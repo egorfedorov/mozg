@@ -1,0 +1,16 @@
+# Public brain pages are the point of publishing — let them be found.
+# Everything behind a session is noise for a crawler and a privacy risk if a
+# stray link ever leaks.
+
+User-agent: *
+Allow: /$
+Allow: /explore
+Allow: /b/
+
+Disallow: /brains
+Disallow: /settings
+Disallow: /sign-in
+Disallow: /api/
+Disallow: /mcp
+
+Sitemap: https://mozg.sh/sitemap.xml
