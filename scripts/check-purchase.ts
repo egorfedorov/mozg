@@ -88,6 +88,14 @@ async function main() {
   );
   check("one purchase row exists", rows[0].n === 1, `${rows[0].n} rows`);
 
+  // Buying is also how a brain reaches the buyer's set. Having to add
+  // something you just paid for would be a bug report, not a step.
+  const inSet = await query<{ n: number }>(
+    `select count(*)::int as n from library where user_id = $1 and brain_id = $2`,
+    [buyer, brain.id],
+  );
+  check("buying puts it in the buyer's brains", inSet[0].n === 1, `${inSet[0].n} row(s)`);
+
   console.log("\nmanual adjustment (the admin path)");
   // The buyer is on $5.00 here. Taking more than that back has to be refused,
   // or the ledger stops summing to the balances.
