@@ -5,8 +5,8 @@
  *   npm run db:migrate          apply pending
  *   npm run db:reset            drop everything, then apply all
  *
- * Identity tables belong to better-auth — run its CLI first:
- *   npx @better-auth/cli migrate
+ * 0000_auth.sql carries better-auth's own tables. They used to come from its
+ * CLI, which does nothing inside a container — see the note in that file.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
@@ -36,16 +36,6 @@ async function main() {
         applied_at timestamptz not null default now()
       )
     `);
-
-    const authReady = await client.query(`select to_regclass('public."user"') as t`);
-    if (!authReady.rows[0].t) {
-      console.error(
-        '\n✗ better-auth tables are missing (no "user" table).\n' +
-          "  Run this first, then re-run the migration:\n\n" +
-          "    npx @better-auth/cli migrate\n",
-      );
-      process.exit(1);
-    }
 
     const applied = new Set(
       (await client.query<{ name: string }>("select name from _migrations")).rows.map(
