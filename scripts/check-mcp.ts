@@ -291,7 +291,63 @@ async function main() {
       Boolean(secret.body.result?.isError) && /credential/i.test(textOf(secret.body.result)),
     );
 
+    console.log("\ngrouping brains into a family");
+    const kid = await rpc(
+      "tools/call",
+      {
+        name: "brain_create",
+        arguments: {
+          title: "Check MCP part",
+          goal: "One part of the throwaway brain.",
+          parent: "check-mcp-scratch",
+        },
+      },
+      token,
+    );
+    check(
+      "a child can be created under a parent",
+      /grouped under check-mcp-scratch/.test(textOf(kid.body.result)),
+      textOf(kid.body.result).slice(0, 60),
+    );
+
+    const nested = await rpc(
+      "tools/call",
+      {
+        name: "brain_create",
+        arguments: {
+          title: "Check MCP deeper",
+          goal: "Should not exist.",
+          parent: "check-mcp-part",
+        },
+      },
+      token,
+    );
+    check(
+      "a second level is refused",
+      Boolean(nested.body.result?.isError) && /one level/i.test(textOf(nested.body.result)),
+      textOf(nested.body.result).slice(0, 50),
+    );
+
+    const listed = await rpc("tools/call", { name: "brain_list", arguments: {} }, token);
+    check(
+      "brain_list explains that a parent covers its children",
+      /searching check-mcp-scratch searches these/.test(textOf(listed.body.result)),
+    );
+
+    const brief = await rpc(
+      "tools/call",
+      { name: "brain_brief", arguments: { brain: "check-mcp-scratch" } },
+      token,
+    );
+    check(
+      "brain_brief on a parent maps its children",
+      /groups 1 others|check-mcp-part/.test(textOf(brief.body.result)),
+    );
+
     console.log("\ncleaning up the scratch brain");
+    await query(`delete from brains where owner_id = $1 and slug like 'check-mcp-%'`, [
+      owner.id,
+    ]);
     await query(`delete from brains where owner_id = $1 and slug = 'check-mcp-scratch'`, [owner.id]);
     if (before) await query(`update "user" set plan = $2 where id = $1`, [owner.id, before.plan]);
     console.log(`  removed, plan restored to ${before?.plan}`);

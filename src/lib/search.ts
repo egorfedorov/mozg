@@ -28,6 +28,9 @@ export interface SearchHit {
   score: number;
   /** Which retriever(s) surfaced it — useful when debugging a bad answer. */
   via: "vector" | "text" | "both";
+  /** Which brain it came from. Only interesting when searching a family. */
+  brain_slug: string;
+  brain_title: string;
 }
 
 export interface SearchOptions {
@@ -37,11 +40,17 @@ export interface SearchOptions {
   degraded?: boolean;
 }
 
+/**
+ * `brainIds` takes a family: searching a parent reaches its children, so an
+ * agent that knows the product name does not need to know how the owner split
+ * it up. A single id behaves exactly as before.
+ */
 export async function searchBrain(
-  brainId: string,
+  brainIds: string | string[],
   q: string,
   opts: SearchOptions = {},
 ): Promise<{ hits: SearchHit[]; degraded: boolean }> {
+  const ids = Array.isArray(brainIds) ? brainIds : [brainIds];
   const limit = Math.min(Math.max(opts.limit ?? 8, 1), 25);
   const text = q.trim();
   if (!text) return { hits: [], degraded: false };
@@ -66,6 +75,8 @@ export async function searchBrain(
     score: string;
     in_vec: boolean;
     in_fts: boolean;
+    brain_slug: string;
+    brain_title: string;
   }>(
     `
     with params as (
@@ -79,7 +90,7 @@ export async function searchBrain(
              row_number() over (order by c.embedding <=> (select v from params)) as rank
         from chunks c
         join notes n on n.id = c.note_id
-       where c.brain_id = $1
+       where c.brain_id = any($1::uuid[])
          and n.status = 'active'
          and c.embedding is not null
          and (select v from params) is not null
@@ -94,7 +105,7 @@ export async function searchBrain(
              ) as rank
         from chunks c
         join notes n on n.id = c.note_id
-       where c.brain_id = $1
+       where c.brain_id = any($1::uuid[])
          and n.status = 'active'
          and (select tsq from params) is not null
          and c.tsv @@ (select tsq from params)
@@ -115,14 +126,16 @@ export async function searchBrain(
        group by id, note_id
     )
     select f.id as chunk_id, f.note_id, n.title, n.category, n.kind,
-           c.content as excerpt, f.score::text, f.in_vec, f.in_fts
+           c.content as excerpt, f.score::text, f.in_vec, f.in_fts,
+           b.slug as brain_slug, b.title as brain_title
       from fused f
       join chunks c on c.id = f.id
       join notes n on n.id = f.note_id
+      join brains b on b.id = n.brain_id
      order by f.score desc
      limit $5
     `,
-    [brainId, vector, toTsQuery(text), opts.category ?? null, limit],
+    [ids, vector, toTsQuery(text), opts.category ?? null, limit],
   );
 
   return {
@@ -136,6 +149,8 @@ export async function searchBrain(
       excerpt: r.excerpt,
       score: Number(r.score),
       via: r.in_vec && r.in_fts ? "both" : r.in_vec ? "vector" : "text",
+      brain_slug: r.brain_slug,
+      brain_title: r.brain_title,
     })),
   };
 }

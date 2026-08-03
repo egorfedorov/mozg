@@ -11,7 +11,11 @@ const EXAMPLES = [
   "Follow our Postgres conventions: naming, migrations, indexing, and the things we never do.",
 ];
 
-export default function NewBrainForm() {
+export default function NewBrainForm({
+  parents,
+}: {
+  parents: { id: string; title: string }[];
+}) {
   const [state, action, pending] = useActionState(createBrain, null);
 
   return (
@@ -43,6 +47,22 @@ export default function NewBrainForm() {
             ))}
           </select>
         </Field>
+
+        {parents.length > 0 && (
+          <Field
+            label="Group it under"
+            hint="For a big subject split into parts. Searching the parent searches every child."
+          >
+            <select name="parent" defaultValue="" style={inputStyle}>
+              <option value="">on its own</option>
+              {parents.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         <Field
           label="What should it be able to do?"

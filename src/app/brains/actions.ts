@@ -15,6 +15,7 @@ const createSchema = z.object({
   goal: z.string().trim().max(4000).optional(),
   // An unknown topic is a stale form, not something worth an error message.
   topic: z.string().catch("other").transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
+  parent: z.string().trim().optional(),
 });
 
 export async function createBrain(_prev: unknown, formData: FormData) {
@@ -25,6 +26,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     title: formData.get("title"),
     goal: formData.get("goal") || undefined,
     topic: formData.get("topic") ?? "other",
+    parent: String(formData.get("parent") ?? "") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -56,10 +58,25 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     slug = `${base}-${i}`.slice(0, 39);
   }
 
+  // The database refuses a parent that is not this user's, or that is already
+  // a child. Resolving it here turns that into a sentence rather than a 500.
+  let parentId: string | null = null;
+  if (parsed.data.parent) {
+    const parent = await maybeOne<{ id: string; parent_id: string | null }>(
+      `select id, parent_id from brains where owner_id = $1 and id = $2`,
+      [user.id, parsed.data.parent],
+    );
+    if (!parent) return { error: "That parent brain does not exist." };
+    if (parent.parent_id) {
+      return { error: "Brains group one level deep. Pick a top-level brain." };
+    }
+    parentId = parent.id;
+  }
+
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal, topic)
-     values ($1, $2, $3, $4, $5) returning *`,
-    [user.id, slug, parsed.data.title, parsed.data.goal ?? null, parsed.data.topic],
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id)
+     values ($1, $2, $3, $4, $5, $6) returning *`,
+    [user.id, slug, parsed.data.title, parsed.data.goal ?? null, parsed.data.topic, parentId],
   );
 
   revalidatePath("/brains");

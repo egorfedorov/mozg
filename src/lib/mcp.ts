@@ -5,6 +5,7 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
+import { familyIds, childrenOf } from "@/lib/families";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
@@ -136,6 +137,14 @@ export const TOOLS: ToolDef[] = [
             "Catalogue field: web, backend, gamedev, mobile, ai, data, devops, " +
             "design, security, product, other.",
         },
+        parent: {
+          type: "string",
+          description:
+            "Handle of a brain to group this one under, for a large subject " +
+            "split into parts (a docs site with an API, a maths model and an " +
+            "SDK). Searching the parent then searches every child. One level " +
+            "only — a child cannot have children.",
+        },
       },
       required: ["title", "goal"],
       additionalProperties: false,
@@ -262,11 +271,16 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     score: number | null;
     note_count: number;
     access: string;
+    parent_handle: string | null;
   }>(
-    `select b.slug as handle, b.title, b.goal, b.score, b.note_count, 'owner' as access
-       from brains b where b.owner_id = $1
+    `select b.slug as handle, b.title, b.goal, b.score, b.note_count, 'owner' as access,
+            p.slug as parent_handle
+       from brains b
+       left join brains p on p.id = b.parent_id
+      where b.owner_id = $1
      union all
-     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count, g.role
+     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count, g.role,
+            null
        from brains b
        join grants g on g.brain_id = b.id
        join "user" u on u.id = b.owner_id
@@ -279,17 +293,40 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
   if (!rows.length) {
     return {
       text:
-        "No brains yet. Create one at the mozg dashboard, add sources, then " +
-        "call brain_list again.",
+        "No brains yet. Create one with brain_create, feed it with " +
+        "brain_add_source, then call brain_list again.",
     };
   }
 
-  const lines = rows.map(
-    (r) =>
-      `- ${r.handle} — ${r.title}\n` +
-      `  goal: ${r.goal ?? "not set"}\n` +
-      `  ${r.note_count} notes · ${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}`,
-  );
+  const describe = (r: (typeof rows)[number], indent: string) =>
+    `${indent}- ${r.handle} — ${r.title}\n` +
+    `${indent}  goal: ${r.goal ?? "not set"}\n` +
+    `${indent}  ${r.note_count} notes · ` +
+    `${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}`;
+
+  // Children are printed under their parent so the shape of someone's
+  // knowledge is visible at a glance, and so an agent knows that asking the
+  // parent covers all of them.
+  const children = new Map<string, typeof rows>();
+  for (const r of rows) {
+    if (!r.parent_handle) continue;
+    children.set(r.parent_handle, [...(children.get(r.parent_handle) ?? []), r]);
+  }
+
+  const lines: string[] = [];
+  for (const r of rows) {
+    if (r.parent_handle) continue;
+    lines.push(describe(r, ""));
+    const kids = children.get(r.handle) ?? [];
+    if (kids.length) {
+      lines.push(
+        `    searching ${r.handle} searches these ${kids.length} together; ` +
+          "ask a child directly to stay inside one subject:",
+      );
+      for (const kid of kids) lines.push(describe(kid, "    "));
+    }
+  }
+
   return { text: `${rows.length} brain(s) available:\n\n${lines.join("\n")}` };
 }
 
@@ -302,10 +339,31 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
     `Brain: ${resolved.brain.title} (${handle})`,
     `Goal: ${brief.goal ?? "not set"}`,
     `${brief.noteCount} notes.`,
+  ];
+
+  // A parent is a map, not a store. Say what it groups before anything else —
+  // an agent that reads this should know it can search here for everything, or
+  // pick one child to stay inside a single subject.
+  const kids = resolved.brain.parent_id ? [] : await childrenOf(resolved.brain.id);
+  if (kids.length) {
+    parts.push(
+      "",
+      `This brain groups ${kids.length} others. Searching it searches all of them;`,
+      "name a child to stay inside one subject:",
+      ...kids.map(
+        (k) =>
+          `  ${k.slug} — ${k.title}` +
+          `\n      ${k.goal ?? "no goal set"}` +
+          `\n      ${k.note_count} notes · ${k.score === null ? "not examined" : `trained ${k.score}%`}`,
+      ),
+    );
+  }
+
+  parts.push(
     "",
     "Categories:",
     ...brief.categories.map((c) => `  ${c.name} — ${c.notes} notes`),
-  ];
+  );
 
   if (brief.sampleTitles.length) {
     parts.push("", "Recent notes:", ...brief.sampleTitles.map((t) => `  · ${t}`));
@@ -335,7 +393,11 @@ async function brainSearch(
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
 
-  const { hits, degraded } = await searchBrain(resolved.brain.id, q, {
+  // A parent reaches its children, so an agent that knows the product name
+  // does not have to know how the owner split it up.
+  const scope = await familyIds(resolved.brain);
+
+  const { hits, degraded } = await searchBrain(scope, q, {
     limit: typeof args.limit === "number" ? args.limit : undefined,
     category: typeof args.category === "string" ? args.category : null,
   });
@@ -352,10 +414,12 @@ async function brainSearch(
     };
   }
 
+  const acrossFamily = scope.length > 1;
   const blocks = hits.map(
     (h, i) =>
       `[${i + 1}] ${h.title}` +
       (h.category ? `  (${h.category})` : "") +
+      (acrossFamily ? `  — from ${h.brain_slug}` : "") +
       `\nnote_id: ${h.note_id}\n${h.excerpt}`,
   );
 
@@ -539,15 +603,44 @@ async function brainCreate(
 
   const topic = isTopic(args.topic) ? String(args.topic) : "other";
 
+  // A parent has to exist, belong to this user, and not be a child itself. The
+  // database enforces all three; resolving here turns a constraint violation
+  // into a sentence the agent can act on.
+  let parentId: string | null = null;
+  const parentHandle = String(args.parent ?? "").trim();
+  if (parentHandle) {
+    const parent = await maybeOne<Brain>(
+      `select * from brains where owner_id = $1 and slug = $2`,
+      [owner.userId, parentHandle],
+    );
+    if (!parent) {
+      return {
+        text: `No brain "${parentHandle}" to group this under. Call brain_list.`,
+        isError: true,
+      };
+    }
+    if (parent.parent_id) {
+      return {
+        text:
+          `"${parentHandle}" is itself grouped under another brain, and brains ` +
+          "nest one level deep. Group this under its parent instead.",
+        isError: true,
+      };
+    }
+    parentId = parent.id;
+  }
+
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal, topic)
-     values ($1, $2, $3, $4, $5) returning *`,
-    [owner.userId, slug, title, goal, topic],
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id)
+     values ($1, $2, $3, $4, $5, $6) returning *`,
+    [owner.userId, slug, title, goal, topic, parentId],
   );
 
   return {
     text:
-      `Created "${brain.title}" with the handle ${brain.slug}.\n\n` +
+      `Created "${brain.title}" with the handle ${brain.slug}` +
+      (parentHandle ? `, grouped under ${parentHandle}` : "") +
+      ".\n\n" +
       `Goal: ${goal}\n\n` +
       "It is empty. Add material with brain_add_source — documentation pages by " +
       "URL, or blocks of text. Once material is in, it sits an exam built from " +

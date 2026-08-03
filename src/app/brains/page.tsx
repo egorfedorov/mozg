@@ -36,6 +36,13 @@ export default async function BrainsPage() {
 
   const trend = stats.callsWeek - stats.callsPrevWeek;
 
+  // Parents first, each with its children. A child whose parent was deleted
+  // falls back to standing on its own rather than disappearing.
+  const byId = new Map(brains.map((b) => [b.id, b]));
+  const families: [(typeof brains)[number], typeof brains][] = brains
+    .filter((b) => !b.parent_id || !byId.has(b.parent_id))
+    .map((parent) => [parent, brains.filter((b) => b.parent_id === parent.id)]);
+
   return (
     <AppShell
       active="/brains"
@@ -87,10 +94,27 @@ export default async function BrainsPage() {
         )}
 
         <Section title="All brains" aside={`${brains.length} in total`}>
+          {/* Families are rendered as families: a parent with its children
+              indented under it, because that is how the owner thinks about
+              them and how an agent is told they behave. */}
+          {families.map(([parent, children]) => (
+            <div key={parent.id} style={{ marginBottom: "1.5rem" }}>
+              {children.length > 0 && (
+                <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
+                  {parent.title} · {children.length} inside · searching the parent
+                  searches all of them
+                </p>
+              )}
+              <div className="grid-brains">
+                <BrainCard brain={parent} />
+                {children.map((child) => (
+                  <BrainCard key={child.id} brain={child} />
+                ))}
+              </div>
+            </div>
+          ))}
+
           <div className="grid-brains">
-            {brains.map((brain) => (
-              <BrainCard key={brain.id} brain={brain} />
-            ))}
             <Link href="/brains/new" className="card-new">
               <span className="plus">+</span>
               <span className="mono" style={{ fontSize: ".8125rem" }}>

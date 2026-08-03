@@ -27,6 +27,8 @@ export interface Brain {
   color: string;
   /** Catalogue field — see src/lib/topics.ts. Free text; unknown reads as "other". */
   topic: string;
+  /** Groups this brain under another. One level only; see 0006_families.sql. */
+  parent_id: string | null;
   visibility: Visibility;
   license: License;
   score: number | null;
