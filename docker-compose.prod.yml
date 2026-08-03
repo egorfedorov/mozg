@@ -1,25 +1,13 @@
 # Production stack for mozg.sh.
 #
-#   cp .env.example .env   # fill it in — see README "Deploy"
-#   docker compose -f docker-compose.prod.yml up -d
+# TLS and ports 80/443 belong to the host's nginx, which already serves other
+# sites on this box — see deploy/nginx-mozg.sh.conf. The app therefore binds to
+# localhost only and is never reachable from outside except through nginx.
 #
-# Caddy terminates TLS and gets a certificate for mozg.sh automatically, so
-# there is no certbot step and no renewal cron.
+#   cp .env.example .env   # fill it in — see README "Deploy"
+#   docker compose -f docker-compose.prod.yml up -d --build
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-
   db:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
@@ -40,8 +28,8 @@ services:
     restart: unless-stopped
     volumes:
       - models:/models
-    # First boot downloads 2.2 GB of weights; give it room before the
-    # healthcheck starts failing.
+    # First boot downloads 2.2 GB of weights into the volume; give it room
+    # before the healthcheck starts calling it dead.
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8099/health || exit 1"]
       interval: 15s
@@ -56,11 +44,14 @@ services:
   app:
     build: .
     restart: unless-stopped
+    # Localhost only. Exposing 3300 publicly would bypass nginx and serve the
+    # app without TLS.
+    ports:
+      - "127.0.0.1:3300:3300"
     env_file: .env
     environment:
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
       EMBED_URL: http://embed:8099
-      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
       - storage:/data/storage
@@ -76,7 +67,6 @@ services:
     environment:
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
       EMBED_URL: http://embed:8099
-      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
       - storage:/data/storage
@@ -88,5 +78,3 @@ volumes:
   pgdata:
   models:
   storage:
-  caddy-data:
-  caddy-config:

@@ -89,8 +89,15 @@ export async function structured<T>(opts: {
  * that would overstate ingest cost by a third once caching kicks in.
  */
 export function costCents(model: string, usage: Usage): number {
-  const p = PRICE[model];
-  if (!p) return 0;
+  // Resellers hand out dated ids (claude-haiku-4-5-20251001) and suffixed
+  // variants (-thinking). Same model, same price — strip to the base id or
+  // every cost lands as zero and the economics look free.
+  const base = model.replace(/-\d{8}$/, "").replace(/-thinking$/, "");
+  const p = PRICE[base];
+  if (!p) {
+    console.warn(`[cost] no price for model "${model}" — reporting 0`);
+    return 0;
+  }
   const read = usage.cache_read_input_tokens ?? 0;
   const write = usage.cache_creation_input_tokens ?? 0;
   const usd =
