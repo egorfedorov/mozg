@@ -34,8 +34,15 @@ export async function fetchPageText(url: string): Promise<string> {
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (declared > MAX_BYTES) throw new Error("page is over 10 MB");
 
-  const html = (await res.text()).slice(0, MAX_BYTES);
-  return stripHtml(html);
+  const body = (await res.text()).slice(0, MAX_BYTES);
+
+  // Only strip markup from markup. A raw .md or .txt URL is already the text
+  // we want, and running the tag stripper over it eats every generic and JSX
+  // fragment in the code samples — `Array<string>` becomes `Array`, which is
+  // worse than useless in a brain about an SDK.
+  const type = (res.headers.get("content-type") ?? "").toLowerCase();
+  const looksLikeMarkup = type.includes("html") || type.includes("xml");
+  return looksLikeMarkup ? stripHtml(body) : body.trim();
 }
 
 /**

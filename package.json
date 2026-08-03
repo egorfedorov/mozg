@@ -22,7 +22,8 @@
     "check:money": "tsx --env-file-if-exists=.env scripts/check-money.ts",
     "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts",
     "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts",
-    "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts"
+    "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts",
+    "seed:stake": "tsx --env-file-if-exists=.env scripts/seed-stake-engine.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
