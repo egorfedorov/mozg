@@ -1,8 +1,9 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, enqueueIngest } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, enqueueIngest } from "@/worker/queue";
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { runExam } from "@/worker/exam";
 import { runMaintenance } from "@/worker/maintenance";
+import { runConsolidation } from "@/worker/consolidate";
 import { embedHealthy } from "@/lib/embed";
 import { env } from "@/lib/env";
 
@@ -121,9 +122,35 @@ async function main() {
 
   await scheduleMaintenance();
 
+  await boss.work(
+    QUEUES.consolidate,
+    { batchSize: 1, pollingIntervalSeconds: 30 },
+    async () => {
+      const started = Date.now();
+      try {
+        const report = await runConsolidation();
+        console.log(
+          `[consolidate] brains=${report.brains} clusters=${report.clusters} ` +
+            `merged=${report.merged} superseded=${report.superseded} ` +
+            `skipped=${report.skipped} ${report.costCents.toFixed(1)}¢ ` +
+            `${Date.now() - started}ms`,
+        );
+      } catch (err) {
+        console.error(
+          `[consolidate] FAILED after ${Date.now() - started}ms:`,
+          err instanceof Error ? err.message : err,
+        );
+        throw err;
+      }
+    },
+  );
+
+  await scheduleConsolidation();
+
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +
-      `(one job at a time per queue, maintenance ${MAINTENANCE_CRON} UTC)`,
+      `(one job at a time per queue, maintenance ${MAINTENANCE_CRON} UTC, ` +
+      `consolidation ${env.CONSOLIDATE_ENABLED ? `${CONSOLIDATE_CRON} UTC` : "off"})`,
   );
 
   const shutdown = async (signal: string) => {

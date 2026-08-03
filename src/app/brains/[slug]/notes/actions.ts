@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { query, maybeOne } from "@/db";
 import { currentUser } from "@/lib/session";
+import { normalizeCategory } from "@/lib/category";
 
 /** Every action here proves the note belongs to a brain this user owns. */
 async function ownedNote(noteId: string, userId: string) {
@@ -82,8 +83,13 @@ export async function recategorise(formData: FormData) {
   const note = await ownedNote(String(formData.get("id")), user.id);
   if (!note) return;
 
-  const raw = String(formData.get("category") ?? "").trim().slice(0, 60);
-  await query(`update notes set category = $2 where id = $1`, [note.id, raw || null]);
+  const raw = String(formData.get("category") ?? "").slice(0, 120);
+  // Normalised like every other write path — a hand-typed "Type Scale" must
+  // not fork the category extraction already uses.
+  await query(`update notes set category = $2 where id = $1`, [
+    note.id,
+    normalizeCategory(raw),
+  ]);
 
   revalidatePath(`/brains/${note.slug}/notes`);
 }

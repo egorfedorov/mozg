@@ -47,7 +47,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4g
+          # Measured, not estimated: bge-m3 alone sits at 3.0 GB resident on
+          # production — not the ~2 GB the budget assumed. Loading the reranker
+          # on top of that inside a 4 GB limit is an OOM, and an OOM here takes
+          # search and ingest down together.
+          #
+          # The host has 62 GB with under 1 GB in use by everything else, so a
+          # tight limit buys nothing. This is a runaway guard, not a budget.
+          memory: 8g
     logging:
       driver: json-file
       options:

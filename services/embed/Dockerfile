@@ -23,6 +23,11 @@ RUN chmod +x fetch-model.sh
 ENV EMBED_MODEL=/models/bge-m3
 ENV DEST=/models/bge-m3
 
+# Optional cross-encoder for search reranking. Not fetched on boot — pull it
+# deliberately (`./fetch-model.sh reranker` against the models volume). Until
+# it is there, /rerank answers 503 and search falls back to plain RRF.
+ENV RERANK_MODEL=/models/bge-reranker-v2-m3
+
 EXPOSE 8099
 
 # Fetch on first boot if the volume is empty, then serve.

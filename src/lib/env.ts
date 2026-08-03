@@ -21,6 +21,9 @@ const schema = z.object({
 
   EMBED_URL: z.string().url().default("http://localhost:8099"),
   EMBED_DIM: z.coerce.number().int().default(1024),
+  // The reranker lives on the same embed service, so it defaults to EMBED_URL
+  // (filled in after parse). Set it only if /rerank is served elsewhere.
+  RERANK_URL: z.string().url().optional(),
 
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./.storage"),
@@ -48,6 +51,15 @@ const schema = z.object({
   NOWPAYMENTS_API_KEY: z.string().optional(),
   NOWPAYMENTS_IPN_SECRET: z.string().optional(),
 
+  // Nightly note consolidation. Off until the similarity threshold separates
+  // duplicates from neighbours on real material — measured on bge-m3, three
+  // notes stating the same fact sat at 0.15/0.22/0.27 while the first pair of
+  // genuinely different facts sat at 0.2766, so there is no threshold that
+  // catches the duplicates without gluing unrelated facts together. Merging is
+  // destructive; an unattended job should not run on a number nobody has
+  // validated.
+  CONSOLIDATE_ENABLED: z.stringbool().default(false),
+
   // Comma-separated addresses that may open /admin. Empty means nobody can —
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.
@@ -63,7 +75,7 @@ if (!parsed.success) {
   throw new Error(`Invalid environment:\n${issues}\n\nCopy .env.example to .env`);
 }
 
-export const env = parsed.data;
+export const env = { ...parsed.data, RERANK_URL: parsed.data.RERANK_URL ?? parsed.data.EMBED_URL };
 
 /**
  * Can the product send mail? Everything that depends on reaching someone by

@@ -38,20 +38,23 @@ export async function categoryGroups(brainId: string): Promise<CategoryGroup[]> 
         order by started_at desc limit 1
      ),
      counted as (
-       select coalesce(category, 'uncategorised') as category, count(*)::int as notes
+       -- lower(): note categories are stored normalised (lib/category.ts)
+       -- while check categories keep the exam's casing — the join below must
+       -- not treat "Type scale" and "type scale" as different areas.
+       select coalesce(lower(category), 'uncategorised') as category, count(*)::int as notes
          from notes
         where brain_id = $1 and status = 'active'
         group by 1
      ),
      examined as (
-       select c.category,
+       select lower(c.category) as category,
               count(r.passed) filter (where r.passed)::int as passed,
               count(*)::int as total
          from checks c
          join latest l on true
          join check_results r on r.check_id = c.id and r.run_id = l.id
         where c.brain_id = $1 and c.enabled
-        group by c.category
+        group by 1
      )
      select coalesce(counted.category, examined.category) as category,
             coalesce(counted.notes, 0) as notes,
@@ -101,10 +104,23 @@ export interface DuplicatePair {
  */
 const NEAR = 0.12;
 
+export interface DuplicatePairsOptions {
+  limit?: number;
+  /** Cosine-distance ceiling. The duplicate display keeps the historical 0.12. */
+  maxDistance?: number;
+  /**
+   * Skip notes younger than this. Consolidation passes it because a note
+   * written an hour ago may still be getting corrected or reviewed — merging
+   * under active work produces a merge that is stale the moment it lands.
+   */
+  minAgeHours?: number;
+}
+
 export async function duplicatePairs(
   brainId: string,
-  limit = 20,
+  opts: DuplicatePairsOptions = {},
 ): Promise<DuplicatePair[]> {
+  const { limit = 20, maxDistance = NEAR, minAgeHours = null } = opts;
   const rows = await query<{
     a_id: string;
     a_title: string;
@@ -130,6 +146,10 @@ export async function duplicatePairs(
          join notes xa on xa.id = x.note_id and xa.status = 'active'
          join notes yb on yb.id = y.note_id and yb.status = 'active'
         where x.brain_id = $1 and (x.embedding <=> y.embedding) < $2
+          -- Age gate is optional: the duplicate display shows fresh pairs too,
+          -- only automated merging needs to stay away from work in progress.
+          and ($4::int is null or (xa.created_at < now() - make_interval(hours => $4)
+                               and yb.created_at < now() - make_interval(hours => $4)))
         group by 1, 2
         order by 3
         limit $3
@@ -145,7 +165,7 @@ export async function duplicatePairs(
        join notes a on a.id = p.a_id
        join notes b on b.id = p.b_id
       order by p.distance`,
-    [brainId, NEAR, limit],
+    [brainId, maxDistance, limit, minAgeHours],
   );
 
   return rows.map((r) => ({

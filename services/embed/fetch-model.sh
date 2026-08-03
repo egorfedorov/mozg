@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Fetch bge-m3 into a local directory.
+# Fetch a model into a local directory.
 #
 # Two problems this works around, both specific to flaky routes to the HF CDN:
 #
-#   1. huggingface_hub stalls on the LFS CDN — small files land, the 2.3 GB
+#   1. huggingface_hub stalls on the LFS CDN — small files land, the GB-sized
 #      weights sit at zero bytes forever with no error.
 #   2. `curl --retry -C -` makes it worse, not better: when the CDN ignores
 #      Range on a retry it replies 200 with the whole body and curl truncates
@@ -13,27 +13,52 @@
 # and a 200 (ignored Range) is rejected rather than written. Progress can only
 # go forwards; interrupt and re-run as often as you like.
 #
-#   ./fetch-model.sh            # resume into ./models/bge-m3
-#   MIRROR=1 ./fetch-model.sh   # go through hf-mirror.com instead
+#   ./fetch-model.sh              # resume bge-m3 into ./models/bge-m3
+#   ./fetch-model.sh reranker     # bge-reranker-v2-m3 into ./models/bge-reranker-v2-m3
+#   MIRROR=1 ./fetch-model.sh     # go through hf-mirror.com instead
 set -uo pipefail
 cd "$(dirname "$0")"
 
-REPO="BAAI/bge-m3"
-DEST="${DEST:-./models/bge-m3}"
+TARGET="${1:-bge-m3}"
 HOST="https://huggingface.co"
 [ "${MIRROR:-0}" = "1" ] && HOST="https://hf-mirror.com"
 
-SMALL=(
-  "1_Pooling/config.json"
-  "config.json"
-  "config_sentence_transformers.json"
-  "modules.json"
-  "sentence_bert_config.json"
-  "special_tokens_map.json"
-  "tokenizer_config.json"
-  "tokenizer.json"
-  "sentencepiece.bpe.model"
-)
+case "$TARGET" in
+  bge-m3)
+    REPO="BAAI/bge-m3"
+    DEST="${DEST:-./models/bge-m3}"
+    ENV_VAR="EMBED_MODEL"
+    SMALL=(
+      "1_Pooling/config.json"
+      "config.json"
+      "config_sentence_transformers.json"
+      "modules.json"
+      "sentence_bert_config.json"
+      "special_tokens_map.json"
+      "tokenizer_config.json"
+      "tokenizer.json"
+      "sentencepiece.bpe.model"
+    )
+    ;;
+  reranker|bge-reranker-v2-m3)
+    # Plain CrossEncoder checkpoint — no sentence-transformers module configs,
+    # so the file list is just tokenizer + config.
+    REPO="BAAI/bge-reranker-v2-m3"
+    DEST="${DEST:-./models/bge-reranker-v2-m3}"
+    ENV_VAR="RERANK_MODEL"
+    SMALL=(
+      "config.json"
+      "special_tokens_map.json"
+      "tokenizer_config.json"
+      "tokenizer.json"
+      "sentencepiece.bpe.model"
+    )
+    ;;
+  *)
+    echo "unknown target '$TARGET' — expected 'bge-m3' or 'reranker'" >&2
+    exit 1
+    ;;
+esac
 LARGE="pytorch_model.bin"
 
 size_of() { stat -f%z "$1" 2>/dev/null || stat -c%s "$1" 2>/dev/null || echo 0; }
@@ -114,4 +139,4 @@ done
 printf '\r    100%%  %s MB          \n' "$((total / 1024 / 1024))"
 echo
 echo "✓ model ready. Point the service at it:"
-echo "    EMBED_MODEL=$(cd "$DEST" && pwd)"
+echo "    $ENV_VAR=$(cd "$DEST" && pwd)"

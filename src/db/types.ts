@@ -104,7 +104,7 @@ export interface Note {
   category: string | null;
   kind: NoteKind;
   confidence: number;
-  author: "ingest" | "human" | "agent";
+  author: "ingest" | "human" | "agent" | "consolidated";
   agent_client: string | null;
   status: NoteStatus;
   superseded_by: string | null;

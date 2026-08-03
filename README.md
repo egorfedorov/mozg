@@ -67,6 +67,18 @@ npm run db:migrate       # brains, sources, notes, chunks, checks, grants, calls
 этом случае честно предупреждает агента строкой «semantic search is
 unavailable».
 
+Поверх гибридного поиска есть опциональный реранкер — cross-encoder
+`bge-reranker-v2-m3`, который перечитывает топ кандидатов после RRF-слияния.
+Качается тем же скриптом и живёт на том же сервисе (`POST /rerank`):
+
+```bash
+./services/embed/fetch-model.sh reranker   # ./models/bge-reranker-v2-m3
+```
+
+Без скачанных весов реранкера всё работает как раньше: `/rerank` отвечает 503,
+поиск возвращает порядок RRF, а MCP добавляет строку «reranking is
+unavailable».
+
 ### 5. Запуск
 
 ```bash
@@ -147,7 +159,7 @@ worker (pg-boss)  ─────────────────┘        
 | `src/lib/scan.ts` | сканер секретов и PII, гейт публикации |
 | `src/lib/extract.ts` | скриншот → заметки, промпт знает цель мозга |
 | `src/lib/chunk.ts` | нарезка заметок под поиск |
-| `src/lib/search.ts` | гибридный поиск: вектор + FTS, слияние через RRF |
+| `src/lib/search.ts` | гибридный поиск: вектор + FTS, слияние через RRF, реранк топа cross-encoder'ом |
 | `src/lib/tsquery.ts` | построение tsquery — **не** `plainto_tsquery`, см. комментарий |
 | `src/lib/mcp.ts` | описания инструментов MCP — это промпт, а не докstring |
 | `src/lib/access.ts` | кто что может с мозгом — единственная точка проверки |
@@ -160,7 +172,8 @@ worker (pg-boss)  ─────────────────┘        
 | `src/app/mcp/route.ts` | JSON-RPC эндпоинт для агентов |
 | `src/worker/ingest.ts` | пайплайн целиком |
 | `src/worker/exam.ts` | генерация проверок из цели + прогон и судейство |
-| `services/embed/` | bge-m3 за FastAPI |
+| `services/embed/` | bge-m3 за FastAPI + опциональный реранкер bge-reranker-v2-m3 (`/rerank`) |
+| `src/lib/rerank.ts` | клиент реранкера: таймаут, кап документов, null = «нет реранкера» |
 | `scripts/ingest.ts` | прогон пайплайна из терминала |
 | `scripts/seed.ts` | демо-мозг и токен для проверки MCP |
 | `scripts/check-access.ts` | сквозная проверка изоляции мозгов |

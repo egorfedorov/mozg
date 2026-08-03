@@ -4,6 +4,7 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
+import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
 import { storage } from "@/lib/storage";
 import { fetchPageText, contentHash } from "@/lib/page";
@@ -18,9 +19,6 @@ import { enqueueExam } from "@/worker/queue";
  * model wrote. A model asked not to transcribe a token will still occasionally
  * paraphrase one into a note.
  */
-
-/** cos distance below this means "the brain already knows this". */
-const DUPLICATE_DISTANCE = 0.07;
 
 export interface IngestResult {
   status: "ready" | "rejected" | "failed";
@@ -105,9 +103,11 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     )
       // Hand the model the canonical spellings, so "reuse an existing
       // category" cannot echo back a casing the write path would then
-      // rewrite into a different string than the exam's label.
+      // rewrite into a different string than the exam's label. Deduped after
+      // normalising: "Type scale" and "type scale" were two rows above.
       .map((r) => normalizeCategory(r.category))
-      .filter((c): c is string => c !== null);
+      .filter((c): c is string => c !== null)
+      .filter((c, i, all) => all.indexOf(c) === i);
 
     // Extraction is the step that costs money, and pg-boss retries the whole
     // job — so a flake at the embed stage would otherwise buy the same
@@ -167,20 +167,10 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
 
         // Dedup on the note's leading chunk — that's where title + first
         // sentence live, which is what makes two notes "the same fact".
-        const dup = await client.query<{ note_id: string; distance: number }>(
-          `select c.note_id, (c.embedding <=> $2::vector) as distance
-             from chunks c
-             join notes n on n.id = c.note_id
-            where c.brain_id = $1 and n.status = 'active'
-            order by c.embedding <=> $2::vector
-            limit 1`,
-          [brain.id, toVector(noteVectors[0])],
-        );
-
+        // Inside this transaction on purpose: the check must see the notes
+        // this batch inserted moments ago, which are still uncommitted.
         const duplicate =
-          dup.rows[0] && Number(dup.rows[0].distance) < DUPLICATE_DISTANCE
-            ? dup.rows[0].note_id
-            : null;
+          (await findDuplicateNote(brain.id, noteVectors[0], client))?.note_id ?? null;
 
         const { rows } = await client.query<{ id: string }>(
           `insert into notes
@@ -192,7 +182,9 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
             source.id,
             note.title,
             note.body,
-            note.category,
+            // Canonical form, or "Type scale" / "type scale" stay two
+            // categories forever (see lib/category.ts).
+            normalizeCategory(note.category),
             note.kind,
             note.confidence,
           ],

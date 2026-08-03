@@ -3,8 +3,11 @@ import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
+import { findDuplicateNote } from "@/lib/dedup";
 import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
+import { normalizeCategory } from "@/lib/category";
+import { clipExcerpt } from "@/lib/excerpt";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
@@ -61,14 +64,20 @@ export const TOOLS: ToolDef[] = [
       "whenever the answer depends on project-specific conventions, layouts, " +
       "rules or decisions that are not already in this conversation — before " +
       "answering from general knowledge. Prefer several short, specific queries " +
-      "over one long one. Returns ranked excerpts with note ids.",
+      "over one long one. Returns ranked excerpts with note ids — excerpts are " +
+      "cut short; brain_read gives the full note.",
     inputSchema: {
       type: "object",
       properties: {
         brain: { type: "string", description: "Brain handle." },
         query: { type: "string", description: "What you need to know." },
         limit: { type: "integer", description: "Max results, 1-25. Default 8." },
-        category: { type: "string", description: "Optional category filter." },
+        category: {
+          type: "string",
+          description:
+            "Optional category filter, e.g. \"typography/scale\". A top level " +
+            "(\"typography\") also matches everything under it.",
+        },
       },
       required: ["brain", "query"],
       additionalProperties: false,
@@ -369,11 +378,30 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
     );
   }
 
+  // Rendered as a tree: the top level carries the group's total, its children
+  // list their own counts. Capped in briefBrain — when it had to trim, say so,
+  // or the agent reads a summary as the whole map.
+  const categoryLines = brief.categories.map((c) => {
+    const kids = c.children
+      // Just the part after the top level — the filter takes the full path,
+      // and the hint below says how to compose it.
+      .map((k) => `${k.name.slice(c.name.length + 1)} (${k.notes})`)
+      .join(", ");
+    const more = c.hiddenChildren ? `, +${c.hiddenChildren} more` : "";
+    return `  ${c.name} — ${c.notes} notes` + (kids ? `: ${kids}${more}` : "");
+  });
   parts.push(
     "",
-    "Categories:",
-    ...brief.categories.map((c) => `  ${c.name} — ${c.notes} notes`),
+    "Categories (pass one to brain_search's category filter, as \"top/sub\";",
+    "a top level alone covers everything under it):",
+    ...categoryLines,
   );
+  if (brief.hiddenCategories > 0) {
+    parts.push(
+      `  … ${brief.hiddenCategories} more top-level categories not shown —`,
+      "  this is the largest slice; search with a category filter to drill further.",
+    );
+  }
 
   if (brief.sampleTitles.length) {
     parts.push("", "Recent notes:", ...brief.sampleTitles.map((t) => `  · ${t}`));
@@ -408,7 +436,7 @@ async function brainSearch(
   // let a public parent answer from its private or unpurchased children.
   const scope = await familyScopeFor(resolved.brain, owner.userId);
 
-  const { hits, degraded } = await searchBrain(scope, q, {
+  const { hits, degraded, reranked } = await searchBrain(scope, q, {
     limit: typeof args.limit === "number" ? args.limit : undefined,
     category: typeof args.category === "string" ? args.category : null,
   });
@@ -426,13 +454,23 @@ async function brainSearch(
   }
 
   const acrossFamily = scope.length > 1;
-  const blocks = hits.map(
-    (h, i) =>
+  // Excerpts are cut to ~150 tokens — enough to judge relevance, not enough to
+  // answer from. The full text is one brain_read away; the footer says so only
+  // when something was actually cut, or it is noise on every small result.
+  let anyClipped = false;
+  const blocks = hits.map((h, i) => {
+    const clip = clipExcerpt(h.excerpt);
+    anyClipped ||= clip.clipped;
+    return (
       `[${i + 1}] ${h.title}` +
       (h.category ? `  (${h.category})` : "") +
       (acrossFamily ? `  — from ${h.brain_slug}` : "") +
-      `\nnote_id: ${h.note_id}\n${h.excerpt}`,
-  );
+      `\nnote_id: ${h.note_id}\n${clip.text}`
+    );
+  });
+  const clippedHint = anyClipped
+    ? "\n\n---\n\nExcerpts are cut short — call brain_read with a note_id for the full note."
+    : "";
 
   // Searching a family competes six subjects for the same few slots, so the
   // exact note can rank below something merely adjacent. Asking one child is
@@ -451,8 +489,14 @@ async function brainSearch(
     text:
       (degraded
         ? "Note: semantic search is unavailable, these are keyword matches only.\n\n"
-        : "") +
+        : // The reranker being down is a quality loss, not a correctness one —
+          // the hybrid ranking is still the full pipeline minus the final
+          // reorder. Worth one honest line, not an alarm.
+          !reranked && hits.length > 1
+          ? "Note: reranking is unavailable, these are in hybrid-search order.\n\n"
+          : "") +
       blocks.join("\n\n---\n\n") +
+      clippedHint +
       narrow,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
@@ -533,12 +577,52 @@ async function brainWrite(
   }
 
   const pending = resolved.brain.review_required;
-  // Inserted pending even when no review is required: the note flips to active
-  // only once its chunks exist. An "active" note with no chunks is invisible
-  // to search, which looks like the write silently did nothing — the trap
-  // review.approve's comment warns about. If the embedder is down the note
-  // stays pending (the owner's approve re-tries the embed) and the agent gets
-  // an honest error instead of a ghost note.
+  const texts = chunksForNote(title, body);
+
+  // The duplicate check needs the note's vector, so the embed moved ahead of
+  // the insert: a failed embed now leaves nothing behind at all, where it used
+  // to strand a pending row (the ghost note review.approve's comment warns
+  // about).
+  //
+  // On the review path the embed only feeds the duplicate check — the note
+  // itself is embedded on approval, and failing the whole write because a
+  // local check could not run would be the tail wagging the dog. The reviewer
+  // is the dedup backstop there.
+  let vectors: number[][] | null = null;
+  try {
+    vectors = await embedPassages(texts);
+  } catch (err) {
+    if (!pending) throw err;
+  }
+
+  // Same threshold as ingest (lib/dedup.ts): an agent re-writing a fact the
+  // brain already holds is the most common duplicate there is, and until now
+  // this path never checked.
+  const duplicate = vectors?.length
+    ? await findDuplicateNote(resolved.brain.id, vectors[0])
+    : null;
+
+  // Without review, refuse outright and say what the brain already has. The
+  // agent can then brain_read the existing note and write again with the
+  // specific difference stated — an update, not a copy.
+  if (duplicate && !pending) {
+    return {
+      text:
+        `Not saved — ${handle} already holds this as "${duplicate.title}" ` +
+        `(note_id: ${duplicate.note_id}).\n\n` +
+        "Call brain_read on it. If your lesson adds something it lacks, write " +
+        "again stating that specific difference or extra detail; do not retry " +
+        "the same wording.",
+      isError: true,
+      brainId: resolved.brain.id,
+      ownerId: resolved.brain.owner_id,
+      results: 0,
+    };
+  }
+
+  // With review, save anyway and flag the look-alike in the response: pending
+  // is the human's territory, and silently refusing could swallow a deliberate
+  // correction to the note it resembles. The reviewer sees both and decides.
   const note = await one<{ id: string }>(
     `insert into notes
        (brain_id, title, body, category, kind, author, agent_client, status, confidence)
@@ -548,7 +632,9 @@ async function brainWrite(
       resolved.brain.id,
       title,
       body,
-      typeof args.category === "string" ? args.category : null,
+      // Same canonicalisation ingest applies — an agent writing "Type Scale"
+      // must land in the same category as extraction's "type scale".
+      normalizeCategory(typeof args.category === "string" ? args.category : null),
       typeof args.kind === "string" ? args.kind : "fact",
       "mcp",
     ],
@@ -557,9 +643,6 @@ async function brainWrite(
   // Pending notes stay unindexed until approved — otherwise "review required"
   // would be theatre and unapproved notes would already be answering queries.
   if (!pending) {
-    const texts = chunksForNote(title, body);
-    // Embed before writing anything; a throw here leaves the note pending.
-    const vectors = await embedPassages(texts);
     await tx(async (client) => {
       for (let i = 0; i < texts.length; i++) {
         await client.query(
@@ -570,11 +653,13 @@ async function brainWrite(
             note.id,
             texts[i],
             estimateTokens(texts[i]),
-            toVector(vectors[i]),
+            toVector(vectors![i]),
           ],
         );
       }
-      // Flip last, atomically with the chunks it makes searchable.
+      // Flipped active in the same transaction as the chunks that make it
+      // searchable — an "active" note with no chunks is invisible to search,
+      // which looks like the write silently did nothing.
       await client.query(`update notes set status = 'active' where id = $1`, [note.id]);
     });
   }
@@ -588,7 +673,13 @@ async function brainWrite(
   return {
     text: pending
       ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +
-        "in search until approved."
+        "in search until approved." +
+        (duplicate
+          ? `\n\nHeads-up: it looks very close to the existing note ` +
+            `"${duplicate.title}" (note_id: ${duplicate.note_id}). The reviewer ` +
+            "sees both and decides — but if this was meant as a correction, " +
+            "brain_read that note and write again stating what it gets wrong."
+          : "")
       : `Saved to ${handle}. It is searchable now.`,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,

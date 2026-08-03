@@ -11,6 +11,7 @@ export const QUEUES = {
   ingest: "ingest",
   exam: "exam",
   maintenance: "maintenance",
+  consolidate: "consolidate",
 } as const;
 
 /**
@@ -19,6 +20,14 @@ export const QUEUES = {
  * morning should not answer stale until tomorrow.
  */
 export const MAINTENANCE_CRON = "17 */6 * * *";
+
+/**
+ * Consolidation is daily, unlike maintenance: every merge is a paid model
+ * call, and duplicates accumulate slowly enough that six-hourly passes would
+ * buy the same merges four times over. 03:43 UTC keeps it clear of the
+ * maintenance slots.
+ */
+export const CONSOLIDATE_CRON = "43 3 * * *";
 
 let boss: PgBoss | null = null;
 let starting: Promise<PgBoss> | null = null;
@@ -62,6 +71,31 @@ export async function scheduleMaintenance(): Promise<void> {
 export async function enqueueMaintenance(): Promise<void> {
   const b = await getBoss();
   await b.send(QUEUES.maintenance, {}, { singletonKey: "maintenance", singletonSeconds: 300 });
+}
+
+/**
+ * Register the daily consolidation pass. Same rationale as maintenance:
+ * stored in the database, so restarts and multi-worker deploys fire it once.
+ */
+export async function scheduleConsolidation(): Promise<void> {
+  const b = await getBoss();
+
+  // Off by default — see CONSOLIDATE_ENABLED in lib/env.ts. Unschedule rather
+  // than skip, so turning the flag off actually stops a schedule already
+  // stored in the database from a previous boot.
+  if (!env.CONSOLIDATE_ENABLED) {
+    await b.unschedule(QUEUES.consolidate).catch(() => {});
+    return;
+  }
+
+  await b.schedule(QUEUES.consolidate, CONSOLIDATE_CRON, {}, { tz: "UTC" });
+}
+
+export async function enqueueConsolidation(): Promise<void> {
+  const b = await getBoss();
+  // The pass walks every large brain; a double trigger would pay for the same
+  // merges twice.
+  await b.send(QUEUES.consolidate, {}, { singletonKey: "consolidation", singletonSeconds: 600 });
 }
 
 export async function enqueueExam(brainId: string): Promise<void> {

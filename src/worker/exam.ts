@@ -196,12 +196,25 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
         return {
           check,
           context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
+          // Kept alongside the verdict so a fail can be told apart later:
+          // zero hits means the brain has nothing to answer from, hits with a
+          // fail mean the material is there and search or phrasing lost it.
+          // topScore is the fused RRF score of whatever ranked first (the
+          // reranker reorders but does not rescale it).
+          retrievalHits: hits.length,
+          retrievalTopScore: hits[0]?.score ?? null,
         };
       }),
     );
 
     let cost = 0;
-    const results: { check: Check; passed: boolean; reason: string }[] = [];
+    const results: {
+      check: Check;
+      passed: boolean;
+      reason: string;
+      retrievalHits: number;
+      retrievalTopScore: number | null;
+    }[] = [];
 
     for (let i = 0; i < contexts.length; i += JUDGE_BATCH) {
       const batch = contexts.slice(i, i + JUDGE_BATCH);
@@ -214,15 +227,18 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
           check: entry.check,
           passed: verdict?.passed ?? false,
           reason: verdict?.reason ?? "judge returned no verdict",
+          retrievalHits: entry.retrievalHits,
+          retrievalTopScore: entry.retrievalTopScore,
         });
       }
     }
 
     for (const r of results) {
       await query(
-        `insert into check_results (run_id, check_id, passed, reason)
-         values ($1, $2, $3, $4)`,
-        [run.id, r.check.id, r.passed, r.reason],
+        `insert into check_results
+           (run_id, check_id, passed, reason, retrieval_hits, retrieval_top_score)
+         values ($1, $2, $3, $4, $5, $6)`,
+        [run.id, r.check.id, r.passed, r.reason, r.retrievalHits, r.retrievalTopScore],
       );
     }
 

@@ -1,22 +1,30 @@
 import { query, toVector } from "@/db";
 import { embedQuery } from "@/lib/embed";
+import { applyRerank, rerank } from "@/lib/rerank";
 import { toTsQuery } from "@/lib/tsquery";
+import { normalizeCategory, topLevelCategory } from "@/lib/category";
 
 /**
- * Hybrid retrieval: vector + full-text, fused with Reciprocal Rank Fusion.
+ * Hybrid retrieval: vector + full-text, fused with Reciprocal Rank Fusion,
+ * then rescored by a cross-encoder when one is available.
  *
  * RRF combines the two rankings without needing their scores to be on the same
  * scale — cosine distance and ts_rank never are, and calibrating them against
  * each other is a tuning job that never ends. Ranks are comparable by
  * construction, so there is nothing to tune.
  *
- * lazy: no cross-encoder rerank yet. Add bge-reranker-v2-m3 over the top-30
- * once the exam shows retrieval is what's capping the score.
+ * The reranker (bge-reranker-v2-m3) then reads the query together with each of
+ * the top candidates and reorders them — a cross-encoder ranks pairs far
+ * better than the bi-encoder behind the vector leg, but at per-pair cost, so
+ * it only ever sees RERANK_CANDIDATES. It is optional: weights not fetched or
+ * service down means the RRF order is returned as-is.
  */
 
 /** RRF damping. 60 is the value from the original paper and behaves well. */
 const K = 60;
 const CANDIDATES = 30;
+/** How many RRF winners the reranker rescores; also the SQL fetch size. */
+const RERANK_CANDIDATES = 25;
 
 export interface SearchHit {
   note_id: string;
@@ -47,11 +55,14 @@ export async function searchBrain(
   brainIds: string | string[],
   q: string,
   opts: SearchOptions = {},
-): Promise<{ hits: SearchHit[]; degraded: boolean }> {
+): Promise<{ hits: SearchHit[]; degraded: boolean; reranked: boolean }> {
   const ids = Array.isArray(brainIds) ? brainIds : [brainIds];
   const limit = Math.min(Math.max(opts.limit ?? 8, 1), 25);
+  // Normalised the same way the write paths store it, so an agent asking for
+  // "Type scale" finds notes extraction filed as "type scale".
+  const category = normalizeCategory(opts.category);
   const text = q.trim();
-  if (!text) return { hits: [], degraded: false };
+  if (!text) return { hits: [], degraded: false, reranked: false };
 
   // A dead embedding service degrades search to full-text instead of failing
   // the agent's tool call. Half an answer beats an error mid-task.
@@ -92,7 +103,12 @@ export async function searchBrain(
          and n.status = 'active'
          and c.embedding is not null
          and (select v from params) is not null
-         and ((select cat from params) is null or n.category = (select cat from params))
+         and ((select cat from params) is null
+              or lower(n.category) = (select cat from params)
+              -- A top-level filter reaches its subcategories: "typography"
+              -- also matches "typography/scale". lower() covers rows written
+              -- before category normalisation existed.
+              or lower(n.category) like (select cat from params) || '/%')
        order by c.embedding <=> (select v from params)
        limit ${CANDIDATES}
     ),
@@ -107,7 +123,12 @@ export async function searchBrain(
          and n.status = 'active'
          and (select tsq from params) is not null
          and c.tsv @@ (select tsq from params)
-         and ((select cat from params) is null or n.category = (select cat from params))
+         and ((select cat from params) is null
+              or lower(n.category) = (select cat from params)
+              -- A top-level filter reaches its subcategories: "typography"
+              -- also matches "typography/scale". lower() covers rows written
+              -- before category normalisation existed.
+              or lower(n.category) like (select cat from params) || '/%')
        order by ts_rank_cd(c.tsv, (select tsq from params)) desc
        limit ${CANDIDATES}
     ),
@@ -133,24 +154,32 @@ export async function searchBrain(
      order by f.score desc
      limit $5
     `,
-    [ids, vector, toTsQuery(text), opts.category ?? null, limit],
+    // Fetch enough for the rerank pass, not just the final page — the reranker
+    // can promote a candidate that RRF put at #20 into the top-N.
+    [ids, vector, toTsQuery(text), category, Math.max(limit, RERANK_CANDIDATES)],
   );
 
-  return {
-    degraded,
-    hits: rows.map((r) => ({
-      note_id: r.note_id,
-      chunk_id: r.chunk_id,
-      title: r.title,
-      category: r.category,
-      kind: r.kind,
-      excerpt: r.excerpt,
-      score: Number(r.score),
-      via: r.in_vec && r.in_fts ? "both" : r.in_vec ? "vector" : "text",
-      brain_slug: r.brain_slug,
-      brain_title: r.brain_title,
-    })),
-  };
+  const hits: SearchHit[] = rows.map((r) => ({
+    note_id: r.note_id,
+    chunk_id: r.chunk_id,
+    title: r.title,
+    category: r.category,
+    kind: r.kind,
+    excerpt: r.excerpt,
+    score: Number(r.score),
+    via: r.in_vec && r.in_fts ? "both" : r.in_vec ? "vector" : "text",
+    brain_slug: r.brain_slug,
+    brain_title: r.brain_title,
+  }));
+
+  // One candidate is already the answer; a dead reranker leaves the RRF order
+  // untouched, which the caller reports as "no-rerank" degradation.
+  if (hits.length <= 1) return { hits, degraded, reranked: false };
+
+  const scores = await rerank(text, hits.map((h) => h.excerpt));
+  if (!scores) return { hits: hits.slice(0, limit), degraded, reranked: false };
+
+  return { hits: applyRerank(hits, scores, limit), degraded, reranked: true };
 }
 
 /**
@@ -158,12 +187,74 @@ export async function searchBrain(
  * covers, in what words, and — just as usefully — what it is known to be
  * missing.
  */
+export interface BriefSubcategory {
+  /** The full category string, e.g. "typography/scale" — pass it to brain_search's category filter as-is. */
+  name: string;
+  notes: number;
+}
+
+export interface BriefCategory {
+  /** Top-level segment: "typography" for "typography/scale", or the whole category when it has no "/". */
+  name: string;
+  /** Notes across the whole group, subcategories included. */
+  notes: number;
+  children: BriefSubcategory[];
+  /** Children beyond the per-group cap — the group is bigger than shown. */
+  hiddenChildren: number;
+}
+
 export interface BrainBrief {
   goal: string | null;
   noteCount: number;
-  categories: { name: string; notes: number }[];
+  categories: BriefCategory[];
+  /** Top-level groups beyond the cap. Nonzero means this is a summary, not the full map. */
+  hiddenCategories: number;
   sampleTitles: string[];
   knownGaps: string[];
+}
+
+/**
+ * Caps keep the brief a map rather than a dump: past a few dozen categories a
+ * flat list costs more tokens than the orientation it buys. 200 raw rows is a
+ * ceiling on the pathology, not a target — with normalised categories a brain
+ * that still grows 200 distinct labels has a vocabulary problem, not a brief
+ * problem.
+ */
+const MAX_CATEGORY_ROWS = 200;
+const MAX_CATEGORY_GROUPS = 12;
+const MAX_CHILDREN_PER_GROUP = 5;
+
+function groupCategories(rows: { name: string; notes: number }[]): {
+  groups: BriefCategory[];
+  hidden: number;
+} {
+  const byTop = new Map<string, { notes: number; children: BriefSubcategory[] }>();
+  for (const r of rows) {
+    const top = topLevelCategory(r.name);
+    let group = byTop.get(top);
+    if (!group) {
+      group = { notes: 0, children: [] };
+      byTop.set(top, group);
+    }
+    group.notes += r.notes;
+    // A category that *is* the top level has no child entry of its own.
+    if (r.name !== top) group.children.push({ name: r.name, notes: r.notes });
+  }
+
+  const sorted = [...byTop.entries()]
+    .map(([name, g]) => ({
+      name,
+      notes: g.notes,
+      children: g.children.sort((a, b) => b.notes - a.notes),
+    }))
+    .sort((a, b) => b.notes - a.notes);
+
+  const groups = sorted.slice(0, MAX_CATEGORY_GROUPS).map((g) => ({
+    ...g,
+    hiddenChildren: Math.max(0, g.children.length - MAX_CHILDREN_PER_GROUP),
+    children: g.children.slice(0, MAX_CHILDREN_PER_GROUP),
+  }));
+  return { groups, hidden: sorted.length - groups.length };
 }
 
 export async function briefBrain(brainId: string): Promise<BrainBrief> {
@@ -172,10 +263,13 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
       `select goal, note_count from brains where id = $1`,
       [brainId],
     ),
+    // Read wide and fold into a tree in code: a "/" in the category makes one
+    // branch, and the SQL stays a plain GROUP BY instead of recursive CTE
+    // gymnastics for a two-level display.
     query<{ name: string; notes: number }>(
-      `select coalesce(category, 'uncategorised') as name, count(*)::int as notes
+      `select coalesce(lower(category), 'uncategorised') as name, count(*)::int as notes
          from notes where brain_id = $1 and status = 'active'
-        group by 1 order by 2 desc limit 20`,
+        group by 1 order by 2 desc limit ${MAX_CATEGORY_ROWS}`,
       [brainId],
     ),
     query<{ title: string }>(
@@ -201,10 +295,13 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
     ),
   ]);
 
+  const { groups, hidden } = groupCategories(categories);
+
   return {
     goal: goalRow[0]?.goal ?? null,
     noteCount: goalRow[0]?.note_count ?? 0,
-    categories,
+    categories: groups,
+    hiddenCategories: hidden,
     sampleTitles: titles.map((t) => t.title),
     knownGaps: gaps.map((g) => g.category),
   };

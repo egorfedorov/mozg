@@ -41,6 +41,33 @@ export async function listBrains(ownerId: string): Promise<BrainWithScore[]> {
  * run yet come back as `empty` cells rather than disappearing — an unexamined
  * category is information too.
  */
+/**
+ * The fix for a failing category depends on *why* it fails, and the three
+ * causes used to render as the same red row:
+ *
+ *   - nothing in the brain covers it          -> add material
+ *   - search returns nothing for the checks   -> add material or match the
+ *     questions' wording (the notes exist but not under these words)
+ *   - search finds material yet the check     -> the notes answer around the
+ *     still fails                              question, not the question
+ *
+ * retrievalHits is summed over the category's checks in the latest run, and
+ * null when that run predates the retrieval columns (0014) — then we say no
+ * more than we know. The 0-1 band counts as "nothing": one hit across a whole
+ * category is a miss, not coverage.
+ */
+export function gapLabel(
+  state: CategoryScore["state"],
+  sourcesForCategory: number,
+  retrievalHits: number | null,
+): string | null {
+  if (state === "fail" && sourcesForCategory === 0) return "no source covers this";
+  if (state !== "fail" && state !== "partial") return null;
+  if (retrievalHits === null) return "not enough material";
+  if (retrievalHits <= 1) return "search finds nothing to answer from";
+  return `search finds material (${retrievalHits} hits) but the answer fails — wording, not coverage`;
+}
+
 export async function categoryScores(
   brainIds: string[],
 ): Promise<Map<string, CategoryScore[]>> {
@@ -52,6 +79,7 @@ export async function categoryScores(
     total: number;
     passed: number | null;
     sources_for_category: number;
+    retrieval_hits: number | null;
   }>(
     `with latest as (
        select distinct on (brain_id) id, brain_id
@@ -66,7 +94,11 @@ export async function categoryScores(
             (select count(*)::int from notes n
               where n.brain_id = c.brain_id
                 and n.category = c.category
-                and n.status = 'active') as sources_for_category
+                and n.status = 'active') as sources_for_category,
+            -- Nulls stay null (a pre-0014 run has no signal); sum() over an
+            -- empty or all-null set returns null, which gapLabel reads as
+            -- "unknown" rather than zero.
+            sum(r.retrieval_hits)::int as retrieval_hits
        from checks c
        left join latest l on l.brain_id = c.brain_id
        left join check_results r on r.check_id = c.id and r.run_id = l.id
@@ -88,12 +120,7 @@ export async function categoryScores(
             ? "fail"
             : "partial";
 
-    const gap =
-      state === "fail" && row.sources_for_category === 0
-        ? "no source covers this"
-        : state === "fail" || state === "partial"
-          ? "not enough material"
-          : null;
+    const gap = gapLabel(state, row.sources_for_category, row.retrieval_hits);
 
     const list = map.get(row.brain_id) ?? [];
     list.push({ category: row.category, passed, total: row.total, state, gap });
