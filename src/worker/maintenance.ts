@@ -119,11 +119,13 @@ export async function refreshUrlSources(limit = REFRESH_BATCH): Promise<RefreshR
       [source.id],
     );
 
+    // extract_payload must go too — otherwise the re-ingest would skip the
+    // paid step and re-chunk the *old* page's notes (see 0011).
     await query(
       `update sources
           set status = 'queued', content_hash = $2, checked_at = now(),
               changed_at = now(), refresh_count = refresh_count + 1,
-              note_count = 0, error = null
+              note_count = 0, error = null, extract_payload = null
         where id = $1`,
       [source.id, hash],
     );

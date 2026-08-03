@@ -36,8 +36,6 @@ export interface SearchHit {
 export interface SearchOptions {
   limit?: number;
   category?: string | null;
-  /** Set when the embedding service is unreachable; text-only results. */
-  degraded?: boolean;
 }
 
 /**

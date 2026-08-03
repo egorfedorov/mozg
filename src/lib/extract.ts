@@ -164,7 +164,15 @@ export async function extractFromImage(
 function finish(raw: unknown, usage: Usage): ExtractResult {
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) {
-    throw new Error(`extraction schema mismatch: ${parsed.error.issues[0]?.message}`);
+    // Name the fields that broke, like the exam's judge does — "schema
+    // mismatch" alone sends the next person to re-read the schema, which is
+    // almost never where the problem is.
+    throw new Error(
+      `extraction schema mismatch: ${parsed.error.issues
+        .slice(0, 2)
+        .map((i) => `${i.path.join(".") || "root"} ${i.message}`)
+        .join("; ")}`,
+    );
   }
   return {
     notes: parsed.data.notes,
@@ -220,17 +228,28 @@ export async function extractFromPdf(
  * page ingested as its first 55% with nothing anywhere saying so. It also gave
  * the model an input large enough that it sometimes answered without the notes
  * array at all, failing the whole source.
+ *
+ * MAX_SEGMENTS is a hard cap, and going past it now fails loudly rather than
+ * repeating the original sin in segmented form: a source whose tail is dropped
+ * must say so, or the brain claims knowledge it never read.
  */
 const SEGMENT = 60_000;
 const MAX_SEGMENTS = 12;
 
 /** Split on blank lines so a segment does not start mid-sentence. */
-function segments(text: string): string[] {
+export function segments(text: string): string[] {
   if (text.length <= SEGMENT) return [text];
 
   const out: string[] = [];
   let rest = text;
-  while (rest.length && out.length < MAX_SEGMENTS) {
+  while (rest.length) {
+    if (out.length >= MAX_SEGMENTS) {
+      throw new Error(
+        `source text is ${Math.round(text.length / 1000)} KB — over the ` +
+          `${Math.round((SEGMENT * MAX_SEGMENTS) / 1000)} KB one source can hold. ` +
+          "Split it into smaller sources; nothing was ingested.",
+      );
+    }
     if (rest.length <= SEGMENT) {
       out.push(rest);
       break;

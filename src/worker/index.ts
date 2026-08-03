@@ -1,6 +1,6 @@
 import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, enqueueIngest } from "@/worker/queue";
 import { query } from "@/db";
-import { ingestSource } from "@/worker/ingest";
+import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { runExam } from "@/worker/exam";
 import { runMaintenance } from "@/worker/maintenance";
 import { embedHealthy } from "@/lib/embed";
@@ -11,8 +11,6 @@ import { env } from "@/lib/env";
  *
  *   npm run worker
  */
-
-const CONCURRENCY = 2;
 
 async function main() {
   if (!(await embedHealthy())) {
@@ -28,6 +26,11 @@ async function main() {
   // worker whenever it likes, and a source interrupted between "processing"
   // and "ready" was simply abandoned — it stayed processing forever, counted
   // as stuck by the health check, and nothing ever picked it up again.
+  //
+  // No age threshold on purpose: during a deploy overlap the old worker may
+  // still hold a source this sweep requeues, and that is now safe — the
+  // requeued job bounces off the advisory lock in ingestSource and pg-boss
+  // retries it once the real run has finished.
   const orphans = await query<{ id: string; name: string | null }>(
     `update sources set status = 'queued', processing_at = null
       where status = 'processing' returning id, coalesce(original_name, url) as name`,
@@ -57,10 +60,14 @@ async function main() {
         // pg-boss swallows the throw into its retry bookkeeping, so a failure
         // would otherwise leave no trace in the log at all — the worst possible
         // shape for an ops problem.
-        console.error(
-          `[ingest] ${sourceId} FAILED after ${Date.now() - started}ms:`,
-          err instanceof Error ? err.message : err,
-        );
+        if (err instanceof SourceBusyError) {
+          console.log(`[ingest] ${sourceId} ${err.message}`);
+        } else {
+          console.error(
+            `[ingest] ${sourceId} FAILED after ${Date.now() - started}ms:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
         throw err;
       }
     },
@@ -116,7 +123,7 @@ async function main() {
 
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +
-      `(concurrency ${CONCURRENCY}, maintenance ${MAINTENANCE_CRON} UTC)`,
+      `(one job at a time per queue, maintenance ${MAINTENANCE_CRON} UTC)`,
   );
 
   const shutdown = async (signal: string) => {

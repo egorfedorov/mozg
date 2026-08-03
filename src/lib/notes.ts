@@ -124,6 +124,11 @@ export async function duplicatePairs(
          from chunks x
          join chunks y
            on y.brain_id = x.brain_id and y.note_id > x.note_id
+         -- Filter inside the self-join, not after it: pairing every chunk of
+         -- a dead note against everything else is the expensive part, and the
+         -- outer filter used to pay for it and then throw the pairs away.
+         join notes xa on xa.id = x.note_id and xa.status = 'active'
+         join notes yb on yb.id = y.note_id and yb.status = 'active'
         where x.brain_id = $1 and (x.embedding <=> y.embedding) < $2
         group by 1, 2
         order by 3
@@ -137,8 +142,8 @@ export async function duplicatePairs(
             b.category as b_category,
             to_char(b.created_at at time zone 'UTC', 'YYYY-MM-DD') as b_created
        from pairs p
-       join notes a on a.id = p.a_id and a.status = 'active'
-       join notes b on b.id = p.b_id and b.status = 'active'
+       join notes a on a.id = p.a_id
+       join notes b on b.id = p.b_id
       order by p.distance`,
     [brainId, NEAR, limit],
   );

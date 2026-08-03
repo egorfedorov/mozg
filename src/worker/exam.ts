@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { one, query } from "@/db";
+import { one, query, tx } from "@/db";
 import type { Brain, Check } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
@@ -99,16 +99,21 @@ export async function generateChecks(brain: Brain): Promise<number> {
 
   const checks = parsed.data.checks.slice(0, MAX_CHECKS);
 
-  await query(`delete from checks where brain_id = $1 and origin = 'generated'`, [
-    brain.id,
-  ]);
-  for (const c of checks) {
-    await query(
-      `insert into checks (brain_id, category, question, expect, weight)
-       values ($1, $2, $3, $4, $5)`,
-      [brain.id, c.category, c.question, c.expect, c.weight],
-    );
-  }
+  // One transaction: as separate statements a crash between the delete and
+  // the inserts left the brain with zero generated checks, and the next exam
+  // would quietly regenerate from nothing rather than retry this failure.
+  await tx(async (client) => {
+    await client.query(`delete from checks where brain_id = $1 and origin = 'generated'`, [
+      brain.id,
+    ]);
+    for (const c of checks) {
+      await client.query(
+        `insert into checks (brain_id, category, question, expect, weight)
+         values ($1, $2, $3, $4, $5)`,
+        [brain.id, c.category, c.question, c.expect, c.weight],
+      );
+    }
+  });
 
   return checks.length;
 }

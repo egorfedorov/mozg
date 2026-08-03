@@ -13,6 +13,17 @@ import { one, query, maybeOne, toVector } from "@/db";
 import { refreshUrlSources, examStaleBrains } from "@/worker/maintenance";
 import { contentHash } from "@/lib/page";
 
+/**
+ * Big enough to cover everything else due in this database.
+ *
+ * The pass takes the oldest-checked sources first, capped. With a batch of
+ * five and a developer machine holding real brains, unrelated sources sorted
+ * ahead of the scratch one and it was never reached — so this check failed or
+ * passed depending on rows it has nothing to do with. Assertions below are on
+ * the scratch source's own row for the same reason.
+ */
+const WIDE = 500;
+
 const PAGE = process.env.REFRESH_PAGE ?? "https://example.com/";
 
 let failures = 0;
@@ -61,7 +72,7 @@ async function main() {
   );
 
   console.log("\nfirst pass — a source that predates fingerprints");
-  const first = await refreshUrlSources(5);
+  const first = await refreshUrlSources(WIDE);
   check("it fetched the page", first.checked >= 1, JSON.stringify(first));
   check("it adopted rather than re-read", first.adopted >= 1, `adopted=${first.adopted}`);
 
@@ -84,10 +95,17 @@ async function main() {
     `update sources set checked_at = now() - interval '30 days' where id = $1`,
     [source.id],
   );
-  const second = await refreshUrlSources(5);
+  const second = await refreshUrlSources(WIDE);
   check("it checked the page again", second.checked >= 1, JSON.stringify(second));
-  check("an unchanged page is not re-ingested", second.unchanged >= 1, `unchanged=${second.unchanged}`);
-  check("and nothing was marked changed", second.changed === 0, `changed=${second.changed}`);
+  const afterSecond = await one<{ status: string; refresh_count: number }>(
+    `select status, refresh_count from sources where id = $1`,
+    [source.id],
+  );
+  check(
+    "an unchanged page is not re-ingested",
+    afterSecond.status === "ready" && afterSecond.refresh_count === 0,
+    `${afterSecond.status}, ${afterSecond.refresh_count} refreshes`,
+  );
 
   console.log("\nthird pass — the page moved under us");
   await query(
@@ -95,15 +113,21 @@ async function main() {
       where id = $1`,
     [source.id, contentHash("something else entirely")],
   );
-  const third = await refreshUrlSources(5);
-  check("a different hash counts as changed", third.changed >= 1, `changed=${third.changed}`);
+  await refreshUrlSources(WIDE);
 
-  const afterChange = await one<{ status: string; refresh_count: number }>(
-    `select status, refresh_count from sources where id = $1`,
+  const afterChange = await one<{
+    status: string;
+    refresh_count: number;
+    extract_payload: unknown;
+  }>(
+    `select status, refresh_count, extract_payload from sources where id = $1`,
     [source.id],
   );
   check("the source was requeued for re-reading", afterChange.status === "queued", afterChange.status);
   check("the refresh was counted", afterChange.refresh_count === 1, String(afterChange.refresh_count));
+  // Without this the re-ingest would skip the paid step and re-chunk the notes
+  // of the page as it used to be.
+  check("the cached extraction was dropped", afterChange.extract_payload === null);
 
   const gone = await query<{ n: number }>(
     `select count(*)::int as n from chunks where note_id = $1`,
@@ -125,12 +149,16 @@ async function main() {
   await query(`update sources set status = 'ready', checked_at = now() where id = $1`, [
     source.id,
   ]);
-  const fourth = await refreshUrlSources(5);
-  check(
-    "a page checked just now is skipped",
-    !JSON.stringify(fourth).includes('"checked":1') || fourth.checked === 0,
-    JSON.stringify(fourth),
+  const before = await one<{ checked_at: string }>(
+    `select checked_at::text from sources where id = $1`,
+    [source.id],
   );
+  await refreshUrlSources(WIDE);
+  const after = await one<{ checked_at: string }>(
+    `select checked_at::text from sources where id = $1`,
+    [source.id],
+  );
+  check("a page checked just now is skipped", before.checked_at === after.checked_at);
 
   console.log("\nstale exams");
   await query(

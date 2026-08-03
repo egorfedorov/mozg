@@ -76,6 +76,89 @@ function currentVersionOnly(paths: string[]): { kept: string[]; version: string 
  */
 const PACKS: Pack[] = [
   {
+    // The docs site is a SvelteKit app that serves a JavaScript shell, so a
+    // fetcher sees the word "Loading". The repository it is built from is the
+    // better source anyway: the .svx files carry the API specs as data rather
+    // than as rendered tables, so field types and required flags survive.
+    key: "stake",
+    repo: "StakeEngine/docs",
+    prefix: "src/routes/docs/",
+    endings: ["+page.svx"],
+    topic: "gamedev",
+    parent: {
+      slug: "stake-engine",
+      title: "Stake Engine",
+      goal:
+        "Answer any question about building and shipping a slot game on Stake " +
+        "Engine: the RGS wallet endpoints and how a round is served, how the " +
+        "maths model is built and simulated, how the frontend consumes its " +
+        "events, what approval requires, and the platform facts a game is " +
+        "launched with — currencies, dimensions, languages and URL structure.",
+    },
+    children: [
+      {
+        slug: "stake-engine-rgs-api",
+        title: "Stake Engine · RGS API",
+        goal:
+          "Answer questions about the RGS wallet endpoints exactly as they are " +
+          "specified: authenticate, balance, play, end-round, bet-replay and " +
+          "event — the HTTP method and path of each, every request field with " +
+          "its type and whether it is required, the response shape, the error " +
+          "cases, and how amounts are expressed in minor currency units.",
+        areas: ["api"],
+      },
+      {
+        slug: "stake-engine-math-sdk",
+        title: "Stake Engine · Math SDK",
+        goal:
+          "Answer questions about building a game's mathematics with the Math " +
+          "SDK: the game format and state machine, how board, lines, ways, " +
+          "cluster, scatter and tumble wins are calculated, how betmodes and " +
+          "distributions are configured, what simulation produces, and which " +
+          "files the toolchain reads and writes.",
+        areas: ["math-sdk"],
+      },
+      {
+        slug: "stake-engine-web-sdk",
+        title: "Stake Engine · Web SDK",
+        goal:
+          "Answer questions about building the game frontend with the Web SDK: " +
+          "the file structure of a game, how context and state are shared, how " +
+          "events from the maths are consumed and animated, the UI components " +
+          "provided, and how Storybook is used to develop them.",
+        areas: ["web-sdk"],
+      },
+      {
+        slug: "stake-engine-approval",
+        title: "Stake Engine · Approval",
+        goal:
+          "Answer what a game must satisfy before Stake Engine will approve it: " +
+          "the submission checklist, the maths requirements, the frontend " +
+          "requirements, the RGS requirements, the game tile specification and " +
+          "the quality bar — including the things that get a submission rejected.",
+        areas: ["approval"],
+      },
+      {
+        slug: "stake-engine-reference",
+        title: "Stake Engine · Reference",
+        goal:
+          "Answer the flat factual questions: which currencies are supported " +
+          "and how their minor units work, the required game dimensions, the " +
+          "supported languages, what social mode changes, and the structure of " +
+          "the URLs a game is launched with.",
+        areas: ["reference", "example"],
+      },
+      {
+        slug: "stake-engine-ai",
+        title: "Stake Engine · AI integration",
+        goal:
+          "Answer how to use Stake Engine's own AI tooling: what its MCP " +
+          "server exposes, how to connect it, and what the Hayden agent is for.",
+        areas: ["ai-integration"],
+      },
+    ],
+  },
+  {
     key: "mcp",
     repo: "modelcontextprotocol/modelcontextprotocol",
     prefix: "docs/",
@@ -205,8 +288,13 @@ async function docPages(pack: Pack): Promise<string[]> {
 }
 
 function areaOf(pack: Pack, path: string): string {
-  const rel = path.slice(pack.prefix.length);
-  return rel.split("/")[0].replace(/\.(md|mdx)$/, "");
+  // Strip the file part first: SvelteKit puts the page at `api/+page.svx`, so
+  // splitting on "/" alone makes the root page its own area called "+page.svx".
+  const rel = path
+    .slice(pack.prefix.length)
+    .replace(/\/?\+page\.svx$/, "")
+    .replace(/\.(md|mdx)$/, "");
+  return rel.split("/")[0];
 }
 
 async function upsert(

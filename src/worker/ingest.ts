@@ -1,8 +1,8 @@
-import { query, one, tx, toVector } from "@/db";
+import { pool, query, one, tx, toVector } from "@/db";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
-import { extractFromImage, extractFromPdf, extractFromText } from "@/lib/extract";
+import { extractFromImage, extractFromPdf, extractFromText, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
 import { storage } from "@/lib/storage";
 import { fetchPageText, contentHash } from "@/lib/page";
@@ -28,7 +28,44 @@ export interface IngestResult {
   costCents?: number;
 }
 
+/**
+ * Thrown when another worker holds the source's lock. Not a failure of the
+ * source — pg-boss retries the job, and by then the other run has finished.
+ */
+export class SourceBusyError extends Error {
+  constructor(sourceId: string) {
+    super(`source ${sourceId} is being ingested by another worker — left for retry`);
+    this.name = "SourceBusyError";
+  }
+}
+
 export async function ingestSource(sourceId: string): Promise<IngestResult> {
+  // A deploy briefly runs two workers at once, and the new one's orphan sweep
+  // requeues whatever the old one is still finishing — two extractions, two
+  // Anthropic bills, one source. Hold a session lock for the whole run so the
+  // second worker bows out instead. This is also why the startup sweep needs
+  // no age threshold: a source that only looks orphaned bounces off this lock
+  // and lands back on the queue. hashtextextended collisions cost a retry,
+  // never a double run.
+  const client = await pool.connect();
+  try {
+    const locked = await client.query<{ got: boolean }>(
+      `select pg_try_advisory_lock(hashtextextended($1, 0)) as got`,
+      [sourceId],
+    );
+    if (!locked.rows[0].got) throw new SourceBusyError(sourceId);
+
+    try {
+      return await ingestLocked(sourceId);
+    } finally {
+      await client.query(`select pg_advisory_unlock(hashtextextended($1, 0))`, [sourceId]);
+    }
+  } finally {
+    client.release();
+  }
+}
+
+async function ingestLocked(sourceId: string): Promise<IngestResult> {
   const source = await one<Source>(`select * from sources where id = $1`, [sourceId]);
 
   if (source.status === "ready") {
@@ -66,7 +103,20 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
       )
     ).map((r) => r.category);
 
-    const extracted = await extract(source, brain, categories);
+    // Extraction is the step that costs money, and pg-boss retries the whole
+    // job — so a flake at the embed stage would otherwise buy the same
+    // extraction again. Cache the payload on the source row; a retry skips
+    // straight to chunking. Kept after success on purpose: it is a few KB per
+    // source, and being able to re-chunk an old extraction beats re-buying
+    // it. Maintenance clears it when a page's text actually changes.
+    let extracted = source.extract_payload as ExtractResult | null;
+    if (!extracted) {
+      extracted = await extract(source, brain, categories);
+      await query(`update sources set extract_payload = $2 where id = $1`, [
+        sourceId,
+        JSON.stringify(extracted),
+      ]);
+    }
 
     // ── secret gate ────────────────────────────────────────────────────────
     const combined = extracted.notes.map((n) => `${n.title}\n${n.body}`).join("\n\n");
@@ -152,6 +202,10 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
               where id = $1 and status = 'active'`,
             [duplicate, noteId],
           );
+          // Search runs over chunks, not notes — a superseded note must stop
+          // answering immediately, and its vectors would otherwise sit in the
+          // hnsw/GIN indexes forever. Same reason maintenance deletes them.
+          await client.query(`delete from chunks where note_id = $1`, [duplicate]);
         }
 
         for (let c = 0; c < texts.length; c++) {

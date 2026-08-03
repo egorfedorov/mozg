@@ -1,4 +1,4 @@
-import { query, maybeOne, one, toVector } from "@/db";
+import { query, maybeOne, one, tx, toVector } from "@/db";
 import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
@@ -533,10 +533,16 @@ async function brainWrite(
   }
 
   const pending = resolved.brain.review_required;
+  // Inserted pending even when no review is required: the note flips to active
+  // only once its chunks exist. An "active" note with no chunks is invisible
+  // to search, which looks like the write silently did nothing — the trap
+  // review.approve's comment warns about. If the embedder is down the note
+  // stays pending (the owner's approve re-tries the embed) and the agent gets
+  // an honest error instead of a ghost note.
   const note = await one<{ id: string }>(
     `insert into notes
        (brain_id, title, body, category, kind, author, agent_client, status, confidence)
-     values ($1, $2, $3, $4, $5, 'agent', $6, $7, 0.7)
+     values ($1, $2, $3, $4, $5, 'agent', $6, 'pending', 0.7)
      returning id`,
     [
       resolved.brain.id,
@@ -545,7 +551,6 @@ async function brainWrite(
       typeof args.category === "string" ? args.category : null,
       typeof args.kind === "string" ? args.kind : "fact",
       "mcp",
-      pending ? "pending" : "active",
     ],
   );
 
@@ -553,20 +558,25 @@ async function brainWrite(
   // would be theatre and unapproved notes would already be answering queries.
   if (!pending) {
     const texts = chunksForNote(title, body);
+    // Embed before writing anything; a throw here leaves the note pending.
     const vectors = await embedPassages(texts);
-    for (let i = 0; i < texts.length; i++) {
-      await query(
-        `insert into chunks (brain_id, note_id, content, token_count, embedding)
-         values ($1, $2, $3, $4, $5::vector)`,
-        [
-          resolved.brain.id,
-          note.id,
-          texts[i],
-          estimateTokens(texts[i]),
-          toVector(vectors[i]),
-        ],
-      );
-    }
+    await tx(async (client) => {
+      for (let i = 0; i < texts.length; i++) {
+        await client.query(
+          `insert into chunks (brain_id, note_id, content, token_count, embedding)
+           values ($1, $2, $3, $4, $5::vector)`,
+          [
+            resolved.brain.id,
+            note.id,
+            texts[i],
+            estimateTokens(texts[i]),
+            toVector(vectors[i]),
+          ],
+        );
+      }
+      // Flip last, atomically with the chunks it makes searchable.
+      await client.query(`update notes set status = 'active' where id = $1`, [note.id]);
+    });
   }
 
   if (!pending) {

@@ -89,6 +89,8 @@ export interface Source {
   error: string | null;
   note_count: number;
   cost_cents: number | null;
+  /** Cached extraction so a queue retry skips the paid step; see 0011. */
+  extract_payload: unknown;
   created_at: Date;
   processed_at: Date | null;
 }
