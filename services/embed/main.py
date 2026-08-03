@@ -38,15 +38,42 @@ def model() -> SentenceTransformer:
     return _model
 
 
+# One obvious pair. A working cross-encoder scores the first far above the
+# second; a model whose classifier head was newly initialised scores both at
+# roughly 0.5 in whatever order it feels like.
+_SELF_TEST = [
+    ("what is the capital of France", "Paris is the capital of France."),
+    ("what is the capital of France", "Bananas are yellow."),
+]
+
+
 def reranker() -> CrossEncoder:
     global _reranker
     if _reranker is None:
         # Lazy, unlike the embedding model: the reranker is optional and its
-        # ~1 GB of fp32 weights sits on top of bge-m3's ~2 GB inside a 4 GB
-        # container limit, so we only pay for it once reranking is actually
-        # requested. A missing model dir raises here and /rerank answers 503 —
-        # /embed and /health are untouched.
-        _reranker = CrossEncoder(RERANK_MODEL, max_length=512)
+        # weights sit on top of bge-m3's, so we only pay for it once reranking
+        # is actually requested. A missing model dir raises here and /rerank
+        # answers 503 — /embed and /health are untouched.
+        model = CrossEncoder(RERANK_MODEL, max_length=512)
+
+        # Refuse to serve a reranker that cannot tell relevant from unrelated.
+        #
+        # Transformers only *warns* when a checkpoint has no classifier head
+        # and builds a random one, so the service would come up healthy and
+        # reorder every search by noise — strictly worse than having no
+        # reranker at all, and invisible unless someone reads the scores. This
+        # has happened once: an embedding model's files in the reranker's
+        # directory, every score ~0.5, the right answer ranked last.
+        good, bad = model.predict(_SELF_TEST)
+        if not good > bad + 0.05:
+            raise RuntimeError(
+                f"reranker at {RERANK_MODEL} failed its self-test "
+                f"(relevant={good:.4f} vs unrelated={bad:.4f}) — the classifier "
+                "head is probably untrained. Refusing to serve it; search falls "
+                "back to RRF order."
+            )
+
+        _reranker = model
     return _reranker
 
 

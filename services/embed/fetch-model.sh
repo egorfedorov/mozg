@@ -42,8 +42,13 @@ case "$TARGET" in
     ;;
   reranker|bge-reranker-v2-m3)
     # Plain CrossEncoder checkpoint — no sentence-transformers module configs,
-    # so the file list is just tokenizer + config.
+    # so the file list is just tokenizer + config. Weights ship as safetensors
+    # here, not pytorch_model.bin: asking for the wrong one 404s, and if the
+    # directory already holds an embedding model's files the loader quietly
+    # builds a randomly-initialised classifier head and scores everything at
+    # ~0.5 — worse than no reranker, because search still reorders by it.
     REPO="BAAI/bge-reranker-v2-m3"
+    WEIGHTS="model.safetensors"
     DEST="${DEST:-./models/bge-reranker-v2-m3}"
     ENV_VAR="RERANK_MODEL"
     SMALL=(
@@ -59,7 +64,7 @@ case "$TARGET" in
     exit 1
     ;;
 esac
-LARGE="pytorch_model.bin"
+LARGE="${WEIGHTS:-pytorch_model.bin}"
 
 size_of() { stat -f%z "$1" 2>/dev/null || stat -c%s "$1" 2>/dev/null || echo 0; }
 
