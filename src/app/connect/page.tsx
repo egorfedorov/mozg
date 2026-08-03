@@ -1,0 +1,158 @@
+import Link from "next/link";
+import TopBar from "@/components/TopBar";
+import ClientList from "./ClientList";
+import { CLIENTS, MODELS } from "@/lib/clients";
+import { currentUser } from "@/lib/session";
+import { env } from "@/lib/env";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Connect a brain — mozg",
+  description:
+    "Exact configuration for Claude Code, Codex, Kimi CLI, Qwen Code, Cursor, VS Code, Cline and Claude Desktop.",
+};
+
+export default async function ConnectPage() {
+  const user = await currentUser();
+
+  return (
+    <>
+      <TopBar />
+
+      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
+        <p className="eyebrow">Model Context Protocol</p>
+        <h1
+          className="display"
+          style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".4rem 0 1rem" }}
+        >
+          Connect a brain to
+          <br />
+          whatever you code in.
+        </h1>
+        <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
+          A brain speaks MCP, so any client that speaks MCP can read it. Below is
+          the exact configuration for each one, taken from that client&apos;s own
+          documentation.
+        </p>
+
+        {/* The single most common misunderstanding, answered before it is asked. */}
+        <aside
+          className="panel"
+          style={{ marginTop: "2rem", maxWidth: "64ch", borderLeft: "4px solid var(--color-riso-blue)" }}
+        >
+          <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
+            First, the thing everyone asks
+          </p>
+          <p style={{ margin: 0, color: "var(--ink-2)" }}>
+            <strong style={{ color: "var(--ink)" }}>MCP is a client feature, not a
+            model feature.</strong>{" "}
+            Kimi, DeepSeek, GLM and Qwen are models. You run them inside one of the
+            clients on this page, and the brain connects to the client. Asking
+            whether mozg &quot;supports DeepSeek&quot; is really asking which client
+            you run DeepSeek in.
+          </p>
+        </aside>
+
+        <ClientList
+          clients={CLIENTS}
+          url={`${env.NEXT_PUBLIC_APP_URL}/mcp`}
+          signedIn={Boolean(user)}
+        />
+
+        <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
+          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
+            Models, and where they fit
+          </h2>
+          <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
+            None of these connect to a brain directly. Each one runs inside a client
+            from the list above.
+          </p>
+
+          <div className="panel" style={{ padding: 0, marginTop: "1.25rem" }}>
+            {MODELS.map((m) => (
+              <div
+                key={m.name}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(140px, 1fr) 2fr",
+                  gap: "1rem",
+                  padding: ".8rem 1.25rem",
+                  borderBottom: "1px solid var(--rule)",
+                  alignItems: "baseline",
+                }}
+              >
+                <span>
+                  <strong>{m.name}</strong>
+                  <span
+                    className="mono"
+                    style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}
+                  >
+                    {m.vendor}
+                  </span>
+                </span>
+                <span style={{ color: "var(--ink-2)", fontSize: ".9375rem" }}>
+                  {m.verdict}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
+          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".75rem" }}>
+            What the agent gets
+          </h2>
+          <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
+            Five tools. The descriptions tell the agent <em>when</em> to reach for
+            each one, which is the difference between a brain that gets used and one
+            that sits there.
+          </p>
+
+          <div className="panel" style={{ padding: 0, marginTop: "1.25rem" }}>
+            {[
+              ["brain_list", "What brains am I allowed to read?"],
+              ["brain_brief", "What does this brain cover — and what is it known to be missing?"],
+              ["brain_search", "Find what this project actually decided, before answering from general knowledge."],
+              ["brain_read", "Open one note in full."],
+              ["brain_write", "Save a convention or a pitfall worth keeping."],
+            ].map(([name, what]) => (
+              <div
+                key={name}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(130px, auto) 1fr",
+                  gap: "1rem",
+                  padding: ".7rem 1.25rem",
+                  borderBottom: "1px solid var(--rule)",
+                  alignItems: "baseline",
+                }}
+              >
+                <code className="mono" style={{ color: "var(--color-riso-blue)" }}>
+                  {name}
+                </code>
+                <span style={{ color: "var(--ink-2)", fontSize: ".9375rem" }}>{what}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div
+          style={{
+            display: "flex",
+            gap: ".75rem",
+            marginTop: "clamp(3rem, 7vw, 4rem)",
+            flexWrap: "wrap",
+          }}
+        >
+          <Link className="btn" href={user ? "/brains" : "/sign-in"}>
+            {user ? "Your brains" : "Build a brain"}
+          </Link>
+          <Link className="btn btn-ghost" href="/guide">
+            How to build a good one
+          </Link>
+        </div>
+      </main>
+    </>
+  );
+}

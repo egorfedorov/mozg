@@ -4,6 +4,9 @@
 
 User-agent: *
 Allow: /$
+Allow: /why
+Allow: /connect
+Allow: /guide
 Allow: /explore
 Allow: /b/
 

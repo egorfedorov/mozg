@@ -22,6 +22,9 @@ export default async function TopBar({ active }: { active?: string }) {
             <Link className="navlink" href="/explore">
               explore
             </Link>
+            <Link className="navlink hide-sm" href="/connect">
+              connect
+            </Link>
             <Link
               className="navlink hide-sm"
               href="/settings"
@@ -32,8 +35,14 @@ export default async function TopBar({ active }: { active?: string }) {
           </>
         ) : (
           <>
+            <Link className="navlink hide-sm" href="/why">
+              why
+            </Link>
             <Link className="navlink" href="/explore">
               explore
+            </Link>
+            <Link className="navlink hide-sm" href="/connect">
+              connect
             </Link>
             <Link className="btn" href="/sign-in">
               Sign in
