@@ -430,11 +430,26 @@ async function brainSearch(
       `\nnote_id: ${h.note_id}\n${h.excerpt}`,
   );
 
+  // Searching a family competes six subjects for the same few slots, so the
+  // exact note can rank below something merely adjacent. Asking one child is
+  // sharper — say so, and name the ones that answered, because the agent
+  // cannot see the shape of the family from a result list.
+  const narrow =
+    acrossFamily && hits.length
+      ? "\n\n---\n\nThese came from " +
+        [...new Set(hits.map((h) => h.brain_slug))].join(", ") +
+        ". Searching this parent covers every part of it at once, which can " +
+        "bury an exact answer. If the question belongs to one of those, ask it " +
+        "directly for a sharper result."
+      : "";
+
   return {
     text:
       (degraded
         ? "Note: semantic search is unavailable, these are keyword matches only.\n\n"
-        : "") + blocks.join("\n\n---\n\n"),
+        : "") +
+      blocks.join("\n\n---\n\n") +
+      narrow,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: hits.length,
