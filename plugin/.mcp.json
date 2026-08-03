@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mozg": {
+      "type": "http",
+      "url": "https://mozg.sh/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MOZG_TOKEN}"
+      }
+    }
+  }
+}

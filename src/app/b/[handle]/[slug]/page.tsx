@@ -4,11 +4,13 @@ import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import BuyBrain from "@/components/BuyBrain";
+import AddBrain from "@/components/AddBrain";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
 import { topicLabel } from "@/lib/topics";
+import { inLibrary } from "@/lib/library";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -71,7 +73,7 @@ export default async function PublicBrainPage({
 
   const { brain, preview } = found;
 
-  const [categories, samples, balance] = await Promise.all([
+  const [categories, samples, balance, added] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
     // buying, never the bodies that were paid for.
@@ -87,6 +89,7 @@ export default async function PublicBrainPage({
           [user.id],
         ).then((r) => r[0]?.balance_cents ?? 0)
       : Promise.resolve(null),
+    user ? inLibrary(user.id, brain.id) : Promise.resolve(false),
   ]);
 
   const licence = LICENSE[brain.license];
@@ -189,6 +192,15 @@ export default async function PublicBrainPage({
               </Link>
             )}
           </section>
+          )}
+
+          {!preview && brain.owner_id !== user?.id && (
+            <AddBrain
+              brainId={brain.id}
+              handle={`${handle}/${brain.slug}`}
+              signedIn={Boolean(user)}
+              added={added}
+            />
           )}
 
           <section className="scorecard">

@@ -46,6 +46,36 @@ export default async function ConnectPage() {
           </p>
         </aside>
 
+        {/* The shortest path first. Everything below it is the manual way. */}
+        <section
+          className="panel"
+          style={{ marginTop: "2rem", borderLeft: "4px solid var(--color-riso-green)" }}
+        >
+          <p className="eyebrow">Claude Code · the short way</p>
+          <h2 className="h3" style={{ margin: ".4rem 0 .6rem" }}>
+            Install the plugin instead of editing config.
+          </h2>
+          <pre
+            className="mono"
+            style={{
+              margin: "0 0 .75rem",
+              fontSize: ".8125rem",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+{`/plugin marketplace add mozg-sh/mozg
+/plugin install mozg@mozg
+export MOZG_TOKEN=mzg_...`}
+          </pre>
+          <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>
+            It brings the MCP connection and two commands: <code className="mono">/brains</code>{" "}
+            to see what you can read, <code className="mono">/learn</code> to save what a
+            session worked out. Make the token below — the button fills it into the
+            command.
+          </p>
+        </section>
+
         <ClientList
           clients={CLIENTS}
           url={`${env.NEXT_PUBLIC_APP_URL}/mcp`}

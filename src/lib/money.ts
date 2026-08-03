@@ -288,6 +288,15 @@ export async function purchaseBrain(opts: {
     );
     const purchaseId = rows[0].id;
 
+    // A purchase is the strongest possible statement that someone wants a
+    // brain in their set, so it lands in the library in the same transaction.
+    // Buying something and then having to add it separately would be a bug
+    // report, not a feature.
+    await client.query(
+      `insert into library (user_id, brain_id) values ($1, $2) on conflict do nothing`,
+      [buyerId, brainId],
+    );
+
     await move({
       client,
       userId: buyerId,

@@ -286,6 +286,16 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
        join "user" u on u.id = b.owner_id
        join "user" me on lower(me.email) = lower(g.email)
       where me.id = $1 and me."emailVerified"
+     union all
+     -- Brains added from the catalogue. Without this the catalogue was a
+     -- shop window an agent could never see into: reading a public brain
+     -- worked if you knew its handle, and nothing ever told you the handle.
+     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
+            'added', null
+       from library l
+       join brains b on b.id = l.brain_id
+       join "user" u on u.id = b.owner_id
+      where l.user_id = $1 and b.visibility = 'public'
       order by 1`,
     [owner.userId],
   );

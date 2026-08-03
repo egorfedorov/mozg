@@ -29,7 +29,7 @@ const GROUPS: {
     title: "Account",
     items: [
       { href: "/settings/balance", label: "Balance" },
-      { href: "/settings/purchases", label: "Purchases" },
+      { href: "/settings/purchases", label: "Library" },
       { href: "/settings/tokens", label: "Tokens" },
       { href: "/settings", label: "Plan & profile" },
     ],

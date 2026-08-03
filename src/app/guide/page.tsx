@@ -224,6 +224,37 @@ export default async function GuidePage() {
           </div>
         </section>
 
+        {/* The single most misread thing in the product. */}
+        <section
+          id="exam"
+          className="panel"
+          style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", maxWidth: "64ch", scrollMarginTop: "5rem" }}
+        >
+          <p className="eyebrow">What the exam is, and is not</p>
+          <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
+            It does not teach the brain anything.
+          </h2>
+          <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
+            The exam is a measurement, not training. Your goal is turned into
+            control questions with expected answers. After every change the brain
+            searches itself for each one, a judge is shown the five passages that
+            came back, and decides whether they answer it. The score is the share
+            it got right.
+          </p>
+          <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
+            So it measures <strong style={{ color: "var(--ink)" }}>what an agent
+            actually gets when it asks</strong> — not how much you uploaded. A
+            brain with two hundred notes and a bad goal scores worse than one with
+            twenty and a sharp one.
+          </p>
+          <p style={{ color: "var(--ink-2)", margin: 0 }}>
+            Two ways to raise it, and they are the only two: give it the material
+            the failures name, or write a goal that describes what the material can
+            actually support. Chasing the number itself is how you get a padded
+            brain that still cannot answer.
+          </p>
+        </section>
+
         <section
           id="selling"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}

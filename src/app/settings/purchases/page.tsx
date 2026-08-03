@@ -6,10 +6,12 @@ import { formatCents } from "@/lib/money-math";
 import { topicLabel } from "@/lib/topics";
 import AppShell from "@/components/AppShell";
 import { Section, Rows, Row } from "@/components/ui";
+import { libraryBrains } from "@/lib/library";
+import { dropBrain } from "@/app/b/[handle]/[slug]/library-action";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Purchases — mozg" };
+export const metadata = { title: "Library — mozg" };
 
 interface Bought {
   brain_id: string;
@@ -37,7 +39,7 @@ export default async function PurchasesPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/purchases");
 
-  const [bought, sold] = await Promise.all([
+  const [bought, sold, library] = await Promise.all([
     query<Bought>(
       `select p.brain_id, b.title, b.slug, b.topic, b.visibility, b.note_count,
               u.handle as owner_handle, p.price_cents,
@@ -60,11 +62,50 @@ export default async function PurchasesPage() {
         order by sum(p.seller_cents) desc`,
       [user.id],
     ),
+    libraryBrains(user.id),
   ]);
 
   return (
-    <AppShell active="/settings/purchases" eyebrow={user.email} title="Purchases & sales">
+    <AppShell active="/settings/purchases" eyebrow={user.email} title="Your brain library">
       <div className="stack">
+        <Section
+          title="Added from the catalogue"
+          aside={library.length ? `${library.length} in your set` : undefined}
+        >
+          <p className="lede" style={{ marginBottom: ".75rem" }}>
+            These appear in the list your agents read. Nothing was copied to
+            your machine — each stays with its author and keeps improving as
+            they add to it.
+          </p>
+          <Rows
+            empty={
+              <>
+                Nothing added yet.{" "}
+                <Link href="/explore" style={{ textDecoration: "underline" }}>
+                  Browse the catalogue
+                </Link>{" "}
+                and add a brain; your agents see it immediately.
+              </>
+            }
+          >
+            {library.map((b) => (
+              <Row
+                key={b.id}
+                href={`/b/${b.owner_handle}/${b.slug}`}
+                title={b.title}
+                sub={b.still_public ? undefined : "the author unpublished it — your agents can no longer read it"}
+                meta={`${b.handle} · ${b.note_count} notes · ${b.score === null ? "not examined" : `trained ${b.score}%`} · added ${b.added_at}`}
+                side={
+                  <form action={dropBrain}>
+                    <input type="hidden" name="brainId" value={b.id} />
+                    <button className="linkish">remove</button>
+                  </form>
+                }
+              />
+            ))}
+          </Rows>
+        </Section>
+
         <Section
           title="Brains you bought"
           aside={
