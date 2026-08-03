@@ -8,6 +8,8 @@ import { MIN_PAYOUT_CENTS } from "@/lib/money";
 import AppShell from "@/components/AppShell";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import PayoutForm from "../PayoutForm";
+import TopUpForm from "../TopUpForm";
+import { paymentsReady } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -66,21 +68,7 @@ export default async function BalancePage() {
         </Stats>
 
         <div className="stack-tight">
-          <div className="panel">
-            <p className="eyebrow">Topping up</p>
-            <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
-              Handled by hand while the crypto gateway is being wired up. Write
-              with the amount and we credit the balance the same day — nothing is
-              lost by starting this way, it is the same ledger the gateway will
-              write to.
-            </p>
-            <a
-              className="btn"
-              href={`mailto:hi@mozg.sh?subject=${encodeURIComponent("Top up balance")}&body=${encodeURIComponent(`Account: ${user.email}\nAmount: `)}`}
-            >
-              Ask to top up
-            </a>
-          </div>
+          <TopUpForm ready={paymentsReady} email={user.email} />
 
           <PayoutForm balanceCents={balance} minCents={MIN_PAYOUT_CENTS} open={openPayout} />
         </div>

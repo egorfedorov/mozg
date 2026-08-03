@@ -43,6 +43,11 @@ const schema = z.object({
   EMAIL_FROM: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
 
+  // Crypto top-ups. Inert until both exist: an invoice we cannot verify a
+  // callback for would be a balance credited by anyone who guesses a URL.
+  NOWPAYMENTS_API_KEY: z.string().optional(),
+  NOWPAYMENTS_IPN_SECRET: z.string().optional(),
+
   // Comma-separated addresses that may open /admin. Empty means nobody can —
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.

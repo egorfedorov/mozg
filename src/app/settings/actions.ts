@@ -7,6 +7,7 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { requestPayout, MIN_PAYOUT_CENTS } from "@/lib/money";
 import { formatCents } from "@/lib/money-math";
+import { createInvoice } from "@/lib/payments";
 
 /** Handles are a public namespace — /b/{handle}/{slug} — so they are strict. */
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
@@ -92,4 +93,29 @@ export async function askForPayout(_prev: unknown, formData: FormData) {
 
   revalidatePath("/settings/balance");
   return { ok: true as const };
+}
+
+export async function startTopUp(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ payUrl?: string; amountCents?: number; error?: string }> {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const amountCents = Number(formData.get("amount") ?? 0);
+  const res = await createInvoice({ userId: user.id, amountCents });
+
+  if (!res.ok) {
+    return {
+      error:
+        res.reason === "unconfigured"
+          ? "Top-ups are not switched on yet."
+          : res.reason === "amount"
+            ? "Pick one of the amounts above."
+            : `The payment provider did not answer (${res.reason}). Try again shortly.`,
+    };
+  }
+
+  revalidatePath("/settings/balance");
+  return { payUrl: res.invoice.payUrl, amountCents: res.invoice.amountCents };
 }
