@@ -4,6 +4,11 @@ import { query } from "@/db";
 import type { Brain } from "@/db/types";
 import { categoryScores, tintFor } from "@/lib/brains";
 
+// Reads the database and the session on every request. Without this Next
+// prerenders it at build time — which fails in a Docker build (no database)
+// and, worse, would serve a cached page that never reflects new public brains.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Explore brains — mozg",
   description:

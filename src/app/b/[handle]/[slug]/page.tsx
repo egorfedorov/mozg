@@ -27,6 +27,9 @@ const LICENSE: Record<string, { label: string; detail: string }> = {
   },
 };
 
+// Both the page and generateMetadata query the database per request.
+export const dynamic = "force-dynamic";
+
 const STATE_SIGIL = { pass: "✓", partial: "▲", fail: "✕", empty: "·" } as const;
 
 /**

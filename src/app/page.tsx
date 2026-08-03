@@ -2,6 +2,10 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import { currentUser } from "@/lib/session";
 
+// Renders per-session (the header shows who you are), so it must not be
+// prerendered into a single cached copy.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const user = await currentUser();
 
