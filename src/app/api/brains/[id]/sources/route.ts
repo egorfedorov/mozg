@@ -15,8 +15,12 @@ const TEXT_TYPES = new Set([
   "application/json",
   "text/csv",
 ]);
+const PDF_TYPE = "application/pdf";
 
 const MAX_BYTES = 20 * 1024 * 1024;
+// PDFs go to the model whole, and the API caps a request at 32 MB including
+// the base64 overhead. Refusing early beats a confusing failure mid-ingest.
+const MAX_PDF_BYTES = 20 * 1024 * 1024;
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   let user;
@@ -61,9 +65,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
 
     const isImage = IMAGE_TYPES.has(file.type);
+    const isPdf = file.type === PDF_TYPE;
     const isText = TEXT_TYPES.has(file.type) || file.type === "";
-    if (!isImage && !isText) {
+    if (!isImage && !isPdf && !isText) {
       rejected.push({ name: file.name, reason: `unsupported type ${file.type}` });
+      continue;
+    }
+    if (isPdf && file.size > MAX_PDF_BYTES) {
+      rejected.push({ name: file.name, reason: "PDF over 20 MB — split it first" });
       continue;
     }
 
@@ -74,7 +83,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const source = await one<Source>(
       `insert into sources (brain_id, kind, storage_key, original_name, mime, bytes)
        values ($1, $2, $3, $4, $5, $6) returning *`,
-      [brain.id, isImage ? "image" : "text", key, file.name, file.type, body.length],
+      [
+        brain.id,
+        isImage ? "image" : isPdf ? "file" : "text",
+        key,
+        file.name,
+        file.type,
+        body.length,
+      ],
     );
 
     // Queue rather than process inline: a folder of 40 screenshots would blow

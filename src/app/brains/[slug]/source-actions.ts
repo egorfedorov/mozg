@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { maybeOne, query } from "@/db";
+import { maybeOne, one, query } from "@/db";
 import type { Source } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { storage } from "@/lib/storage";
+import { checkFetchableUrl } from "@/lib/url-guard";
 import { enqueueIngest } from "@/worker/queue";
 
 async function ownedSource(sourceId: string, userId: string): Promise<Source | null> {
@@ -40,6 +41,53 @@ export async function retrySource(formData: FormData) {
 
   await enqueueIngest(source.id);
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
+}
+
+/**
+ * Add one or more pages by URL, one per line. Docs sites are where most of a
+ * brain's material actually lives, and pasting eight links beats saving eight
+ * screenshots of the same pages.
+ */
+export async function addUrls(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const slug = String(formData.get("slug"));
+  const brain = await maybeOne<{ id: string }>(
+    `select id from brains where owner_id = $1 and slug = $2`,
+    [user.id, slug],
+  );
+  if (!brain) return { error: "Brain not found." };
+
+  const lines = String(formData.get("urls") ?? "")
+    .split(/[\n\s]+/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 25);
+
+  if (!lines.length) return { error: "Paste at least one URL." };
+
+  const added: string[] = [];
+  const refused: string[] = [];
+
+  for (const line of lines) {
+    const check = await checkFetchableUrl(line);
+    if (!check.ok || !check.url) {
+      refused.push(`${line.slice(0, 60)} — ${check.reason}`);
+      continue;
+    }
+
+    const source = await one<Source>(
+      `insert into sources (brain_id, kind, url, original_name)
+       values ($1, 'url', $2, $3) returning *`,
+      [brain.id, check.url, new URL(check.url).hostname],
+    );
+    await enqueueIngest(source.id);
+    added.push(check.url);
+  }
+
+  revalidatePath(`/brains/${slug}`);
+  return { added: added.length, refused };
 }
 
 export async function deleteSource(formData: FormData) {

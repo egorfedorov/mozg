@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import ConnectBox from "@/components/ConnectBox";
 import Dropzone from "@/components/Dropzone";
+import AddUrls from "@/components/AddUrls";
 import GoalEditor from "@/components/GoalEditor";
 import CallLog from "@/components/CallLog";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -319,8 +320,9 @@ export default async function BrainPage({
             </span>
           </div>
 
-          <div style={{ marginBottom: "1.25rem" }}>
+          <div style={{ marginBottom: "1.25rem", display: "grid", gap: ".75rem" }}>
             <Dropzone brainId={brain.id} />
+            <AddUrls slug={brain.slug} />
           </div>
 
           {sources.length === 0 ? (

@@ -90,7 +90,7 @@ export default function Dropzone({ brainId }: { brainId: string }) {
         ref={inputRef}
         type="file"
         multiple
-        accept="image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,application/json,.md,.txt"
+        accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.pdf"
         hidden
         onChange={(e) => {
           if (e.target.files) void upload(e.target.files);
@@ -105,7 +105,7 @@ export default function Dropzone({ brainId }: { brainId: string }) {
         {busy ? "Uploading…" : "Drop screenshots here"}
       </span>
       <span style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
-        PNG, JPEG, WebP, Markdown or text · up to 20 MB each
+        Screenshots, PDFs, Markdown or text · up to 20 MB each
       </span>
 
       {message && (

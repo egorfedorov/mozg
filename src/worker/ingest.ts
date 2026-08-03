@@ -2,9 +2,10 @@ import { query, one, tx, toVector } from "@/db";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
-import { extractFromImage, extractFromText, type ExtractedNote } from "@/lib/extract";
+import { extractFromImage, extractFromPdf, extractFromText } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
 import { storage } from "@/lib/storage";
+import { checkFetchableUrl } from "@/lib/url-guard";
 import { enqueueExam } from "@/worker/queue";
 
 /**
@@ -187,11 +188,40 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
     return extractFromImage(bytes, { goal: brain.goal, categories });
   }
 
+  if (source.mime === "application/pdf") {
+    if (!source.storage_key) throw new Error("pdf source has no storage key");
+    const bytes = await storage.get(source.storage_key);
+    return extractFromPdf(bytes, {
+      goal: brain.goal,
+      categories,
+      label: source.original_name ?? undefined,
+    });
+  }
+
   if (source.kind === "url") {
     if (!source.url) throw new Error("url source has no url");
-    const res = await fetch(source.url, { signal: AbortSignal.timeout(30_000) });
+
+    // Re-checked here, not just when the source was added: DNS can change in
+    // between, so a hostname that resolved publicly then could point at an
+    // internal address by the time the worker gets to it.
+    const guard = await checkFetchableUrl(source.url);
+    if (!guard.ok) throw new Error(`refusing to fetch: ${guard.reason}`);
+
+    const res = await fetch(source.url, {
+      signal: AbortSignal.timeout(30_000),
+      redirect: "manual", // a redirect could land somewhere the guard rejected
+      headers: { "user-agent": "mozg/0.1 (+https://mozg.sh)" },
+    });
+    if (res.status >= 300 && res.status < 400) {
+      throw new Error(`${source.url} redirects — add the final URL instead`);
+    }
     if (!res.ok) throw new Error(`fetch ${source.url} -> ${res.status}`);
-    const html = await res.text();
+
+    // A 500 MB file would be read into memory before anything else could stop
+    // it, so cap by declared length and then by what we actually read.
+    const declared = Number(res.headers.get("content-length") ?? 0);
+    if (declared > 10 * 1024 * 1024) throw new Error("page is over 10 MB");
+    const html = (await res.text()).slice(0, 10 * 1024 * 1024);
     return extractFromText(stripHtml(html), {
       goal: brain.goal,
       categories,

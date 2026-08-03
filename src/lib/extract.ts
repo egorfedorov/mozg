@@ -177,6 +177,41 @@ function finish(raw: unknown, usage: Usage): ExtractResult {
 }
 
 /** Plain text and URLs skip vision but reuse the same goal-aware prompt. */
+/**
+ * PDFs go to the model as a document block, not as text we scraped out first.
+ * Design systems and API docs arrive as PDFs constantly, and the layout — which
+ * column a value sits in, what a diagram is pointing at — is exactly the part a
+ * text extractor throws away.
+ */
+export async function extractFromPdf(
+  pdf: Buffer,
+  opts: { goal: string | null; categories?: string[]; label?: string },
+): Promise<ExtractResult> {
+  const { data: raw, usage } = await structured<unknown>({
+    model: env.MODEL_EXTRACT,
+    system: systemPrompt(opts.goal, opts.categories ?? []),
+    toolName: "save_notes",
+    toolDescription: TOOL_DESCRIPTION,
+    schema: JSON_SCHEMA,
+    content: [
+      {
+        type: "document",
+        source: {
+          type: "base64",
+          media_type: "application/pdf",
+          data: pdf.toString("base64"),
+        },
+      },
+      {
+        type: "text",
+        text: `${opts.label ? `Source: ${opts.label}\n\n` : ""}Extract the notes.`,
+      },
+    ],
+  });
+
+  return finish(raw, usage);
+}
+
 export async function extractFromText(
   text: string,
   opts: { goal: string | null; categories?: string[]; label?: string },
