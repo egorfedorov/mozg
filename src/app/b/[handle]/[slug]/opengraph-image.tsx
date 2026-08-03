@@ -10,6 +10,11 @@ import { tintFor } from "@/lib/brains";
  * carry.
  */
 
+// The card is drawn per brain from the database, so there is nothing to
+// collect at build time — and trying to collect it fails in the container,
+// which has no credentials and should not need any to compile.
+export const dynamic = "force-dynamic";
+
 export const alt = "A mozg brain — exam score and note count";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

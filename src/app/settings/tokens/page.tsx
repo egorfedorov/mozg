@@ -61,7 +61,10 @@ export default async function TokensPage() {
                       : "never used"
                   }
                   side={
-                    <form action={revoke}>
+                    <ConfirmForm
+                      action={revoke}
+                      message={`Revoke ${t.prefix}…? Any client using it loses access on the next call.`}
+                    >
                       <input type="hidden" name="id" value={t.id} />
                       <button
                         className="mono"
@@ -77,7 +80,7 @@ export default async function TokensPage() {
                       >
                         revoke
                       </button>
-                    </form>
+                    </ConfirmForm>
                   }
                 />
               ))}
