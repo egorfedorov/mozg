@@ -1,4 +1,5 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, enqueueIngest } from "@/worker/queue";
+import { query } from "@/db";
 import { ingestSource } from "@/worker/ingest";
 import { runExam } from "@/worker/exam";
 import { runMaintenance } from "@/worker/maintenance";
@@ -22,6 +23,22 @@ async function main() {
   }
 
   const boss = await getBoss();
+
+  // Anything left mid-flight by the last shutdown. A deploy restarts the
+  // worker whenever it likes, and a source interrupted between "processing"
+  // and "ready" was simply abandoned — it stayed processing forever, counted
+  // as stuck by the health check, and nothing ever picked it up again.
+  const orphans = await query<{ id: string; name: string | null }>(
+    `update sources set status = 'queued', processing_at = null
+      where status = 'processing' returning id, coalesce(original_name, url) as name`,
+  );
+  for (const o of orphans) await enqueueIngest(o.id);
+  if (orphans.length) {
+    console.log(
+      `[worker] requeued ${orphans.length} source(s) interrupted by the last stop:`,
+      orphans.map((o) => o.name ?? o.id).join(", "),
+    );
+  }
 
   await boss.work(
     QUEUES.ingest,
