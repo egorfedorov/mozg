@@ -7,6 +7,7 @@ import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
+import { topicLabel } from "@/lib/topics";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -95,7 +96,9 @@ export default async function PublicBrainPage({
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">
-          <Link href="/explore">explore</Link> / {handle}
+          <Link href="/explore">explore</Link> /{" "}
+          <Link href={`/explore?topic=${brain.topic}`}>{topicLabel(brain.topic)}</Link> /{" "}
+          {handle}
         </p>
 
         <div

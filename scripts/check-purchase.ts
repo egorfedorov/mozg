@@ -9,7 +9,7 @@
  *   npm run check:purchase
  */
 import { one, query } from "@/db";
-import { purchaseBrain, topUp, sellerShare, formatCents } from "@/lib/money";
+import { purchaseBrain, topUp, adjustBalance, sellerShare, formatCents } from "@/lib/money";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -75,6 +75,17 @@ async function main() {
     [brain.id, buyer],
   );
   check("one purchase row exists", rows[0].n === 1, `${rows[0].n} rows`);
+
+  console.log("\nmanual adjustment (the admin path)");
+  // The buyer is on $5.00 here. Taking more than that back has to be refused,
+  // or the ledger stops summing to the balances.
+  const over = await adjustBalance({ userId: buyer, amountCents: -100000, note: "test" });
+  check("cannot overdraw an account", !over.ok, `balance ${formatCents(over.balanceCents)}`);
+
+  const credit = await adjustBalance({ userId: buyer, amountCents: 250, note: "goodwill" });
+  const debit = await adjustBalance({ userId: buyer, amountCents: -250, note: "undo" });
+  check("credit then debit nets to zero", credit.ok && debit.ok && debit.balanceCents === 500,
+    formatCents(debit.balanceCents));
 
   console.log("\nbalances afterwards");
   const after = await query<{ id: string; balance_cents: number }>(

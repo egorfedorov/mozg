@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import type { Brain, Grant } from "@/db/types";
 // money-math, not money: this is a client component and @/lib/money drags in pg.
 import { PLATFORM_FEE_PERCENT } from "@/lib/money-math";
+import { TOPICS } from "@/lib/topics";
 import { updateSharing, inviteByEmail, removeGrant } from "./actions";
 
 const VISIBILITY = [
@@ -92,6 +93,32 @@ export default function ShareForm({
               detail={l.detail}
             />
           ))}
+        </fieldset>
+
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
+          <legend className="eyebrow" style={{ padding: 0 }}>
+            Field
+          </legend>
+          <p style={{ margin: "0 0 .25rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+            Which shelf of the catalogue it sits on. Only matters once it is public.
+          </p>
+          <select
+            name="topic"
+            defaultValue={brain.topic}
+            style={{
+              padding: ".55rem .7rem",
+              border: "1.5px solid var(--ink)",
+              background: "var(--paper)",
+              font: "inherit",
+              maxWidth: 320,
+            }}
+          >
+            {TOPICS.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
         </fieldset>
 
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>

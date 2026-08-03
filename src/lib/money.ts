@@ -109,6 +109,40 @@ export async function topUp(opts: {
   });
 }
 
+/**
+ * Move a balance by hand: a refund, a goodwill credit, or a crypto top-up that
+ * arrived off-band. Signed — negative takes money back, and is refused rather
+ * than allowed to overdraw, so the ledger keeps summing to the balances.
+ */
+export async function adjustBalance(opts: {
+  userId: string;
+  amountCents: number;
+  note: string;
+}): Promise<{ ok: boolean; balanceCents: number }> {
+  if (opts.amountCents === 0) return { ok: false, balanceCents: 0 };
+
+  return tx(async (client) => {
+    const locked = await client.query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1 for update`,
+      [opts.userId],
+    );
+    if (!locked.rows.length) return { ok: false, balanceCents: 0 };
+
+    const before = locked.rows[0].balance_cents;
+    if (before + opts.amountCents < 0) return { ok: false, balanceCents: before };
+
+    await move({
+      client,
+      userId: opts.userId,
+      amountCents: opts.amountCents,
+      kind: "adjustment",
+      note: opts.note,
+    });
+
+    return { ok: true, balanceCents: before + opts.amountCents };
+  });
+}
+
 export type PurchaseResult =
   | { ok: true; purchaseId: string; paidCents: number; balanceCents: number }
   | { ok: false; reason: "already-owned" | "insufficient" | "free" | "own-brain" };

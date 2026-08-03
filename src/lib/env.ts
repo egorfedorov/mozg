@@ -36,6 +36,11 @@ const schema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
 
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
+
+  // Comma-separated addresses that may open /admin. Empty means nobody can —
+  // an admin surface that defaults to open is a breach waiting for its first
+  // sign-up.
+  ADMIN_EMAILS: z.string().default(""),
 });
 
 const parsed = schema.safeParse(process.env);

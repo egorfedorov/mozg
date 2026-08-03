@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/session";
+import { isAdmin } from "@/lib/admin";
 
 export default async function TopBar({ active }: { active?: string }) {
   const user = await currentUser();
@@ -25,6 +26,16 @@ export default async function TopBar({ active }: { active?: string }) {
             <Link className="navlink hide-sm" data-active={active === "connect"} href="/connect">
               connect
             </Link>
+            {isAdmin(user) && (
+              <Link
+                className="navlink hide-sm"
+                data-active={active === "admin"}
+                href="/admin"
+                style={{ color: "var(--color-riso-red)" }}
+              >
+                admin
+              </Link>
+            )}
             <Link
               className="navlink hide-sm"
               href="/settings"

@@ -7,12 +7,15 @@ import { one, query, maybeOne } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { slugify } from "@/lib/brains";
+import { TOPIC_KEYS } from "@/lib/topics";
 
 const PLAN_BRAIN_LIMIT = { free: 1, pro: 20, team: 100 } as const;
 
 const createSchema = z.object({
   title: z.string().trim().min(1, "Give the brain a name").max(80),
   goal: z.string().trim().max(4000).optional(),
+  // An unknown topic is a stale form, not something worth an error message.
+  topic: z.string().catch("other").transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
 });
 
 export async function createBrain(_prev: unknown, formData: FormData) {
@@ -22,6 +25,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   const parsed = createSchema.safeParse({
     title: formData.get("title"),
     goal: formData.get("goal") || undefined,
+    topic: formData.get("topic") ?? "other",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -54,9 +58,9 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   }
 
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal) values ($1, $2, $3, $4)
-     returning *`,
-    [user.id, slug, parsed.data.title, parsed.data.goal ?? null],
+    `insert into brains (owner_id, slug, title, goal, topic)
+     values ($1, $2, $3, $4, $5) returning *`,
+    [user.id, slug, parsed.data.title, parsed.data.goal ?? null, parsed.data.topic],
   );
 
   revalidatePath("/brains");

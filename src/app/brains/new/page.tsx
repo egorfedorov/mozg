@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { createBrain } from "../actions";
+import { TOPICS } from "@/lib/topics";
 
 const EXAMPLES = [
   "Match our design system exactly: colour, type scale, spacing, component rules, empty and error states.",
@@ -39,6 +40,19 @@ export default function NewBrainPage() {
             placeholder="Design system"
             style={inputStyle}
           />
+        </Field>
+
+        <Field
+          label="Field"
+          hint="How people find it in the catalogue if you ever publish it."
+        >
+          <select name="topic" defaultValue="web" style={inputStyle}>
+            {TOPICS.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field

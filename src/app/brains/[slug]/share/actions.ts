@@ -7,6 +7,7 @@ import { maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { scanSecrets, scanPII } from "@/lib/scan";
+import { TOPIC_KEYS } from "@/lib/topics";
 
 async function ownedBrain(slug: string, userId: string): Promise<Brain | null> {
   return maybeOne<Brain>(`select * from brains where owner_id = $1 and slug = $2`, [
@@ -31,12 +32,14 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       // Entered in dollars, stored in cents. Anything above $1000 is a slipped
       // decimal point far more often than it is a real price.
       price: z.coerce.number().min(0).max(1000),
+      topic: z.string().transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
     })
     .safeParse({
       visibility: formData.get("visibility"),
       license: formData.get("license"),
       review_required: formData.get("review_required") === "on",
       price: String(formData.get("price") ?? "0").replace(",", ".") || "0",
+      topic: String(formData.get("topic") ?? "other"),
     });
 
   if (!parsed.success) return { error: "Invalid settings." };
@@ -88,7 +91,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
 
   await query(
     `update brains set visibility = $2, license = $3, review_required = $4,
-            price_cents = $5, updated_at = now()
+            price_cents = $5, topic = $6, updated_at = now()
       where id = $1`,
     [
       brain.id,
@@ -96,6 +99,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       parsed.data.license,
       parsed.data.review_required,
       priceCents,
+      parsed.data.topic,
     ],
   );
 

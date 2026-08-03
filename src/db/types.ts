@@ -25,6 +25,8 @@ export interface Brain {
   title: string;
   goal: string | null;
   color: string;
+  /** Catalogue field — see src/lib/topics.ts. Free text; unknown reads as "other". */
+  topic: string;
   visibility: Visibility;
   license: License;
   score: number | null;
