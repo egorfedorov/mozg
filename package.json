@@ -27,7 +27,8 @@
     "ask": "tsx --env-file-if-exists=.env scripts/ask.ts",
     "token": "tsx --env-file-if-exists=.env scripts/token.ts",
     "exam": "tsx --env-file-if-exists=.env scripts/exam.ts",
-    "review": "tsx --env-file-if-exists=.env scripts/review.ts"
+    "review": "tsx --env-file-if-exists=.env scripts/review.ts",
+    "catalogue": "tsx --env-file-if-exists=.env scripts/catalogue.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
