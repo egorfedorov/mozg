@@ -212,23 +212,100 @@ export async function extractFromPdf(
   return finish(raw, usage);
 }
 
+/**
+ * How much text goes to the model in one pass.
+ *
+ * This used to be a single call with `text.slice(0, 400_000)`, which quietly
+ * threw away everything past the cut and reported success — a 726 KB schema
+ * page ingested as its first 55% with nothing anywhere saying so. It also gave
+ * the model an input large enough that it sometimes answered without the notes
+ * array at all, failing the whole source.
+ */
+const SEGMENT = 60_000;
+const MAX_SEGMENTS = 12;
+
+/** Split on blank lines so a segment does not start mid-sentence. */
+function segments(text: string): string[] {
+  if (text.length <= SEGMENT) return [text];
+
+  const out: string[] = [];
+  let rest = text;
+  while (rest.length && out.length < MAX_SEGMENTS) {
+    if (rest.length <= SEGMENT) {
+      out.push(rest);
+      break;
+    }
+    const window = rest.slice(0, SEGMENT);
+    const cut = window.lastIndexOf("\n\n");
+    const at = cut > SEGMENT / 2 ? cut : SEGMENT;
+    out.push(rest.slice(0, at));
+    rest = rest.slice(at);
+  }
+  return out;
+}
+
 export async function extractFromText(
   text: string,
   opts: { goal: string | null; categories?: string[]; label?: string },
 ): Promise<ExtractResult> {
-  const { data: raw, usage } = await structured<unknown>({
-    model: env.MODEL_EXTRACT,
-    system: systemPrompt(opts.goal, opts.categories ?? []),
-    toolName: "save_notes",
-    toolDescription: TOOL_DESCRIPTION,
-    schema: JSON_SCHEMA,
-    content: [
-      {
-        type: "text",
-        text: `${opts.label ? `Source: ${opts.label}\n\n` : ""}${text.slice(0, 400_000)}`,
-      },
-    ],
-  });
+  const parts = segments(text);
 
-  return finish(raw, usage);
+  const notes: ExtractedNote[] = [];
+  let usage = { inputTokens: 0, outputTokens: 0, costCents: 0 };
+  let failed = 0;
+
+  for (const [i, part] of parts.entries()) {
+    const where =
+      parts.length > 1 ? ` (part ${i + 1} of ${parts.length})` : "";
+
+    try {
+      const { data: raw, usage: u } = await structured<unknown>({
+        model: env.MODEL_EXTRACT,
+        system: systemPrompt(opts.goal, opts.categories ?? []),
+        toolName: "save_notes",
+        toolDescription: TOOL_DESCRIPTION,
+        schema: JSON_SCHEMA,
+        content: [
+          {
+            type: "text",
+            text: `${opts.label ? `Source: ${opts.label}${where}\n\n` : ""}${part}`,
+          },
+        ],
+      });
+
+      const result = finish(raw, u);
+      notes.push(...result.notes);
+      usage = {
+        inputTokens: usage.inputTokens + result.usage.inputTokens,
+        outputTokens: usage.outputTokens + result.usage.outputTokens,
+        costCents: usage.costCents + result.usage.costCents,
+      };
+    } catch (err) {
+      // One bad segment should not lose the other eleven. A page that fails
+      // entirely still throws, so the source is marked failed rather than
+      // stored as a partial nobody knows is partial.
+      failed++;
+      console.warn(
+        `[extract] ${opts.label ?? "text"}${where} failed: ` +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
+  }
+
+  if (!notes.length) {
+    throw new Error(
+      failed
+        ? `every segment failed (${failed} of ${parts.length})`
+        : "the model returned no notes",
+    );
+  }
+
+  if (failed) {
+    console.warn(
+      `[extract] ${opts.label ?? "text"}: kept ${notes.length} notes, ` +
+        `${failed} of ${parts.length} segments failed`,
+    );
+  }
+
+  return { notes, usage };
 }
