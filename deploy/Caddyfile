@@ -1,0 +1,36 @@
+# Automatic HTTPS for mozg.sh. Caddy obtains and renews the certificate itself,
+# so there is no certbot and no renewal cron to forget about.
+
+mozg.sh, www.mozg.sh {
+	encode zstd gzip
+
+	# The MCP endpoint is long-lived: agents keep the connection open, and the
+	# call-log stream is server-sent events. Buffering either would break them.
+	@stream path /mcp* /api/brains/*/calls/stream
+	handle @stream {
+		reverse_proxy app:3300 {
+			flush_interval -1
+			transport http {
+				read_timeout 10m
+			}
+		}
+	}
+
+	handle {
+		reverse_proxy app:3300
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

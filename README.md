@@ -189,6 +189,60 @@ npm run check:access  # сквозная проверка изоляции мо�
 
 ---
 
+## Деплой на mozg.sh
+
+Нужен сервер с **8 ГБ памяти** (можно 4, но впритык): модели эмбеддингов
+одной нужно около 4 ГБ, остальное — приложение, воркер и Postgres.
+
+**1. DNS.** A-запись `mozg.sh` → IP сервера, и такая же для `www`. Caddy сам
+получит и будет продлевать сертификат — certbot и крон не нужны.
+
+**2. На сервере:**
+
+```bash
+git clone git@github.com:egorfedorov/mozg.git && cd mozg
+cp .env.example .env
+```
+
+В `.env` обязательно:
+
+```
+POSTGRES_PASSWORD=<длинный случайный>
+BETTER_AUTH_SECRET=<openssl rand -hex 32>
+BETTER_AUTH_URL=https://mozg.sh
+NEXT_PUBLIC_APP_URL=https://mozg.sh
+ANTHROPIC_API_KEY=<ключ>
+ANTHROPIC_BASE_URL=https://api.apimart.ai   # если через apimart
+```
+
+**3. Запуск:**
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Первый старт сервиса эмбеддингов качает 2.2 ГБ весов в volume — это
+единственный долгий шаг, минут пять на нормальном канале. Веса лежат в
+volume, а не в образе: 2.2 ГБ в слое сделали бы больно каждому деплою.
+
+**4. Схема (один раз):**
+
+```bash
+docker compose -f docker-compose.prod.yml exec app npm run auth:migrate
+docker compose -f docker-compose.prod.yml exec app npm run db:migrate
+```
+
+**5. Проверить:**
+
+```bash
+curl https://mozg.sh/mcp            # {"name":"mozg",...}
+docker compose -f docker-compose.prod.yml logs -f worker
+```
+
+Замечание про регион: если сервер в РФ, Docker Hub и Hugging Face могут не
+отдать образы и веса — та же беда, что была локально. Зарубежный хостинг
+скачивает всё за минуту.
+
 ## Состояние
 
 Проверено вживую: схема на pgvector с HNSW, сканер секретов и чанкер (16
