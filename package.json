@@ -8,16 +8,16 @@
     "start": "next start -p 3300",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
-    "db:reset": "tsx --env-file=.env scripts/migrate.ts --reset",
-    "worker": "tsx watch --env-file=.env src/worker/index.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
+    "db:reset": "tsx --env-file-if-exists=.env scripts/migrate.ts --reset",
+    "worker": "tsx watch --env-file-if-exists=.env src/worker/index.ts",
     "worker:prod": "tsx src/worker/index.ts",
-    "ingest": "tsx --env-file=.env scripts/ingest.ts",
-    "seed": "tsx --env-file=.env scripts/seed.ts",
+    "ingest": "tsx --env-file-if-exists=.env scripts/ingest.ts",
+    "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
     "test": "tsx --test src/lib/*.test.ts",
     "auth:migrate": "npx --yes @better-auth/cli migrate --y",
-    "check:access": "tsx --env-file=.env scripts/check-access.ts",
-    "try:extract": "tsx --env-file=.env scripts/try-extract.ts"
+    "check:access": "tsx --env-file-if-exists=.env scripts/check-access.ts",
+    "try:extract": "tsx --env-file-if-exists=.env scripts/try-extract.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
