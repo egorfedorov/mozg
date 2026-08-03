@@ -21,7 +21,6 @@ RUN chmod +x fetch-model.sh
 # Weights live in a volume, not the image: 2.2 GB in a layer makes every deploy
 # slow and every registry push painful.
 ENV EMBED_MODEL=/models/bge-m3
-ENV DEST=/models/bge-m3
 
 # Optional cross-encoder for search reranking. Not fetched on boot — pull it
 # deliberately (`./fetch-model.sh reranker` against the models volume). Until
@@ -31,4 +30,4 @@ ENV RERANK_MODEL=/models/bge-reranker-v2-m3
 EXPOSE 8099
 
 # Fetch on first boot if the volume is empty, then serve.
-CMD ["sh", "-c", "[ -s /models/bge-m3/pytorch_model.bin ] || ./fetch-model.sh; exec uvicorn main:app --host 0.0.0.0 --port 8099"]
+CMD ["sh", "-c", "[ -s /models/bge-m3/pytorch_model.bin ] || ./fetch-model.sh bge-m3 /models/bge-m3; exec uvicorn main:app --host 0.0.0.0 --port 8099"]

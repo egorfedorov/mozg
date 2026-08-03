@@ -15,6 +15,12 @@
 #
 #   ./fetch-model.sh              # resume bge-m3 into ./models/bge-m3
 #   ./fetch-model.sh reranker     # bge-reranker-v2-m3 into ./models/bge-reranker-v2-m3
+#   ./fetch-model.sh reranker /tmp/x   # second argument overrides the directory
+#
+# The destination comes from the target, not from a DEST in the environment.
+# The image sets DEST for its own boot fetch, and honouring that here sent the
+# reranker's weights into the embedding model's directory — where transformers
+# then preferred them and would have loaded a cross-encoder as the embedder.
 #   MIRROR=1 ./fetch-model.sh     # go through hf-mirror.com instead
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -26,7 +32,7 @@ HOST="https://huggingface.co"
 case "$TARGET" in
   bge-m3)
     REPO="BAAI/bge-m3"
-    DEST="${DEST:-./models/bge-m3}"
+    DEST="${2:-./models/bge-m3}"
     ENV_VAR="EMBED_MODEL"
     SMALL=(
       "1_Pooling/config.json"
@@ -49,7 +55,7 @@ case "$TARGET" in
     # ~0.5 — worse than no reranker, because search still reorders by it.
     REPO="BAAI/bge-reranker-v2-m3"
     WEIGHTS="model.safetensors"
-    DEST="${DEST:-./models/bge-reranker-v2-m3}"
+    DEST="${2:-./models/bge-reranker-v2-m3}"
     ENV_VAR="RERANK_MODEL"
     SMALL=(
       "config.json"
