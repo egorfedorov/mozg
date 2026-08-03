@@ -1,5 +1,6 @@
 import { maybeOne } from "@/db";
 import type { Brain, GrantRole } from "@/db/types";
+import { gateFor, hasPaid } from "@/lib/paywall";
 
 /**
  * Who may do what with a brain. Every read path and every MCP tool goes
@@ -66,13 +67,14 @@ async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
 
   if (brain.visibility !== "public") return { brain, access: null, preview: false };
 
-  if (brain.price_cents > 0) {
-    if (!userId) return { brain, access: null, preview: true };
-    const bought = await maybeOne(
-      `select 1 from purchases where brain_id = $1 and buyer_id = $2`,
-      [brain.id, userId],
-    );
-    return bought ? open("viewer") : { brain, access: null, preview: true };
+  // A price on a parent covers its children — see lib/paywall.ts. Checking
+  // only this brain's own price would let a buyer walk past the parent and
+  // add the free children instead.
+  const gate = await gateFor(brain);
+  if (gate) {
+    return (await hasPaid(gate, userId))
+      ? open("viewer")
+      : { brain, access: null, preview: true };
   }
 
   return open("viewer");

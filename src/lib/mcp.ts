@@ -9,6 +9,7 @@ import { familyIds, childrenOf } from "@/lib/families";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
+import { gateFor, hasPaid } from "@/lib/paywall";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { storage, storageKey } from "@/lib/storage";
 import { enqueueIngest } from "@/worker/queue";
@@ -215,15 +216,11 @@ async function resolveBrain(
 
   if (brain.visibility !== "public") return null;
 
-  // A paid brain is not readable over MCP until it is bought. The agent path
-  // must not be a way around the paywall the site enforces.
-  if (brain.price_cents > 0) {
-    const bought = await maybeOne(
-      `select 1 from purchases where brain_id = $1 and buyer_id = $2`,
-      [brain.id, userId],
-    );
-    if (!bought) return null;
-  }
+  // A paid brain is not readable over MCP until it is bought, and a price on
+  // a parent covers its children. The agent path must not be a way around the
+  // paywall the site enforces, nor around the family it applies to.
+  const gate = await gateFor(brain);
+  if (gate && !(await hasPaid(gate, userId))) return null;
 
   return { brain, access: "viewer" };
 }
