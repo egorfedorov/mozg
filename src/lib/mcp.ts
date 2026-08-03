@@ -133,9 +133,11 @@ async function resolveBrain(
 
   if (brain.owner_id === userId) return { brain, access: "owner" };
 
+  // Verified addresses only — see the note in lib/access.ts. An agent must not
+  // be the way around a check the web app enforces.
   const grant = await maybeOne<{ role: "viewer" | "contributor" }>(
     `select g.role from grants g join "user" u on lower(u.email) = lower(g.email)
-      where g.brain_id = $1 and u.id = $2`,
+      where g.brain_id = $1 and u.id = $2 and u."emailVerified"`,
     [brain.id, userId],
   );
   if (grant) return { brain, access: grant.role };
@@ -192,7 +194,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
        join grants g on g.brain_id = b.id
        join "user" u on u.id = b.owner_id
        join "user" me on lower(me.email) = lower(g.email)
-      where me.id = $1
+      where me.id = $1 and me."emailVerified"
       order by 1`,
     [owner.userId],
   );

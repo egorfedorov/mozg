@@ -131,6 +131,12 @@ export default function ShareForm({
           People
         </h2>
 
+        <p style={{ color: "var(--ink-2)", marginTop: 0, fontSize: ".9375rem", maxWidth: "58ch" }}>
+          Access is granted to the address, and only once that address is proven
+          — signing in with GitHub proves it. Until then the invitation sits here
+          and grants nothing.
+        </p>
+
         <form action={sendInvite} style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
           <input type="hidden" name="slug" value={brain.slug} />
           <input
@@ -188,7 +194,7 @@ export default function ShareForm({
                 <span>{g.email}</span>
                 <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
                   {g.role === "contributor" ? "read + write" : "read"}
-                  {!g.accepted_by && " · not signed up yet"}
+                  {!g.accepted_by && " · has not signed in yet"}
                 </span>
                 <form action={removeGrant}>
                   <input type="hidden" name="id" value={g.id} />

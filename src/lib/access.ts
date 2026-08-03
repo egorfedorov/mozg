@@ -37,10 +37,14 @@ async function resolve(brain: Brain, userId: string | null): Promise<Access> {
   if (userId && brain.owner_id === userId) return "owner";
 
   if (userId) {
+    // The email must be verified. Grants are matched by address, so without
+    // this anyone could sign up as someone-else@their-company.com and collect
+    // every brain shared to that person. GitHub logins arrive verified; a
+    // password signup does not until it proves the address.
     const grant = await maybeOne<{ role: GrantRole }>(
       `select g.role from grants g
          join "user" u on lower(u.email) = lower(g.email)
-        where g.brain_id = $1 and u.id = $2`,
+        where g.brain_id = $1 and u.id = $2 and u."emailVerified"`,
       [brain.id, userId],
     );
     if (grant) return grant.role;
