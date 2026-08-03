@@ -170,6 +170,132 @@ async function main() {
       `code ${badTool.body.error?.code ?? "none"}`,
     );
 
+    console.log("\ncreating a brain the way an agent would");
+    // Free plans hold one brain, and the check must not fail because the
+    // account is legitimately full — lift it for the test and put it back.
+    const before = await maybeOne<{ plan: string }>(`select plan from "user" where id = $1`, [
+      owner.id,
+    ]);
+    await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
+
+    const created = await rpc(
+      "tools/call",
+      {
+        name: "brain_create",
+        arguments: {
+          title: "Check MCP scratch",
+          goal: "Answer questions about the throwaway brain this check creates.",
+          topic: "devops",
+        },
+      },
+      token,
+    );
+    const createdText = textOf(created.body.result);
+    check("brain_create answers", created.status === 200 && !created.body.error);
+    check("it returns the handle", createdText.includes("check-mcp-scratch"), createdText.slice(0, 60));
+
+    const scratch = await maybeOne<{ id: string; topic: string; goal: string | null }>(
+      `select id, topic, goal from brains where owner_id = $1 and slug = 'check-mcp-scratch'`,
+      [owner.id],
+    );
+    check("the brain really exists", Boolean(scratch));
+    check("the topic was kept", scratch?.topic === "devops", scratch?.topic ?? "—");
+
+    const again = await rpc(
+      "tools/call",
+      {
+        name: "brain_create",
+        arguments: { title: "Check MCP scratch", goal: "Something else entirely." },
+      },
+      token,
+    );
+    const copies = await query<{ n: number }>(
+      `select count(*)::int as n from brains where owner_id = $1 and slug like 'check-mcp-scratch%'`,
+      [owner.id],
+    );
+    check(
+      "creating it twice returns the same brain",
+      copies[0].n === 1 && /already exists/i.test(textOf(again.body.result)),
+      `${copies[0].n} brain(s)`,
+    );
+
+    const noGoal = await rpc(
+      "tools/call",
+      { name: "brain_create", arguments: { title: "No goal here" } },
+      token,
+    );
+    check(
+      "a brain without a goal is refused",
+      Boolean(noGoal.body.result?.isError) && /goal/i.test(textOf(noGoal.body.result)),
+    );
+
+    console.log("\nfeeding it");
+    const addText = await rpc(
+      "tools/call",
+      {
+        name: "brain_add_source",
+        arguments: {
+          brain: "check-mcp-scratch",
+          text: "The throwaway brain exists only so this check has something to write to.",
+          name: "check-mcp note",
+        },
+      },
+      token,
+    );
+    check("brain_add_source accepts text", !addText.body.result?.isError, textOf(addText.body.result).slice(0, 50));
+
+    const sources = await query<{ n: number }>(
+      `select count(*)::int as n from sources where brain_id = $1`,
+      [scratch?.id ?? null],
+    );
+    check("the source was queued", sources[0].n === 1, `${sources[0].n} source(s)`);
+
+    // The SSRF guard is the reason an agent can be handed a URL by a poisoned
+    // page without it becoming a request to the metadata service.
+    const ssrf = await rpc(
+      "tools/call",
+      {
+        name: "brain_add_source",
+        arguments: {
+          brain: "check-mcp-scratch",
+          urls: ["http://169.254.169.254/latest/meta-data/", "http://localhost:3300/"],
+        },
+      },
+      token,
+    );
+    const ssrfText = textOf(ssrf.body.result);
+    check(
+      "internal addresses are refused",
+      Boolean(ssrf.body.result?.isError) && /169\.254|localhost/.test(ssrfText),
+      ssrfText.slice(0, 70),
+    );
+    const afterSsrf = await query<{ n: number }>(
+      `select count(*)::int as n from sources where brain_id = $1`,
+      [scratch?.id ?? null],
+    );
+    check("nothing was queued for them", afterSsrf[0].n === 1, `${afterSsrf[0].n} source(s)`);
+
+    const secret = await rpc(
+      "tools/call",
+      {
+        name: "brain_add_source",
+        arguments: {
+          brain: "check-mcp-scratch",
+          text: "Deploy with AKIAIOSFODNN7EXAMPLE and the key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY.",
+        },
+      },
+      token,
+    );
+    check(
+      "text containing a credential is refused",
+      Boolean(secret.body.result?.isError) && /credential/i.test(textOf(secret.body.result)),
+    );
+
+    console.log("\ncleaning up the scratch brain");
+    await query(`delete from brains where owner_id = $1 and slug = 'check-mcp-scratch'`, [owner.id]);
+    if (before) await query(`update "user" set plan = $2 where id = $1`, [owner.id, before.plan]);
+    console.log(`  removed, plan restored to ${before?.plan}`);
+
     console.log("\nmetering");
     const calls = await query<{ n: number }>(
       `select count(*)::int as n from calls where created_at > now() - interval '2 minutes'`,

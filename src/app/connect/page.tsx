@@ -95,10 +95,11 @@ export default async function ConnectPage() {
           <h2 className="h2" style={{ marginBottom: ".75rem" }}>
             What the agent gets
           </h2>
-          <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            Five tools. The descriptions tell the agent <em>when</em> to reach for
-            each one, which is the difference between a brain that gets used and one
-            that sits there.
+          <p className="lede">
+            Seven tools, the same in every client on this page — a brain is not a
+            Claude feature. The descriptions tell the agent <em>when</em> to reach
+            for each one, which is the difference between a brain that gets used
+            and one that sits there.
           </p>
 
           <div className="panel" style={{ padding: 0, marginTop: "1.25rem" }}>
@@ -108,6 +109,8 @@ export default async function ConnectPage() {
               ["brain_search", "Find what this project actually decided, before answering from general knowledge."],
               ["brain_read", "Open one note in full."],
               ["brain_write", "Save a convention or a pitfall worth keeping."],
+              ["brain_create", "Start a new brain, without leaving the editor."],
+              ["brain_add_source", "Feed it documentation pages or a block of text to read."],
             ].map(([name, what]) => (
               <div
                 key={name}

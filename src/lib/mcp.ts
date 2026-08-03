@@ -5,6 +5,12 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
+import { slugify } from "@/lib/brains";
+import { isTopic } from "@/lib/topics";
+import { limitsFor } from "@/lib/plans";
+import { checkFetchableUrl } from "@/lib/url-guard";
+import { storage, storageKey } from "@/lib/storage";
+import { enqueueIngest } from "@/worker/queue";
 import type { TokenOwner } from "@/lib/tokens";
 
 /**
@@ -105,6 +111,62 @@ export const TOOLS: ToolDef[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "brain_create",
+    description:
+      "Create a new brain. Use when the user asks to start one, or when you " +
+      "notice they are explaining the same project-specific context repeatedly " +
+      "and no existing brain covers it — offer first, do not create unasked. " +
+      "The goal matters more than the name: it becomes an exam the brain is " +
+      "scored against, so write it as an outcome (\"answer questions about our " +
+      "webhook retries and idempotency\") rather than a subject (\"webhooks\"). " +
+      "Creating the same title twice returns the existing brain instead of a " +
+      "duplicate.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Short name, e.g. \"Design system\"." },
+        goal: {
+          type: "string",
+          description: "What it must be able to answer. Concrete; this becomes the exam.",
+        },
+        topic: {
+          type: "string",
+          description:
+            "Catalogue field: web, backend, gamedev, mobile, ai, data, devops, " +
+            "design, security, product, other.",
+        },
+      },
+      required: ["title", "goal"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "brain_add_source",
+    description:
+      "Feed raw material into a brain: documentation pages by URL, or a block of " +
+      "text. The material is read and turned into searchable notes in the " +
+      "background — this returns as soon as the work is queued, so tell the user " +
+      "it is processing rather than waiting for notes to appear. Prefer this over " +
+      "brain_write when you have primary material: brain_write saves one fact you " +
+      "already know, this extracts many from a source. Never pass a URL behind a " +
+      "login, and never paste text containing credentials.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Brain handle." },
+        urls: {
+          type: "array",
+          items: { type: "string" },
+          description: "Pages to read. Up to 25 per call.",
+        },
+        text: { type: "string", description: "A block of material to read." },
+        name: { type: "string", description: "What the text is, for the source list." },
+      },
+      required: ["brain"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 // ─── resolution ──────────────────────────────────────────────────────────────
@@ -183,6 +245,10 @@ export async function callTool(
       return brainRead(args, owner);
     case "brain_write":
       return brainWrite(args, owner);
+    case "brain_create":
+      return brainCreate(args, owner);
+    case "brain_add_source":
+      return brainAddSource(args, owner);
     default:
       return { text: `Unknown tool: ${name}`, isError: true };
   }
@@ -406,6 +472,193 @@ async function brainWrite(
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,
+  };
+}
+
+/**
+ * Create a brain from an agent. Same limits as the web form, because a quota
+ * that only one path enforces is not a quota.
+ *
+ * Idempotent on the slug: an agent that retries after a timeout, or a user who
+ * asks twice in one session, gets the brain back rather than a second copy
+ * with a "-2" suffix that nothing will ever look at again.
+ */
+async function brainCreate(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const title = String(args.title ?? "").trim().slice(0, 80);
+  const goal = String(args.goal ?? "").trim().slice(0, 4000);
+
+  if (!title) return { text: "A title is required.", isError: true };
+  if (!goal) {
+    return {
+      text:
+        "A goal is required — it becomes the exam this brain is scored against. " +
+        "Write what it must be able to answer, as an outcome rather than a subject.",
+      isError: true,
+    };
+  }
+
+  const slug = slugify(title);
+  const existing = await maybeOne<Brain>(
+    `select * from brains where owner_id = $1 and slug = $2`,
+    [owner.userId, slug],
+  );
+  if (existing) {
+    return {
+      text:
+        `A brain "${existing.slug}" already exists with that name — returning it ` +
+        `instead of creating a duplicate. Its goal is: ${existing.goal ?? "not set"}. ` +
+        "Add material with brain_add_source, or pick a different title.",
+      brainId: existing.id,
+      ownerId: existing.owner_id,
+    };
+  }
+
+  const limits = limitsFor(owner.plan);
+  const { count } = await one<{ count: number }>(
+    `select count(*)::int as count from brains where owner_id = $1`,
+    [owner.userId],
+  );
+  if (count >= limits.brains) {
+    return {
+      text:
+        `The ${owner.plan} plan holds ${limits.brains} brain${limits.brains === 1 ? "" : "s"} ` +
+        `and ${count} already exist. Tell the user to upgrade at mozg.sh/settings, ` +
+        "or to reuse an existing brain.",
+      isError: true,
+    };
+  }
+
+  const topic = isTopic(args.topic) ? String(args.topic) : "other";
+
+  const brain = await one<Brain>(
+    `insert into brains (owner_id, slug, title, goal, topic)
+     values ($1, $2, $3, $4, $5) returning *`,
+    [owner.userId, slug, title, goal, topic],
+  );
+
+  return {
+    text:
+      `Created "${brain.title}" with the handle ${brain.slug}.\n\n` +
+      `Goal: ${goal}\n\n` +
+      "It is empty. Add material with brain_add_source — documentation pages by " +
+      "URL, or blocks of text. Once material is in, it sits an exam built from " +
+      "the goal and reports which categories it cannot answer yet; that list is " +
+      "what to add next. The owner can also upload screenshots and PDFs at " +
+      `mozg.sh/brains/${brain.slug}.`,
+    brainId: brain.id,
+    ownerId: brain.owner_id,
+    results: 1,
+  };
+}
+
+/**
+ * Feed material in. Owner only — ingest spends the owner's extraction budget,
+ * and the web upload path is owner-only too.
+ */
+async function brainAddSource(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+  if (resolved.access !== "owner") {
+    return {
+      text: `Only the owner of ${handle} can add material to it.`,
+      isError: true,
+    };
+  }
+  const brain = resolved.brain;
+
+  const rawUrls = Array.isArray(args.urls)
+    ? args.urls.map((u) => String(u).trim()).filter(Boolean).slice(0, 25)
+    : [];
+  const text = typeof args.text === "string" ? args.text.trim() : "";
+
+  if (!rawUrls.length && !text) {
+    return { text: "Pass urls, text, or both.", isError: true };
+  }
+
+  const limits = limitsFor(owner.plan);
+  const wanted = rawUrls.length + (text ? 1 : 0);
+  if (brain.source_count + wanted > limits.sources) {
+    return {
+      text:
+        `That would exceed ${limits.sources} sources on the ${owner.plan} plan ` +
+        `(${brain.source_count} used). Tell the user to upgrade at mozg.sh/settings.`,
+      isError: true,
+    };
+  }
+
+  const added: string[] = [];
+  const refused: string[] = [];
+
+  for (const raw of rawUrls) {
+    // The same SSRF guard the web form uses: resolves DNS and rejects private,
+    // loopback and metadata addresses. An agent is a fine way to be pointed at
+    // 169.254.169.254 by a poisoned page.
+    const check = await checkFetchableUrl(raw);
+    if (!check.ok || !check.url) {
+      refused.push(`${raw.slice(0, 60)} — ${check.reason}`);
+      continue;
+    }
+    const source = await one<{ id: string }>(
+      `insert into sources (brain_id, kind, url, original_name)
+       values ($1, 'url', $2, $3) returning id`,
+      [brain.id, check.url, new URL(check.url).hostname],
+    );
+    await enqueueIngest(source.id);
+    added.push(check.url);
+  }
+
+  if (text) {
+    // Same gate as brain_write. This is a path with no human looking at the
+    // material before it is stored.
+    const findings = scanSecrets(text);
+    if (findings.length) {
+      refused.push(
+        `the text block — it contains what looks like a credential ` +
+          `(${findings.map((f) => f.label).join(", ")})`,
+      );
+    } else {
+      const name = String(args.name ?? "").trim().slice(0, 120) || "pasted by an agent";
+      const key = storageKey(brain.id, `${name}.md`);
+      await storage.put(key, Buffer.from(text, "utf8"), "text/markdown");
+      const source = await one<{ id: string }>(
+        `insert into sources (brain_id, kind, storage_key, original_name, mime, bytes)
+         values ($1, 'text', $2, $3, 'text/markdown', $4) returning id`,
+        [brain.id, key, name, Buffer.byteLength(text, "utf8")],
+      );
+      await enqueueIngest(source.id);
+      added.push(name);
+    }
+  }
+
+  if (!added.length) {
+    return {
+      text: `Nothing was added.\n${refused.map((r) => `- ${r}`).join("\n")}`,
+      isError: true,
+      brainId: brain.id,
+      ownerId: brain.owner_id,
+    };
+  }
+
+  return {
+    text:
+      `Queued ${added.length} source${added.length === 1 ? "" : "s"} for ${handle}: ` +
+      `${added.slice(0, 8).join(", ")}${added.length > 8 ? ", …" : ""}.\n\n` +
+      "Reading happens in the background — notes will not be searchable for a " +
+      "minute or two. Do not call brain_search expecting them immediately; tell " +
+      "the user it is processing." +
+      (refused.length
+        ? `\n\nRefused:\n${refused.map((r) => `- ${r}`).join("\n")}`
+        : ""),
+    brainId: brain.id,
+    ownerId: brain.owner_id,
+    results: added.length,
   };
 }
 

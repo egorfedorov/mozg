@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { one, query } from "@/db";
-import type { Brain, Plan, Source } from "@/db/types";
+import type { Brain, Source } from "@/db/types";
 import { requireUser } from "@/lib/session";
 import { storage, storageKey } from "@/lib/storage";
 import { enqueueIngest } from "@/worker/queue";
-
-/** Sources per brain, by plan. */
-const SOURCE_LIMIT: Record<Plan, number> = { free: 50, pro: 1000, team: 5000 };
+import { limitsFor } from "@/lib/plans";
 
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 const TEXT_TYPES = new Set([
@@ -43,7 +41,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "No files received." }, { status: 400 });
   }
 
-  const limit = SOURCE_LIMIT[user.plan];
+  const limit = limitsFor(user.plan).sources;
   if (brain.source_count + files.length > limit) {
     return NextResponse.json(
       {

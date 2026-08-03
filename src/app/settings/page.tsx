@@ -4,6 +4,7 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import AppShell from "@/components/AppShell";
 import ProfileForm from "./ProfileForm";
+import { limitsFor } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -15,17 +16,11 @@ export const metadata = { title: "Account — mozg" };
  * one because they protect the API bill, not the revenue.
  */
 
-const PLANS = {
-  free: { brains: 1, sources: 50, calls: 300, write: false, exports: false },
-  pro: { brains: 20, sources: 1000, calls: 10_000, write: true, exports: true },
-  team: { brains: 100, sources: 5000, calls: 50_000, write: true, exports: true },
-} as const;
-
 export default async function SettingsPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings");
 
-  const limits = PLANS[user.plan];
+  const limits = limitsFor(user.plan);
   const [counts] = await query<{
     brains: number;
     sources: number;

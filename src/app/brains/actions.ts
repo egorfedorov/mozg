@@ -8,8 +8,7 @@ import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { slugify } from "@/lib/brains";
 import { TOPIC_KEYS } from "@/lib/topics";
-
-const PLAN_BRAIN_LIMIT = { free: 1, pro: 20, team: 100 } as const;
+import { limitsFor } from "@/lib/plans";
 
 const createSchema = z.object({
   title: z.string().trim().min(1, "Give the brain a name").max(80),
@@ -35,7 +34,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     `select count(*)::int as count from brains where owner_id = $1`,
     [user.id],
   );
-  const limit = PLAN_BRAIN_LIMIT[user.plan];
+  const limit = limitsFor(user.plan).brains;
   if (count >= limit) {
     return {
       error:
