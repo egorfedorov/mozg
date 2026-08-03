@@ -192,6 +192,29 @@ export async function adminMoney(): Promise<AdminMoney> {
   return rows[0];
 }
 
+export interface AdminPayout {
+  id: string;
+  email: string;
+  handle: string | null;
+  amount_cents: number;
+  balance_cents: number;
+  destination: string;
+  requested_at: string;
+}
+
+/** Withdrawals waiting on a human to send crypto and mark them paid. */
+export async function openPayouts(): Promise<AdminPayout[]> {
+  return query<AdminPayout>(
+    `select p.id::text, u.email, u.handle, p.amount_cents, u.balance_cents,
+            p.destination,
+            to_char(p.requested_at at time zone 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS"Z"') as requested_at
+       from payouts p join "user" u on u.id = p.user_id
+      where p.status = 'requested'
+      order by p.requested_at`,
+  );
+}
+
 export interface AdminLedgerRow {
   id: string;
   email: string;

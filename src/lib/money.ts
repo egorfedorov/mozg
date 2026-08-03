@@ -143,6 +143,104 @@ export async function adjustBalance(opts: {
   });
 }
 
+/** The least an author can withdraw. Below this the transfer fee eats it. */
+export const MIN_PAYOUT_CENTS = 2000;
+
+export type PayoutResult =
+  | { ok: true; payoutId: string }
+  | { ok: false; reason: "too-small" | "insufficient" | "already-open" };
+
+/**
+ * Ask to withdraw. Nothing moves yet — the money leaves the balance when the
+ * payout is marked paid, so an unanswered request never makes a balance lie.
+ * The amount is still checked against the balance now, because a request for
+ * money that is not there wastes the operator's time.
+ */
+export async function requestPayout(opts: {
+  userId: string;
+  amountCents: number;
+  destination: string;
+}): Promise<PayoutResult> {
+  if (opts.amountCents < MIN_PAYOUT_CENTS) return { ok: false, reason: "too-small" };
+
+  return tx(async (client) => {
+    const locked = await client.query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1 for update`,
+      [opts.userId],
+    );
+    if (!locked.rows.length || locked.rows[0].balance_cents < opts.amountCents) {
+      return { ok: false as const, reason: "insufficient" as const };
+    }
+
+    const open = await client.query(
+      `select 1 from payouts where user_id = $1 and status = 'requested'`,
+      [opts.userId],
+    );
+    if (open.rowCount) return { ok: false as const, reason: "already-open" as const };
+
+    const { rows } = await client.query<{ id: string }>(
+      `insert into payouts (user_id, amount_cents, destination)
+       values ($1, $2, $3) returning id`,
+      [opts.userId, opts.amountCents, opts.destination],
+    );
+    return { ok: true as const, payoutId: rows[0].id };
+  });
+}
+
+/**
+ * Settle a payout. Marking it paid is what actually debits the balance, in the
+ * same transaction — so a paid payout and the money leaving are one event.
+ */
+export async function settlePayout(opts: {
+  payoutId: string;
+  paid: boolean;
+  note?: string;
+}): Promise<{ ok: boolean; reason?: "not-open" | "insufficient" }> {
+  return tx(async (client) => {
+    const { rows } = await client.query<{
+      user_id: string;
+      amount_cents: number;
+    }>(
+      `select user_id, amount_cents from payouts
+        where id = $1 and status = 'requested' for update`,
+      [opts.payoutId],
+    );
+    if (!rows.length) return { ok: false, reason: "not-open" as const };
+    const { user_id, amount_cents } = rows[0];
+
+    if (!opts.paid) {
+      await client.query(
+        `update payouts set status = 'rejected', settled_at = now(), note = $2
+          where id = $1`,
+        [opts.payoutId, opts.note ?? null],
+      );
+      return { ok: true };
+    }
+
+    const balance = await client.query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1 for update`,
+      [user_id],
+    );
+    if (!balance.rows.length || balance.rows[0].balance_cents < amount_cents) {
+      return { ok: false, reason: "insufficient" as const };
+    }
+
+    await move({
+      client,
+      userId: user_id,
+      amountCents: -amount_cents,
+      kind: "payout",
+      note: opts.note ?? "withdrawal",
+    });
+
+    await client.query(
+      `update payouts set status = 'paid', settled_at = now(), note = $2 where id = $1`,
+      [opts.payoutId, opts.note ?? null],
+    );
+    return { ok: true };
+  });
+}
+
 export type PurchaseResult =
   | { ok: true; purchaseId: string; paidCents: number; balanceCents: number }
   | { ok: false; reason: "already-owned" | "insufficient" | "free" | "own-brain" };

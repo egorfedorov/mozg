@@ -1,5 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
+import SiteFooter from "@/components/SiteFooter";
 import ClientList from "./ClientList";
 import { CLIENTS, MODELS } from "@/lib/clients";
 import { currentUser } from "@/lib/session";
@@ -16,20 +18,10 @@ export const metadata = {
 export default async function ConnectPage() {
   const user = await currentUser();
 
-  return (
+  // Same page, two frames: signed in it is a workspace screen, signed out it
+  // is a marketing page that has to introduce itself and link onward.
+  const body = (
     <>
-      <TopBar />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Model Context Protocol</p>
-        <h1
-          className="display"
-          style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".4rem 0 1rem" }}
-        >
-          Connect a brain to
-          <br />
-          whatever you code in.
-        </h1>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
           A brain speaks MCP, so any client that speaks MCP can read it. Below is
           the exact configuration for each one, taken from that client&apos;s own
@@ -60,7 +52,7 @@ export default async function ConnectPage() {
           signedIn={Boolean(user)}
         />
 
-        <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
+        <section id="models" style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}>
           <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
             Models, and where they fit
           </h2>
@@ -152,7 +144,37 @@ export default async function ConnectPage() {
             How to build a good one
           </Link>
         </div>
+    </>
+  );
+
+  if (user) {
+    return (
+      <AppShell
+        active="/connect"
+        eyebrow="Model Context Protocol"
+        title="Connect a brain to whatever you code in."
+      >
+        {body}
+      </AppShell>
+    );
+  }
+
+  return (
+    <>
+      <TopBar active="connect" />
+      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
+        <p className="eyebrow">Model Context Protocol</p>
+        <h1
+          className="display"
+          style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".4rem 0 1rem" }}
+        >
+          Connect a brain to
+          <br />
+          whatever you code in.
+        </h1>
+        {body}
       </main>
+      <SiteFooter />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import BrainCard from "@/components/BrainCard";
 import { currentUser } from "@/lib/session";
 import { listBrains } from "@/lib/brains";
@@ -43,27 +43,17 @@ export default async function BrainsPage() {
   const trend = stats.callsWeek - stats.callsPrevWeek;
 
   return (
-    <>
-      <TopBar active="brains" />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3rem)" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <h1 className="display" style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.75rem)" }}>
-            Your brains
-          </h1>
-          <Link className="btn" href="/brains/new">
-            New brain
-          </Link>
-        </div>
-
+    <AppShell
+      active="/brains"
+      eyebrow="Dashboard"
+      title="Your brains"
+      action={
+        <Link className="btn" href="/brains/new">
+          New brain
+        </Link>
+      }
+    >
+      <>
         {/* Numbers that change what you do, not vanity counters. */}
         <div
           style={{
@@ -72,7 +62,6 @@ export default async function BrainsPage() {
             gap: "1px",
             background: "var(--rule)",
             border: "1.5px solid var(--ink)",
-            marginTop: "1.5rem",
           }}
         >
           <Stat label="Brains" value={String(stats.brains)} />
@@ -224,8 +213,8 @@ export default async function BrainsPage() {
             </section>
           )}
         </section>
-      </main>
-    </>
+      </>
+    </AppShell>
   );
 }
 
@@ -275,35 +264,27 @@ function Stat({
 /** An empty screen is an invitation to act, not a shrug. */
 function FirstRun() {
   return (
-    <>
-      <TopBar active="brains" />
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Nothing here yet</p>
-        <h1
-          className="display"
-          style={{ fontSize: "clamp(2rem, 5vw, 3rem)", margin: ".4rem 0 1rem" }}
-        >
-          Start with one folder
-          <br />
-          of screenshots.
-        </h1>
-        <p style={{ color: "var(--ink-2)", maxWidth: "54ch", marginTop: 0 }}>
-          Pick something you explain to an agent over and over — a UI you keep
-          rebuilding, an API you keep re-reading, a convention nobody wrote down.
-          Name what it&apos;s for, drop the material in, and connect it to your editor.
-        </p>
-        <div style={{ display: "flex", gap: ".75rem", marginTop: "1.75rem", flexWrap: "wrap" }}>
-          <Link className="btn" href="/brains/new">
-            Build the first one
-          </Link>
-          <Link className="btn btn-ghost" href="/guide">
-            How to build a good one
-          </Link>
-          <Link className="btn btn-ghost" href="/explore">
-            See public brains
-          </Link>
-        </div>
-      </main>
-    </>
+    <AppShell
+      active="/brains"
+      eyebrow="Nothing here yet"
+      title="Start with one folder of screenshots."
+    >
+      <p style={{ color: "var(--ink-2)", maxWidth: "54ch", marginTop: 0 }}>
+        Pick something you explain to an agent over and over — a UI you keep
+        rebuilding, an API you keep re-reading, a convention nobody wrote down.
+        Name what it&apos;s for, drop the material in, and connect it to your editor.
+      </p>
+      <div style={{ display: "flex", gap: ".75rem", marginTop: "1.75rem", flexWrap: "wrap" }}>
+        <Link className="btn" href="/brains/new">
+          Build the first one
+        </Link>
+        <Link className="btn btn-ghost" href="/guide">
+          How to build a good one
+        </Link>
+        <Link className="btn btn-ghost" href="/explore">
+          See public brains
+        </Link>
+      </div>
+    </AppShell>
   );
 }

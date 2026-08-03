@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import ShareForm from "./ShareForm";
 import DeleteBrain from "./DeleteBrain";
 import { maybeOne, query } from "@/db";
@@ -28,10 +28,7 @@ export default async function SharePage({
   );
 
   return (
-    <>
-      <TopBar active="brains" />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 760 }}>
+    <AppShell active="/brains" narrow>
         <Link className="eyebrow" href={`/brains/${brain.slug}`}>
           ← {brain.title}
         </Link>
@@ -83,7 +80,6 @@ export default async function SharePage({
           title={brain.title}
           noteCount={brain.note_count}
         />
-      </main>
-    </>
+      </AppShell>
   );
 }

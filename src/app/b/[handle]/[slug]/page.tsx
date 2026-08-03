@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
+import SiteFooter from "@/components/SiteFooter";
 import BuyBrain from "@/components/BuyBrain";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
@@ -265,6 +266,7 @@ export default async function PublicBrainPage({
           </div>
         </section>
       </main>
+      <SiteFooter />
     </>
   );
 }

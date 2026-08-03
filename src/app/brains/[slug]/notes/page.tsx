@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import { maybeOne, query } from "@/db";
 import type { Brain, Note } from "@/db/types";
 import { currentUser } from "@/lib/session";
@@ -61,10 +61,7 @@ export default async function NotesPage({
   ]);
 
   return (
-    <>
-      <TopBar active="brains" />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
+    <AppShell active="/brains">
         <Link className="eyebrow" href={`/brains/${brain.slug}`}>
           ← {brain.title}
         </Link>
@@ -207,7 +204,6 @@ export default async function NotesPage({
             ))}
           </div>
         )}
-      </main>
-    </>
+      </AppShell>
   );
 }

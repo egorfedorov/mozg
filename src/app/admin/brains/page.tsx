@@ -1,5 +1,5 @@
 import Link from "next/link";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import AdminNav from "../AdminNav";
 import { requireAdmin, adminBrains } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
@@ -15,14 +15,7 @@ export default async function AdminBrainsPage() {
   const brains = await adminBrains();
 
   return (
-    <>
-      <TopBar />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3rem)" }}>
-        <p className="eyebrow">Operator</p>
-        <h1 className="display" style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.75rem)", margin: ".3rem 0 0" }}>
-          Brains
-        </h1>
+    <AppShell active="/admin" eyebrow="Operator" title="Brains">
         <AdminNav active="/admin/brains" />
 
         <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
@@ -124,7 +117,6 @@ export default async function AdminBrainsPage() {
             </tbody>
           </table>
         </div>
-      </main>
-    </>
+      </AppShell>
   );
 }

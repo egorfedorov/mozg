@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import ConnectBox from "@/components/ConnectBox";
 import Dropzone from "@/components/Dropzone";
 import AddUrls from "@/components/AddUrls";
@@ -83,10 +83,7 @@ export default async function BrainPage({
   ).length;
 
   return (
-    <>
-      <TopBar active="brains" />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
+    <AppShell active="/brains">
         <Link className="eyebrow" href="/brains">
           ← brains
         </Link>
@@ -390,8 +387,7 @@ export default async function BrainPage({
             </div>
           )}
         </section>
-      </main>
-    </>
+      </AppShell>
   );
 }
 

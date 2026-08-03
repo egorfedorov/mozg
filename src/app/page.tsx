@@ -1,13 +1,61 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import SiteFooter from "@/components/SiteFooter";
 import { currentUser } from "@/lib/session";
+import { query } from "@/db";
+import type { Brain } from "@/db/types";
+import { tintFor } from "@/lib/brains";
+import { topicLabel } from "@/lib/topics";
+import { formatCents } from "@/lib/money-math";
 
 // Renders per-session (the header shows who you are), so it must not be
 // prerendered into a single cached copy.
 export const dynamic = "force-dynamic";
 
+/** Kept short and true: every one of these is configured on /connect. */
+const CLIENT_NAMES = ["Claude Code", "Codex", "Cursor", "Cline", "Kimi CLI", "Qwen Code", "VS Code"];
+
+const USES: { field: string; tint: string; title: string; body: string }[] = [
+  {
+    field: "Design systems",
+    tint: "violet",
+    title: "Our components, not Tailwind's",
+    body: "Exact spacing, the states you actually ship, and the three rules everyone breaks.",
+  },
+  {
+    field: "Backend & APIs",
+    tint: "blue",
+    title: "The integration as it really runs",
+    body: "Your retries, your idempotency keys, the webhook order — not the vendor's happy path.",
+  },
+  {
+    field: "Game development",
+    tint: "red",
+    title: "Engine conventions and math",
+    body: "How a mechanic is wired, what the pipeline expects, which numbers are load-bearing.",
+  },
+  {
+    field: "Product & process",
+    tint: "orange",
+    title: "What nobody wrote down",
+    body: "Naming, review rules, the deploy sequence — the folklore a new agent never gets.",
+  },
+];
+
 export default async function Home() {
   const user = await currentUser();
+
+  // Real brains, not mockups. An empty catalogue simply hides the section
+  // rather than showing three placeholders that promise something untrue.
+  const featured = await query<
+    Brain & { owner_handle: string }
+  >(
+    `select b.*, u.handle as owner_handle
+       from brains b join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and u.handle is not null
+      order by b.score desc nulls last, b.updated_at desc
+      limit 3`,
+  );
 
   return (
     <>
@@ -79,6 +127,63 @@ export default async function Home() {
           <div> Section gap is 32px — 24px is the inner scale, never between sections.</div>
           <div> Price is 40/44 with tabular-nums. Primary CTA fills only on mobile.</div>
         </div>
+
+        {/* Breadth, stated as a fact rather than as a wall of logos we do not
+            have permission to use. */}
+        <div
+          style={{
+            marginTop: "1.25rem",
+            paddingTop: "1rem",
+            borderTop: "1px solid var(--rule)",
+            display: "flex",
+            gap: "1.25rem",
+            flexWrap: "wrap",
+            alignItems: "baseline",
+          }}
+        >
+          <span className="eyebrow">Reads in</span>
+          {CLIENT_NAMES.map((name) => (
+            <span key={name} className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+              {name}
+            </span>
+          ))}
+          <Link className="mono" href="/connect" style={{ fontSize: ".8125rem" }}>
+            all of them →
+          </Link>
+        </div>
+
+        {/* The pitch is abstract until you see what goes in one. */}
+        <section style={{ marginTop: "clamp(4rem, 10vw, 6rem)" }}>
+          <p className="eyebrow">What people put in one</p>
+          <h2
+            className="display"
+            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", margin: ".6rem 0 1.5rem" }}
+          >
+            The things you explain twice a week.
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "1px",
+              background: "var(--rule)",
+              border: "1.5px solid var(--ink)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            }}
+          >
+            {USES.map((u) => (
+              <div key={u.title} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
+                <p className="eyebrow" style={{ margin: 0, color: `var(--color-riso-${u.tint})` }}>
+                  {u.field}
+                </p>
+                <h3 className="display" style={{ fontSize: "1.125rem", margin: ".4rem 0 .5rem" }}>
+                  {u.title}
+                </h3>
+                <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{u.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* The differentiator gets its own beat. */}
         <section style={{ marginTop: "clamp(4rem, 10vw, 7rem)" }}>
@@ -182,24 +287,156 @@ export default async function Home() {
           </div>
         </section>
 
-        <footer
-          className="mono"
+        <hr className="rule" style={{ margin: "clamp(4rem, 9vw, 6rem) 0 2.5rem" }} />
+
+        {/* Where to go next, in the order someone actually needs it. */}
+        <section>
+          <p className="eyebrow">Start here</p>
+          <h2
+            className="display"
+            style={{ fontSize: "clamp(1.6rem, 4vw, 2.25rem)", margin: ".4rem 0 1.5rem" }}
+          >
+            Four pages, then you&apos;re running.
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "1px",
+              background: "var(--rule)",
+              border: "1.5px solid var(--ink)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            }}
+          >
+            <GuideCard
+              href="/why"
+              step="01"
+              title="Why this exists"
+              blurb="What a brain is, and why agent memory built into one vendor isn't the same thing."
+            />
+            <GuideCard
+              href="/guide"
+              step="02"
+              title="Build a good brain"
+              blurb="What to feed it, how to write a goal that becomes a real exam, and what a low score means."
+            />
+            <GuideCard
+              href="/connect"
+              step="03"
+              title="Connect your agent"
+              blurb="Copy-paste setup for Claude Code, Codex, Cursor, Kimi, DeepSeek, GLM and Qwen."
+            />
+            <GuideCard
+              href="/explore"
+              step="04"
+              title="Or take one that exists"
+              blurb="A catalogue of brains other people built, by field, free and paid."
+            />
+          </div>
+        </section>
+
+        {featured.length > 0 && (
+          <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: "1rem",
+                flexWrap: "wrap",
+                gap: ".5rem",
+              }}
+            >
+              <h2 className="display" style={{ fontSize: "1.5rem" }}>
+                In the catalogue now
+              </h2>
+              <Link className="mono" href="/explore" style={{ fontSize: ".8125rem" }}>
+                all brains →
+              </Link>
+            </div>
+
+            <div className="grid-brains">
+              {featured.map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/b/${b.owner_handle}/${b.slug}`}
+                  className="card"
+                  data-tint={tintFor(b)}
+                >
+                  <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
+                    {topicLabel(b.topic)} · {b.owner_handle}
+                  </span>
+                  <h3 className="card-title">{b.title}</h3>
+                  <p className="card-goal">{b.goal ?? "No goal set."}</p>
+                  <div className="card-foot">
+                    <span style={{ opacity: 0.8 }}>
+                      {b.price_cents ? formatCents(b.price_cents) : "Free"} · {b.note_count} notes
+                    </span>
+                    {b.score !== null && (
+                      <span className="card-score">
+                        {b.score}
+                        <sup>%</sup>
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* One clear way out of the page. */}
+        <section
+          className="panel"
           style={{
-            marginTop: "clamp(4rem, 9vw, 6rem)",
-            paddingTop: "1.5rem",
-            borderTop: "1px solid var(--rule)",
-            fontSize: ".75rem",
-            color: "var(--ink-3)",
+            marginTop: "clamp(3.5rem, 9vw, 5rem)",
             display: "flex",
             gap: "1.5rem",
             flexWrap: "wrap",
+            alignItems: "center",
+            borderWidth: "2px",
           }}
         >
-          <span>mozg</span>
-          <Link href="/explore">explore</Link>
-          <Link href="/sign-in">sign in</Link>
-        </footer>
+          <div style={{ flex: "1 1 32ch" }}>
+            <h2 className="display" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2rem)", margin: 0 }}>
+              Stop explaining the same thing.
+            </h2>
+            <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
+              The free plan holds one brain, fifty sources and three hundred agent
+              calls a month — enough to find out whether this works for you.
+            </p>
+          </div>
+          <Link className="btn" href={user ? "/brains" : "/sign-in"}>
+            {user ? "Open your brains" : "Build a brain"}
+          </Link>
+        </section>
       </main>
+      <SiteFooter />
     </>
+  );
+}
+
+function GuideCard({
+  href,
+  step,
+  title,
+  blurb,
+}: {
+  href: string;
+  step: string;
+  title: string;
+  blurb: string;
+}) {
+  return (
+    <Link href={href} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
+      {/* Numbered because this really is a sequence — read, build, connect. */}
+      <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
+        {step}
+      </span>
+      <h3 className="display" style={{ fontSize: "1.25rem", margin: ".35rem 0 .5rem" }}>
+        {title}
+      </h3>
+      <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{blurb}</p>
+    </Link>
   );
 }

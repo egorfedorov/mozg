@@ -9,7 +9,16 @@
  *   npm run check:purchase
  */
 import { one, query } from "@/db";
-import { purchaseBrain, topUp, adjustBalance, sellerShare, formatCents } from "@/lib/money";
+import {
+  purchaseBrain,
+  topUp,
+  adjustBalance,
+  requestPayout,
+  settlePayout,
+  sellerShare,
+  formatCents,
+  MIN_PAYOUT_CENTS,
+} from "@/lib/money";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -41,6 +50,9 @@ async function main() {
   );
   await query(`delete from purchases where brain_id = $1`, [brain.id]);
   await query(`delete from ledger where user_id = any($1)`, [[seller, buyer]]);
+  // An open request from a run that died mid-way would trip the one-open-per-
+  // user index and fail the next run for the wrong reason.
+  await query(`delete from payouts where user_id = any($1)`, [[seller, buyer]]);
   await query(`update "user" set balance_cents = 0 where id = any($1)`, [[seller, buyer]]);
   console.log("  brain at $5.00, both balances zeroed");
 
@@ -86,6 +98,48 @@ async function main() {
   const debit = await adjustBalance({ userId: buyer, amountCents: -250, note: "undo" });
   check("credit then debit nets to zero", credit.ok && debit.ok && debit.balanceCents === 500,
     formatCents(debit.balanceCents));
+
+  console.log("\nwithdrawals");
+  // The buyer is on $5.00. Give them enough to clear the minimum, then check
+  // that asking does not move money and settling does.
+  await topUp({ userId: buyer, amountCents: MIN_PAYOUT_CENTS, note: "for payout test" });
+  const tooBig = await requestPayout({
+    userId: buyer,
+    amountCents: 1_000_000,
+    destination: "T-test-wallet",
+  });
+  check("cannot withdraw more than the balance", !tooBig.ok);
+
+  const asked = await requestPayout({
+    userId: buyer,
+    amountCents: MIN_PAYOUT_CENTS,
+    destination: "T-test-wallet",
+  });
+  check("request accepted", asked.ok);
+
+  const second = await requestPayout({
+    userId: buyer,
+    amountCents: MIN_PAYOUT_CENTS,
+    destination: "T-test-wallet",
+  });
+  check("only one open request at a time", !second.ok && second.reason === "already-open");
+
+  const pendingBalance = await query<{ balance_cents: number }>(
+    `select balance_cents from "user" where id = $1`,
+    [buyer],
+  );
+  check(
+    "asking does not move money",
+    pendingBalance[0].balance_cents === 500 + MIN_PAYOUT_CENTS,
+    formatCents(pendingBalance[0].balance_cents),
+  );
+
+  if (asked.ok) {
+    const settled = await settlePayout({ payoutId: asked.payoutId, paid: true });
+    check("marking it paid debits the balance", settled.ok);
+    const again = await settlePayout({ payoutId: asked.payoutId, paid: true });
+    check("a settled payout cannot be paid twice", !again.ok && again.reason === "not-open");
+  }
 
   console.log("\nbalances afterwards");
   const after = await query<{ id: string; balance_cents: number }>(

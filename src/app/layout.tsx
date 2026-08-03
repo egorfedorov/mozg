@@ -34,6 +34,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+      {/* No footer here on purpose: it belongs to the public side of the site.
+          A workspace ends in work, not in a wall of links out. */}
       <body>{children}</body>
     </html>
   );

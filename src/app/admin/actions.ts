@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { query } from "@/db";
-import { adjustBalance as moveBalance } from "@/lib/money";
+import { adjustBalance as moveBalance, settlePayout } from "@/lib/money";
 import { requireAdmin } from "@/lib/admin";
 import { TOPIC_KEYS } from "@/lib/topics";
 
@@ -64,6 +64,31 @@ export async function adjustBalance(formData: FormData) {
     `[admin] ${admin.email} adjusted ${parsed.data.id} by ${cents}c — ${res.ok ? "ok" : "refused"}`,
   );
   revalidatePath("/admin/users");
+  revalidatePath("/admin");
+}
+
+/**
+ * Settle a withdrawal. "Paid" is what debits the balance — mark it only after
+ * the transfer has actually left, because this is the step that makes the
+ * ledger say the money is gone.
+ */
+export async function settleWithdrawal(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({ id: z.string().uuid(), paid: z.enum(["yes", "no"]) })
+    .safeParse({ id: formData.get("id"), paid: formData.get("paid") });
+  if (!parsed.success) return;
+
+  const res = await settlePayout({
+    payoutId: parsed.data.id,
+    paid: parsed.data.paid === "yes",
+    note: `settled by ${admin.email}`,
+  });
+
+  console.log(
+    `[admin] ${admin.email} settled payout ${parsed.data.id} paid=${parsed.data.paid} — ${res.ok ? "ok" : res.reason}`,
+  );
   revalidatePath("/admin");
 }
 

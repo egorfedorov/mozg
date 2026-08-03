@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import SiteFooter from "@/components/SiteFooter";
 import { query } from "@/db";
 import type { Brain } from "@/db/types";
 import { categoryScores, tintFor } from "@/lib/brains";
@@ -327,6 +328,7 @@ export default async function ExplorePage({
           </Link>
         </section>
       </main>
+      <SiteFooter />
     </>
   );
 }

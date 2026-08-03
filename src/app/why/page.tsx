@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import SiteFooter from "@/components/SiteFooter";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -204,6 +205,7 @@ export default async function WhyPage() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </>
   );
 }

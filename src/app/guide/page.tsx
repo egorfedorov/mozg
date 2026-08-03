@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import SiteFooter from "@/components/SiteFooter";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,29 @@ const STEPS = [
     title: "Let agents write back, then review",
     body: "When an agent works out a convention or hits a pitfall, it can save it. Those notes wait in a review queue rather than going straight into search — which is what keeps a brain sharpening instead of drifting. Approving takes a second; the alternative is a brain full of half-true things nobody checked.",
     aside: "Review is on by default. Turn it off per brain once you trust the source.",
+  },
+];
+
+const SELLING = [
+  {
+    step: "01",
+    title: "Make it public and pick a field",
+    body: "Both live on the brain's sharing page. The field is how someone browsing the catalogue finds you.",
+  },
+  {
+    step: "02",
+    title: "Keep the licence at CC BY-NC-SA",
+    body: "Buyers may use and adapt it; reselling it is not allowed. MIT would let them resell, so a priced brain refuses that combination.",
+  },
+  {
+    step: "03",
+    title: "Set a price",
+    body: "Paid once, not per month — buyers keep access as you keep adding to it. You receive 70% of each sale on your balance.",
+  },
+  {
+    step: "04",
+    title: "Withdraw when you want",
+    body: "Earnings sit on your balance. Ask for a withdrawal from the balance page; payouts are sent in crypto by hand.",
   },
 ];
 
@@ -201,6 +225,47 @@ export default async function GuidePage() {
           </div>
         </section>
 
+        <section
+          id="selling"
+          style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}
+        >
+          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
+            Selling one
+          </h2>
+          <p style={{ color: "var(--ink-2)", maxWidth: "64ch", marginTop: 0 }}>
+            A brain is worth money when it holds something a buyer cannot read off a
+            docs site: the shape of a real integration, a pipeline that took a month
+            to get right, conventions nobody wrote down. Publishing costs nothing and
+            the exam does the selling — a buyer sees the goal, the score, and every
+            note title before paying.
+          </p>
+
+          <div className="panel" style={{ padding: 0, maxWidth: "64ch" }}>
+            {SELLING.map((s) => (
+              <div
+                key={s.step}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2.5rem 1fr",
+                  gap: "1rem",
+                  padding: ".9rem 1.25rem",
+                  borderBottom: "1px solid var(--rule)",
+                }}
+              >
+                <span className="mono" style={{ color: "var(--ink-3)", fontSize: ".75rem" }}>
+                  {s.step}
+                </span>
+                <span>
+                  <strong>{s.title}</strong>
+                  <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+                    {s.body}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section className="panel" style={{ marginTop: "clamp(3rem, 7vw, 4rem)", maxWidth: "64ch" }}>
           <p className="eyebrow">One thing never to do</p>
           <h2 className="display" style={{ fontSize: "1.5rem", margin: ".5rem 0 .75rem" }}>
@@ -224,6 +289,7 @@ export default async function GuidePage() {
           </Link>
         </div>
       </main>
+      <SiteFooter />
     </>
   );
 }

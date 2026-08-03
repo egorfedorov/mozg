@@ -1,8 +1,16 @@
 import Link from "next/link";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import AdminNav from "./AdminNav";
-import { requireAdmin, health, adminMoney, adminLedger, adminBrains } from "@/lib/admin";
+import {
+  requireAdmin,
+  health,
+  adminMoney,
+  adminLedger,
+  adminBrains,
+  openPayouts,
+} from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
+import { settleWithdrawal } from "./actions";
 import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +20,12 @@ export const metadata = { title: "Admin — mozg", robots: { index: false, follo
 export default async function AdminPage() {
   await requireAdmin();
 
-  const [h, money, ledger, brains, totals] = await Promise.all([
+  const [h, money, ledger, brains, payouts, totals] = await Promise.all([
     health(),
     adminMoney(),
     adminLedger(12),
     adminBrains(200),
+    openPayouts(),
     query<{ users: number; brains: number; notes: number; public_brains: number; paid_brains: number }>(
       `select
          (select count(*)::int from "user") as users,
@@ -31,14 +40,7 @@ export default async function AdminPage() {
   const attention = brains.filter((b) => b.failed_sources > 0).slice(0, 8);
 
   return (
-    <>
-      <TopBar />
-
-      <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3rem)" }}>
-        <p className="eyebrow">Operator</p>
-        <h1 className="display" style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.75rem)", margin: ".3rem 0 0" }}>
-          Admin
-        </h1>
+    <AppShell active="/admin" eyebrow="Operator" title="Overview">
         <AdminNav active="/admin" />
 
         {/* Is anything broken right now? Nothing else on this page matters if
@@ -100,6 +102,61 @@ export default async function AdminPage() {
             <Cell label="On sale" value={String(t.paid_brains)} />
           </div>
         </section>
+
+        {payouts.length > 0 && (
+          <section style={{ marginTop: "2rem" }}>
+            <h2 className="display" style={{ fontSize: "1.25rem", marginBottom: ".25rem" }}>
+              Withdrawals waiting
+            </h2>
+            <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
+              Send the transfer first, then mark it paid — marking it is what
+              debits the balance.
+            </p>
+            <div className="adm-scroll">
+              <table className="adm">
+                <thead>
+                  <tr>
+                    <th>Asked</th>
+                    <th>Who</th>
+                    <th style={{ textAlign: "right" }}>Amount</th>
+                    <th style={{ textAlign: "right" }}>Balance</th>
+                    <th>Send to</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {payouts.map((p) => (
+                    <tr key={p.id}>
+                      <td className="mono">{p.requested_at.slice(0, 10)}</td>
+                      <td>{p.handle ?? p.email}</td>
+                      <td className="num">{formatCents(p.amount_cents)}</td>
+                      <td className="num">{formatCents(p.balance_cents)}</td>
+                      <td className="mono" style={{ maxWidth: "28ch", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.destination}
+                      </td>
+                      <td>
+                        <span style={{ display: "flex", gap: ".3rem" }}>
+                          <form action={settleWithdrawal}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="paid" value="yes" />
+                            <button type="submit">Mark paid</button>
+                          </form>
+                          <form action={settleWithdrawal}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="paid" value="no" />
+                            <button type="submit" data-danger="true">
+                              Reject
+                            </button>
+                          </form>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         <section style={{ marginTop: "2rem" }}>
           <h2 className="display" style={{ fontSize: "1.25rem", marginBottom: ".75rem" }}>
@@ -199,8 +256,7 @@ export default async function AdminPage() {
             </div>
           </section>
         )}
-      </main>
-    </>
+      </AppShell>
   );
 }
 
