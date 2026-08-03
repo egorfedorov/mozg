@@ -4,6 +4,7 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
+import { normalizeCategory } from "@/lib/category";
 import { storage } from "@/lib/storage";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueExam } from "@/worker/queue";
@@ -101,7 +102,12 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
          limit 40`,
         [brain.id],
       )
-    ).map((r) => r.category);
+    )
+      // Hand the model the canonical spellings, so "reuse an existing
+      // category" cannot echo back a casing the write path would then
+      // rewrite into a different string than the exam's label.
+      .map((r) => normalizeCategory(r.category))
+      .filter((c): c is string => c !== null);
 
     // Extraction is the step that costs money, and pg-boss retries the whole
     // job — so a flake at the embed stage would otherwise buy the same
