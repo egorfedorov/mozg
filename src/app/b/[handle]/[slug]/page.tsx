@@ -12,6 +12,7 @@ import { currentUser } from "@/lib/session";
 import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
 import { childrenOf, parentOf } from "@/lib/families";
+import { gateFor } from "@/lib/paywall";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -94,6 +95,11 @@ export default async function PublicBrainPage({
     brain.parent_id ? Promise.resolve([]) : childrenOf(brain.id),
     parentOf(brain),
   ]);
+
+  // What actually has to be bought. For a child of a paid family that is the
+  // parent — buying the child is not a thing, and offering it without a price
+  // would be offering something that does not exist.
+  const gate = await gateFor(brain);
 
   const licence = LICENSE[brain.license];
 
@@ -186,8 +192,9 @@ export default async function PublicBrainPage({
           {preview ? (
             <BuyBrain
               handle={handle}
-              slug={brain.slug}
-              priceCents={brain.price_cents}
+              slug={gate && gate.brainId !== brain.id && parent ? parent.slug : brain.slug}
+              priceCents={gate?.priceCents ?? brain.price_cents}
+              partOf={gate && gate.brainId !== brain.id ? (parent?.title ?? null) : null}
               balanceCents={balance}
               signedIn={Boolean(user)}
             />

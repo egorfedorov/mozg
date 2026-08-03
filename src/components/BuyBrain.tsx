@@ -10,12 +10,15 @@ export default function BuyBrain({
   handle,
   slug,
   priceCents,
+  partOf,
   balanceCents,
   signedIn,
 }: {
   handle: string;
   slug: string;
   priceCents: number;
+  /** Set when this brain is unlocked by buying the family it belongs to. */
+  partOf?: string | null;
   balanceCents: number | null;
   signedIn: boolean;
 }) {
@@ -36,6 +39,12 @@ export default function BuyBrain({
       </div>
 
       <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "52ch", fontSize: ".9375rem" }}>
+        {partOf ? (
+          <>
+            This is part of <strong>{partOf}</strong> and is not sold on its
+            own — one purchase unlocks the whole family, this brain included.{" "}
+          </>
+        ) : null}
         Buying unlocks the notes for your agents and for you. Paid from your
         balance. A brain can be copied once it is readable, so there are no
         refunds after the first read — decide from the preview below.
