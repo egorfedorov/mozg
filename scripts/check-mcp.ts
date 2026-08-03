@@ -291,6 +291,54 @@ async function main() {
       Boolean(secret.body.result?.isError) && /credential/i.test(textOf(secret.body.result)),
     );
 
+    console.log("\nthe learning loop");
+    const lesson = await rpc(
+      "tools/call",
+      {
+        name: "brain_write",
+        arguments: {
+          brain: "check-mcp-scratch",
+          title: "Check MCP wrote this",
+          body: "A note written by the check, to prove an agent can teach a brain.",
+          kind: "fact",
+        },
+      },
+      token,
+    );
+    check("an agent can write a lesson back", !lesson.body.result?.isError,
+      textOf(lesson.body.result).slice(0, 50));
+
+    const written = await maybeOne<{ id: string; status: string; chunks: number }>(
+      `select n.id, n.status,
+              (select count(*)::int from chunks c where c.note_id = n.id) as chunks
+         from notes n join brains b on b.id = n.brain_id
+        where b.slug = 'check-mcp-scratch' and n.author = 'agent'`,
+    );
+    check("it waits for review", written?.status === "pending", written?.status ?? "missing");
+    check(
+      "and is not searchable until approved",
+      written?.chunks === 0,
+      `${written?.chunks ?? "?"} chunks`,
+    );
+
+    // Free plans are told on the plan page that writing back is Pro. That
+    // sentence was decoration until this was enforced.
+    await query(`update "user" set plan = 'free' where id = $1`, [owner.id]);
+    const refused = await rpc(
+      "tools/call",
+      {
+        name: "brain_write",
+        arguments: { brain: "check-mcp-scratch", title: "Nope", body: "Should be refused." },
+      },
+      token,
+    );
+    check(
+      "a free plan is refused, as the plan page promises",
+      Boolean(refused.body.result?.isError) && /Pro/.test(textOf(refused.body.result)),
+      textOf(refused.body.result).slice(0, 50),
+    );
+    await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
+
     console.log("\ngrouping brains into a family");
     const kid = await rpc(
       "tools/call",

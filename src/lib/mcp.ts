@@ -473,6 +473,18 @@ async function brainWrite(
     };
   }
 
+  // The plan page says agents can write back on Pro. It said so while nothing
+  // enforced it, which made the sentence a decoration rather than a rule.
+  if (!limitsFor(owner.plan).write) {
+    return {
+      text:
+        `Writing back is a Pro feature and this account is on ${owner.plan}. ` +
+        "Tell the user what you would have saved and that they can turn it on " +
+        "at mozg.sh/settings — do not retry.",
+      isError: true,
+    };
+  }
+
   const title = String(args.title ?? "").trim();
   const body = String(args.body ?? "").trim();
   if (!title || !body) {
