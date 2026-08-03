@@ -44,13 +44,22 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
   ]);
 
   try {
-    // Categories already in use, so the model reuses labels instead of
-    // inventing a synonym for every screenshot.
+    // The vocabulary to file notes under, exam categories first.
+    //
+    // This used to be the categories already on notes, which drifts: the exam
+    // asks about "Spacing and layout" while extraction invents "Type scale and
+    // spacing", and the coverage view then reports no notes for a category that
+    // is in fact covered. The exam's own labels are the authority — they come
+    // from the goal, which is the thing the brain is measured against.
     const categories = (
       await query<{ category: string }>(
-        `select distinct category from notes
+        `select category, 0 as rank from checks
+          where brain_id = $1 and enabled and category is not null
+         union
+         select distinct category, 1 as rank from notes
           where brain_id = $1 and status = 'active' and category is not null
-          limit 40`,
+         order by rank, category
+         limit 40`,
         [brain.id],
       )
     ).map((r) => r.category);

@@ -683,6 +683,34 @@ a.row:hover {
   color: var(--ink-2);
 }
 
+/* A button that behaves like a link, for inline row actions. */
+.linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.linkish:hover {
+  color: var(--ink);
+}
+
+.linkish[data-danger="true"] {
+  color: var(--color-riso-red);
+}
+
+.row-select {
+  font: inherit;
+  font-size: 0.6875rem;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: inherit;
+}
+
 /* ─── chips ─────────────────────────────────────────────────────────────── */
 /* One filter language. The catalogue used to have three on a single line. */
 
