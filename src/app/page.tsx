@@ -53,6 +53,7 @@ export default async function Home() {
     `select b.*, u.handle as owner_handle
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and u.handle is not null
+        and b.parent_id is null
       order by b.score desc nulls last, b.updated_at desc
       limit 3`,
   );

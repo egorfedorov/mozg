@@ -23,6 +23,8 @@ export const metadata = {
 interface PublicBrain extends Brain {
   owner_handle: string;
   owner_name: string | null;
+  children: number;
+  child_notes: number;
 }
 
 type Price = "all" | "free" | "paid";
@@ -59,10 +61,18 @@ export default async function ExplorePage({
         ? "and b.price_cents > 0"
         : "";
 
+  // Families are one entry, not eight. A parent already covers its children
+  // when searched, so listing each child beside it fills the catalogue with
+  // rows that are the same purchase and the same connection.
   const brains = await query<PublicBrain>(
-    `select b.*, u.handle as owner_handle, u.name as owner_name
+    `select b.*, u.handle as owner_handle, u.name as owner_name,
+            (select count(*)::int from brains c
+              where c.parent_id = b.id and c.visibility = 'public') as children,
+            (select coalesce(sum(c.note_count), 0)::int from brains c
+              where c.parent_id = b.id and c.visibility = 'public') as child_notes
        from brains b join "user" u on u.id = b.owner_id
-      where b.visibility = 'public' and u.handle is not null ${where}
+      where b.visibility = 'public' and u.handle is not null
+        and b.parent_id is null ${where}
         and ($1::text is null or b.topic = $1)
       order by ${sort.sql}
       limit 60`,
@@ -77,6 +87,7 @@ export default async function ExplorePage({
         `select b.topic, count(*)::int as n
            from brains b join "user" u on u.id = b.owner_id
           where b.visibility = 'public' and u.handle is not null
+            and b.parent_id is null
           group by b.topic`,
       )
     ).map((r) => [r.topic, r.n]),
@@ -231,7 +242,8 @@ export default async function ExplorePage({
 
                 <div className="card-foot">
                   <span style={{ opacity: 0.8 }}>
-                    {brain.note_count} notes
+                    {(brain.note_count + brain.child_notes).toLocaleString()} notes
+                    {brain.children > 0 && ` · ${brain.children} inside`}
                     {brain.sales_count > 0 && ` · ${brain.sales_count} sold`}
                   </span>
                   {brain.score !== null && (

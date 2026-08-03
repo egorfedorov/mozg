@@ -11,6 +11,7 @@ import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
 import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
+import { childrenOf, parentOf } from "@/lib/families";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -73,7 +74,7 @@ export default async function PublicBrainPage({
 
   const { brain, preview } = found;
 
-  const [categories, samples, balance, added] = await Promise.all([
+  const [categories, samples, balance, added, children, parent] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
     // buying, never the bodies that were paid for.
@@ -90,6 +91,8 @@ export default async function PublicBrainPage({
         ).then((r) => r[0]?.balance_cents ?? 0)
       : Promise.resolve(null),
     user ? inLibrary(user.id, brain.id) : Promise.resolve(false),
+    brain.parent_id ? Promise.resolve([]) : childrenOf(brain.id),
+    parentOf(brain),
   ]);
 
   const licence = LICENSE[brain.license];
@@ -103,6 +106,12 @@ export default async function PublicBrainPage({
           <Link href="/explore">explore</Link> /{" "}
           <Link href={`/explore?topic=${brain.topic}`}>{topicLabel(brain.topic)}</Link> /{" "}
           {handle}
+          {parent && (
+            <>
+              {" / "}
+              <Link href={`/b/${handle}/${parent.slug}`}>{parent.title}</Link>
+            </>
+          )}
         </p>
 
         <div
@@ -140,6 +149,31 @@ export default async function PublicBrainPage({
             </p>
           </div>
         </div>
+
+        {children.length > 0 && (
+          <section style={{ margin: "0 0 2.5rem" }}>
+            <div className="section-head">
+              <h2 className="h2">What is inside</h2>
+              <span className="eyebrow">
+                asking this brain searches all {children.length}
+              </span>
+            </div>
+            <div className="rows">
+              {children.map((c) => (
+                <Link key={c.id} className="row" href={`/b/${handle}/${c.slug}`}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{c.title}</strong>
+                    <span className="row-sub">{c.goal ?? "No goal set."}</span>
+                    <span className="row-meta">{c.note_count} notes</span>
+                  </span>
+                  <span className="row-side">
+                    {c.score === null ? "—" : `${c.score}%`}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div
           style={{
