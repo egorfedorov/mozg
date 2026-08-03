@@ -59,7 +59,7 @@ export default async function Home() {
           </div>
           <div>
             <span className="c">$</span> claude mcp add --transport http mozg
-            https://api.mozg.dev/mcp
+            https://mozg.sh/mcp
           </div>
           <div className="t">✓ connected · 3 brains available</div>
           <div style={{ height: ".9rem" }} />
