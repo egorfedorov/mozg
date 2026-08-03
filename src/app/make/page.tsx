@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import { SketchDefs, Panel, Scribble } from "@/components/Sketch";
 import { currentUser } from "@/lib/session";
 
@@ -96,6 +97,7 @@ export default async function MakePage() {
     <>
       <SketchDefs />
       <TopBar active="guide" />
+      <Contents active="/make" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">For people making brains</p>

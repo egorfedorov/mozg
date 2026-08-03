@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import { SketchDefs, Divergence, Scribble, Panel } from "@/components/Sketch";
 import { currentUser } from "@/lib/session";
 
@@ -70,6 +71,7 @@ export default async function VsPage() {
     <>
       <SketchDefs />
       <TopBar />
+      <Contents active="/vs" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">A brain and a file</p>

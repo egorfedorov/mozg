@@ -13,6 +13,7 @@ import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
 import { accessibleChildren, parentOf } from "@/lib/families";
 import { gateFor } from "@/lib/paywall";
+import { isoDate } from "@/lib/dates";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -38,15 +39,6 @@ const LICENSE: Record<string, { label: string; detail: string }> = {
 export const dynamic = "force-dynamic";
 
 const STATE_SIGIL = { pass: "✓", partial: "▲", fail: "✕", empty: "·" } as const;
-
-/**
- * Not toLocaleDateString: it renders differently on the server and in the
- * browser (a hydration mismatch), and "8/3/2026" is ambiguous to half the
- * planet. ISO is identical everywhere and reads the same in every locale.
- */
-function isoDate(value: Date | string): string {
-  return new Date(value).toISOString().slice(0, 10);
-}
 
 export async function generateMetadata({
   params,

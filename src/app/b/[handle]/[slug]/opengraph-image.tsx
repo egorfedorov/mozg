@@ -96,11 +96,11 @@ export default async function OgImage({
             gap: 48,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, maxWidth: 720 }}>
             <div
               style={{
                 display: "flex",
-                fontSize: 72,
+                fontSize: 64,
                 fontWeight: 800,
                 letterSpacing: -2,
                 lineHeight: 1.05,
@@ -137,7 +137,7 @@ export default async function OgImage({
                 color: onTint,
                 border: `4px solid ${INK}`,
                 padding: "16px 32px",
-                fontSize: 120,
+                fontSize: 104,
                 fontWeight: 800,
                 letterSpacing: -4,
                 lineHeight: 1,

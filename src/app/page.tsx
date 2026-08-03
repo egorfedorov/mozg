@@ -1,6 +1,8 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
+import { SketchDefs, Pipeline, Divergence, Scribble } from "@/components/Sketch";
 import { currentUser } from "@/lib/session";
 import { query } from "@/db";
 import type { Brain } from "@/db/types";
@@ -60,7 +62,9 @@ export default async function Home() {
 
   return (
     <>
+      <SketchDefs />
       <TopBar />
+      <Contents />
 
       <main className="shell" style={{ paddingBlock: "clamp(3rem, 9vw, 6rem)" }}>
         {/* Hero. The most characteristic thing in this product's world is a
@@ -154,6 +158,21 @@ export default async function Home() {
             all of them →
           </Link>
         </div>
+
+        <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
+          <p className="eyebrow">What actually happens</p>
+          <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
+            Nothing is stuffed
+            <br />
+            into the context.
+          </h2>
+          <Pipeline />
+          <p className="lede" style={{ marginTop: "1.25rem" }}>
+            A page is read once into notes that keep the exact values. The agent
+            searches those and takes the handful it needs — which is why a brain
+            can hold seven hundred notes and still cost a paragraph to use.
+          </p>
+        </section>
 
         {/* The pitch is abstract until you see what goes in one. */}
         <section style={{ marginTop: "clamp(4rem, 10vw, 6rem)" }}>
@@ -288,7 +307,28 @@ export default async function Home() {
           </div>
         </section>
 
-        <hr className="rule" style={{ margin: "clamp(4rem, 9vw, 6rem) 0 2.5rem" }} />
+        <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
+          <p className="eyebrow">Why not just write a file</p>
+          <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
+            Because of what
+            <br />
+            happens next.
+          </h2>
+          <Divergence />
+          <p className="lede" style={{ marginTop: "1.25rem" }}>
+            A file is the same three months later. A brain has been re-read,
+            corrected by the agents using it, and measured against what it claims
+            to know.{" "}
+            <Link href="/vs" style={{ textDecoration: "underline" }}>
+              The honest comparison, including when a file wins
+            </Link>
+            .
+          </p>
+        </section>
+
+        <div style={{ margin: "clamp(3rem, 8vw, 4.5rem) 0 2.5rem" }}>
+          <Scribble />
+        </div>
 
         {/* Where to go next, in the order someone actually needs it. */}
         <section>

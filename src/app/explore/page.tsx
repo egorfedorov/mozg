@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import { query } from "@/db";
 import type { Brain } from "@/db/types";
 import { categoryScores, tintFor } from "@/lib/brains";
@@ -120,6 +121,7 @@ export default async function ExplorePage({
   return (
     <>
       <TopBar active="explore" />
+      <Contents active="/explore" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">Catalogue · connect any of these in one command</p>

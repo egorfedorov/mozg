@@ -221,3 +221,69 @@ export function Divergence() {
     </svg>
   );
 }
+
+/**
+ * How a page becomes an answer.
+ *
+ * The pipeline is four steps and people guess wrong about all of them —
+ * mostly they assume the whole document is stuffed into the agent's context.
+ * Drawing it is faster than the paragraph that would be needed instead.
+ */
+export function Pipeline() {
+  const steps: [string, string][] = [
+    ["a page", "screens, docs, a repo"],
+    ["notes", "facts with values kept"],
+    ["searched", "five, not five hundred"],
+    ["an answer", "in the agent's words"],
+  ];
+
+  return (
+    <svg
+      viewBox="0 0 640 132"
+      width="100%"
+      role="img"
+      aria-label="A page becomes notes, notes are searched, and five of them become an answer."
+      style={{ display: "block", overflow: "visible", maxWidth: 780 }}
+    >
+      {steps.map(([label, note], i) => {
+        const x = 10 + i * 160;
+        return (
+          <g key={label}>
+            <g filter="url(#sk-frame)" fill="none" stroke="var(--graphite)" strokeLinecap="round">
+              <rect x={x} y="14" width="118" height="52" strokeWidth="1.6" />
+              {/* the second pass, offset — one stroke never covers a box */}
+              <rect x={x + 2} y="16.5" width="114" height="47" strokeWidth="0.8" opacity="0.4" />
+            </g>
+
+            {/* the sheet shrinking: four lines, then two, then one */}
+            <g
+              filter="url(#sk-wobble)"
+              stroke={i === steps.length - 1 ? "var(--color-riso-red)" : "var(--graphite)"}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              opacity="0.85"
+            >
+              {Array.from({ length: Math.max(1, 4 - i) }, (_, k) => (
+                <path key={k} d={`M${x + 14} ${28 + k * 9} H${x + 104 - k * 12}`} />
+              ))}
+            </g>
+
+            <text x={x + 59} y="86" textAnchor="middle" className="sk-label">
+              {label}
+            </text>
+            <text x={x + 59} y="102" textAnchor="middle" className="sk-label sk-label-quiet">
+              {note}
+            </text>
+
+            {i < steps.length - 1 && (
+              <g filter="url(#sk-wobble)" fill="none" stroke="var(--graphite)" strokeWidth="1.6" strokeLinecap="round">
+                <path d={`M${x + 128} 40 H${x + 152}`} />
+                <path d={`M${x + 145} 34 L${x + 154} 40 L${x + 145} 46`} />
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}

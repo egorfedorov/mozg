@@ -507,6 +507,94 @@ a {
   padding: 1.25rem;
 }
 
+/* ─── contents strip ────────────────────────────────────────────────────── */
+
+.contents {
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  position: sticky;
+  top: 60px;
+  z-index: 15;
+}
+
+.contents-inner {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.contents-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.contents-item {
+  flex: 0 0 auto;
+  padding: 0.55rem 1rem 0.5rem;
+  border-right: 1px solid var(--rule);
+  min-width: 0;
+}
+
+.contents-item:first-child {
+  padding-left: 0;
+}
+
+.contents-item:last-child {
+  border-right: 0;
+}
+
+.contents-item:hover {
+  background: var(--paper);
+}
+
+.contents-item[data-active="true"] {
+  background: var(--ink);
+}
+
+.contents-label {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.contents-note {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.contents-item[data-active="true"] .contents-label {
+  color: var(--paper);
+}
+
+.contents-item[data-active="true"] .contents-note {
+  color: var(--paper);
+  opacity: 0.7;
+}
+
+/* The subtitle is a luxury on a phone; the label is not. */
+@media (max-width: 640px) {
+  .contents-note {
+    display: none;
+  }
+
+  .contents-item {
+    padding: 0.6rem 0.85rem;
+  }
+
+  /* A strip that scrolls but does not look like it is a strip half the
+     visitors never scroll. The fade is the only honest affordance available
+     without adding a control nobody asked for. */
+  .contents-inner {
+    -webkit-mask-image: linear-gradient(to right, #000 84%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 84%, transparent 100%);
+    padding-right: 2rem;
+  }
+}
+
 /* ─── the drawn layer ───────────────────────────────────────────────────── */
 /* Graphite is not ink: a pencil is warmer and never fully black, and keeping
    them apart is what stops the drawings reading as failed printing. */
@@ -581,6 +669,11 @@ a {
 
 .sk-label-red {
   fill: var(--color-riso-red);
+}
+
+.sk-label-quiet {
+  fill: var(--ink-3);
+  font-size: 10px;
 }
 
 .sk-strip {

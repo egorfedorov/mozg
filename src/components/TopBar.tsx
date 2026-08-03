@@ -53,17 +53,11 @@ export default async function TopBar({ active }: { active?: string }) {
           </>
         ) : (
           <>
-            <Link className="navlink hide-sm" data-active={active === "why"} href="/why">
-              why
-            </Link>
+            {/* The reading pages live in the contents strip below, which fits
+                them all and does not drop half on a phone. The bar keeps the
+                two things a visitor might want to do. */}
             <Link className="navlink" data-active={active === "explore"} href="/explore">
-              explore
-            </Link>
-            <Link className="navlink hide-sm" data-active={active === "guide"} href="/guide">
-              guide
-            </Link>
-            <Link className="navlink hide-sm" data-active={active === "connect"} href="/connect">
-              connect
+              catalogue
             </Link>
             <Link className="btn" href="/sign-in">
               Sign in

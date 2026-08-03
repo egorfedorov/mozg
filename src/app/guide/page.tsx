@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +101,7 @@ export default async function GuidePage() {
   return (
     <>
       <TopBar />
+      <Contents active="/guide" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">For people building brains</p>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import AppShell from "@/components/AppShell";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import ClientList from "./ClientList";
 import { CLIENTS, MODELS } from "@/lib/clients";
 import { currentUser } from "@/lib/session";
@@ -195,6 +196,7 @@ export MOZG_TOKEN=mzg_...`}
   return (
     <>
       <TopBar active="connect" />
+      <Contents active="/connect" />
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">Model Context Protocol</p>
         <h1
