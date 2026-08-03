@@ -108,9 +108,12 @@ async function main() {
     formatCents(debit.balanceCents));
 
   console.log("\nwithdrawals");
-  // The buyer is on $5.00. Give them enough to clear the minimum, then check
-  // that asking does not move money and settling does.
+  // The buyer is on $5.00. Top up to clear the minimum, then check the thing
+  // the hold exists for: a requested amount must leave the balance at once, or
+  // the same money can be spent while the request waits.
   await topUp({ userId: buyer, amountCents: MIN_PAYOUT_CENTS, note: "for payout test" });
+  const before = 500 + MIN_PAYOUT_CENTS;
+
   const tooBig = await requestPayout({
     userId: buyer,
     amountCents: 1_000_000,
@@ -125,28 +128,60 @@ async function main() {
   });
   check("request accepted", asked.ok);
 
-  const second = await requestPayout({
-    userId: buyer,
-    amountCents: MIN_PAYOUT_CENTS,
-    destination: "T-test-wallet",
-  });
-  check("only one open request at a time", !second.ok && second.reason === "already-open");
-
-  const pendingBalance = await query<{ balance_cents: number }>(
+  const held = await query<{ balance_cents: number }>(
     `select balance_cents from "user" where id = $1`,
     [buyer],
   );
   check(
-    "asking does not move money",
-    pendingBalance[0].balance_cents === 500 + MIN_PAYOUT_CENTS,
-    formatCents(pendingBalance[0].balance_cents),
+    "the amount is held, not left spendable",
+    held[0].balance_cents === before - MIN_PAYOUT_CENTS,
+    formatCents(held[0].balance_cents),
+  );
+
+  // The whole point of holding it: the reserved money cannot go somewhere else
+  // while the operator is still deciding.
+  const spendHeld = await requestPayout({
+    userId: buyer,
+    amountCents: MIN_PAYOUT_CENTS,
+    destination: "T-test-wallet",
+  });
+  check(
+    "the held money cannot be requested again",
+    !spendHeld.ok,
+    spendHeld.ok ? "ALLOWED" : spendHeld.reason,
   );
 
   if (asked.ok) {
-    const settled = await settlePayout({ payoutId: asked.payoutId, paid: true });
-    check("marking it paid debits the balance", settled.ok);
-    const again = await settlePayout({ payoutId: asked.payoutId, paid: true });
-    check("a settled payout cannot be paid twice", !again.ok && again.reason === "not-open");
+    const rejected = await settlePayout({ payoutId: asked.payoutId, paid: false });
+    const refunded = await query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1`,
+      [buyer],
+    );
+    check("rejecting refunds the hold", rejected.ok && refunded[0].balance_cents === before,
+      formatCents(refunded[0].balance_cents));
+
+    const again = await requestPayout({
+      userId: buyer,
+      amountCents: MIN_PAYOUT_CENTS,
+      destination: "T-test-wallet",
+    });
+    check("and the money can be asked for again", again.ok);
+
+    if (again.ok) {
+      const paid = await settlePayout({ payoutId: again.payoutId, paid: true });
+      check("marking it paid closes the row", paid.ok);
+      const after = await query<{ balance_cents: number }>(
+        `select balance_cents from "user" where id = $1`,
+        [buyer],
+      );
+      check(
+        "and does not debit twice",
+        after[0].balance_cents === before - MIN_PAYOUT_CENTS,
+        formatCents(after[0].balance_cents),
+      );
+      const twice = await settlePayout({ payoutId: again.payoutId, paid: true });
+      check("a settled payout cannot be settled again", !twice.ok);
+    }
   }
 
   console.log("\nbalances afterwards");
@@ -157,6 +192,8 @@ async function main() {
   const buyerBalance = after.find((u) => u.id === buyer)!.balance_cents;
   const sellerBalance = after.find((u) => u.id === seller)!.balance_cents;
 
+  // $5 left after the purchase, plus the top-up for the payout test, minus the
+  // withdrawal that was actually paid out.
   check("buyer charged exactly once", buyerBalance === 500, formatCents(buyerBalance));
   check(
     "author credited their share",
