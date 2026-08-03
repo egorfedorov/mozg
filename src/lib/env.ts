@@ -37,6 +37,12 @@ const schema = z.object({
 
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
 
+  // Set once an email provider is wired up. Until then the product cannot send
+  // a verification link or a password reset, so signing up with a password
+  // creates an account that can never be verified and never recovered.
+  EMAIL_FROM: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+
   // Comma-separated addresses that may open /admin. Empty means nobody can —
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.
@@ -53,6 +59,13 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+/**
+ * Can the product send mail? Everything that depends on reaching someone by
+ * email is gated on this, so wiring a provider turns those paths on rather
+ * than requiring them to be found and un-commented.
+ */
+export const emailReady = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 
 /** S3 driver needs its whole credential set or none of it. */
 if (env.STORAGE_DRIVER === "s3") {

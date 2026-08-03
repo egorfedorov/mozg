@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 // Relative, not "@/..." — the better-auth CLI loads this file outside the
 // Next.js resolver and does not honour tsconfig path aliases.
 import { pool } from "../db";
-import { env } from "./env";
+import { env, emailReady } from "./env";
 
 /**
  * Identity. better-auth owns the "user"/"session"/"account"/"verification"
@@ -24,8 +24,14 @@ export const auth = betterAuth({
         }
       : undefined,
 
-  // Email+password stays on so the app is usable before GitHub OAuth is set up.
-  emailAndPassword: { enabled: true },
+  // Sign-in stays on so anyone who already has a password keeps working.
+  //
+  // Sign-up is closed until mail can be sent, because without it a password
+  // account is a dead end: its address is never verified, so brains shared
+  // with it by email silently grant nothing, and a forgotten password can
+  // never be reset. GitHub OAuth verifies the address as a side effect, which
+  // is why it stays open.
+  emailAndPassword: { enabled: true, disableSignUp: !emailReady },
 
   user: {
     additionalFields: {

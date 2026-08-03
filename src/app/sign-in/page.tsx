@@ -1,5 +1,5 @@
 import SignInForm from "./SignInForm";
-import { env } from "@/lib/env";
+import { env, emailReady } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -11,5 +11,5 @@ export default function SignInPage() {
   // button that leads to an error page.
   const githubEnabled = Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET);
 
-  return <SignInForm githubEnabled={githubEnabled} />;
+  return <SignInForm githubEnabled={githubEnabled} signUpEnabled={emailReady} />;
 }

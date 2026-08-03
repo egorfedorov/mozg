@@ -30,7 +30,14 @@ function humanError(message: string | undefined, mode: "in" | "up"): string {
   return message || "That did not work. Try again.";
 }
 
-export default function SignInForm({ githubEnabled }: { githubEnabled: boolean }) {
+export default function SignInForm({
+  githubEnabled,
+  signUpEnabled,
+}: {
+  githubEnabled: boolean;
+  /** Password sign-up is closed until mail can be sent — see lib/auth.ts. */
+  signUpEnabled: boolean;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") ?? "/brains";
@@ -140,26 +147,40 @@ export default function SignInForm({ githubEnabled }: { githubEnabled: boolean }
         </button>
       </form>
 
-      <button
-        type="button"
-        onClick={() => {
-          setMode(mode === "in" ? "up" : "in");
-          setError(null);
-        }}
-        className="mono"
-        style={{
-          marginTop: "1.25rem",
-          background: "none",
-          border: 0,
-          padding: 0,
-          color: "var(--ink-2)",
-          fontSize: ".8125rem",
-          cursor: "pointer",
-          textDecoration: "underline",
-        }}
-      >
-        {mode === "in" ? "No account yet? Create one" : "Already have an account? Sign in"}
-      </button>
+      {signUpEnabled ? (
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === "in" ? "up" : "in");
+            setError(null);
+          }}
+          className="mono"
+          style={{
+            marginTop: "1.25rem",
+            background: "none",
+            border: 0,
+            padding: 0,
+            color: "var(--ink-2)",
+            fontSize: ".8125rem",
+            cursor: "pointer",
+            textDecoration: "underline",
+          }}
+        >
+          {mode === "in" ? "No account yet? Create one" : "Already have an account? Sign in"}
+        </button>
+      ) : (
+        /* Said out loud rather than left as a dead link: without mail we cannot
+           verify an address or reset a password, and an account that can do
+           neither is a trap. */
+        <p
+          className="mono"
+          style={{ marginTop: "1.25rem", fontSize: ".75rem", color: "var(--ink-3)", maxWidth: "42ch" }}
+        >
+          New accounts are created with GitHub while email is being set up — it
+          confirms your address, which is what lets people share brains with you.
+          Passwords cannot be reset yet, so we are not handing out new ones.
+        </p>
+      )}
     </main>
   );
 }
