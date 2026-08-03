@@ -101,6 +101,14 @@ export default async function PublicBrainPage({
   // would be offering something that does not exist.
   const gate = await gateFor(brain);
 
+  // Exactly three states, so the page never shows two calls to action or none.
+  //   locked  — paid and not bought yet
+  //   have    — already in this reader's set, or their own
+  //   free    — readable and not added yet
+  const owns = brain.owner_id === user?.id;
+  const familyAdded = gate ? await inLibrary(user?.id ?? "", gate.brainId) : false;
+  const state = preview ? "locked" : owns || added || familyAdded ? "have" : "free";
+
   const licence = LICENSE[brain.license];
 
   return (
@@ -235,14 +243,14 @@ export default async function PublicBrainPage({
           </section>
           )}
 
-          {!preview && brain.owner_id !== user?.id && (
+          {state === "free" || (state === "have" && !owns) ? (
             <AddBrain
               brainId={brain.id}
               handle={`${handle}/${brain.slug}`}
               signedIn={Boolean(user)}
-              added={added}
+              added={added || familyAdded}
             />
-          )}
+          ) : null}
 
           <section className="scorecard">
             <div className="score-head">

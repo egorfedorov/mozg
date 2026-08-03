@@ -40,10 +40,10 @@ export default function AddBrain({
 
   if (isAdded) {
     return (
-      <div className="panel">
+      <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-green)" }}>
         <p className="eyebrow">In your brains</p>
         <p style={{ margin: ".5rem 0 0" }}>
-          Your agents can see it now. Ask yours to{" "}
+          Your agents can read it now. Ask yours to{" "}
           <code className="mono">use {handle}</code>, or let it find the brain
           itself with <code className="mono">brain_list</code>.
         </p>
