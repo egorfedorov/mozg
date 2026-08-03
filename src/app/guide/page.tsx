@@ -256,6 +256,34 @@ export default async function GuidePage() {
         </section>
 
         <section
+          id="style"
+          className="panel"
+          style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", maxWidth: "64ch", scrollMarginTop: "5rem" }}
+        >
+          <p className="eyebrow">For artists and designers</p>
+          <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
+            A brain can hold your style. It cannot draw it.
+          </h2>
+          <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
+            Upload your own work and the extraction reads it into rules: the
+            palette you actually use, how you compose, the motifs that recur,
+            the things you never do. An agent writing a brief, a prompt or a
+            spec then follows them instead of guessing.
+          </p>
+          <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
+            What a buyer gets is that guidance in words — mozg does not generate
+            images, and a brain sold as if it did would be a promise the product
+            cannot keep. Say what yours contains and people will know what they
+            are paying for.
+          </p>
+          <p style={{ color: "var(--ink-2)", margin: 0 }}>
+            Only your own work, or work you hold a licence for. A brain built
+            from someone else&apos;s pictures is taken down, and selling one is
+            theft with extra steps.
+          </p>
+        </section>
+
+        <section
           id="selling"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}
         >

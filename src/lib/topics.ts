@@ -23,6 +23,11 @@ export const TOPICS: Topic[] = [
   { key: "design", label: "Design systems", blurb: "Tokens, components, rules, states." },
   { key: "security", label: "Security", blurb: "Threat models, auth, review checklists." },
   { key: "product", label: "Product & process", blurb: "Specs, conventions, how a team works." },
+  {
+    key: "craft",
+    label: "Art & craft",
+    blurb: "An artist's own rules: palette, composition, motifs, what to avoid.",
+  },
   { key: "other", label: "Other", blurb: "Everything that fits nowhere else." },
 ];
 

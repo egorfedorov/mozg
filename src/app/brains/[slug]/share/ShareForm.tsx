@@ -131,6 +131,14 @@ export default function ShareForm({
             Paid once — buyers keep access as you keep adding to it. You receive{" "}
             {100 - PLATFORM_FEE_PERCENT}% of each sale.
           </p>
+          <p
+            className="mono"
+            style={{ margin: "0 0 .5rem", fontSize: ".75rem", color: "var(--ink-3)", maxWidth: "58ch" }}
+          >
+            Sell only what is yours to sell. Upload work you made, or that you
+            hold a licence for — a brain built from someone else&apos;s material
+            is taken down, and selling it is theft with extra steps.
+          </p>
           <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
             <span className="mono" style={{ color: "var(--ink-2)" }}>
               $
