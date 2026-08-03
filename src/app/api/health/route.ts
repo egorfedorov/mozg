@@ -29,7 +29,8 @@ export async function GET() {
       `select
          count(*) filter (where status in ('queued','processing'))::int as pending,
          count(*) filter (
-           where status = 'processing' and created_at < now() - interval '1 hour'
+           where status = 'processing'
+             and coalesce(processing_at, created_at) < now() - interval '1 hour'
          )::int as stuck
        from sources`,
     ).catch(() => []);

@@ -68,7 +68,8 @@ export async function health(): Promise<Health> {
   const rows = await query<Omit<Health, "database" | "embeddings">>(
     `select
        (select count(*) filter (where status = 'processing'
-          and created_at < now() - interval '1 hour')::int from sources) as stuck,
+          and coalesce(processing_at, created_at) < now() - interval '1 hour')::int
+          from sources) as stuck,
        (select count(*) filter (where status in ('queued','processing'))::int
           from sources) as pending,
        (select count(*)::int from calls

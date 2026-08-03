@@ -39,9 +39,11 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
     source.brain_id,
   ]);
 
-  await query(`update sources set status = 'processing', error = null where id = $1`, [
-    sourceId,
-  ]);
+  await query(
+    `update sources set status = 'processing', error = null, processing_at = now()
+      where id = $1`,
+    [sourceId],
+  );
 
   try {
     // The vocabulary to file notes under, exam categories first.
