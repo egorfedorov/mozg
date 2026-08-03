@@ -232,7 +232,18 @@ export default async function ExplorePage({
                 <h2 className="card-title">{brain.title}</h2>
                 <p className="card-goal">{brain.goal ?? "No goal set."}</p>
 
-                <div className="readout">
+                <div
+                  className="readout"
+                  role="img"
+                  aria-label={
+                    scores.get(brain.id)?.length
+                      ? scores
+                          .get(brain.id)!
+                          .map((c) => `${c.category}: ${c.passed} of ${c.total}`)
+                          .join(", ")
+                      : "Not examined yet"
+                  }
+                >
                   {(scores.get(brain.id) ?? Array.from({ length: 6 }, () => ({ state: "empty" as const }))).map(
                     (c, i) => (
                       <span key={i} className="readout-cell" data-state={c.state} />

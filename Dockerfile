@@ -17,6 +17,20 @@ COPY . .
 # the server's git says one thing and the bundle is another.
 ARG GIT_SHA=unknown
 ENV GIT_SHA=$GIT_SHA
+
+# Compiling needs no credentials, but Next evaluates every module while
+# collecting page data — including lib/env, which refuses an empty environment
+# by design. These placeholders exist only in this layer; the container reads
+# the real .env at runtime and validates it there, which is the moment that
+# actually matters.
+#
+# Without them, adding an import of lib/env to any always-evaluated module
+# (a layout, say) breaks the deploy while the same build passes locally, where
+# a .env happens to exist.
+ENV DATABASE_URL=postgres://build:build@localhost:5432/build \
+    BETTER_AUTH_SECRET=build-time-placeholder-not-a-secret \
+    NEXT_PUBLIC_APP_URL=https://mozg.sh
+
 # Fonts are fetched at build time by next/font. If the build host cannot reach
 # Google Fonts the build fails loudly rather than shipping fallback type.
 RUN npm run build

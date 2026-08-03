@@ -49,6 +49,9 @@ export default function CallLog({
   const [calls, setCalls] = useState<Call[]>(recent);
   const [live, setLive] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
+  // Follow the tail only while the reader is already at it — yanking the
+  // scroll on every call makes the history above unreadable.
+  const atBottom = useRef(true);
 
   useEffect(() => {
     const source = new EventSource(`/api/brains/${brainId}/calls/stream`);
@@ -75,11 +78,20 @@ export default function CallLog({
   }, [brainId]);
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "nearest" });
+    if (atBottom.current) bottom.current?.scrollIntoView({ block: "nearest" });
   }, [calls.length]);
 
   return (
-    <section className="term" style={{ maxHeight: 340, overflowY: "auto" }}>
+    <section
+      className="term"
+      style={{ maxHeight: 340, overflowY: "auto" }}
+      aria-live="polite"
+      aria-label="Agent call log"
+      onScroll={(e) => {
+        const el = e.currentTarget;
+        atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+      }}
+    >
       <div className="term-bar" style={{ position: "sticky", top: 0, background: "var(--ink)" }}>
         <span
           className="term-dot"
