@@ -18,7 +18,9 @@
     "auth:migrate": "npx --yes @better-auth/cli migrate --y",
     "check:access": "tsx --env-file-if-exists=.env scripts/check-access.ts",
     "try:extract": "tsx --env-file-if-exists=.env scripts/try-extract.ts",
-    "diagnose": "tsx --env-file-if-exists=.env scripts/diagnose-exam.ts"
+    "diagnose": "tsx --env-file-if-exists=.env scripts/diagnose-exam.ts",
+    "check:money": "tsx --env-file-if-exists=.env scripts/check-money.ts",
+    "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

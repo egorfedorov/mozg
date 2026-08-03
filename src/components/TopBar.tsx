@@ -19,10 +19,10 @@ export default async function TopBar({ active }: { active?: string }) {
             <Link className="navlink" data-active={active === "tokens"} href="/settings/tokens">
               tokens
             </Link>
-            <Link className="navlink" href="/explore">
+            <Link className="navlink" data-active={active === "explore"} href="/explore">
               explore
             </Link>
-            <Link className="navlink hide-sm" href="/connect">
+            <Link className="navlink hide-sm" data-active={active === "connect"} href="/connect">
               connect
             </Link>
             <Link
@@ -38,10 +38,10 @@ export default async function TopBar({ active }: { active?: string }) {
             <Link className="navlink hide-sm" href="/why">
               why
             </Link>
-            <Link className="navlink" href="/explore">
+            <Link className="navlink" data-active={active === "explore"} href="/explore">
               explore
             </Link>
-            <Link className="navlink hide-sm" href="/connect">
+            <Link className="navlink hide-sm" data-active={active === "connect"} href="/connect">
               connect
             </Link>
             <Link className="btn" href="/sign-in">

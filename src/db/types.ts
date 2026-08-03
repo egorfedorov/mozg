@@ -32,8 +32,42 @@ export interface Brain {
   review_required: boolean;
   note_count: number;
   source_count: number;
+  /** 0 means free. Access to a paid brain is bought once, from balance. */
+  price_cents: number;
+  sales_count: number;
   created_at: Date;
   updated_at: Date;
+}
+
+export type LedgerKind =
+  | "topup"
+  | "purchase"
+  | "earning"
+  | "payout"
+  | "refund"
+  | "adjustment";
+
+export interface LedgerEntry {
+  id: string;
+  user_id: string;
+  /** Signed: positive credits, negative debits. */
+  amount_cents: number;
+  kind: LedgerKind;
+  brain_id: string | null;
+  purchase_id: string | null;
+  external_ref: string | null;
+  note: string | null;
+  created_at: Date;
+}
+
+export interface Purchase {
+  id: string;
+  brain_id: string;
+  buyer_id: string;
+  seller_id: string;
+  price_cents: number;
+  seller_cents: number;
+  created_at: Date;
 }
 
 export interface Source {

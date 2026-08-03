@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import type { Brain, Grant } from "@/db/types";
+// money-math, not money: this is a client component and @/lib/money drags in pg.
+import { PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { updateSharing, inviteByEmail, removeGrant } from "./actions";
 
 const VISIBILITY = [
@@ -90,6 +92,43 @@ export default function ShareForm({
               detail={l.detail}
             />
           ))}
+        </fieldset>
+
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
+          <legend className="eyebrow" style={{ padding: 0 }}>
+            Price
+          </legend>
+          <p style={{ margin: "0 0 .25rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+            Leave at 0 to keep it free. A paid brain is listed publicly with its
+            note titles visible, and the contents unlock when someone buys it.
+            Paid once — buyers keep access as you keep adding to it. You receive{" "}
+            {100 - PLATFORM_FEE_PERCENT}% of each sale.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+            <span className="mono" style={{ color: "var(--ink-2)" }}>
+              $
+            </span>
+            <input
+              name="price"
+              type="number"
+              min={0}
+              max={1000}
+              step="0.5"
+              defaultValue={(brain.price_cents / 100).toFixed(2)}
+              style={{
+                width: 120,
+                padding: ".55rem .7rem",
+                border: "1.5px solid var(--ink)",
+                background: "var(--paper)",
+                font: "inherit",
+              }}
+            />
+            {brain.sales_count > 0 && (
+              <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
+                {brain.sales_count} sold
+              </span>
+            )}
+          </div>
         </fieldset>
 
         <label style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>

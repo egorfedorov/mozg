@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
+import BuyBrain from "@/components/BuyBrain";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { categoryScores, tintFor } from "@/lib/brains";
@@ -63,17 +64,27 @@ export default async function PublicBrainPage({
   const { handle, slug } = await params;
   const user = await currentUser();
   const found = await accessForSlug(handle, slug, user?.id ?? null);
-  if (!found || !found.access) notFound();
+  // Locked paid brains still render — as a storefront, not as content.
+  if (!found || (!found.access && !found.preview)) notFound();
 
-  const { brain } = found;
-  const [categories, samples] = await Promise.all([
+  const { brain, preview } = found;
+
+  const [categories, samples, balance] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
+    // Titles are the shop window: enough to judge whether the brain is worth
+    // buying, never the bodies that were paid for.
     query<{ title: string; category: string | null }>(
       `select title, category from notes
         where brain_id = $1 and status = 'active'
-        order by created_at desc limit 14`,
+        order by created_at desc limit ${preview ? 8 : 14}`,
       [brain.id],
     ),
+    user
+      ? query<{ balance_cents: number }>(
+          `select balance_cents from "user" where id = $1`,
+          [user.id],
+        ).then((r) => r[0]?.balance_cents ?? 0)
+      : Promise.resolve(null),
   ]);
 
   const licence = LICENSE[brain.license];
@@ -131,6 +142,15 @@ export default async function PublicBrainPage({
             alignItems: "start",
           }}
         >
+          {preview ? (
+            <BuyBrain
+              handle={handle}
+              slug={brain.slug}
+              priceCents={brain.price_cents}
+              balanceCents={balance}
+              signedIn={Boolean(user)}
+            />
+          ) : (
           <section className="term">
             <div className="term-bar">
               <span className="term-dot" />
@@ -165,6 +185,7 @@ export default async function PublicBrainPage({
               </Link>
             )}
           </section>
+          )}
 
           <section className="scorecard">
             <div className="score-head">
@@ -207,8 +228,14 @@ export default async function PublicBrainPage({
         <section style={{ marginTop: "3rem", display: "grid", gap: "2rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <div>
             <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
-              Inside
+              {preview ? "What is inside" : "Inside"}
             </h2>
+            {preview && (
+              <p style={{ color: "var(--ink-2)", marginTop: 0, fontSize: ".9375rem" }}>
+                Note titles, so you can judge before you buy. The contents unlock
+                on purchase.
+              </p>
+            )}
             <ul style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".35rem" }}>
               {samples.map((s) => (
                 <li key={s.title}>

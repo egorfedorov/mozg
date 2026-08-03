@@ -142,8 +142,19 @@ async function resolveBrain(
   );
   if (grant) return { brain, access: grant.role };
 
-  if (brain.visibility === "public") return { brain, access: "viewer" };
-  return null;
+  if (brain.visibility !== "public") return null;
+
+  // A paid brain is not readable over MCP until it is bought. The agent path
+  // must not be a way around the paywall the site enforces.
+  if (brain.price_cents > 0) {
+    const bought = await maybeOne(
+      `select 1 from purchases where brain_id = $1 and buyer_id = $2`,
+      [brain.id, userId],
+    );
+    if (!bought) return null;
+  }
+
+  return { brain, access: "viewer" };
 }
 
 // ─── dispatch ────────────────────────────────────────────────────────────────

@@ -28,14 +28,34 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       visibility: z.enum(["private", "link", "public"]),
       license: z.enum(["nc", "mit", "proprietary"]),
       review_required: z.coerce.boolean(),
+      // Entered in dollars, stored in cents. Anything above $1000 is a slipped
+      // decimal point far more often than it is a real price.
+      price: z.coerce.number().min(0).max(1000),
     })
     .safeParse({
       visibility: formData.get("visibility"),
       license: formData.get("license"),
       review_required: formData.get("review_required") === "on",
+      price: String(formData.get("price") ?? "0").replace(",", ".") || "0",
     });
 
   if (!parsed.success) return { error: "Invalid settings." };
+
+  const priceCents = Math.round(parsed.data.price * 100);
+
+  // A price on a brain nobody can reach is a trap for the author, not a sale.
+  if (priceCents > 0 && parsed.data.visibility !== "public") {
+    return { error: "A brain has to be public before it can be sold." };
+  }
+
+  // Selling something whose licence lets the buyer resell it is a decision, not
+  // an accident — say so rather than silently allowing it.
+  if (priceCents > 0 && parsed.data.license === "mit") {
+    return {
+      error:
+        "MIT lets buyers resell your brain. Pick CC BY-NC-SA or Closed if you are charging for it.",
+    };
+  }
 
   // Publication gate: a brain that leaks a credential must never become
   // readable by strangers. Ingest scans too, but a note could predate a rule
@@ -68,9 +88,15 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
 
   await query(
     `update brains set visibility = $2, license = $3, review_required = $4,
-            updated_at = now()
+            price_cents = $5, updated_at = now()
       where id = $1`,
-    [brain.id, parsed.data.visibility, parsed.data.license, parsed.data.review_required],
+    [
+      brain.id,
+      parsed.data.visibility,
+      parsed.data.license,
+      parsed.data.review_required,
+      priceCents,
+    ],
   );
 
   revalidatePath(`/brains/${slug}/share`);

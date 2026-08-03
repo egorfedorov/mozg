@@ -5,24 +5,36 @@ import type { Brain, GrantRole } from "@/db/types";
  * Who may do what with a brain. Every read path and every MCP tool goes
  * through here — a forgotten check is how one user's brain ends up in another
  * user's agent.
+ *
+ * A paid brain nobody has bought resolves to `access: null` and `preview: true`
+ * rather than to a viewer. That way the default is closed: a caller that
+ * ignores `preview` shows nothing, and only the storefront opts into rendering
+ * the shell.
  */
 
 export type Access = "owner" | "contributor" | "viewer" | null;
 
+export interface Resolved {
+  brain: Brain;
+  access: Access;
+  /** Listed and describable, but the contents are behind a purchase. */
+  preview: boolean;
+}
+
 export async function accessFor(
   brainId: string,
   userId: string | null,
-): Promise<{ brain: Brain; access: Access } | null> {
+): Promise<Resolved | null> {
   const brain = await maybeOne<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain) return null;
-  return { brain, access: await resolve(brain, userId) };
+  return resolve(brain, userId);
 }
 
 export async function accessForSlug(
   handle: string,
   slug: string,
   userId: string | null,
-): Promise<{ brain: Brain; access: Access } | null> {
+): Promise<Resolved | null> {
   const brain = await maybeOne<Brain>(
     `select b.* from brains b
        join "user" u on u.id = b.owner_id
@@ -30,11 +42,13 @@ export async function accessForSlug(
     [handle, slug],
   );
   if (!brain) return null;
-  return { brain, access: await resolve(brain, userId) };
+  return resolve(brain, userId);
 }
 
-async function resolve(brain: Brain, userId: string | null): Promise<Access> {
-  if (userId && brain.owner_id === userId) return "owner";
+async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
+  const open = (access: Access): Resolved => ({ brain, access, preview: false });
+
+  if (userId && brain.owner_id === userId) return open("owner");
 
   if (userId) {
     // The email must be verified. Grants are matched by address, so without
@@ -47,13 +61,21 @@ async function resolve(brain: Brain, userId: string | null): Promise<Access> {
         where g.brain_id = $1 and u.id = $2 and u."emailVerified"`,
       [brain.id, userId],
     );
-    if (grant) return grant.role;
+    if (grant) return open(grant.role);
   }
 
-  // Public brains are readable by anyone, signed in or not.
-  if (brain.visibility === "public") return "viewer";
+  if (brain.visibility !== "public") return { brain, access: null, preview: false };
 
-  return null;
+  if (brain.price_cents > 0) {
+    if (!userId) return { brain, access: null, preview: true };
+    const bought = await maybeOne(
+      `select 1 from purchases where brain_id = $1 and buyer_id = $2`,
+      [brain.id, userId],
+    );
+    return bought ? open("viewer") : { brain, access: null, preview: true };
+  }
+
+  return open("viewer");
 }
 
 export async function canRead(brainId: string, userId: string | null): Promise<boolean> {
