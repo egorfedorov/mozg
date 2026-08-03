@@ -11,7 +11,7 @@ import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
 import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
-import { childrenOf, parentOf } from "@/lib/families";
+import { accessibleChildren, parentOf } from "@/lib/families";
 import { gateFor } from "@/lib/paywall";
 
 /**
@@ -56,9 +56,23 @@ export async function generateMetadata({
   const { handle, slug } = await params;
   const found = await accessForSlug(handle, slug, null);
   if (!found?.brain || found.brain.visibility !== "public") return { title: "mozg" };
+  const title = `${found.brain.title} — a mozg brain`;
+  const description = found.brain.goal ?? undefined;
   return {
-    title: `${found.brain.title} — a mozg brain`,
-    description: found.brain.goal ?? undefined,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      // The image is the opengraph-image.tsx in this segment — Next resolves it.
+      url: `/b/${handle}/${slug}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
@@ -92,7 +106,7 @@ export default async function PublicBrainPage({
         ).then((r) => r[0]?.balance_cents ?? 0)
       : Promise.resolve(null),
     user ? inLibrary(user.id, brain.id) : Promise.resolve(false),
-    brain.parent_id ? Promise.resolve([]) : childrenOf(brain.id),
+    brain.parent_id ? Promise.resolve([]) : accessibleChildren(brain.id, user?.id ?? null),
     parentOf(brain),
   ]);
 
