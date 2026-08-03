@@ -37,17 +37,51 @@ size=$(du -h "$out" | cut -f1)
 find "$DEST/daily"  -name 'mozg-*.sql.gz' -mtime +$KEEP_DAILY  -delete
 find "$DEST/weekly" -name 'mozg-*.sql.gz' -mtime +$((KEEP_WEEKLY * 7)) -delete
 
-# A backup nobody has ever restored is a hope, not a backup: verify the dump is
-# readable and contains the tables that matter.
+# A backup nobody has ever restored is a hope, not a backup.
 if ! gzip -t "$out" 2>/dev/null; then
   echo "$(date -Is)  FAIL  $out is not a valid gzip"
   exit 1
 fi
-for table in brains notes chunks '"user"'; do
-  if ! zcat "$out" | grep -q "COPY public.$table"; then
+
+# One pass, no `grep -q` inside a pipeline: grep exits at the first match and
+# SIGPIPEs zcat, which under `set -o pipefail` makes a perfectly good backup
+# report FAIL. That is worse than no check — it teaches you to ignore the log.
+tables=$(zcat "$out" | grep '^COPY public\.' | sed 's/^COPY public\.\([^ (]*\).*/\1/' || true)
+for table in brains notes chunks user; do
+  if ! printf '%s\n' "$tables" | grep -qx "\"\?$table\"\?"; then
     echo "$(date -Is)  FAIL  $out has no data for $table"
     exit 1
   fi
 done
 
-echo "$(date -Is)  ok  $out  $size"
+# The real test: restore into a throwaway database and count what came back.
+# Greping the text only proves the dump mentions a table, not that it can be
+# read back — and the day you find that out is the worst possible day.
+scratch="mozg_restore_check"
+cd "$DIR"
+docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U mozg -d postgres -c "drop database if exists $scratch" >/dev/null
+docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U mozg -d postgres -c "create database $scratch" >/dev/null
+
+if ! zcat "$out" | docker compose -f docker-compose.prod.yml exec -T db \
+     psql -U mozg -d "$scratch" -v ON_ERROR_STOP=0 >/dev/null 2>&1; then
+  echo "$(date -Is)  FAIL  $out did not restore"
+  docker compose -f docker-compose.prod.yml exec -T db \
+    psql -U mozg -d postgres -c "drop database if exists $scratch" >/dev/null
+  exit 1
+fi
+
+restored=$(docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U mozg -d "$scratch" -tAc \
+  "select count(*) from brains" 2>/dev/null | tr -d '\r' || echo 0)
+
+docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U mozg -d postgres -c "drop database if exists $scratch" >/dev/null
+
+if [ "${restored:-0}" -lt 1 ]; then
+  echo "$(date -Is)  FAIL  $out restored but holds no brains"
+  exit 1
+fi
+
+echo "$(date -Is)  ok  $out  $size  ($restored brains restored)"
