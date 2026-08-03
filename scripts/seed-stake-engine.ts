@@ -16,6 +16,7 @@
 import { one, maybeOne, query } from "@/db";
 import { enqueueIngest } from "@/worker/queue";
 import { slugify } from "@/lib/brains";
+import { setGoal } from "@/lib/goal";
 
 const REPO = "StakeEngine/docs";
 const RAW = `https://raw.githubusercontent.com/${REPO}/HEAD/`;
@@ -40,10 +41,16 @@ interface Part {
 const PARENT = {
   slug: "stake-engine",
   title: "Stake Engine",
+  // A parent's exam retrieves across its children, so its goal has to describe
+  // what the family answers rather than what its own four overview pages hold.
+  // The first version promised routing — "which child answers this" — which is
+  // knowledge no page contains, so it failed honestly and told us nothing.
   goal:
-    "Point an agent at the right part of Stake Engine: what the platform is, " +
-    "how a game reaches players, and which of the specialised brains under " +
-    "this one answers a given question.",
+    "Answer any question about building and shipping a slot game on Stake " +
+    "Engine: the RGS wallet endpoints and how a round is served, how the " +
+    "maths model is built and simulated, how the frontend consumes its " +
+    "events, what approval requires, and the platform facts a game is " +
+    "launched with — currencies, dimensions, languages and URL structure.",
   areas: ["", "architecture"],
 };
 
@@ -163,10 +170,12 @@ async function upsertBrain(
   );
   if (existing) {
     await query(
-      `update brains set title = $2, goal = $3, parent_id = $4, topic = 'gamedev'
-        where id = $1`,
-      [existing.id, spec.title, spec.goal, parentId],
+      `update brains set title = $2, parent_id = $3, topic = 'gamedev' where id = $1`,
+      [existing.id, spec.title, parentId],
     );
+    // Through setGoal, so a reworded goal throws away the exam it no longer
+    // describes instead of leaving the brain graded on the old promise.
+    await setGoal(existing.id, spec.goal);
     return { id: existing.id, created: false };
   }
 
