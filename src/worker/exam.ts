@@ -259,7 +259,7 @@ async function judge(
 ): Promise<{ verdicts: z.infer<typeof verdicts>["verdicts"]; costCents: number }> {
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_JUDGE,
-    maxTokens: 4000,
+    maxTokens: 8000,
     toolName: "save_verdicts",
     toolDescription: "Record one verdict per check you were given.",
     schema: JUDGE_SCHEMA,
@@ -289,7 +289,16 @@ async function judge(
   });
 
   const parsed = verdicts.safeParse(raw);
-  if (!parsed.success) throw new Error("judge schema mismatch");
+  if (!parsed.success) {
+    // Say what came back. "schema mismatch" alone sends the next person to
+    // read the schema, which is almost never where the problem is.
+    throw new Error(
+      `the judge answered in a shape we cannot read: ${parsed.error.issues
+        .slice(0, 2)
+        .map((i) => `${i.path.join(".") || "root"} ${i.message}`)
+        .join("; ")}`,
+    );
+  }
 
   return {
     verdicts: parsed.data.verdicts,
