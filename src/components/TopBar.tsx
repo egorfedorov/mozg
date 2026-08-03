@@ -3,10 +3,16 @@ import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 
 /**
- * The header answers a different question depending on who is reading it.
- * Signed out, it is "what is this and how do I start"; signed in, it is "take
- * me back to my work". Same bar, two sets of links — not one set with half of
- * it greyed out.
+ * The header for the public side of the site.
+ *
+ * One navigation per page. Everything readable — why, the comparison, both
+ * guides, connect, the catalogue — lives in the contents strip underneath, so
+ * the bar carries only identity and the way out of reading: sign in, or back
+ * to your own work.
+ *
+ * It used to repeat connect, guide and the catalogue in both rows, which is the
+ * same two-navigations mistake the admin console had. Signed-in workspace pages
+ * do not render this at all; they have the rail.
  */
 export default async function TopBar({ active }: { active?: string }) {
   const user = await currentUser();
@@ -20,18 +26,6 @@ export default async function TopBar({ active }: { active?: string }) {
 
         {user ? (
           <>
-            <Link className="navlink" data-active={active === "brains"} href="/brains">
-              brains
-            </Link>
-            <Link className="navlink" data-active={active === "explore"} href="/explore">
-              explore
-            </Link>
-            <Link className="navlink hide-sm" data-active={active === "connect"} href="/connect">
-              connect
-            </Link>
-            <Link className="navlink hide-sm" data-active={active === "guide"} href="/guide">
-              guide
-            </Link>
             {isAdmin(user) && (
               <Link
                 className="navlink hide-sm"
@@ -43,26 +37,21 @@ export default async function TopBar({ active }: { active?: string }) {
               </Link>
             )}
             <Link
-              className="navlink"
+              className="navlink hide-sm"
               data-active={active === "account"}
               href="/settings"
               style={{ color: "var(--ink-3)" }}
             >
               {user.handle ?? user.email}
             </Link>
+            <Link className="btn" href="/brains">
+              Your brains
+            </Link>
           </>
         ) : (
-          <>
-            {/* The reading pages live in the contents strip below, which fits
-                them all and does not drop half on a phone. The bar keeps the
-                two things a visitor might want to do. */}
-            <Link className="navlink" data-active={active === "explore"} href="/explore">
-              catalogue
-            </Link>
-            <Link className="btn" href="/sign-in">
-              Sign in
-            </Link>
-          </>
+          <Link className="btn" href="/sign-in">
+            Sign in
+          </Link>
         )}
       </div>
     </header>

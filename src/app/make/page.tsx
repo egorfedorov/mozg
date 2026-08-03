@@ -96,7 +96,7 @@ export default async function MakePage() {
   return (
     <>
       <SketchDefs />
-      <TopBar active="guide" />
+      <TopBar />
       <Contents active="/make" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>

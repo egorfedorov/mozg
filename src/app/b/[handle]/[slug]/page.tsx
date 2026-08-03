@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
+import Contents from "@/components/Contents";
 import BuyBrain from "@/components/BuyBrain";
 import AddBrain from "@/components/AddBrain";
 import { query } from "@/db";
@@ -120,6 +121,7 @@ export default async function PublicBrainPage({
   return (
     <>
       <TopBar />
+      <Contents active="/explore" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">

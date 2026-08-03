@@ -195,7 +195,7 @@ export MOZG_TOKEN=mzg_...`}
 
   return (
     <>
-      <TopBar active="connect" />
+      <TopBar />
       <Contents active="/connect" />
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">Model Context Protocol</p>

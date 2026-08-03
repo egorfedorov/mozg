@@ -120,7 +120,7 @@ export default async function ExplorePage({
 
   return (
     <>
-      <TopBar active="explore" />
+      <TopBar />
       <Contents active="/explore" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
