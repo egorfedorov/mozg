@@ -96,11 +96,18 @@ const PACKS: Pack[] = [
     parent: {
       slug: "mcp",
       title: "Model Context Protocol",
+      // Written from the specification, not from memory. The first version of
+      // this goal asked about "the lifecycle from initialize to shutdown" —
+      // and 2026-07-28 removed that handshake and made MCP stateless, so the
+      // exam kept asking questions with a false premise and the brain kept
+      // failing them honestly. The exam caught a wrong assumption in the goal,
+      // which is exactly what it is for.
       goal:
-        "Answer any question about the Model Context Protocol as specified: " +
-        "the JSON-RPC messages and their exact shapes, the lifecycle from " +
-        "initialize to shutdown, tools, resources and prompts, transports, " +
-        "authorization, and what a client and a server each must do.",
+        "Answer any question about the Model Context Protocol as it is " +
+        "specified today: the JSON-RPC message shapes, the transports it " +
+        "defines and their rules, how tools, resources and prompts are " +
+        "declared and called, authorization, and which behaviours are " +
+        "required of a client and of a server rather than merely suggested.",
     },
     children: [
       {
@@ -108,8 +115,8 @@ const PACKS: Pack[] = [
         title: "MCP · Specification",
         goal:
           "Answer what the MCP specification requires: the exact JSON-RPC " +
-          "request and response shapes for every method, error codes, the " +
-          "initialize handshake and version negotiation, capabilities, and " +
+          "request and response shapes for every method, error codes, how a " +
+          "client and server agree on a protocol version, capabilities, and " +
           "which behaviours are MUST rather than SHOULD.",
         areas: ["specification"],
       },
