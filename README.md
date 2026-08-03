@@ -359,7 +359,6 @@ Protocol** (семья из 2, бесплатно, ~1000 заметок), соб
 | `npm run requeue -- --brain <slug>` / `--failed` | вернуть источники в очередь (статус + задание вместе) |
 | `npm run token -- --owner <email>` | выпустить MCP-токен; `--revoke <name>` |
 | `npm run catalogue -- --owner <email> --dry` | что сидер положит в каталог |
-| `npm run seed:stake -- --owner <email>` | пересобрать семью Stake Engine |
 
 ## Что здесь ломалось, и почему это стоит помнить
 

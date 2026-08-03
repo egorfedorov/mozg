@@ -12,6 +12,8 @@ import {
   categoryNames,
 } from "@/lib/notes";
 import { deleteNote, mergeNotes, recategorise, restoreNote } from "./actions";
+import ConfirmForm from "@/components/ConfirmForm";
+import { isoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -205,7 +207,7 @@ export default async function NotesPage({
                             {note.body}
                           </p>
                           <span className="row-meta" style={{ marginBottom: ".6rem" }}>
-                            {note.category ?? "uncategorised"} · added {String(note.created_at)}
+                            {note.category ?? "uncategorised"} · added {isoDate(note.created_at)}
                           </span>
                           <form action={mergeNotes}>
                             <input type="hidden" name="keep" value={note.id} />
@@ -375,13 +377,17 @@ function NoteRow({
             <button className="linkish">move</button>
           </form>
 
-          <form action={deleteNote} style={{ marginLeft: "auto" }}>
+          <ConfirmForm
+            action={deleteNote}
+            message={`Delete "${note.title}"? This cannot be undone.`}
+            style={{ marginLeft: "auto" }}
+          >
             <input type="hidden" name="id" value={note.id} />
             <input type="hidden" name="slug" value={slug} />
             <button className="linkish" data-danger="true">
               delete
             </button>
-          </form>
+          </ConfirmForm>
         </span>
       </span>
     </article>

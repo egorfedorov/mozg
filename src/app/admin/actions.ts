@@ -68,9 +68,9 @@ export async function adjustBalance(formData: FormData) {
 }
 
 /**
- * Settle a withdrawal. "Paid" is what debits the balance — mark it only after
- * the transfer has actually left, because this is the step that makes the
- * ledger say the money is gone.
+ * Settle a withdrawal. The money was held when the request was made, so "paid"
+ * only closes the row — mark it only after the transfer has actually left.
+ * "Rejected" refunds the hold back to the author's balance.
  */
 export async function settleWithdrawal(formData: FormData) {
   const admin = await requireAdmin();

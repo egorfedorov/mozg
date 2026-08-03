@@ -66,47 +66,63 @@ async function move(opts: MoveOptions): Promise<void> {
 }
 
 /**
- * Credit a balance. `externalRef` is the payment provider's id — the unique
- * index on it means a webhook delivered three times still credits once.
+ * Credit a balance inside an existing transaction. The payment webhook holds
+ * one so "top-up marked paid" and "balance credited" commit together — done
+ * separately, a crash between them would lose the money while a retried
+ * webhook answers "already".
+ *
+ * `externalRef` is the payment provider's id — the unique index on it means a
+ * webhook delivered three times still credits once.
  */
+export async function creditTopUp(
+  client: PoolClient,
+  opts: {
+    userId: string;
+    amountCents: number;
+    externalRef?: string;
+    note?: string;
+  },
+): Promise<{ credited: boolean; balanceCents: number }> {
+  if (opts.amountCents <= 0) throw new Error("top-up must be positive");
+
+  if (opts.externalRef) {
+    const seen = await client.query(
+      `select 1 from ledger where external_ref = $1`,
+      [opts.externalRef],
+    );
+    if (seen.rowCount) {
+      const { rows } = await client.query<{ balance_cents: number }>(
+        `select balance_cents from "user" where id = $1`,
+        [opts.userId],
+      );
+      return { credited: false, balanceCents: rows[0]?.balance_cents ?? 0 };
+    }
+  }
+
+  await move({
+    client,
+    userId: opts.userId,
+    amountCents: opts.amountCents,
+    kind: "topup",
+    externalRef: opts.externalRef,
+    note: opts.note,
+  });
+
+  const { rows } = await client.query<{ balance_cents: number }>(
+    `select balance_cents from "user" where id = $1`,
+    [opts.userId],
+  );
+  return { credited: true, balanceCents: rows[0].balance_cents };
+}
+
+/** Credit a balance in its own transaction — see creditTopUp. */
 export async function topUp(opts: {
   userId: string;
   amountCents: number;
   externalRef?: string;
   note?: string;
 }): Promise<{ credited: boolean; balanceCents: number }> {
-  if (opts.amountCents <= 0) throw new Error("top-up must be positive");
-
-  return tx(async (client) => {
-    if (opts.externalRef) {
-      const seen = await client.query(
-        `select 1 from ledger where external_ref = $1`,
-        [opts.externalRef],
-      );
-      if (seen.rowCount) {
-        const { rows } = await client.query<{ balance_cents: number }>(
-          `select balance_cents from "user" where id = $1`,
-          [opts.userId],
-        );
-        return { credited: false, balanceCents: rows[0]?.balance_cents ?? 0 };
-      }
-    }
-
-    await move({
-      client,
-      userId: opts.userId,
-      amountCents: opts.amountCents,
-      kind: "topup",
-      externalRef: opts.externalRef,
-      note: opts.note,
-    });
-
-    const { rows } = await client.query<{ balance_cents: number }>(
-      `select balance_cents from "user" where id = $1`,
-      [opts.userId],
-    );
-    return { credited: true, balanceCents: rows[0].balance_cents };
-  });
+  return tx((client) => creditTopUp(client, opts));
 }
 
 /**
@@ -151,10 +167,11 @@ export type PayoutResult =
   | { ok: false; reason: "too-small" | "insufficient" | "already-open" };
 
 /**
- * Ask to withdraw. Nothing moves yet — the money leaves the balance when the
- * payout is marked paid, so an unanswered request never makes a balance lie.
- * The amount is still checked against the balance now, because a request for
- * money that is not there wastes the operator's time.
+ * Ask to withdraw. The amount leaves the balance immediately, as a hold: a
+ * request that only checked the balance could be spent twice over before
+ * anyone settled it. A rejected payout refunds the hold (see settlePayout),
+ * so an unanswered request still never makes a balance lie — the ledger shows
+ * exactly where the money sits.
  */
 export async function requestPayout(opts: {
   userId: string;
@@ -183,19 +200,31 @@ export async function requestPayout(opts: {
        values ($1, $2, $3) returning id`,
       [opts.userId, opts.amountCents, opts.destination],
     );
+
+    // The hold: debit now, in the same transaction as the request row.
+    await move({
+      client,
+      userId: opts.userId,
+      amountCents: -opts.amountCents,
+      kind: "payout",
+      note: `payout ${rows[0].id} requested`,
+    });
+
     return { ok: true as const, payoutId: rows[0].id };
   });
 }
 
 /**
- * Settle a payout. Marking it paid is what actually debits the balance, in the
- * same transaction — so a paid payout and the money leaving are one event.
+ * Settle a payout. The money was already held at request time, so marking it
+ * paid only closes the row; rejecting refunds the hold, in the same
+ * transaction as the rejection — a rejected payout and its money coming back
+ * are one event.
  */
 export async function settlePayout(opts: {
   payoutId: string;
   paid: boolean;
   note?: string;
-}): Promise<{ ok: boolean; reason?: "not-open" | "insufficient" }> {
+}): Promise<{ ok: boolean; reason?: "not-open" }> {
   return tx(async (client) => {
     const { rows } = await client.query<{
       user_id: string;
@@ -209,6 +238,14 @@ export async function settlePayout(opts: {
     const { user_id, amount_cents } = rows[0];
 
     if (!opts.paid) {
+      // Give the hold back. Locked at request time, so the balance is there.
+      await move({
+        client,
+        userId: user_id,
+        amountCents: amount_cents,
+        kind: "refund",
+        note: opts.note ?? "payout rejected",
+      });
       await client.query(
         `update payouts set status = 'rejected', settled_at = now(), note = $2
           where id = $1`,
@@ -216,22 +253,6 @@ export async function settlePayout(opts: {
       );
       return { ok: true };
     }
-
-    const balance = await client.query<{ balance_cents: number }>(
-      `select balance_cents from "user" where id = $1 for update`,
-      [user_id],
-    );
-    if (!balance.rows.length || balance.rows[0].balance_cents < amount_cents) {
-      return { ok: false, reason: "insufficient" as const };
-    }
-
-    await move({
-      client,
-      userId: user_id,
-      amountCents: -amount_cents,
-      kind: "payout",
-      note: opts.note ?? "withdrawal",
-    });
 
     await client.query(
       `update payouts set status = 'paid', settled_at = now(), note = $2 where id = $1`,
@@ -246,21 +267,33 @@ export type PurchaseResult =
   | { ok: false; reason: "already-owned" | "insufficient" | "free" | "own-brain" };
 
 /**
- * Buy access to a brain. One transaction: lock the buyer, check the balance,
- * debit, credit the author, record the purchase.
+ * Buy access to a brain. One transaction: lock the brain so the price cannot
+ * change under us, lock the buyer, check the balance, debit, credit the
+ * author, record the purchase.
+ *
+ * The price is read here, from the locked row — never taken from the caller.
+ * Read outside the transaction, the author could reprice the brain between
+ * the page's select and the debit, and the buyer would be charged a number
+ * they never saw.
  */
 export async function purchaseBrain(opts: {
   brainId: string;
   buyerId: string;
   sellerId: string;
-  priceCents: number;
 }): Promise<PurchaseResult> {
-  const { brainId, buyerId, sellerId, priceCents } = opts;
+  const { brainId, buyerId, sellerId } = opts;
 
-  if (priceCents <= 0) return { ok: false, reason: "free" };
   if (buyerId === sellerId) return { ok: false, reason: "own-brain" };
 
   return tx(async (client) => {
+    const brain = await client.query<{ price_cents: number }>(
+      `select price_cents from brains where id = $1 for update`,
+      [brainId],
+    );
+    if (!brain.rows.length) throw new Error(`no such brain: ${brainId}`);
+    const priceCents = brain.rows[0].price_cents;
+    if (priceCents <= 0) return { ok: false as const, reason: "free" as const };
+
     // Lock first. Without this, two clicks a millisecond apart both read the
     // old balance and both pass the check.
     const locked = await client.query<{ balance_cents: number }>(

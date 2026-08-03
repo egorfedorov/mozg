@@ -7,6 +7,7 @@ import type { Source } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { storage } from "@/lib/storage";
 import { checkFetchableUrl } from "@/lib/url-guard";
+import { rateLimited } from "@/lib/rate-limit";
 import { enqueueIngest } from "@/worker/queue";
 
 async function ownedSource(sourceId: string, userId: string): Promise<Source | null> {
@@ -29,6 +30,10 @@ export async function retrySource(formData: FormData) {
 
   const source = await ownedSource(String(formData.get("id")), user.id);
   if (!source) return;
+
+  // A retry re-reads the whole source through the extraction model on the
+  // platform's bill, so it cannot be a free retry loop either.
+  if (await rateLimited(user.id, "ingest-retry", 10)) return;
 
   // Drop what the previous attempt produced, or a retry would double the notes.
   await query(`delete from notes where source_id = $1`, [source.id]);

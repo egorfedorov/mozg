@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
+import ConfirmForm from "@/components/ConfirmForm";
 import ConnectBox from "@/components/ConnectBox";
 import Dropzone from "@/components/Dropzone";
 import AddUrls from "@/components/AddUrls";
@@ -22,6 +24,22 @@ const LICENSE_LABEL: Record<string, string> = {
 };
 
 const STATE_SIGIL = { pass: "✓", partial: "▲", fail: "✕", empty: "·" } as const;
+
+/** The tab says which brain you are in — a workspace of five tabs needs it. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const user = await currentUser();
+  if (!user) return { title: "mozg" };
+  const brain = await maybeOne<Pick<Brain, "title">>(
+    `select title from brains where owner_id = $1 and slug = $2`,
+    [user.id, slug],
+  );
+  return { title: brain ? `${brain.title} — mozg` : "mozg" };
+}
 
 export default async function BrainPage({
   params,
@@ -370,7 +388,10 @@ export default async function BrainPage({
                         </button>
                       </form>
                     )}
-                    <form action={deleteSource}>
+                    <ConfirmForm
+                      action={deleteSource}
+                      message={`Remove "${s.original_name ?? s.url ?? "this source"}"? Its notes are deleted with it.`}
+                    >
                       <input type="hidden" name="id" value={s.id} />
                       <input type="hidden" name="slug" value={brain.slug} />
                       <button
@@ -379,7 +400,7 @@ export default async function BrainPage({
                       >
                         remove
                       </button>
-                    </form>
+                    </ConfirmForm>
                     <StatusTag status={s.status} />
                   </span>
                 </div>

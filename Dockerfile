@@ -28,7 +28,10 @@ ENV PORT=3300
 ARG GIT_SHA=unknown
 ENV GIT_SHA=$GIT_SHA
 
-# sharp needs libvips at runtime; tsx runs the worker straight from TypeScript.
+# tsx runs the worker straight from TypeScript and needs ca-certificates for
+# outbound TLS. libvips42 is likely unused since sharp 0.34, which ships its
+# own bundled libvips — it stays only because removing it unverified risks
+# breaking image processing in production.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libvips42 ca-certificates \
  && rm -rf /var/lib/apt/lists/*

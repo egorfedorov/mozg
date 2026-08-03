@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import type { Brain } from "@/db/types";
+import { accessFor } from "@/lib/access";
 
 /**
  * Brain families.
@@ -36,6 +37,34 @@ export async function familyIds(brain: Pick<Brain, "id" | "parent_id">): Promise
     `select id from brains where parent_id = $1`,
     [brain.id],
   );
+  return [brain.id, ...kids.map((k) => k.id)];
+}
+
+/**
+ * The children a specific reader may actually open, judged by the same rules
+ * accessFor applies to a single brain. Anything reader-facing must use this
+ * rather than childrenOf/familyIds: resolving the parent says nothing about
+ * its children, and without this filter asking a public parent becomes a way
+ * to read its private or unpurchased children.
+ */
+export async function accessibleChildren(
+  parentId: string,
+  userId: string | null,
+): Promise<FamilyMember[]> {
+  const kids = await childrenOf(parentId);
+  const readable = await Promise.all(
+    kids.map(async (k) => ((await accessFor(k.id, userId))?.access ? k : null)),
+  );
+  return readable.filter((k): k is FamilyMember => k !== null);
+}
+
+/** familyIds for a reader: the search scope must not be wider than their access. */
+export async function familyScopeFor(
+  brain: Pick<Brain, "id" | "parent_id">,
+  userId: string | null,
+): Promise<string[]> {
+  if (brain.parent_id) return [brain.id];
+  const kids = await accessibleChildren(brain.id, userId);
   return [brain.id, ...kids.map((k) => k.id)];
 }
 

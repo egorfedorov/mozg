@@ -22,6 +22,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    # json-file logs grow without bound by default; an unrotated container log
+    # can quietly fill the disk. 3 x 50 MB per service is enough for
+    # postmortems, not enough to starve postgres.
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
 
   embed:
     build: ./services/embed
@@ -40,6 +48,11 @@ services:
       resources:
         limits:
           memory: 4g
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
 
   app:
     build:
@@ -53,6 +66,9 @@ services:
       - "127.0.0.1:3300:3300"
     env_file: .env
     environment:
+      # POSTGRES_PASSWORD is interpolated into a URL and compose cannot
+      # percent-encode it: the password must not contain @ : or /. Stick to
+      # letters, digits, - and _ when rotating.
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
       EMBED_URL: http://embed:8099
       STORAGE_LOCAL_DIR: /data/storage
@@ -61,6 +77,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # The slim image has neither curl nor wget; node 20's global fetch stands
+    # in. /api/health is the same endpoint the deploy smoke test checks.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3300/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
 
   worker:
     build:
@@ -79,6 +108,21 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # No HTTP port to probe and no pgrep in the slim image, so the check walks
+    # /proc for the worker's tsx process. Docker's restart policy covers a
+    # clean crash; this catches the stranger case where the container is alive
+    # but the worker process is gone.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const fs=require('fs');const ok=fs.readdirSync('/proc').some(d=>/^\\d+$/.test(d)&&(()=>{try{return fs.readFileSync('/proc/'+d+'/cmdline','utf8').includes('worker/index')}catch{return false}})());process.exit(ok?0:1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
 
 volumes:
   pgdata:

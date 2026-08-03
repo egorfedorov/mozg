@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createTokenInline } from "@/app/brains/[slug]/token-action";
 
@@ -100,6 +101,14 @@ export default function ConnectBox({
       </div>
       <div>
         <span className="u">&gt;</span> use mozg:{slug} — …
+      </div>
+
+      {/* The command above is Claude Code only; everyone else lands on /connect. */}
+      <div className="c" style={{ marginTop: "1.1rem" }}>
+        not Claude Code?{" "}
+        <Link href="/connect" style={{ color: "var(--color-riso-yellow)", textDecoration: "underline" }}>
+          setup for Codex, Cursor, Kimi and the rest →
+        </Link>
       </div>
     </section>
   );

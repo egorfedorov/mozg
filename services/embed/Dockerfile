@@ -8,8 +8,11 @@ RUN apt-get update \
 
 COPY requirements.txt .
 # CPU-only torch: the GPU build is several GB larger and this workload is a few
-# hundred embeddings a minute at most.
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+# hundred embeddings a minute at most. The pin stays in sync with
+# requirements.txt — the CPU index serves it as 2.6.0+cpu, which ==2.6.0
+# matches (local versions are ignored), so the requirements pass below sees
+# torch as already satisfied instead of pulling the GPU wheel from PyPI.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.6.0 \
  && pip install --no-cache-dir -r requirements.txt
 
 COPY main.py fetch-model.sh ./

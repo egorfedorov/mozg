@@ -10,8 +10,9 @@ import { purchaseBrain } from "@/lib/money";
 /**
  * Buy access to a brain from the account balance.
  *
- * The price is read from the database here, never taken from the form: a
- * posted price is a number the buyer chose.
+ * The price is read inside purchaseBrain's own transaction, never from the
+ * form and never from this read: a posted price is a number the buyer chose,
+ * and a price read here could change before the debit.
  */
 export async function buyBrain(_prev: unknown, formData: FormData) {
   const user = await currentUser();
@@ -28,7 +29,6 @@ export async function buyBrain(_prev: unknown, formData: FormData) {
     brainId: brain.id,
     buyerId: user.id,
     sellerId: brain.owner_id,
-    priceCents: brain.price_cents,
   });
 
   if (result.ok) {

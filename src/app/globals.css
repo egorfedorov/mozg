@@ -11,7 +11,10 @@
   --color-paper-2: #f6f7f3;
   --color-ink: #14161a;
   --color-ink-2: #565c66;
-  --color-ink-3: #8d939c;
+  /* #646b75, not the old #8d939c: the lighter grey was ≈2.4:1 on paper, well
+     under WCAG AA for the small text (.stat-note, .row-meta) that uses it.
+     This sits at ≈4.6:1 and still reads lighter than --ink-2. */
+  --color-ink-3: #646b75;
   --color-rule: #cfd2ca;
 
   --color-riso-blue: #3d5588;
@@ -27,7 +30,7 @@
   --paper-2: #f6f7f3;
   --ink: #14161a;
   --ink-2: #565c66;
-  --ink-3: #8d939c;
+  --ink-3: #646b75;
   --rule: #cfd2ca;
   --shadow: 0 1px 0 var(--rule);
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
@@ -502,6 +505,197 @@ a {
   border: 1.5px solid var(--ink);
   background: var(--paper-2);
   padding: 1.25rem;
+}
+
+/* ─── the drawn layer ───────────────────────────────────────────────────── */
+/* Graphite is not ink: a pencil is warmer and never fully black, and keeping
+   them apart is what stops the drawings reading as failed printing. */
+
+:root {
+  --graphite: #4a4844;
+}
+
+.sk-panel {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.sk-panel-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sk-panel-body {
+  position: relative;
+  padding: 1.5rem 1.4rem 1.3rem;
+}
+
+.sk-panel-n {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.sk-panel-title {
+  margin: 0 0 0.55rem;
+}
+
+.sk-panel-text {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.sk-panel-text p {
+  margin: 0 0 0.6rem;
+}
+
+.sk-panel-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* The margin note: written after the panel, at a slight angle, the way you
+   annotate your own printout. */
+.sk-aside {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  color: var(--graphite);
+  opacity: 0.75;
+  margin: 0.9rem 0 0;
+  padding-left: 0.9rem;
+  border-left: 1.5px solid currentColor;
+  transform: rotate(-0.4deg);
+}
+
+.sk-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  fill: var(--ink-2);
+  letter-spacing: 0.04em;
+}
+
+.sk-label-red {
+  fill: var(--color-riso-red);
+}
+
+.sk-strip {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-panel-frame {
+    filter: none;
+  }
+}
+
+/* ─── the strip ─────────────────────────────────────────────────────────── */
+/* Panels read left to right on a wide screen and top to bottom on a phone, so
+   the arrow between them has to turn with the flow — an arrow pointing right
+   at the end of a stacked column points at nothing. */
+
+.strip {
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+/* ─── the comparison ────────────────────────────────────────────────────── */
+/* Two columns on a wide screen, stacked on a phone with the labels repeated —
+   an answer with no idea which side it belongs to is worse than a taller page. */
+
+.vs-grid {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+/* Only useful once the answers sit side by side. */
+.vs-head {
+  display: none;
+}
+
+.vs-row {
+  border-bottom: 1px solid var(--rule);
+  padding: 1.1rem 1.25rem;
+}
+
+.vs-row:last-child {
+  border-bottom: 0;
+}
+
+.vs-q {
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--q, var(--ink));
+}
+
+.vs-pair {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vs-file,
+.vs-brain {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.vs-file {
+  color: var(--ink-2);
+}
+
+.vs-file::before,
+.vs-brain::before {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--ink-3);
+}
+
+.vs-file::before {
+  content: "file";
+}
+
+.vs-brain::before {
+  content: "brain";
+  color: var(--color-riso-red);
+}
+
+@media (min-width: 760px) {
+  .vs-pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  /* Labelled once at the top of the column instead of on every row. */
+  .vs-file::before,
+  .vs-brain::before {
+    content: none;
+  }
+
+  .vs-head {
+    display: block;
+    padding-block: 0.8rem;
+  }
+
+  .vs-head .vs-pair {
+    padding-left: 0.7rem;
+  }
+
+  .vs-brain {
+    color: var(--ink);
+  }
 }
 
 /* ─── the scale ─────────────────────────────────────────────────────────── */
@@ -997,6 +1191,28 @@ a.row:hover {
 
 .dot[data-state="down"] {
   background: var(--color-riso-red);
+}
+
+/* ─── loading skeletons ─────────────────────────────────────────────────── */
+/* Blocks, not a spinner: the page's own shapes arriving is calmer than a
+   wheel, and it makes the wait look like progress. */
+
+.skel {
+  background: var(--paper-2);
+  border: 1.5px solid var(--rule);
+  animation: skel-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skel-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+  }
 }
 
 .dot[data-state="idle"] {

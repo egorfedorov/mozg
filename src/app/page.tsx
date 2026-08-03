@@ -310,16 +310,16 @@ export default async function Home() {
             }}
           >
             <GuideCard
-              href="/why"
+              href="/vs"
               step="01"
-              title="Why this exists"
-              blurb="What a brain is, and why agent memory built into one vendor isn't the same thing."
+              title="Why not just a file?"
+              blurb="Both are text an agent reads. The difference is what happens to them over three months."
             />
             <GuideCard
-              href="/guide"
+              href="/make"
               step="02"
-              title="Build a good brain"
-              blurb="What to feed it, how to write a goal that becomes a real exam, and what a low score means."
+              title="Make one, in six panels"
+              blurb="Pick one job, write the goal as an outcome, feed the real thing, read the failures."
             />
             <GuideCard
               href="/connect"

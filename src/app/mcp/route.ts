@@ -18,6 +18,9 @@ import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
 
 const PROTOCOL_VERSION = "2025-06-18";
 
+/** See the batch note in POST: larger batches would outrun the quota checks. */
+const MAX_BATCH = 10;
+
 interface RpcRequest {
   jsonrpc: "2.0";
   id?: string | number | null;
@@ -49,9 +52,15 @@ export async function POST(req: Request) {
   }
 
   // Batches are legal JSON-RPC; clients rarely send them, but dropping them
-  // silently would be a confusing failure.
+  // silently would be a confusing failure. Capped, and run one at a time: the
+  // burst and quota checks read the calls table, so a parallel batch would
+  // pass every check before the first call was ever recorded.
   if (Array.isArray(body)) {
-    const results = await Promise.all(body.map((r) => handle(r, owner)));
+    if (body.length > MAX_BATCH) {
+      return fail(null, -32600, `Batch too large: at most ${MAX_BATCH} requests per call.`);
+    }
+    const results = [];
+    for (const r of body) results.push(await handle(r, owner));
     const responses = results.filter(Boolean);
     return responses.length
       ? NextResponse.json(responses)
@@ -158,15 +167,21 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       try {
         outcome = await callTool(name, args, owner);
       } catch (err) {
+        // err.message can carry pg details (relation names, constraint text) —
+        // schema information a caller has no business seeing. Log it, answer
+        // with something generic.
+        console.error(`[mcp] ${name} failed for ${owner.userId}:`, err);
         outcome = {
-          text: `Tool failed: ${err instanceof Error ? err.message : String(err)}`,
+          text: "Tool failed with an internal error. The details are logged; do not retry the same call.",
           isError: true,
         };
       }
 
       // Metering is the same table billing will read — record every call,
-      // including the failed ones, or the numbers lie.
-      void query(
+      // including the failed ones, or the numbers lie. Awaited rather than
+      // fire-and-forget so a batched call's burst/quota check sees the calls
+      // before it; a failed insert must still not fail the tool call.
+      await query(
         `insert into calls
            (brain_id, caller_id, owner_id, tool, query, results, latency_ms, ok)
          values ($1, $2, $3, $4, $5, $6, $7, $8)`,

@@ -27,6 +27,21 @@ export async function deleteBrain(_prev: unknown, formData: FormData) {
     return { error: `Type "${brain.title}" exactly to confirm.` };
   }
 
+  // Same refusal the admin path makes: people paid for that access, and
+  // deleting the brain silently takes what they bought.
+  const sold = await maybeOne<{ n: number }>(
+    `select count(*)::int as n from purchases where brain_id = $1`,
+    [brain.id],
+  );
+  if (sold && sold.n > 0) {
+    return {
+      error:
+        `This brain has been bought ${sold.n} time${sold.n === 1 ? "" : "s"}, so it cannot ` +
+        "be deleted — that would take back something people paid for. Take it off " +
+        "sale instead, or ask support to refund the buyers first.",
+    };
+  }
+
   const keys = await query<{ storage_key: string }>(
     `select storage_key from sources
       where brain_id = $1 and storage_key is not null`,

@@ -5,7 +5,7 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
-import { familyIds, childrenOf } from "@/lib/families";
+import { familyScopeFor, accessibleChildren } from "@/lib/families";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
@@ -350,8 +350,11 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
 
   // A parent is a map, not a store. Say what it groups before anything else —
   // an agent that reads this should know it can search here for everything, or
-  // pick one child to stay inside a single subject.
-  const kids = resolved.brain.parent_id ? [] : await childrenOf(resolved.brain.id);
+  // pick one child to stay inside a single subject. Only the children this
+  // caller may read: naming a private one would leak that it exists at all.
+  const kids = resolved.brain.parent_id
+    ? []
+    : await accessibleChildren(resolved.brain.id, owner.userId);
   if (kids.length) {
     parts.push(
       "",
@@ -400,9 +403,10 @@ async function brainSearch(
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
 
-  // A parent reaches its children, so an agent that knows the product name
-  // does not have to know how the owner split it up.
-  const scope = await familyIds(resolved.brain);
+  // A parent reaches the children this caller may read — no further. Resolving
+  // the parent checked the parent's gate only, so an unfiltered scope would
+  // let a public parent answer from its private or unpurchased children.
+  const scope = await familyScopeFor(resolved.brain, owner.userId);
 
   const { hits, degraded } = await searchBrain(scope, q, {
     limit: typeof args.limit === "number" ? args.limit : undefined,
@@ -507,8 +511,11 @@ async function brainWrite(
     };
   }
 
-  const title = String(args.title ?? "").trim();
-  const body = String(args.body ?? "").trim();
+  // Capped like brain_create does (80/4000), only looser — a note is longer
+  // than a goal, but an agent pasting a whole log file should be stopped
+  // somewhere. 200/20000 matches what a human would ever write by hand.
+  const title = String(args.title ?? "").trim().slice(0, 200);
+  const body = String(args.body ?? "").trim().slice(0, 20000);
   if (!title || !body) {
     return { text: "Both title and body are required.", isError: true };
   }
@@ -709,7 +716,10 @@ async function brainAddSource(
   const rawUrls = Array.isArray(args.urls)
     ? args.urls.map((u) => String(u).trim()).filter(Boolean).slice(0, 25)
     : [];
-  const text = typeof args.text === "string" ? args.text.trim() : "";
+  // ~100 KB of pasted material: the web upload path caps files at 20 MB, but
+  // a text block goes through extraction as one job, so a smaller cap keeps a
+  // paste from turning into a very expensive single ingest.
+  const text = typeof args.text === "string" ? args.text.trim().slice(0, 100_000) : "";
 
   if (!rawUrls.length && !text) {
     return { text: "Pass urls, text, or both.", isError: true };

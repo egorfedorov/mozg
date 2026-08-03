@@ -9,7 +9,7 @@ export default function TokenForm() {
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3300";
 
-  if (state?.token) {
+  if (state && "token" in state) {
     const command = `claude mcp add --transport http mozg ${base}/mcp --header "Authorization: Bearer ${state.token}"`;
     return (
       <section className="term" style={{ marginTop: "1.5rem" }}>
@@ -65,6 +65,11 @@ export default function TokenForm() {
       <button className="btn" disabled={pending}>
         {pending ? "Creating…" : "New token"}
       </button>
+      {state && "error" in state && (
+        <p role="alert" style={{ width: "100%", margin: 0, color: "var(--ink-2)" }}>
+          {state.error}
+        </p>
+      )}
     </form>
   );
 }

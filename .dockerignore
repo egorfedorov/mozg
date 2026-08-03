@@ -1,0 +1,32 @@
+# The Dockerfile does `COPY . .` in the build stage — everything not listed
+# here lands in the build context and in image layers. Mirrors .gitignore,
+# plus the things git tracks but Docker must never see.
+
+# secrets: .env holds the API key, the auth secret and POSTGRES_PASSWORD.
+# A layer with .env in it is a leak that survives force-pushes.
+.env
+.env.*
+!.env.example
+
+# version control
+.git
+
+# host build artifacts: the Mac's node_modules carry darwin binaries that
+# break the linux image, and .next would shadow the container's own build
+node_modules
+.next
+*.tsbuildinfo
+next-env.d.ts
+
+# local data, never part of the app
+.storage
+.shots
+
+# embedding service: 2.2 GB of model weights and a venv
+services/embed/models
+services/embed/.venv
+__pycache__
+
+# scratch
+*.log
+.DS_Store

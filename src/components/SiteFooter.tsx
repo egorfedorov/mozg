@@ -10,6 +10,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Product",
     links: [
       { href: "/why", label: "Why mozg" },
+      { href: "/vs", label: "A brain and a Skill file" },
       { href: "/explore", label: "Catalogue" },
       { href: "/explore?price=free", label: "Free brains" },
       { href: "/explore?price=paid", label: "Paid brains" },
@@ -18,7 +19,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Guides",
     links: [
-      { href: "/guide", label: "Build a brain" },
+      { href: "/make", label: "Make one, in six panels" },
+      { href: "/guide", label: "The long version" },
       { href: "/connect", label: "Connect an agent" },
       { href: "/connect#models", label: "Models that work" },
       { href: "/guide#selling", label: "Sell a brain" },

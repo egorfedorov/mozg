@@ -1,9 +1,10 @@
 -- Payout requests.
 --
 -- Payouts are manual: an author asks, we send crypto by hand, we mark it paid.
--- The row exists so the ask is a record rather than an email thread, and so
--- the money only leaves the balance at the moment it is marked paid — the
--- ledger stays the single source of truth for what anyone holds.
+-- The row exists so the ask is a record rather than an email thread. The money
+-- is held the moment the ask is made (a 'payout' debit, refunded on rejection),
+-- so the balance a request reserves cannot be spent again while it waits — and
+-- the ledger stays the single source of truth for what anyone holds.
 
 create table if not exists payouts (
   id           uuid primary key default gen_random_uuid(),

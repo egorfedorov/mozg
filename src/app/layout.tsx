@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 // Cyrillic throughout: brains will hold Russian notes, and a fallback glyph in
@@ -26,9 +27,19 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Absolute URLs for every og:/twitter: tag below — without a base, crawlers
+  // get relative paths and the share card silently loses its image.
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
   title: "mozg — one brain, every agent",
   description:
     "Build a knowledge brain from screenshots and files, then connect it to Claude Code, Codex and Cursor over MCP.",
+  openGraph: {
+    siteName: "mozg",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,13 @@
-# torch wheels lag new Python releases — leave the floor open so 3.12/3.13 both
-# resolve. Pin exactly only if a specific build starts misbehaving.
-torch>=2.6
-sentence-transformers>=3.3
-fastapi>=0.115
-uvicorn[standard]>=0.34
+# Pinned to the versions the embedding pipeline was verified against: torch
+# and sentence-transformers move fast, and a silent major bump would rebuild
+# the image with an untested extractor. Bump deliberately, then re-check
+# extraction quality. torch 2.6.0 wheels cover Python 3.9-3.13, so the pin
+# does not constrain the interpreter the way the old floor comment feared.
+#
+# torch is also installed separately in the Dockerfile from the CPU wheel
+# index — keep the two pins in sync, or pip resolves the mismatch by pulling
+# the multi-GB GPU wheel from PyPI.
+torch==2.6.0
+sentence-transformers==3.4.1
+fastapi==0.115.12
+uvicorn[standard]==0.34.0

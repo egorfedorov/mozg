@@ -61,7 +61,6 @@ async function main() {
     brainId: brain.id,
     buyerId: buyer,
     sellerId: seller,
-    priceCents: 500,
   });
   check("refused", !broke.ok && broke.reason === "insufficient");
 
@@ -73,8 +72,8 @@ async function main() {
   console.log("\ntwo simultaneous purchases");
   // The whole reason the buyer's row is locked before the balance is read.
   const [a, b] = await Promise.all([
-    purchaseBrain({ brainId: brain.id, buyerId: buyer, sellerId: seller, priceCents: 500 }),
-    purchaseBrain({ brainId: brain.id, buyerId: buyer, sellerId: seller, priceCents: 500 }),
+    purchaseBrain({ brainId: brain.id, buyerId: buyer, sellerId: seller }),
+    purchaseBrain({ brainId: brain.id, buyerId: buyer, sellerId: seller }),
   ]).catch((err) => {
     // A unique-violation surfacing as a throw is still "only one won".
     console.log(`  (one attempt threw: ${err instanceof Error ? err.message.slice(0, 60) : err})`);

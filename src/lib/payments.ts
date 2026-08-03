@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { maybeOne, query } from "@/db";
+import { query, tx } from "@/db";
 import { env } from "@/lib/env";
-import { topUp } from "@/lib/money";
+import { creditTopUp } from "@/lib/money";
 
 /**
  * Crypto top-ups through NOWPayments.
@@ -135,43 +135,54 @@ export async function applyWebhook(payload: {
   const status = String(payload.payment_status ?? "");
   if (!reference) return { credited: false, reason: "unknown" };
 
-  const row = await maybeOne<{
-    id: string;
-    user_id: string;
-    amount_cents: number;
-    status: string;
-  }>(`select id, user_id, amount_cents, status from topups where reference = $1`, [reference]);
-
-  if (!row) return { credited: false, reason: "unknown" };
-  if (row.status === "paid") return { credited: false, reason: "already" };
-
-  if (FINAL_BAD.has(status)) {
-    await query(
-      `update topups set status = 'failed', settled_at = now() where id = $1`,
-      [row.id],
+  // One transaction, row locked the whole time. Two deliveries of the same
+  // callback must not both pass the status check, and the row becomes 'paid'
+  // in the same commit that credits the balance — marked-paid without the
+  // credit is money lost, because a retried webhook answers "already".
+  return tx(async (client) => {
+    const { rows } = await client.query<{
+      id: string;
+      user_id: string;
+      amount_cents: number;
+      status: string;
+    }>(
+      `select id, user_id, amount_cents, status from topups where reference = $1
+        for update`,
+      [reference],
     );
-    return { credited: false, reason: "failed" };
-  }
+    const row = rows[0];
 
-  // Anything else — waiting, confirming, partially_paid — is not money yet.
-  if (!FINAL_OK.has(status)) return { credited: false, reason: "not-final" };
+    if (!row) return { credited: false as const, reason: "unknown" as const };
+    if (row.status === "paid") return { credited: false as const, reason: "already" as const };
 
-  await query(
-    `update topups set status = 'paid', settled_at = now(), provider_ref = $2
-      where id = $1`,
-    [row.id, payload.payment_id ? String(payload.payment_id) : null],
-  );
+    if (FINAL_BAD.has(status)) {
+      await client.query(
+        `update topups set status = 'failed', settled_at = now() where id = $1`,
+        [row.id],
+      );
+      return { credited: false as const, reason: "failed" as const };
+    }
 
-  // Our amount, not theirs. The ledger's unique external_ref makes a second
-  // delivery of the same callback a no-op even if the row check above raced.
-  await topUp({
-    userId: row.user_id,
-    amountCents: row.amount_cents,
-    externalRef: reference,
-    note: "crypto top-up",
+    // Anything else — waiting, confirming, partially_paid — is not money yet.
+    if (!FINAL_OK.has(status)) return { credited: false as const, reason: "not-final" as const };
+
+    await client.query(
+      `update topups set status = 'paid', settled_at = now(), provider_ref = $2
+        where id = $1`,
+      [row.id, payload.payment_id ? String(payload.payment_id) : null],
+    );
+
+    // Our amount, not theirs. The ledger's unique external_ref makes a second
+    // delivery of the same callback a no-op even if the row check above raced.
+    await creditTopUp(client, {
+      userId: row.user_id,
+      amountCents: row.amount_cents,
+      externalRef: reference,
+      note: "crypto top-up",
+    });
+
+    return { credited: true as const, amountCents: row.amount_cents };
   });
-
-  return { credited: true, amountCents: row.amount_cents };
 }
 
 export async function recentTopups(userId: string, limit = 5) {

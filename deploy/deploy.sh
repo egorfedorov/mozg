@@ -54,7 +54,11 @@ if [ "$running" != "$sha" ]; then
 fi
 echo "  running $running"
 
-say "4/5  migrations"
+say "4/5  backup + migrations"
+# Never migrate against the only copy of the data: dump and restore-check the
+# database first, so a bad migration means restoring a minutes-old backup from
+# /var/backups/mozg instead of last night's.
+ssh "$HOST" "$DIR/deploy/backup.sh"
 ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app npm run db:migrate 2>&1 | tail -3"
 
 say "5/5  smoke test"

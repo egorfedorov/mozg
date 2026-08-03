@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
-# Nightly database backup, run on the server by cron.
+# Nightly backup, run on the server by cron. Dumps postgres and tars the
+# storage volume (the uploaded screenshot originals); optionally pushes both
+# off the machine with rclone.
 #
 #   crontab -e
 #   17 3 * * *  /opt/mozg/deploy/backup.sh >> /var/log/mozg-backup.log 2>&1
 #
 # Brains are the product: sources can be re-uploaded, but extracted notes cost
 # real money to regenerate and agent-written notes cannot be recovered at all.
+#
+# Backups on the same disk protect against postgres, not against the machine.
+# Set BACKUP_RCLONE_REMOTE to any configured rclone remote (e.g.
+# "b2:mozg-backups") and fresh dumps are copied off the box. Without it the
+# offsite step logs a note and skips — rclone is not required.
 set -euo pipefail
 
 DIR="${MOZG_DIR:-/opt/mozg}"
 DEST="${MOZG_BACKUP_DIR:-/var/backups/mozg}"
 KEEP_DAILY="${KEEP_DAILY:-14}"
 KEEP_WEEKLY="${KEEP_WEEKLY:-8}"
+# Named volumes are prefixed with the compose project name, which defaults to
+# the directory name: /opt/mozg -> mozg_storage. Override if MOZG_DIR differs.
+STORAGE_VOLUME="${MOZG_STORAGE_VOLUME:-mozg_storage}"
 
 mkdir -p "$DEST/daily" "$DEST/weekly"
 cd "$DIR"
@@ -30,16 +40,35 @@ docker compose -f docker-compose.prod.yml exec -T db \
 mv "$out.tmp" "$out"
 size=$(du -h "$out" | cut -f1)
 
+# The storage volume holds the uploaded screenshot originals. They can
+# theoretically be re-uploaded, but nobody will — losing them leaves every
+# brain with notes whose source image is gone. Tarred through a throwaway
+# container because a named volume has no host path you can safely tar.
+sout="$DEST/daily/storage-$stamp.tar.gz"
+docker run --rm -v "$STORAGE_VOLUME:/data:ro" -v "$DEST/daily:/backup" alpine \
+  tar -czf "/backup/storage-$stamp.tar.gz.tmp" -C /data .
+
+# Same rule as the database dump: replace the real file only once the tar
+# succeeded.
+mv "$DEST/daily/storage-$stamp.tar.gz.tmp" "$sout"
+ssize=$(du -h "$sout" | cut -f1)
+
 # Sunday's copy is kept longer, so a problem noticed weeks later is still
-# recoverable.
+# recoverable. Storage gets no weekly: the originals are re-uploadable in
+# principle, and eight weeks of screenshots costs real disk.
 [ "$(date +%u)" = 7 ] && cp "$out" "$DEST/weekly/mozg-$stamp.sql.gz"
 
-find "$DEST/daily"  -name 'mozg-*.sql.gz' -mtime +$KEEP_DAILY  -delete
-find "$DEST/weekly" -name 'mozg-*.sql.gz' -mtime +$((KEEP_WEEKLY * 7)) -delete
+find "$DEST/daily"  -name 'mozg-*.sql.gz'    -mtime +$KEEP_DAILY          -delete
+find "$DEST/daily"  -name 'storage-*.tar.gz' -mtime +$KEEP_DAILY          -delete
+find "$DEST/weekly" -name 'mozg-*.sql.gz'    -mtime +$((KEEP_WEEKLY * 7)) -delete
 
 # A backup nobody has ever restored is a hope, not a backup.
 if ! gzip -t "$out" 2>/dev/null; then
   echo "$(date -Is)  FAIL  $out is not a valid gzip"
+  exit 1
+fi
+if ! gzip -t "$sout" 2>/dev/null; then
+  echo "$(date -Is)  FAIL  $sout is not a valid gzip"
   exit 1
 fi
 
@@ -84,4 +113,22 @@ if [ "${restored:-0}" -lt 1 ]; then
   exit 1
 fi
 
-echo "$(date -Is)  ok  $out  $size  ($restored brains restored)"
+# Offsite copy: without it every backup dies together with the machine it is
+# meant to save you from. rclone is optional by design — an unconfigured
+# remote means a note in the log, not a failed cron.
+if [ -n "${BACKUP_RCLONE_REMOTE:-}" ]; then
+  if command -v rclone >/dev/null 2>&1; then
+    rclone copy "$out"  "$BACKUP_RCLONE_REMOTE/daily/"
+    rclone copy "$sout" "$BACKUP_RCLONE_REMOTE/storage/"
+    if [ "$(date +%u)" = 7 ]; then
+      rclone copy "$DEST/weekly/mozg-$stamp.sql.gz" "$BACKUP_RCLONE_REMOTE/weekly/"
+    fi
+    echo "$(date -Is)  ok  pushed to $BACKUP_RCLONE_REMOTE"
+  else
+    echo "$(date -Is)  warn  BACKUP_RCLONE_REMOTE is set but rclone is not installed — local copies only"
+  fi
+else
+  echo "$(date -Is)  note  BACKUP_RCLONE_REMOTE unset — backups stay on this machine"
+fi
+
+echo "$(date -Is)  ok  $out  $size  ($restored brains restored)  $sout  $ssize"

@@ -7,6 +7,7 @@ import type { McpToken } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { quotaRemaining } from "@/lib/tokens";
 import { revoke } from "./actions";
+import ConfirmForm from "@/components/ConfirmForm";
 
 export const dynamic = "force-dynamic";
 

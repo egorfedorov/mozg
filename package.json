@@ -23,7 +23,6 @@
     "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts",
     "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts",
     "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts",
-    "seed:stake": "tsx --env-file-if-exists=.env scripts/seed-stake-engine.ts",
     "ask": "tsx --env-file-if-exists=.env scripts/ask.ts",
     "token": "tsx --env-file-if-exists=.env scripts/token.ts",
     "exam": "tsx --env-file-if-exists=.env scripts/exam.ts",
