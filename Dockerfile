@@ -33,6 +33,12 @@ COPY src ./src
 COPY scripts ./scripts
 
 RUN useradd -m -u 10001 mozg && chown -R mozg:mozg /app
+
+# The storage volume mounts here. Creating it in the image with the right owner
+# is what makes a fresh install work: Docker copies this ownership into a new
+# named volume, and without it the volume arrives owned by root while the app
+# runs as mozg — every upload then fails with EACCES and nothing says why.
+RUN mkdir -p /data/storage && chown -R mozg:mozg /data
 USER mozg
 
 EXPOSE 3300
