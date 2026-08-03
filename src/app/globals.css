@@ -535,8 +535,12 @@ a {
   min-width: 0;
 }
 
+/* The first label lines up under the wordmark, but zeroing its padding also
+   took away the active block's breathing room. Pull the item left by exactly
+   its own padding instead: the text lands where it did, and the highlight has
+   somewhere to sit. */
 .contents-item:first-child {
-  padding-left: 0;
+  margin-left: -1rem;
 }
 
 .contents-item:last-child {
@@ -583,6 +587,10 @@ a {
 
   .contents-item {
     padding: 0.6rem 0.85rem;
+  }
+
+  .contents-item:first-child {
+    margin-left: -0.85rem;
   }
 
   /* A strip that scrolls but does not look like it is a strip half the
