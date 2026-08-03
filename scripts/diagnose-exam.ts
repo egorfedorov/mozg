@@ -1,19 +1,27 @@
 /**
  * Why did the exam fail?
  *
- * Two very different causes look identical in the score:
- *   retrieval — the answer is in the brain, search did not surface it
- *   content   — the answer is not in the brain at all
+ * Three very different causes look identical in the score:
+ *   thin      — the judge was shown a related note and it did not answer
+ *   retrieval — the answer is in the brain but ranked below what the exam sees
+ *   missing   — the answer is not in the brain at all
  *
- * The fix differs completely (better ranking vs more sources), so guessing is
- * expensive. For each failed check this re-runs the search with a wide net and
- * reports whether the expected answer was in reach but ranked too low.
+ * The fix differs completely — rewrite or deepen the note, improve ranking, or
+ * add sources — so guessing is expensive. The distinction that matters is the
+ * exam's own retrieval depth: anything the judge already saw and still failed
+ * is not a ranking problem, whatever a wider search turns up.
  *
  *   npm run diagnose -- --brain design
  */
 import { query, one } from "@/db";
 import type { Brain, Check } from "@/db/types";
 import { searchBrain } from "@/lib/search";
+import { familyIds } from "@/lib/families";
+
+/** What runExam shows the judge. Anything inside this was already seen. */
+const EXAM_DEPTH = 5;
+/** How far down to look before calling something absent. */
+const WIDE = 25;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -56,29 +64,41 @@ async function main() {
 
   console.log(`${failed.length} failed checks in "${brain.title}"\n`);
 
+  const thin: Check[] = [];
   const retrieval: Check[] = [];
   const content: Check[] = [];
 
-  for (const check of failed) {
-    // Deliberately wider than the exam uses: if the answer shows up here but
-    // not in the top 5, that is a ranking problem, not a missing note.
-    const { hits } = await searchBrain(brain.id, check.question, { limit: 25 });
+  // The exam is scored on what the judge is shown, so the same scope has to be
+  // used here or the diagnosis describes a different system.
+  const scope = await familyIds(brain);
 
+  for (const check of failed) {
+    const { hits } = await searchBrain(scope, check.question, { limit: WIDE });
     const rank = hits.findIndex((h) => covers(`${h.title} ${h.excerpt}`, check.expect));
 
-    if (rank >= 0) {
+    if (rank < 0) {
+      content.push(check);
+      continue;
+    }
+
+    if (rank < EXAM_DEPTH) {
+      // The judge already had this passage in front of it and failed the check
+      // anyway. Reranking cannot help; the note itself does not answer.
+      thin.push(check);
+      console.log(`  THIN       ${check.question}`);
+      console.log(`             judge saw "${hits[rank].title}" at rank ${rank + 1} and still failed it\n`);
+    } else {
       retrieval.push(check);
       console.log(`  RETRIEVAL  ${check.question}`);
-      console.log(`             answer was at rank ${rank + 1} of ${hits.length}`);
+      console.log(`             answer was at rank ${rank + 1}, below the ${EXAM_DEPTH} the exam sees`);
       console.log(`             "${hits[rank].title}"\n`);
-    } else {
-      content.push(check);
     }
   }
 
   console.log(`\n${"─".repeat(70)}`);
-  console.log(`  retrieval problems: ${retrieval.length}  (answer present, ranked too low)`);
-  console.log(`  content gaps:       ${content.length}  (answer not in the brain)`);
+  console.log(`  thin notes:         ${thin.length}  (judge saw it, it did not answer)`);
+  console.log(`  retrieval problems: ${retrieval.length}  (present, ranked below the exam's ${EXAM_DEPTH})`);
+  console.log(`  missing material:   ${content.length}  (not in the brain at all)`);
   console.log(`${"─".repeat(70)}\n`);
 
   if (content.length) {
@@ -92,12 +112,27 @@ async function main() {
     }
   }
 
-  console.log(
-    retrieval.length > content.length
-      ? "\n→ retrieval is the cap. A reranker would pay for itself."
-      : "\n→ content is the cap. A reranker would change almost nothing;" +
-          " the brain needs more sources.",
-  );
+  // Name the largest cause, and say what actually fixes it. The point of this
+  // script is to stop the wrong thing being built.
+  const worst = Math.max(thin.length, retrieval.length, content.length);
+  if (worst === thin.length) {
+    console.log(
+      "\n→ the notes are the cap. Search finds the right material and it does not\n" +
+        "  answer the question — the source is vague, or extraction summarised away\n" +
+        "  the specifics. Feed the primary material, not a description of it.\n" +
+        "  A reranker would change nothing here.",
+    );
+  } else if (worst === retrieval.length) {
+    console.log(
+      "\n→ retrieval is the cap. The answers are in the brain but rank below the\n" +
+        `  ${EXAM_DEPTH} passages the exam sees. A reranker would pay for itself.`,
+    );
+  } else {
+    console.log(
+      "\n→ material is the cap. The answers are not in the brain at all;\n" +
+        "  the categories above name what to add.",
+    );
+  }
 }
 
 main()

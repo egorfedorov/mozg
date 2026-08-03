@@ -4,6 +4,7 @@ import type { Brain, Check } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
 import { searchBrain } from "@/lib/search";
+import { familyIds } from "@/lib/families";
 
 /**
  * The exam — point B, made measurable.
@@ -178,9 +179,15 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
   try {
     // Retrieval first, for every check. This is the part that actually measures
     // the brain: the judge only ever sees what search returned.
+    //
+    // The same scope an agent gets, which for a parent means its children. A
+    // score is a promise about what asking this brain returns, so scoring it on
+    // less than that would make the number a lie in the owner's favour.
+    const scope = await familyIds(brain);
+
     const contexts = await Promise.all(
       checks.map(async (check) => {
-        const { hits } = await searchBrain(brainId, check.question, { limit: 5 });
+        const { hits } = await searchBrain(scope, check.question, { limit: 5 });
         return {
           check,
           context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
