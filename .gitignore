@@ -1,0 +1,21 @@
+node_modules
+.next
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — .env holds the API key and the auth secret
+.env
+.env.local
+.env.*.local
+
+# local storage driver
+.storage
+
+# embedding service: 2.2 GB of model weights and a venv
+services/embed/models
+services/embed/.venv
+__pycache__
+
+# scratch screenshots used for extraction tests
+.shots

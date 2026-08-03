@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# Fetch bge-m3 into a local directory.
+#
+# Two problems this works around, both specific to flaky routes to the HF CDN:
+#
+#   1. huggingface_hub stalls on the LFS CDN — small files land, the 2.3 GB
+#      weights sit at zero bytes forever with no error.
+#   2. `curl --retry -C -` makes it worse, not better: when the CDN ignores
+#      Range on a retry it replies 200 with the whole body and curl truncates
+#      the partial file. The download then walks backwards.
+#
+# So the big file is fetched with explicit Range requests appended to the file,
+# and a 200 (ignored Range) is rejected rather than written. Progress can only
+# go forwards; interrupt and re-run as often as you like.
+#
+#   ./fetch-model.sh            # resume into ./models/bge-m3
+#   MIRROR=1 ./fetch-model.sh   # go through hf-mirror.com instead
+set -uo pipefail
+cd "$(dirname "$0")"
+
+REPO="BAAI/bge-m3"
+DEST="${DEST:-./models/bge-m3}"
+HOST="https://huggingface.co"
+[ "${MIRROR:-0}" = "1" ] && HOST="https://hf-mirror.com"
+
+SMALL=(
+  "1_Pooling/config.json"
+  "config.json"
+  "config_sentence_transformers.json"
+  "modules.json"
+  "sentence_bert_config.json"
+  "special_tokens_map.json"
+  "tokenizer_config.json"
+  "tokenizer.json"
+  "sentencepiece.bpe.model"
+)
+LARGE="pytorch_model.bin"
+
+size_of() { stat -f%z "$1" 2>/dev/null || stat -c%s "$1" 2>/dev/null || echo 0; }
+
+mkdir -p "$DEST"
+echo "→ $REPO into $DEST (via ${HOST#https://})"
+
+for f in "${SMALL[@]}"; do
+  out="$DEST/$f"
+  mkdir -p "$(dirname "$out")"
+  if [ -s "$out" ]; then
+    printf '  %-40s cached\n' "$f"
+    continue
+  fi
+  printf '  %-40s ' "$f"
+  if curl -fsSL --retry 5 --retry-delay 3 --connect-timeout 20 \
+       -o "$out" "$HOST/$REPO/resolve/main/$f"; then
+    echo "ok ($(du -h "$out" | cut -f1))"
+  else
+    rm -f "$out"
+    echo "FAILED — re-run to retry"
+    exit 1
+  fi
+done
+
+# ─── the big one ─────────────────────────────────────────────────────────────
+
+url="$HOST/$REPO/resolve/main/$LARGE"
+out="$DEST/$LARGE"
+touch "$out"
+
+total=$(curl -fsSLI --connect-timeout 20 "$url" \
+  | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {v=$2} END {gsub(/\r/,"",v); print v+0}')
+
+if [ "${total:-0}" -lt 1000000 ]; then
+  echo "  could not determine size of $LARGE (got '${total:-}')" >&2
+  exit 1
+fi
+
+echo "  $LARGE — $((total / 1024 / 1024)) MB total"
+
+stall=0
+while :; do
+  have=$(size_of "$out")
+  [ "$have" -ge "$total" ] && break
+
+  pct=$((have * 100 / total))
+  printf '\r    %3d%%  %s / %s MB  ' "$pct" "$((have / 1024 / 1024))" "$((total / 1024 / 1024))"
+
+  code=$(curl -sS --connect-timeout 20 --max-time 900 \
+           --speed-limit 2048 --speed-time 60 \
+           -H "Range: bytes=${have}-" \
+           -w '%{http_code}' -o /tmp/mozg-chunk.bin -L "$url" 2>/dev/null)
+
+  chunk=$(size_of /tmp/mozg-chunk.bin)
+
+  # 206 = the server honoured Range, so the chunk continues our file.
+  # 200 = it ignored Range and sent everything; appending would corrupt.
+  if [ "$code" = "206" ] && [ "$chunk" -gt 0 ]; then
+    cat /tmp/mozg-chunk.bin >> "$out"
+    stall=0
+  elif [ "$code" = "200" ] && [ "$have" -eq 0 ] && [ "$chunk" -gt 0 ]; then
+    mv /tmp/mozg-chunk.bin "$out"
+    stall=0
+  else
+    stall=$((stall + 1))
+    if [ "$stall" -ge 30 ]; then
+      echo
+      echo "  stalled after 30 attempts (last HTTP $code). File kept at $(size_of "$out") bytes —"
+      echo "  re-run this script to continue from there."
+      exit 1
+    fi
+    sleep 3
+  fi
+  rm -f /tmp/mozg-chunk.bin
+done
+
+printf '\r    100%%  %s MB          \n' "$((total / 1024 / 1024))"
+echo
+echo "✓ model ready. Point the service at it:"
+echo "    EMBED_MODEL=$(cd "$DEST" && pwd)"

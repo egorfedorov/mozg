@@ -1,0 +1,90 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { scanSecrets, scanPII, redact, mask, entropy } from "./scan";
+
+const ids = (fs: { rule: string }[]) => fs.map((f) => f.rule).sort();
+
+test("catches provider keys", () => {
+  const text = `
+    ANTHROPIC_API_KEY=sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789
+    export GH=ghp_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789
+    aws: AKIAIOSFODNN7EXAMPLE
+    google: AIzaSyA1234567890abcdefghijklmnopqrstuv
+  `;
+  assert.deepEqual(ids(scanSecrets(text)), [
+    "anthropic",
+    "aws_key_id",
+    "github_pat",
+    "google_api",
+  ]);
+});
+
+test("catches private key blocks and JWTs", () => {
+  const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIEow...\n";
+  const jwt =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+  assert.deepEqual(ids(scanSecrets(pem)), ["private_key"]);
+  assert.deepEqual(ids(scanSecrets(jwt)), ["jwt"]);
+});
+
+test("connection strings: real password flagged, dev placeholder is not", () => {
+  assert.deepEqual(
+    ids(scanSecrets("postgres://admin:hunter2xyzzy@db.prod.internal:5432/app")),
+    ["conn_string"],
+  );
+  // Our own .env.example must not trip the gate.
+  assert.deepEqual(scanSecrets("postgres://mozg:mozg@localhost:5432/mozg"), []);
+});
+
+test("generic assignments need real entropy", () => {
+  assert.deepEqual(
+    ids(scanSecrets('api_key = "Xf9Qz2Lm7Rb4Tn8Wv3Yc6Kd1"')),
+    ["generic_assignment"],
+  );
+  // Low-entropy repeats are placeholders, not credentials.
+  assert.deepEqual(scanSecrets('password = "aaaaaaaaaaaaaaaa"'), []);
+  assert.deepEqual(scanSecrets('token: "your-api-key"'), []);
+});
+
+test("card numbers are Luhn-checked", () => {
+  assert.deepEqual(ids(scanPII("card 4242 4242 4242 4242")), ["card"]);
+  // Passes the shape, fails Luhn — an order id, not a card.
+  assert.equal(
+    scanPII("order 1234 5678 9012 3456").filter((f) => f.rule === "card").length,
+    0,
+  );
+});
+
+test("PII is separate from secrets", () => {
+  const text = "ping egor@example.com or +7 916 123 45 67";
+  assert.deepEqual(scanSecrets(text), []);
+  assert.deepEqual(ids(scanPII(text)), ["email", "phone"]);
+});
+
+test("findings never carry the raw secret", () => {
+  const secret = "sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789";
+  const [finding] = scanSecrets(`key=${secret}`);
+  assert.ok(finding, "expected a finding");
+  assert.ok(!finding.sample.includes("AbCdEfGhIjKlMnOpQr"));
+  assert.ok(finding.sample.includes("•"));
+  assert.equal(mask("short"), "•••••");
+});
+
+test("redact rewrites in place and is idempotent", () => {
+  const text = "use sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789 now";
+  const once = redact(text);
+  assert.ok(!once.includes("AbCdEfGhIjKlMnOpQr"));
+  assert.ok(once.startsWith("use sk-") && once.endsWith("now"));
+  assert.equal(redact(once), once);
+});
+
+test("clean text produces nothing", () => {
+  const text = "The balance is drawn at 24px from the left edge of the HUD frame.";
+  assert.deepEqual(scanSecrets(text), []);
+  assert.deepEqual(scanPII(text), []);
+});
+
+test("entropy separates random from repetitive", () => {
+  assert.ok(entropy("aaaaaaaaaaaaaaaa") < 1);
+  assert.ok(entropy("Xf9Qz2Lm7Rb4Tn8Wv3Yc6Kd1") > 3.4);
+});

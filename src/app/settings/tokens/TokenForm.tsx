@@ -1,0 +1,70 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { createToken } from "./actions";
+
+export default function TokenForm() {
+  const [state, action, pending] = useActionState(createToken, null);
+  const [copied, setCopied] = useState(false);
+
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3300";
+
+  if (state?.token) {
+    const command = `claude mcp add --transport http mozg ${base}/mcp --header "Authorization: Bearer ${state.token}"`;
+    return (
+      <section className="term" style={{ marginTop: "1.5rem" }}>
+        <div className="term-bar">
+          <span className="term-dot" />
+          <span className="term-dot" />
+          <span className="term-dot" />
+          <span style={{ marginLeft: ".5rem" }}>copy this now</span>
+        </div>
+        <div style={{ wordBreak: "break-all", marginBottom: ".9rem" }}>
+          <span className="c">$</span> {command}
+        </div>
+        <button
+          className="btn"
+          style={{
+            background: copied ? "var(--color-riso-green)" : "var(--color-riso-yellow)",
+            color: "var(--ink)",
+            borderColor: copied ? "var(--color-riso-green)" : "var(--color-riso-yellow)",
+          }}
+          onClick={async () => {
+            await navigator.clipboard.writeText(command);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+        >
+          {copied ? "Copied" : "Copy command"}
+        </button>
+        <div className="c" style={{ marginTop: "1rem" }}>
+          This is the only time the token is shown. Losing it means making a new one.
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <form
+      action={action}
+      style={{ display: "flex", gap: ".75rem", marginTop: "1.5rem", flexWrap: "wrap" }}
+    >
+      <input
+        name="name"
+        placeholder="What machine is this for? e.g. macbook"
+        maxLength={60}
+        style={{
+          flex: 1,
+          minWidth: 240,
+          padding: ".7rem .85rem",
+          border: "1.5px solid var(--ink)",
+          background: "var(--paper-2)",
+          font: "inherit",
+        }}
+      />
+      <button className="btn" disabled={pending}>
+        {pending ? "Creating…" : "New token"}
+      </button>
+    </form>
+  );
+}

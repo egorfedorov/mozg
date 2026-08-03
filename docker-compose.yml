@@ -1,0 +1,39 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: mozg-db
+    environment:
+      POSTGRES_USER: mozg
+      POSTGRES_PASSWORD: mozg
+      POSTGRES_DB: mozg
+    ports:
+      - "5433:5432"
+    volumes:
+      - mozg-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mozg -d mozg"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Embeddings. First boot downloads bge-m3 (~2.2 GB) into the named volume.
+  embed:
+    build: ./services/embed
+    container_name: mozg-embed
+    ports:
+      - "8099:8099"
+    environment:
+      EMBED_MODEL: BAAI/bge-m3
+      HF_HOME: /models
+    volumes:
+      - mozg-models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8099/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+
+volumes:
+  mozg-pgdata:
+  mozg-models:

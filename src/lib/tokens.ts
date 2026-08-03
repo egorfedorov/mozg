@@ -1,0 +1,107 @@
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { maybeOne, query } from "@/db";
+import type { Plan } from "@/db/types";
+
+/**
+ * MCP access tokens.
+ *
+ * Stored as a SHA-256 hash — a database dump must not hand anyone a working
+ * key. The plaintext is shown once, at creation, and never again.
+ */
+
+const PREFIX = "mzg_";
+
+export interface IssuedToken {
+  /** Plaintext. Shown once. */
+  token: string;
+  id: string;
+  prefix: string;
+}
+
+export function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function issueToken(userId: string, name?: string): Promise<IssuedToken> {
+  const token = PREFIX + randomBytes(24).toString("base64url");
+  const prefix = token.slice(0, 12);
+
+  const row = await maybeOne<{ id: string }>(
+    `insert into mcp_tokens (user_id, token_hash, prefix, name)
+     values ($1, $2, $3, $4) returning id`,
+    [userId, hashToken(token), prefix, name ?? null],
+  );
+
+  return { token, id: row!.id, prefix };
+}
+
+export interface TokenOwner {
+  userId: string;
+  tokenId: string;
+  plan: Plan;
+}
+
+/** Resolve a bearer token to its owner, or null. Also stamps last_used_at. */
+export async function verifyToken(raw: string | null): Promise<TokenOwner | null> {
+  if (!raw) return null;
+  const token = raw.replace(/^Bearer\s+/i, "").trim();
+  if (!token.startsWith(PREFIX)) return null;
+
+  const hash = hashToken(token);
+  const row = await maybeOne<{ id: string; user_id: string; token_hash: string; plan: Plan }>(
+    `select t.id, t.user_id, t.token_hash, u.plan
+       from mcp_tokens t
+       join "user" u on u.id = t.user_id
+      where t.token_hash = $1 and t.revoked_at is null`,
+    [hash],
+  );
+  if (!row) return null;
+
+  // The lookup already matched on the hash; this is belt-and-braces against a
+  // future change that makes the comparison non-constant-time.
+  const a = Buffer.from(row.token_hash, "hex");
+  const b = Buffer.from(hash, "hex");
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+  // Fire-and-forget: a failed timestamp update must not fail the tool call.
+  void query(`update mcp_tokens set last_used_at = now() where id = $1`, [row.id]).catch(
+    () => {},
+  );
+
+  return { userId: row.user_id, tokenId: row.id, plan: row.plan };
+}
+
+export async function revokeToken(userId: string, tokenId: string): Promise<void> {
+  await query(
+    `update mcp_tokens set revoked_at = now() where id = $1 and user_id = $2`,
+    [tokenId, userId],
+  );
+}
+
+/** Monthly call quota, checked against `calls` — the same table billing reads. */
+const MONTHLY_CALLS: Record<Plan, number> = { free: 300, pro: 10_000, team: 50_000 };
+
+export async function quotaRemaining(userId: string, plan: Plan): Promise<number> {
+  const row = await maybeOne<{ used: number }>(
+    `select count(*)::int as used from calls
+      where caller_id = $1 and created_at >= date_trunc('month', now())`,
+    [userId],
+  );
+  return Math.max(0, MONTHLY_CALLS[plan] - (row?.used ?? 0));
+}
+
+/**
+ * Burst ceiling, separate from the monthly quota. It catches two different
+ * things: an agent stuck in a retry loop burning a month's quota in a minute,
+ * and someone systematically draining a brain they were given read access to.
+ */
+const BURST_PER_MINUTE = 60;
+
+export async function burstExceeded(userId: string): Promise<boolean> {
+  const row = await maybeOne<{ n: number }>(
+    `select count(*)::int as n from calls
+      where caller_id = $1 and created_at > now() - interval '1 minute'`,
+    [userId],
+  );
+  return (row?.n ?? 0) >= BURST_PER_MINUTE;
+}

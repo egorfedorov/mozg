@@ -1,0 +1,524 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   mozg — riso print / lab report
+   Brain colours are real Risograph ink values. A brain is layered knowledge;
+   overprint is literally layers combining, so the metaphor is load-bearing.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-paper: #eceee7;
+  --color-paper-2: #f6f7f3;
+  --color-ink: #14161a;
+  --color-ink-2: #565c66;
+  --color-ink-3: #8d939c;
+  --color-rule: #cfd2ca;
+
+  --color-riso-blue: #3d5588;
+  --color-riso-red: #f15060;
+  --color-riso-green: #00a95c;
+  --color-riso-yellow: #ffe800;
+  --color-riso-violet: #765ba7;
+  --color-riso-orange: #ff6c2f;
+}
+
+:root {
+  --paper: #eceee7;
+  --paper-2: #f6f7f3;
+  --ink: #14161a;
+  --ink-2: #565c66;
+  --ink-3: #8d939c;
+  --rule: #cfd2ca;
+  --shadow: 0 1px 0 var(--rule);
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Faint paper tooth — riso stock is never flat. */
+  background-image: radial-gradient(var(--rule) 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+}
+
+::selection {
+  background: var(--color-riso-yellow);
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* ─── type ──────────────────────────────────────────────────────────────── */
+
+.display {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-ligatures: none;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+/* ─── shell ─────────────────────────────────────────────────────────────── */
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.topbar {
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  height: 60px;
+}
+
+.wordmark {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.04em;
+  margin-right: auto;
+}
+
+.wordmark span {
+  color: var(--color-riso-red);
+}
+
+.navlink {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  padding: 0.35rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.navlink:hover,
+.navlink[data-active="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* The bar is a fixed-height flex row with no wrap, so on a phone the last
+   items would simply run off the edge. Drop the identity label first — it is
+   the only thing there that is not navigation. */
+@media (max-width: 640px) {
+  .topbar-inner {
+    gap: 1rem;
+  }
+  .hide-sm {
+    display: none;
+  }
+}
+
+/* ─── buttons ───────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  padding: 0.6rem 1rem;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper-2);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.btn:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* ─── brain cards ───────────────────────────────────────────────────────── */
+
+.grid-brains {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(266px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  --tint: var(--color-riso-blue);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 268px;
+  padding: 1.25rem;
+  background: var(--tint);
+  color: var(--paper-2);
+  border: 1.5px solid var(--ink);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+/* Overprint: a second ink pass, multiplied, exactly like riso registration. */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -40% -30% auto auto;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0.14;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.card[data-tint="yellow"] {
+  --tint: var(--color-riso-yellow);
+  color: var(--ink);
+}
+
+.card[data-tint="red"] {
+  --tint: var(--color-riso-red);
+}
+.card[data-tint="blue"] {
+  --tint: var(--color-riso-blue);
+}
+.card[data-tint="green"] {
+  --tint: var(--color-riso-green);
+}
+.card[data-tint="violet"] {
+  --tint: var(--color-riso-violet);
+}
+.card[data-tint="orange"] {
+  --tint: var(--color-riso-orange);
+  color: var(--ink);
+}
+
+.card-title {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0.5rem 0 0.35rem;
+}
+
+.card-goal {
+  font-size: 0.875rem;
+  line-height: 1.35;
+  opacity: 0.82;
+  margin: 0 0 auto;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.card-score {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 2.75rem;
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+}
+
+.card-score sup {
+  font-size: 0.9rem;
+  font-weight: 700;
+  vertical-align: super;
+  margin-left: 0.1em;
+}
+
+/* ─── the readout ───────────────────────────────────────────────────────────
+   The signature element. A ring shows one number; this strip shows WHICH exam
+   categories hold and where the hole is — which is the actual product. */
+
+.readout {
+  display: flex;
+  gap: 3px;
+  margin-top: 0.75rem;
+}
+
+.readout-cell {
+  flex: 1;
+  height: 10px;
+  border: 1.25px solid currentColor;
+  opacity: 0.45;
+}
+
+.readout-cell[data-state="pass"] {
+  background: currentColor;
+  opacity: 1;
+}
+
+.readout-cell[data-state="partial"] {
+  background: repeating-linear-gradient(
+    45deg,
+    currentColor 0 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.95;
+}
+
+.readout-cell[data-state="empty"] {
+  opacity: 0.3;
+}
+
+/* ─── new-brain tile ────────────────────────────────────────────────────── */
+
+.card-new {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 268px;
+  padding: 1.25rem;
+  border: 1.5px dashed var(--ink-3);
+  background: transparent;
+  color: var(--ink-2);
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
+}
+
+.card-new:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--paper-2);
+}
+
+.card-new .plus {
+  font-family: var(--font-display), sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ─── terminal ──────────────────────────────────────────────────────────── */
+
+.term {
+  background: var(--ink);
+  color: #e6e8ea;
+  border: 1.5px solid var(--ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+}
+
+.term-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid #2b2f36;
+  color: #6d747e;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.term-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #3a3f47;
+}
+
+.term .u {
+  color: var(--color-riso-yellow);
+}
+.term .t {
+  color: #7fd4a8;
+}
+.term .c {
+  color: #6d747e;
+}
+.term .k {
+  color: #8fb3ff;
+}
+
+/* ─── exam scorecard ────────────────────────────────────────────────────── */
+
+.scorecard {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.score-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.score-big {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 7vw, 4rem);
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto;
+  gap: 0.85rem;
+  align-items: baseline;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.9375rem;
+}
+
+.score-row:last-child {
+  border-bottom: 0;
+}
+
+.score-row .sig {
+  font-family: var(--font-mono), monospace;
+  font-weight: 700;
+}
+
+.score-row[data-state="pass"] .sig {
+  color: var(--color-riso-green);
+}
+.score-row[data-state="partial"] .sig {
+  color: var(--color-riso-orange);
+}
+.score-row[data-state="fail"] .sig {
+  color: var(--color-riso-red);
+}
+
+.score-row .count {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.score-gap {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* ─── misc ──────────────────────────────────────────────────────────────── */
+
+.rule {
+  border: 0;
+  border-top: 1.5px solid var(--ink);
+  margin: 0;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.45rem;
+  border: 1.25px solid currentColor;
+}
+
+.panel {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  padding: 1.25rem;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

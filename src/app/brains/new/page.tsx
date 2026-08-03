@@ -1,0 +1,121 @@
+"use client";
+
+import { useActionState } from "react";
+import Link from "next/link";
+import { createBrain } from "../actions";
+
+const EXAMPLES = [
+  "Match our design system exactly: colour, type scale, spacing, component rules, empty and error states.",
+  "Answer questions about the Stripe webhook flow we actually run — our retries and idempotency, not the docs version.",
+  "Follow our Postgres conventions: naming, migrations, indexing, and the things we never do.",
+];
+
+export default function NewBrainPage() {
+  const [state, action, pending] = useActionState(createBrain, null);
+
+  return (
+    <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 5rem)", maxWidth: 760 }}>
+      <Link className="eyebrow" href="/brains">
+        ← brains
+      </Link>
+
+      <h1
+        className="display"
+        style={{ fontSize: "clamp(2rem, 5vw, 3rem)", margin: ".75rem 0 2rem" }}
+      >
+        New brain
+      </h1>
+
+      <form action={action} className="panel" style={{ display: "grid", gap: "1.5rem" }}>
+        <Field
+          label="Name"
+          hint="What you'll call it in your editor, e.g. mozg:design"
+        >
+          <input
+            name="title"
+            required
+            maxLength={80}
+            autoFocus
+            placeholder="Design system"
+            style={inputStyle}
+          />
+        </Field>
+
+        <Field
+          label="What should it be able to do?"
+          hint="This becomes the exam. Be concrete — vague goals produce vague checks."
+        >
+          <textarea name="goal" rows={4} placeholder={EXAMPLES[0]} style={inputStyle} />
+        </Field>
+
+        <div>
+          <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
+            Examples
+          </p>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "1.1rem",
+              color: "var(--ink-2)",
+              fontSize: ".9375rem",
+              display: "grid",
+              gap: ".35rem",
+            }}
+          >
+            {EXAMPLES.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </div>
+
+        {state?.error && (
+          <p
+            className="mono"
+            style={{ color: "var(--color-riso-red)", fontSize: ".8125rem", margin: 0 }}
+          >
+            {state.error}
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: ".75rem" }}>
+          <button className="btn" type="submit" disabled={pending}>
+            {pending ? "Creating…" : "Create brain"}
+          </button>
+          <Link className="btn btn-ghost" href="/brains">
+            Cancel
+          </Link>
+        </div>
+      </form>
+    </main>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: ".7rem .85rem",
+  border: "1.5px solid var(--ink)",
+  background: "var(--paper)",
+  color: "var(--ink)",
+  font: "inherit",
+  fontSize: "1rem",
+};
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: "grid", gap: ".4rem" }}>
+      <span style={{ fontWeight: 600 }}>{label}</span>
+      <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
+        {hint}
+      </span>
+      {children}
+    </label>
+  );
+}
