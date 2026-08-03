@@ -63,7 +63,17 @@ export default async function AppShell({
   const balance = row?.balance_cents ?? 0;
 
   const groups = isAdmin(user)
-    ? [...GROUPS, { title: "Operator", items: [{ href: "/admin", label: "Admin" }] }]
+    ? [
+        ...GROUPS,
+        {
+          title: "Operator",
+          items: [
+            { href: "/admin", label: "System" },
+            { href: "/admin/users", label: "People" },
+            { href: "/admin/brains", label: "All brains" },
+          ],
+        },
+      ]
     : GROUPS;
 
   return (

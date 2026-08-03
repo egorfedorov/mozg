@@ -122,7 +122,7 @@ export default async function PublicBrainPage({
             }}
           />
           <div style={{ flex: 1, minWidth: 260 }}>
-            <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            <h1 className="h1">
               {brain.title}
             </h1>
             <p style={{ color: "var(--ink-2)", margin: ".6rem 0 0", maxWidth: "60ch" }}>
@@ -231,7 +231,7 @@ export default async function PublicBrainPage({
 
         <section style={{ marginTop: "3rem", display: "grid", gap: "2rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <div>
-            <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
+            <h2 className="h2" style={{ marginBottom: "1rem" }}>
               {preview ? "What is inside" : "Inside"}
             </h2>
             {preview && (
@@ -256,7 +256,7 @@ export default async function PublicBrainPage({
           </div>
 
           <div>
-            <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
+            <h2 className="h2" style={{ marginBottom: "1rem" }}>
               Licence
             </h2>
             <p className="tag" style={{ display: "inline-block", marginBottom: ".75rem" }}>

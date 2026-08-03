@@ -17,7 +17,7 @@ export default function DeleteBrain({
 
   return (
     <section style={{ marginTop: "2.5rem" }}>
-      <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: ".5rem" }}>
+      <h2 className="h2" style={{ marginBottom: ".5rem" }}>
         Delete this brain
       </h2>
       <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>

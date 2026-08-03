@@ -62,7 +62,7 @@ export default function SignInForm({ githubEnabled }: { githubEnabled: boolean }
         mozg<span style={{ color: "var(--color-riso-red)" }}>.</span>
       </Link>
 
-      <h1 className="display" style={{ fontSize: "2.25rem", margin: "1.5rem 0 .5rem" }}>
+      <h1 className="h1" style={{ margin: "1.5rem 0 .5rem" }}>
         {mode === "in" ? "Sign in" : "Create an account"}
       </h1>
       <p style={{ color: "var(--ink-2)", marginTop: 0, marginBottom: "1.75rem" }}>

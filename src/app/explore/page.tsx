@@ -7,6 +7,7 @@ import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
 import { formatCents } from "@/lib/money-math";
 import { TOPICS, topicLabel, isTopic } from "@/lib/topics";
+import { Chip } from "@/components/ui";
 
 // Reads the database and the session on every request. Without this Next
 // prerenders it at build time — which fails in a Docker build (no database)
@@ -111,10 +112,7 @@ export default async function ExplorePage({
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">Catalogue · connect any of these in one command</p>
-        <h1
-          className="display"
-          style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", margin: ".4rem 0 1rem" }}
-        >
+        <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
           Brains other people
           <br />
           already built.
@@ -125,109 +123,47 @@ export default async function ExplorePage({
           description. Paid brains are bought once from your balance and stay yours.
         </p>
 
-        {/* Filters are links, not state: a filtered catalogue should be a URL
-            you can send someone. */}
-        <div
-          style={{
-            display: "flex",
-            gap: "1.5rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-            marginTop: "2rem",
-            paddingBottom: ".75rem",
-            borderBottom: "1.5px solid var(--ink)",
-          }}
-        >
-          <span style={{ display: "flex", gap: ".5rem" }}>
+        {/* One filter language: chips. This row used to carry three. */}
+        <div className="stack-tight" style={{ marginTop: "2rem" }}>
+          <div
+            className="chips"
+            style={{ paddingBottom: ".75rem", borderBottom: "1.5px solid var(--ink)" }}
+          >
             {PRICES.map((p) => (
-              <Link
-                key={p.key}
-                href={href({ price: p.key })}
-                className="tag"
-                style={{
-                  background: p.key === price ? "var(--ink)" : "transparent",
-                  color: p.key === price ? "var(--paper)" : "var(--ink-2)",
-                }}
-              >
+              <Chip key={p.key} href={href({ price: p.key })} on={p.key === price}>
                 {p.label}
-              </Link>
+              </Chip>
             ))}
-          </span>
-          <span style={{ flex: 1 }} />
-          <span style={{ display: "flex", gap: ".75rem", alignItems: "center" }}>
+            <span style={{ flex: 1 }} />
             <span className="eyebrow">Sort</span>
             {SORTS.map((s) => (
-              <Link
-                key={s.key}
-                href={href({ sort: s.key })}
-                className="mono"
-                style={{
-                  fontSize: ".75rem",
-                  borderBottom: s.key === sort.key ? "2px solid var(--ink)" : "2px solid transparent",
-                  color: s.key === sort.key ? "var(--ink)" : "var(--ink-2)",
-                  paddingBottom: ".1rem",
-                }}
-              >
+              <Chip key={s.key} href={href({ sort: s.key })} on={s.key === sort.key}>
                 {s.label}
-              </Link>
+              </Chip>
             ))}
-          </span>
-        </div>
+          </div>
 
-        {/* Fields, in browsing order. Empty ones stay visible but dimmed —
-            "nothing here yet" is a better answer than a missing option. */}
-        <div
-          style={{
-            display: "flex",
-            gap: ".4rem",
-            flexWrap: "wrap",
-            marginTop: "1rem",
-            alignItems: "center",
-          }}
-        >
-          <Link
-            href={href({ topic: null })}
-            className="mono"
-            style={{
-              fontSize: ".8125rem",
-              padding: ".25rem .55rem",
-              border: "1.25px solid var(--ink)",
-              background: topic === null ? "var(--ink)" : "transparent",
-              color: topic === null ? "var(--paper)" : "var(--ink)",
-            }}
-          >
-            All fields
-          </Link>
-          {TOPICS.map((t) => {
-            const n = perTopic.get(t.key) ?? 0;
-            const on = topic === t.key;
-            return (
-              <Link
+          {/* Fields, in browsing order. Empty ones stay visible but dimmed —
+              "nothing here yet" is a better answer than a missing option. */}
+          <div className="chips">
+            <Chip href={href({ topic: null })} on={topic === null}>
+              All fields
+            </Chip>
+            {TOPICS.map((t) => (
+              <Chip
                 key={t.key}
-                href={href({ topic: on ? null : t.key })}
-                className="mono"
+                href={href({ topic: topic === t.key ? null : t.key })}
+                on={topic === t.key}
+                count={perTopic.get(t.key) ?? 0}
                 title={t.blurb}
-                style={{
-                  fontSize: ".8125rem",
-                  padding: ".25rem .55rem",
-                  border: "1.25px solid var(--rule)",
-                  borderColor: on ? "var(--ink)" : "var(--rule)",
-                  background: on ? "var(--ink)" : "transparent",
-                  color: on ? "var(--paper)" : n ? "var(--ink-2)" : "var(--ink-3)",
-                }}
               >
                 {t.label}
-                {n > 0 && <span style={{ opacity: 0.6 }}> {n}</span>}
-              </Link>
-            );
-          })}
-        </div>
+              </Chip>
+            ))}
+          </div>
 
-        {topic && (
-          <p style={{ color: "var(--ink-2)", marginTop: "1rem", marginBottom: 0 }}>
-            {TOPICS.find((t) => t.key === topic)?.blurb}
-          </p>
-        )}
+          {topic && <p className="lede">{TOPICS.find((t) => t.key === topic)?.blurb}</p>}
+        </div>
 
         {brains.length === 0 ? (
           <div className="panel" style={{ marginTop: "2rem", maxWidth: "58ch" }}>
@@ -238,7 +174,7 @@ export default async function ExplorePage({
                   ? "Nothing public yet"
                   : `No ${price} brains yet`}
             </p>
-            <h2 className="display" style={{ fontSize: "1.5rem", margin: ".5rem 0 .75rem" }}>
+            <h2 className="h2" style={{ margin: ".5rem 0 .75rem" }}>
               {topic || price !== "all" ? "Try the whole catalogue." : "Be the first."}
             </h2>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
@@ -315,7 +251,7 @@ export default async function ExplorePage({
           style={{ marginTop: "3rem", display: "flex", gap: "1.5rem", flexWrap: "wrap", alignItems: "center" }}
         >
           <div style={{ flex: "1 1 30ch" }}>
-            <h2 className="display" style={{ fontSize: "1.375rem", margin: 0 }}>
+            <h2 className="h2">
               Sell what you already know.
             </h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>

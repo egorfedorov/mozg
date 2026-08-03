@@ -193,7 +193,7 @@ export default function ShareForm({
       </form>
 
       <section style={{ marginTop: "2rem" }}>
-        <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: ".75rem" }}>
+        <h2 className="h2" style={{ marginBottom: ".75rem" }}>
           People
         </h2>
 

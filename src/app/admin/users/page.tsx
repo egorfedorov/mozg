@@ -1,5 +1,4 @@
 import AppShell from "@/components/AppShell";
-import AdminNav from "../AdminNav";
 import { requireAdmin, adminUsers } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { setPlan, adjustBalance, revokeTokens, deleteUser } from "../actions";
@@ -17,10 +16,8 @@ export default async function AdminUsersPage() {
   const now = Date.now();
 
   return (
-    <AppShell active="/admin" eyebrow="Operator" title="People">
-        <AdminNav active="/admin/users" />
-
-        <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
+    <AppShell active="/admin/users" eyebrow="Operator" title="People">
+      <p className="lede">
           {users.length} account{users.length === 1 ? "" : "s"}. MCP is shown as live
           when a token was used in the last {LIVE_MINUTES} minutes — that is the
           only honest signal, since MCP has no session to stay open.

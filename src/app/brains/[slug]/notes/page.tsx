@@ -76,7 +76,7 @@ export default async function NotesPage({
             margin: ".75rem 0 1.5rem",
           }}
         >
-          <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+          <h1 className="h1">
             Notes
           </h1>
           <span className="eyebrow">

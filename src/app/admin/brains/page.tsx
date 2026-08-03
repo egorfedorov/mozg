@@ -1,6 +1,5 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import AdminNav from "../AdminNav";
 import { requireAdmin, adminBrains } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { setListing, deleteBrain } from "../actions";
@@ -15,10 +14,8 @@ export default async function AdminBrainsPage() {
   const brains = await adminBrains();
 
   return (
-    <AppShell active="/admin" eyebrow="Operator" title="Brains">
-        <AdminNav active="/admin/brains" />
-
-        <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
+    <AppShell active="/admin/brains" eyebrow="Operator" title="Brains">
+      <p className="lede">
           {brains.length} brain{brains.length === 1 ? "" : "s"}. Changing
           visibility away from public also clears the price — a listing nobody
           can reach cannot be bought.

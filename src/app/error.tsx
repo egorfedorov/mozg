@@ -25,8 +25,7 @@ export default function Error({
     >
       <p className="eyebrow">Something broke</p>
       <h1
-        className="display"
-        style={{ fontSize: "clamp(2rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}
+        className="h1" style={{ margin: ".5rem 0 1rem" }}
       >
         This page did not load.
       </h1>

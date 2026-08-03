@@ -104,8 +104,7 @@ export default async function GuidePage() {
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">For people building brains</p>
         <h1
-          className="display"
-          style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".4rem 0 1rem" }}
+          className="h1" style={{ margin: ".4rem 0 1rem" }}
         >
           How to build a brain
           <br />
@@ -136,7 +135,7 @@ export default async function GuidePage() {
                 {step.n}
               </span>
               <div>
-                <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: ".6rem" }}>
+                <h2 className="h2" style={{ marginBottom: ".6rem" }}>
                   {step.title}
                 </h2>
                 <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem", maxWidth: "62ch" }}>
@@ -155,7 +154,7 @@ export default async function GuidePage() {
 
         {/* A real run, so the numbers are not aspirational. */}
         <section style={{ marginTop: "1rem" }}>
-          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".5rem" }}>
             What this looks like in practice
           </h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
@@ -202,7 +201,7 @@ export default async function GuidePage() {
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: "1rem" }}>
+          <h2 className="h2" style={{ marginBottom: "1rem" }}>
             Four ways it goes wrong
           </h2>
           <div className="panel" style={{ padding: 0 }}>
@@ -229,7 +228,7 @@ export default async function GuidePage() {
           id="selling"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}
         >
-          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".5rem" }}>
             Selling one
           </h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "64ch", marginTop: 0 }}>
@@ -268,7 +267,7 @@ export default async function GuidePage() {
 
         <section className="panel" style={{ marginTop: "clamp(3rem, 7vw, 4rem)", maxWidth: "64ch" }}>
           <p className="eyebrow">One thing never to do</p>
-          <h2 className="display" style={{ fontSize: "1.5rem", margin: ".5rem 0 .75rem" }}>
+          <h2 className="h2" style={{ margin: ".5rem 0 .75rem" }}>
             Do not feed it secrets.
           </h2>
           <p style={{ color: "var(--ink-2)", margin: 0 }}>

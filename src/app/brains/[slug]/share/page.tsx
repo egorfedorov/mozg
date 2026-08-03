@@ -33,7 +33,7 @@ export default async function SharePage({
           ← {brain.title}
         </Link>
 
-        <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3rem)", margin: ".75rem 0 .5rem" }}>
+        <h1 className="h1" style={{ margin: ".75rem 0 .5rem" }}>
           Sharing
         </h1>
         {brain.visibility === "public" && user.handle && (
@@ -50,7 +50,7 @@ export default async function SharePage({
         </div>
 
         <section style={{ marginTop: "2.5rem" }}>
-          <h2 className="display" style={{ fontSize: "1.5rem", marginBottom: ".5rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".5rem" }}>
             Export
           </h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>

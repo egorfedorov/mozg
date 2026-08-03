@@ -67,6 +67,8 @@ export default async function Home() {
             gradient. */}
         <p className="eyebrow">Model Context Protocol · Claude Code · Codex · Cursor</p>
 
+        {/* The one heading larger than the scale: it is the hero, and the
+            scale exists so that this exception reads as deliberate. */}
         <h1
           className="display"
           style={{ fontSize: "clamp(2.6rem, 8.5vw, 5.5rem)", margin: ".75rem 0 1rem" }}
@@ -156,8 +158,7 @@ export default async function Home() {
         <section style={{ marginTop: "clamp(4rem, 10vw, 6rem)" }}>
           <p className="eyebrow">What people put in one</p>
           <h2
-            className="display"
-            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", margin: ".6rem 0 1.5rem" }}
+            className="h1" style={{ margin: ".6rem 0 1.5rem" }}
           >
             The things you explain twice a week.
           </h2>
@@ -176,7 +177,7 @@ export default async function Home() {
                 <p className="eyebrow" style={{ margin: 0, color: `var(--color-riso-${u.tint})` }}>
                   {u.field}
                 </p>
-                <h3 className="display" style={{ fontSize: "1.125rem", margin: ".4rem 0 .5rem" }}>
+                <h3 className="h3" style={{ margin: ".4rem 0 .5rem" }}>
                   {u.title}
                 </h3>
                 <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{u.body}</p>
@@ -189,8 +190,7 @@ export default async function Home() {
         <section style={{ marginTop: "clamp(4rem, 10vw, 7rem)" }}>
           <p className="eyebrow">What nobody else does</p>
           <h2
-            className="display"
-            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", margin: ".6rem 0 1.5rem" }}
+            className="h1" style={{ margin: ".6rem 0 1.5rem" }}
           >
             Every brain sits an exam.
           </h2>
@@ -347,7 +347,7 @@ export default async function Home() {
                 gap: ".5rem",
               }}
             >
-              <h2 className="display" style={{ fontSize: "1.5rem" }}>
+              <h2 className="h2">
                 In the catalogue now
               </h2>
               <Link className="mono" href="/explore" style={{ fontSize: ".8125rem" }}>
@@ -398,7 +398,7 @@ export default async function Home() {
           }}
         >
           <div style={{ flex: "1 1 32ch" }}>
-            <h2 className="display" style={{ fontSize: "clamp(1.5rem, 3.5vw, 2rem)", margin: 0 }}>
+            <h2 className="h2" style={{ margin: 0 }}>
               Stop explaining the same thing.
             </h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
@@ -433,7 +433,7 @@ function GuideCard({
       <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
         {step}
       </span>
-      <h3 className="display" style={{ fontSize: "1.25rem", margin: ".35rem 0 .5rem" }}>
+      <h3 className="h3" style={{ margin: ".35rem 0 .5rem" }}>
         {title}
       </h3>
       <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{blurb}</p>

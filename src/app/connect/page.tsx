@@ -53,7 +53,7 @@ export default async function ConnectPage() {
         />
 
         <section id="models" style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}>
-          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".5rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".5rem" }}>
             Models, and where they fit
           </h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
@@ -92,7 +92,7 @@ export default async function ConnectPage() {
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="display" style={{ fontSize: "1.75rem", marginBottom: ".75rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".75rem" }}>
             What the agent gets
           </h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
@@ -165,8 +165,7 @@ export default async function ConnectPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">Model Context Protocol</p>
         <h1
-          className="display"
-          style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".4rem 0 1rem" }}
+          className="h1" style={{ margin: ".4rem 0 1rem" }}
         >
           Connect a brain to
           <br />

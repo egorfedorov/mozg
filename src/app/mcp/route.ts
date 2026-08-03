@@ -100,6 +100,21 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       const name = String(params.name ?? "");
       const args = (params.arguments ?? {}) as Record<string, unknown>;
 
+      // A tool that does not exist is a protocol error, not a tool that ran
+      // and failed. A client working from a stale tool list has to be able to
+      // tell those apart — otherwise it reads "Unknown tool" as an answer and
+      // tries again with the same name.
+      if (!TOOLS.some((t) => t.name === name)) {
+        return {
+          jsonrpc: "2.0" as const,
+          id,
+          error: {
+            code: -32602,
+            message: `Unknown tool: ${name}. Call tools/list for what is available.`,
+          },
+        };
+      }
+
       if (await burstExceeded(owner.userId)) {
         return {
           jsonrpc: "2.0" as const,

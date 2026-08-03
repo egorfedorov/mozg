@@ -108,7 +108,7 @@ export default async function BrainPage({
             }}
           />
           <div style={{ flex: 1, minWidth: 260 }}>
-            <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
+            <h1 className="h1">
               {brain.title}
             </h1>
             <GoalEditor slug={brain.slug} goal={brain.goal} />
@@ -249,7 +249,7 @@ export default async function BrainPage({
                 marginBottom: "1rem",
               }}
             >
-              <h2 className="display" style={{ fontSize: "1.5rem" }}>
+              <h2 className="h2">
                 Written by agents
               </h2>
               <span className="eyebrow">{pending.length} waiting</span>
@@ -305,7 +305,7 @@ export default async function BrainPage({
               marginBottom: "1rem",
             }}
           >
-            <h2 className="display" style={{ fontSize: "1.5rem" }}>
+            <h2 className="h2">
               Sources
             </h2>
             <span style={{ display: "flex", gap: "1rem", alignItems: "center" }}>

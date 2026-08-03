@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import BrainCard from "@/components/BrainCard";
+import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import { currentUser } from "@/lib/session";
 import { listBrains } from "@/lib/brains";
 import { dashboardStats, needsAttention, recentActivity } from "@/lib/dashboard";
@@ -11,20 +12,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Your brains — mozg" };
 
-const ATTENTION_TINT: Record<string, string> = {
-  review: "var(--color-riso-violet)",
-  failed: "var(--color-riso-red)",
-  "no-goal": "var(--color-riso-orange)",
-  unexamined: "var(--color-riso-orange)",
-  gap: "var(--color-riso-blue)",
-};
-
-const ATTENTION_ACTION: Record<string, string> = {
-  review: "Review",
-  failed: "Look",
-  "no-goal": "Set a goal",
-  unexamined: "Run it",
-  gap: "Add sources",
+const ATTENTION: Record<string, { tint: "red" | "blue" | "violet" | "orange"; action: string }> = {
+  review: { tint: "violet", action: "Review" },
+  failed: { tint: "red", action: "Look" },
+  "no-goal": { tint: "orange", action: "Set a goal" },
+  unexamined: { tint: "orange", action: "Run it" },
+  gap: { tint: "blue", action: "Add sources" },
 };
 
 export default async function BrainsPage() {
@@ -53,17 +46,9 @@ export default async function BrainsPage() {
         </Link>
       }
     >
-      <>
+      <div className="stack">
         {/* Numbers that change what you do, not vanity counters. */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "1px",
-            background: "var(--rule)",
-            border: "1.5px solid var(--ink)",
-          }}
-        >
+        <Stats>
           <Stat label="Brains" value={String(stats.brains)} />
           <Stat label="Notes" value={stats.notes.toLocaleString()} />
           <Stat
@@ -78,70 +63,29 @@ export default async function BrainsPage() {
             }
           />
           <Stat label="Balance" value={formatCents(stats.balanceCents)} href="/settings/balance" />
-        </div>
+        </Stats>
 
         {attention.length > 0 && (
-          <section style={{ marginTop: "2.5rem" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                marginBottom: ".75rem",
-              }}
-            >
-              <h2 className="display" style={{ fontSize: "1.375rem" }}>
-                Needs you
-              </h2>
-              <span className="eyebrow">{attention.length} thing{attention.length === 1 ? "" : "s"}</span>
-            </div>
-
-            <div className="panel" style={{ padding: 0 }}>
+          <Section
+            title="Needs you"
+            aside={`${attention.length} thing${attention.length === 1 ? "" : "s"}`}
+          >
+            <Rows>
               {attention.slice(0, 8).map((item, i) => (
-                <Link
+                <Row
                   key={`${item.kind}-${item.brainSlug}-${i}`}
                   href={item.href}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "3px 1fr auto",
-                    gap: "1rem",
-                    alignItems: "center",
-                    padding: ".8rem 1.25rem .8rem .5rem",
-                    borderBottom: "1px solid var(--rule)",
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      alignSelf: "stretch",
-                      background: ATTENTION_TINT[item.kind],
-                    }}
-                  />
-                  <span>
-                    <strong>{item.brainTitle}</strong>
-                    <span
-                      style={{
-                        display: "block",
-                        color: "var(--ink-2)",
-                        fontSize: ".9375rem",
-                      }}
-                    >
-                      {item.detail}
-                    </span>
-                  </span>
-                  <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-                    {ATTENTION_ACTION[item.kind]} →
-                  </span>
-                </Link>
+                  tint={ATTENTION[item.kind].tint}
+                  title={item.brainTitle}
+                  sub={item.detail}
+                  side={`${ATTENTION[item.kind].action} →`}
+                />
               ))}
-            </div>
-          </section>
+            </Rows>
+          </Section>
         )}
 
-        <section style={{ marginTop: "2.5rem" }}>
-          <h2 className="display" style={{ fontSize: "1.375rem", marginBottom: ".75rem" }}>
-            All brains
-          </h2>
+        <Section title="All brains" aside={`${brains.length} in total`}>
           <div className="grid-brains">
             {brains.map((brain) => (
               <BrainCard key={brain.id} brain={brain} />
@@ -153,32 +97,30 @@ export default async function BrainsPage() {
               </span>
             </Link>
           </div>
-        </section>
+        </Section>
 
-        <section style={{ marginTop: "2.5rem" }}>
-          <h2 className="display" style={{ fontSize: "1.375rem", marginBottom: ".75rem" }}>
-            What your agents did
-          </h2>
-
+        <Section title="What your agents did" aside="across every brain">
           {activity.length === 0 ? (
-            <div className="panel">
-              <p style={{ margin: 0, color: "var(--ink-2)" }}>
-                Nothing yet. Once a brain is connected, every tool call an agent
-                makes shows up here — which is the fastest way to see whether it is
-                actually being read.{" "}
-                <Link href="/connect" style={{ textDecoration: "underline" }}>
-                  Connect one
-                </Link>
-                .
-              </p>
-            </div>
+            <Rows
+              empty={
+                <>
+                  Nothing yet. Once a brain is connected, every tool call an agent
+                  makes shows up here — the fastest way to see whether it is
+                  actually being read.{" "}
+                  <Link href="/connect" style={{ textDecoration: "underline" }}>
+                    Connect one
+                  </Link>
+                  .
+                </>
+              }
+            />
           ) : (
             <section className="term">
               <div className="term-bar">
                 <span className="term-dot" />
                 <span className="term-dot" />
                 <span className="term-dot" />
-                <span style={{ marginLeft: ".5rem" }}>across every brain</span>
+                <span style={{ marginLeft: ".5rem" }}>live from your agents</span>
               </div>
               {activity.map((call) => (
                 <div key={call.id} style={{ display: "flex", gap: ".75rem" }}>
@@ -212,52 +154,9 @@ export default async function BrainsPage() {
               ))}
             </section>
           )}
-        </section>
-      </>
+        </Section>
+      </div>
     </AppShell>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  note,
-  href,
-}: {
-  label: string;
-  value: string;
-  note?: string;
-  href?: string;
-}) {
-  const body = (
-    <>
-      <span className="eyebrow" style={{ display: "block" }}>
-        {label}
-      </span>
-      <span
-        className="display"
-        style={{ fontSize: "1.75rem", display: "block", marginTop: ".3rem", lineHeight: 1 }}
-      >
-        {value}
-      </span>
-      {note && (
-        <span
-          className="mono"
-          style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)", marginTop: ".35rem" }}
-        >
-          {note}
-        </span>
-      )}
-    </>
-  );
-
-  const style: React.CSSProperties = { background: "var(--paper-2)", padding: "1rem 1.25rem" };
-  return href ? (
-    <Link href={href} style={style}>
-      {body}
-    </Link>
-  ) : (
-    <div style={style}>{body}</div>
   );
 }
 
@@ -268,8 +167,9 @@ function FirstRun() {
       active="/brains"
       eyebrow="Nothing here yet"
       title="Start with one folder of screenshots."
+      narrow
     >
-      <p style={{ color: "var(--ink-2)", maxWidth: "54ch", marginTop: 0 }}>
+      <p className="lede">
         Pick something you explain to an agent over and over — a UI you keep
         rebuilding, an API you keep re-reading, a convention nobody wrote down.
         Name what it&apos;s for, drop the material in, and connect it to your editor.

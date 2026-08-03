@@ -45,14 +45,14 @@ export default async function SettingsPage() {
   return (
     <AppShell active="/settings" eyebrow={user.email} title="Plan & profile">
       <section>
-        <h2 className="display" style={{ fontSize: "1.375rem", marginBottom: ".75rem" }}>
+        <h2 className="h2" style={{ marginBottom: ".75rem" }}>
           Profile
         </h2>
         <ProfileForm name={user.name ?? ""} handle={user.handle ?? ""} />
       </section>
 
       <section style={{ marginTop: "2.5rem" }}>
-        <h2 className="display" style={{ fontSize: "1.375rem", marginBottom: ".75rem" }}>
+        <h2 className="h2" style={{ marginBottom: ".75rem" }}>
           Plan and usage
         </h2>
 
@@ -89,7 +89,7 @@ export default async function SettingsPage() {
         {user.plan === "free" && (
           <div className="panel" style={{ marginTop: "1.5rem" }}>
             <p className="eyebrow">Need more room</p>
-            <h3 className="display" style={{ fontSize: "1.375rem", margin: ".4rem 0 .6rem" }}>
+            <h3 className="h2" style={{ margin: ".4rem 0 .6rem" }}>
               Pro is handled by hand right now.
             </h3>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
@@ -105,7 +105,7 @@ export default async function SettingsPage() {
       </section>
 
       <section style={{ marginTop: "2.5rem" }}>
-        <h2 className="display" style={{ fontSize: "1.375rem", marginBottom: ".5rem" }}>
+        <h2 className="h2" style={{ marginBottom: ".5rem" }}>
           Connecting an agent
         </h2>
         <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "60ch" }}>

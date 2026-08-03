@@ -45,7 +45,7 @@ export default async function WhyPage() {
         </p>
 
         <section style={{ marginTop: "clamp(3rem, 8vw, 5rem)" }}>
-          <h2 className="display" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.25rem)", marginBottom: "1.5rem" }}>
+          <h2 className="h2" style={{ marginBottom: "1.5rem" }}>
             Three things are broken.
           </h2>
 
@@ -84,7 +84,7 @@ export default async function WhyPage() {
                   {item.n}
                 </span>
                 <div>
-                  <h3 className="display" style={{ fontSize: "1.375rem", marginBottom: ".4rem" }}>
+                  <h3 className="h2" style={{ marginBottom: ".4rem" }}>
                     {item.title}
                   </h3>
                   <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "60ch" }}>{item.body}</p>
@@ -125,7 +125,7 @@ export default async function WhyPage() {
         </section>
 
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 5rem)" }}>
-          <h2 className="display" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.25rem)", marginBottom: "1.5rem" }}>
+          <h2 className="h2" style={{ marginBottom: "1.5rem" }}>
             The rest of it
           </h2>
 
@@ -145,7 +145,7 @@ export default async function WhyPage() {
               ["Yours to take", "Export any brain as CLAUDE.md, a Claude Skill, or AGENTS.md. It keeps working if you stop paying us — which is the point."],
             ].map(([title, body]) => (
               <div key={title}>
-                <h3 className="display" style={{ fontSize: "1.1875rem", marginBottom: ".45rem" }}>
+                <h3 className="h3" style={{ marginBottom: ".45rem" }}>
                   {title}
                 </h3>
                 <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{body}</p>
@@ -189,7 +189,7 @@ export default async function WhyPage() {
         </section>
 
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 5rem)", textAlign: "center" }}>
-          <h2 className="display" style={{ fontSize: "clamp(1.75rem, 4.5vw, 2.75rem)", marginBottom: "1.25rem" }}>
+          <h2 className="h1" style={{ marginBottom: "1.25rem" }}>
             Teach it once.
           </h2>
           <div style={{ display: "flex", gap: ".75rem", justifyContent: "center", flexWrap: "wrap" }}>

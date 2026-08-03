@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/session";
 import { formatCents } from "@/lib/money-math";
 import { topicLabel } from "@/lib/topics";
 import AppShell from "@/components/AppShell";
+import { Section, Rows, Row } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -63,138 +64,67 @@ export default async function PurchasesPage() {
 
   return (
     <AppShell active="/settings/purchases" eyebrow={user.email} title="Purchases & sales">
-      <section>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginBottom: ".75rem",
-          }}
+      <div className="stack">
+        <Section
+          title="Brains you bought"
+          aside={
+            bought.length > 0
+              ? `${formatCents(bought.reduce((n, b) => n + b.price_cents, 0))} in total`
+              : undefined
+          }
         >
-          <h2 className="display" style={{ fontSize: "1.375rem" }}>
-            Brains you bought
-          </h2>
-          {bought.length > 0 && (
-            <span className="eyebrow">
-              {formatCents(bought.reduce((n, b) => n + b.price_cents, 0))} in total
-            </span>
-          )}
-        </div>
-
-        {bought.length === 0 ? (
-          <div className="panel">
-            <p style={{ margin: 0, color: "var(--ink-2)" }}>
-              Nothing yet. A bought brain connects to your agent exactly like your
-              own — one token reaches everything you can read.{" "}
-              <Link href="/explore?price=paid" style={{ textDecoration: "underline" }}>
-                See what is on sale
-              </Link>
-              .
-            </p>
-          </div>
-        ) : (
-          <div className="panel" style={{ padding: 0 }}>
+          <Rows
+            empty={
+              <>
+                Nothing yet. A bought brain connects to your agent exactly like
+                your own — one token reaches everything you can read.{" "}
+                <Link href="/explore?price=paid" style={{ textDecoration: "underline" }}>
+                  See what is on sale
+                </Link>
+                .
+              </>
+            }
+          >
             {bought.map((b) => (
-              <div
+              <Row
                 key={b.brain_id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "1rem",
-                  padding: ".85rem 1.25rem",
-                  borderBottom: "1px solid var(--rule)",
-                  alignItems: "center",
-                }}
-              >
-                <span>
-                  {b.owner_handle && b.visibility === "public" ? (
-                    <Link href={`/b/${b.owner_handle}/${b.slug}`} style={{ fontWeight: 600 }}>
-                      {b.title}
-                    </Link>
-                  ) : (
-                    <strong>{b.title}</strong>
-                  )}
-                  <span
-                    className="mono"
-                    style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}
-                  >
-                    {topicLabel(b.topic)} · {b.owner_handle ?? "—"} · {b.note_count} notes ·
-                    bought {b.bought_at}
-                    {b.visibility !== "public" && " · author unpublished it"}
-                  </span>
-                </span>
-                <span className="mono" style={{ whiteSpace: "nowrap" }}>
-                  {formatCents(b.price_cents)}
-                </span>
-              </div>
+                href={
+                  b.owner_handle && b.visibility === "public"
+                    ? `/b/${b.owner_handle}/${b.slug}`
+                    : undefined
+                }
+                title={b.title}
+                meta={`${topicLabel(b.topic)} · ${b.owner_handle ?? "—"} · ${b.note_count} notes · bought ${b.bought_at}${
+                  b.visibility !== "public" ? " · author unpublished it" : ""
+                }`}
+                side={formatCents(b.price_cents)}
+              />
             ))}
-          </div>
-        )}
-      </section>
+          </Rows>
+        </Section>
 
-      <section style={{ marginTop: "2.5rem" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginBottom: ".75rem",
-          }}
+        <Section
+          title="Brains you sold"
+          aside={
+            sold.length > 0
+              ? `${formatCents(sold.reduce((n, s) => n + s.earned, 0))} earned`
+              : undefined
+          }
         >
-          <h2 className="display" style={{ fontSize: "1.375rem" }}>
-            Brains you sold
-          </h2>
-          {sold.length > 0 && (
-            <span className="eyebrow">
-              {formatCents(sold.reduce((n, s) => n + s.earned, 0))} earned
-            </span>
-          )}
-        </div>
-
-        {sold.length === 0 ? (
-          <div className="panel">
-            <p style={{ margin: 0, color: "var(--ink-2)" }}>
-              No sales yet. A brain has to be public and priced before anyone can
-              buy it — the price field is on its sharing page, next to the licence.
-            </p>
-          </div>
-        ) : (
-          <div className="panel" style={{ padding: 0 }}>
+          <Rows empty="No sales yet. A brain has to be public and priced before anyone can buy it — the price field is on its sharing page, next to the licence.">
             {sold.map((s) => (
-              <div
+              <Row
                 key={s.brain_id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "1rem",
-                  padding: ".85rem 1.25rem",
-                  borderBottom: "1px solid var(--rule)",
-                  alignItems: "center",
-                }}
-              >
-                <span>
-                  <Link href={`/brains/${s.slug}`} style={{ fontWeight: 600 }}>
-                    {s.title}
-                  </Link>
-                  <span
-                    className="mono"
-                    style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}
-                  >
-                    {s.sales} sale{s.sales === 1 ? "" : "s"} · last {s.last_sale}
-                  </span>
-                </span>
-                <span
-                  className="mono"
-                  style={{ whiteSpace: "nowrap", color: "var(--color-riso-green)" }}
-                >
-                  +{formatCents(s.earned)}
-                </span>
-              </div>
+                href={`/brains/${s.slug}`}
+                title={s.title}
+                meta={`${s.sales} sale${s.sales === 1 ? "" : "s"} · last ${s.last_sale}`}
+                side={`+${formatCents(s.earned)}`}
+                sign="up"
+              />
             ))}
-          </div>
-        )}
-      </section>
+          </Rows>
+        </Section>
+      </div>
     </AppShell>
   );
 }
