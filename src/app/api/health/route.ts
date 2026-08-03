@@ -40,7 +40,7 @@ export async function GET() {
   const healthy = Object.values(checks).every((v) => v === "ok");
 
   return NextResponse.json(
-    { status: healthy ? "ok" : "degraded", checks, queue },
+    { status: healthy ? "ok" : "degraded", version: process.env.GIT_SHA ?? "unknown", checks, queue },
     {
       status: healthy ? 200 : 503,
       headers: { "cache-control": "no-store" },

@@ -11,6 +11,12 @@ FROM node:20-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Stamped into the image so a running container can be asked what it was built
+# from. A deploy that silently ships a cached layer is otherwise invisible —
+# the server's git says one thing and the bundle is another.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
 # Fonts are fetched at build time by next/font. If the build host cannot reach
 # Google Fonts the build fails loudly rather than shipping fallback type.
 RUN npm run build
@@ -19,6 +25,8 @@ FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3300
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
 
 # sharp needs libvips at runtime; tsx runs the worker straight from TypeScript.
 RUN apt-get update \

@@ -32,13 +32,27 @@ say "2/5  pulling on $HOST"
 ssh "$HOST" "cd $DIR && git fetch -q origin && git reset -q --hard origin/main && git log --oneline | head -1"
 
 say "3/5  rebuilding"
+sha=$(git rev-parse HEAD)
 if [ "$full" = 1 ]; then
-  ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml up -d --build"
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d --build"
 else
   # The embed image carries torch and takes minutes to rebuild; its code
   # changes far less often than the app's.
-  ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml up -d --build app worker"
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d --build app worker"
 fi
+
+# A deploy that ships a cached layer is invisible otherwise: the server's git
+# says one thing and the running bundle is another. This has happened once —
+# a new route existed in the repository and 404ed in production — so the
+# deploy now refuses to call itself finished unless the image agrees.
+running=$(curl -s --max-time 25 "$URL/api/health" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+if [ "$running" != "$sha" ]; then
+  echo "  ✗ deployed $sha but the app reports ${running:-nothing}"
+  echo "    the image was built from a cached layer — rebuild it properly:"
+  echo "    ssh $HOST 'cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml build --no-cache app worker && docker compose -f docker-compose.prod.yml up -d'"
+  exit 1
+fi
+echo "  running $running"
 
 say "4/5  migrations"
 ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app npm run db:migrate 2>&1 | tail -3"

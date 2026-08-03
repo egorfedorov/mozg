@@ -42,7 +42,10 @@ services:
           memory: 4g
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     # Localhost only. Exposing 3300 publicly would bypass nginx and serve the
     # app without TLS.
@@ -60,7 +63,10 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     command: ["npm", "run", "worker:prod"]
     env_file: .env
