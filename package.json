@@ -26,7 +26,8 @@
     "seed:stake": "tsx --env-file-if-exists=.env scripts/seed-stake-engine.ts",
     "ask": "tsx --env-file-if-exists=.env scripts/ask.ts",
     "token": "tsx --env-file-if-exists=.env scripts/token.ts",
-    "exam": "tsx --env-file-if-exists=.env scripts/exam.ts"
+    "exam": "tsx --env-file-if-exists=.env scripts/exam.ts",
+    "review": "tsx --env-file-if-exists=.env scripts/review.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
