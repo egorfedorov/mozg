@@ -50,7 +50,7 @@ export async function structured<T>(opts: {
 }): Promise<{ data: T; usage: Usage }> {
   const response = await claude().messages.create({
     model: opts.model,
-    max_tokens: opts.maxTokens ?? 8000,
+    max_tokens: opts.maxTokens ?? 16000,
     system: [
       // Same prefix for every call in a batch, so it caches.
       { type: "text", text: opts.system, cache_control: { type: "ephemeral" } },
@@ -68,6 +68,17 @@ export async function structured<T>(opts: {
 
   if (response.stop_reason === "refusal") {
     throw new Error("request refused by safety classifier");
+  }
+
+  // A tool call cut off mid-JSON gets repaired into an object missing its
+  // fields, and the schema check then reports a mismatch — which sends you
+  // looking at the schema instead of at the output limit. Say what happened.
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(
+      `ran out of output room after ${response.usage.output_tokens} tokens — ` +
+        "the answer was cut off, not malformed. Give it a smaller input or " +
+        "a larger max_tokens.",
+    );
   }
 
   const call = response.content.find((b) => b.type === "tool_use");
