@@ -6,7 +6,7 @@ import { query } from "@/db";
  */
 
 export interface Attention {
-  kind: "review" | "failed" | "no-goal" | "gap" | "unexamined";
+  kind: "review" | "failed" | "no-goal" | "gap" | "unexamined" | "unreachable";
   brainSlug: string;
   brainTitle: string;
   count?: number;
@@ -45,7 +45,7 @@ export async function dashboardStats(userId: string): Promise<DashboardStats> {
  * belong on the screen.
  */
 export async function needsAttention(userId: string): Promise<Attention[]> {
-  const [pending, failed, noGoal, unexamined, gaps] = await Promise.all([
+  const [pending, failed, noGoal, unexamined, gaps, unreachable] = await Promise.all([
     query<{ slug: string; title: string; n: number }>(
       `select b.slug, b.title, count(*)::int as n
          from notes n join brains b on b.id = n.brain_id
@@ -96,6 +96,17 @@ export async function needsAttention(userId: string): Promise<Attention[]> {
         where rank = 1 and passed < total`,
       [userId],
     ),
+    // Pages the refresh pass could not read. A page that 404s is the one kind
+    // of decay the owner has to act on — everything else the brain fixes
+    // itself.
+    query<{ slug: string; title: string; n: number }>(
+      `select b.slug, b.title, count(*)::int as n
+         from sources s join brains b on b.id = s.brain_id
+        where b.owner_id = $1 and s.kind = 'url' and s.status = 'ready'
+          and s.error is not null
+        group by b.slug, b.title order by n desc`,
+      [userId],
+    ),
   ]);
 
   const items: Attention[] = [];
@@ -135,6 +146,16 @@ export async function needsAttention(userId: string): Promise<Attention[]> {
       brainSlug: r.slug,
       brainTitle: r.title,
       detail: "has never sat its exam",
+      href: `/brains/${r.slug}`,
+    });
+  }
+  for (const r of unreachable) {
+    items.push({
+      kind: "unreachable",
+      brainSlug: r.slug,
+      brainTitle: r.title,
+      count: r.n,
+      detail: `${r.n} page${r.n === 1 ? "" : "s"} stopped answering — the notes from ${r.n === 1 ? "it" : "them"} may be stale`,
       href: `/brains/${r.slug}`,
     });
   }

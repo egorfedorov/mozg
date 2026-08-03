@@ -21,7 +21,8 @@
     "diagnose": "tsx --env-file-if-exists=.env scripts/diagnose-exam.ts",
     "check:money": "tsx --env-file-if-exists=.env scripts/check-money.ts",
     "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts",
-    "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts"
+    "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts",
+    "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

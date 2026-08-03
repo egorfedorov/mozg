@@ -1,6 +1,7 @@
-import { getBoss, QUEUES } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON } from "@/worker/queue";
 import { ingestSource } from "@/worker/ingest";
 import { runExam } from "@/worker/exam";
+import { runMaintenance } from "@/worker/maintenance";
 import { embedHealthy } from "@/lib/embed";
 import { env } from "@/lib/env";
 
@@ -72,8 +73,33 @@ async function main() {
     },
   );
 
+  await boss.work(
+    QUEUES.maintenance,
+    { batchSize: 1, pollingIntervalSeconds: 30 },
+    async () => {
+      const started = Date.now();
+      try {
+        const { refresh, examined } = await runMaintenance();
+        console.log(
+          `[maintenance] checked=${refresh.checked} unchanged=${refresh.unchanged} ` +
+            `changed=${refresh.changed} failed=${refresh.failed} reexam=${examined} ` +
+            `${Date.now() - started}ms`,
+        );
+      } catch (err) {
+        console.error(
+          `[maintenance] FAILED after ${Date.now() - started}ms:`,
+          err instanceof Error ? err.message : err,
+        );
+        throw err;
+      }
+    },
+  );
+
+  await scheduleMaintenance();
+
   console.log(
-    `[worker] up — queues: ${Object.values(QUEUES).join(", ")} (concurrency ${CONCURRENCY})`,
+    `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +
+      `(concurrency ${CONCURRENCY}, maintenance ${MAINTENANCE_CRON} UTC)`,
   );
 
   const shutdown = async (signal: string) => {

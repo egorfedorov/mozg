@@ -10,7 +10,15 @@ import { env } from "@/lib/env";
 export const QUEUES = {
   ingest: "ingest",
   exam: "exam",
+  maintenance: "maintenance",
 } as const;
+
+/**
+ * How often brains are checked for decay. Every six hours rather than nightly:
+ * the pass is cheap when nothing changed, and a page that was rewritten this
+ * morning should not answer stale until tomorrow.
+ */
+export const MAINTENANCE_CRON = "17 */6 * * *";
 
 let boss: PgBoss | null = null;
 let starting: Promise<PgBoss> | null = null;
@@ -39,6 +47,21 @@ export async function getBoss(): Promise<PgBoss> {
 export async function enqueueIngest(sourceId: string): Promise<void> {
   const b = await getBoss();
   await b.send(QUEUES.ingest, { sourceId }, { singletonKey: sourceId });
+}
+
+/**
+ * Register the recurring maintenance pass. pg-boss stores the schedule in the
+ * database, so it survives restarts and only one worker fires it even if
+ * several are running.
+ */
+export async function scheduleMaintenance(): Promise<void> {
+  const b = await getBoss();
+  await b.schedule(QUEUES.maintenance, MAINTENANCE_CRON, {}, { tz: "UTC" });
+}
+
+export async function enqueueMaintenance(): Promise<void> {
+  const b = await getBoss();
+  await b.send(QUEUES.maintenance, {}, { singletonKey: "maintenance", singletonSeconds: 300 });
 }
 
 export async function enqueueExam(brainId: string): Promise<void> {

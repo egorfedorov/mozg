@@ -5,7 +5,7 @@ import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
 import { storage } from "@/lib/storage";
-import { checkFetchableUrl } from "@/lib/url-guard";
+import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueExam } from "@/worker/queue";
 
 /**
@@ -166,6 +166,10 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
       );
     });
 
+    // Stamped so the maintenance pass can tell a brain that learned something
+    // since its last exam from one that has simply not been touched.
+    await query(`update brains set content_changed_at = now() where id = $1`, [brain.id]);
+
     // A brain with a goal re-sits its exam whenever it learns something.
     if (brain.goal) await enqueueExam(brain.id);
 
@@ -201,28 +205,16 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
   if (source.kind === "url") {
     if (!source.url) throw new Error("url source has no url");
 
-    // Re-checked here, not just when the source was added: DNS can change in
-    // between, so a hostname that resolved publicly then could point at an
-    // internal address by the time the worker gets to it.
-    const guard = await checkFetchableUrl(source.url);
-    if (!guard.ok) throw new Error(`refusing to fetch: ${guard.reason}`);
+    const text = await fetchPageText(source.url);
 
-    const res = await fetch(source.url, {
-      signal: AbortSignal.timeout(30_000),
-      redirect: "manual", // a redirect could land somewhere the guard rejected
-      headers: { "user-agent": "mozg/0.1 (+https://mozg.sh)" },
-    });
-    if (res.status >= 300 && res.status < 400) {
-      throw new Error(`${source.url} redirects — add the final URL instead`);
-    }
-    if (!res.ok) throw new Error(`fetch ${source.url} -> ${res.status}`);
+    // Remember what we read, so the maintenance pass can tell an unchanged
+    // page from one nobody has looked at.
+    await query(
+      `update sources set content_hash = $2, checked_at = now() where id = $1`,
+      [source.id, contentHash(text)],
+    );
 
-    // A 500 MB file would be read into memory before anything else could stop
-    // it, so cap by declared length and then by what we actually read.
-    const declared = Number(res.headers.get("content-length") ?? 0);
-    if (declared > 10 * 1024 * 1024) throw new Error("page is over 10 MB");
-    const html = (await res.text()).slice(0, 10 * 1024 * 1024);
-    return extractFromText(stripHtml(html), {
+    return extractFromText(text, {
       goal: brain.goal,
       categories,
       label: source.url,
@@ -237,20 +229,4 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
     categories,
     label: source.original_name ?? undefined,
   });
-}
-
-/** lazy: good enough to feed a model. Swap for readability/turndown if pages
- *  start arriving as JS-rendered shells. */
-function stripHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/[ \t]{2,}/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }

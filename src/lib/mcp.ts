@@ -464,6 +464,12 @@ async function brainWrite(
     }
   }
 
+  if (!pending) {
+    await query(`update brains set content_changed_at = now() where id = $1`, [
+      resolved.brain.id,
+    ]);
+  }
+
   return {
     text: pending
       ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +

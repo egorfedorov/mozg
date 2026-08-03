@@ -18,6 +18,7 @@ const ATTENTION: Record<string, { tint: "red" | "blue" | "violet" | "orange"; ac
   "no-goal": { tint: "orange", action: "Set a goal" },
   unexamined: { tint: "orange", action: "Run it" },
   gap: { tint: "blue", action: "Add sources" },
+  unreachable: { tint: "red", action: "Check it" },
 };
 
 export default async function BrainsPage() {

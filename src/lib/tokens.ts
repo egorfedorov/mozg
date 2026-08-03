@@ -105,3 +105,15 @@ export async function burstExceeded(userId: string): Promise<boolean> {
   );
   return (row?.n ?? 0) >= BURST_PER_MINUTE;
 }
+
+/** Live tokens per account. A cap, so a stuck button cannot mint hundreds. */
+const MAX_ACTIVE_TOKENS = 20;
+
+export async function issueLimitReached(userId: string): Promise<boolean> {
+  const rows = await query<{ n: number }>(
+    `select count(*)::int as n from mcp_tokens
+      where user_id = $1 and revoked_at is null`,
+    [userId],
+  );
+  return rows[0].n >= MAX_ACTIVE_TOKENS;
+}
