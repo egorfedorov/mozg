@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query, tx } from "@/db";
 import { env } from "@/lib/env";
 import { creditTopUp, purchaseBrain } from "@/lib/money";
+import { availableCoins, coinByKey, usdPrice } from "@/lib/mozgpay-chains";
 
 /**
  * Crypto top-ups through NOWPayments.
@@ -23,8 +24,13 @@ const API = "https://api.nowpayments.io/v1";
 /** Wired up? Everything here is inert until both keys exist. */
 export const paymentsReady = Boolean(env.NOWPAYMENTS_API_KEY && env.NOWPAYMENTS_IPN_SECRET);
 
-/** Our own rails: USDT straight to the owner's wallet, no middleman. */
-export const mozgpayReady = Boolean(env.MOZGPAY_TRON_ADDRESS);
+/** Our own rails: crypto straight to the owner's wallets, no middleman. */
+export const mozgpayReady = Boolean(
+  env.MOZGPAY_TRON_ADDRESS ||
+    env.MOZGPAY_ETH_ADDRESS ||
+    env.MOZGPAY_SOL_ADDRESS ||
+    env.MOZGPAY_BTC_ADDRESS,
+);
 
 /** Either rail being live is enough for the UI to offer crypto. */
 export const anyCryptoReady = paymentsReady || mozgpayReady;
@@ -119,33 +125,50 @@ export async function createOwnInvoice(opts: {
   amountCents: number;
   purpose?: "topup" | "buy";
   buyBrainId?: string;
+  coin?: string;
 }): Promise<{ ok: true; invoice: Invoice } | { ok: false; reason: string }> {
   if (!mozgpayReady) return { ok: false, reason: "unconfigured" };
   if (opts.amountCents < MIN_TOPUP_CENTS || opts.amountCents > MAX_TOPUP_CENTS) {
     return { ok: false, reason: "amount" };
   }
 
-  const reference = `mzp_${randomBytes(12).toString("base64url")}`;
-  const base = opts.amountCents / 100;
+  const coin = coinByKey(opts.coin ?? "usdt-trc20") ?? availableCoins()[0];
+  if (!coin) return { ok: false, reason: "unconfigured" };
 
-  // A few tries at a free fingerprint; the partial unique index is the
-  // referee, so two concurrent invoices cannot land on one amount.
+  let price = 1;
+  try {
+    price = await usdPrice(coin);
+  } catch (err) {
+    return { ok: false, reason: `price feed: ${err instanceof Error ? err.message : err}` };
+  }
+
+  const reference = `mzp_${randomBytes(12).toString("base64url")}`;
+  const base = opts.amountCents / 100 / price;
+  const unit = 10 ** coin.decimals;
+
+  // The round number first — 100 USDT, not 100.008263. The fractional
+  // fingerprint exists only to tell two SIMULTANEOUS same-amount invoices
+  // apart, so it appears only when the round amount is already taken; the
+  // partial unique index is the referee either way. For BTC "round" means
+  // rounded to a satoshi — the fingerprint rides the last digits the same way.
   for (let attempt = 0; attempt < 8; attempt++) {
-    const fingerprint = (randomBytes(2).readUInt16BE(0) % 9899) + 100; // 100..9999
-    const amount = (base + fingerprint / 1_000_000).toFixed(6);
+    const fingerprint = attempt === 0 ? 0 : (randomBytes(2).readUInt16BE(0) % 9899) + 100;
+    const amount = ((Math.round(base * unit) + fingerprint) / unit).toFixed(coin.decimals);
     try {
       await query(
         `insert into topups
            (user_id, amount_cents, provider, reference, purpose, buy_brain_id,
-            chain, pay_address, pay_amount, expires_at)
-         values ($1, $2, 'mozgpay', $3, $4, $5, 'tron', $6, $7, now() + interval '3 hours')`,
+            chain, pay_coin, pay_address, pay_amount, expires_at)
+         values ($1, $2, 'mozgpay', $3, $4, $5, $6, $7, $8, $9, now() + interval '3 hours')`,
         [
           opts.userId,
           opts.amountCents,
           reference,
           opts.purpose ?? "topup",
           opts.purpose === "buy" ? (opts.buyBrainId ?? null) : null,
-          env.MOZGPAY_TRON_ADDRESS,
+          coin.chain,
+          coin.key,
+          coin.address(),
           amount,
         ],
       );

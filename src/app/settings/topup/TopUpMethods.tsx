@@ -22,14 +22,18 @@ const COINS = ["USDT", "USDC", "BTC", "ETH", "TON", "SOL", "LTC"];
 export default function TopUpMethods({
   ready,
   email,
+  coins = [],
 }: {
-  /** True once the NOWPayments keys exist. */
+  /** True once any crypto rail is configured. */
   ready: boolean;
   email: string;
+  /** mozgpay coins available for direct payment. */
+  coins?: { key: string; label: string; note?: string }[];
 }) {
   const [state, action, pending] = useActionState(startTopUp, null);
   const [amount, setAmount] = useState<number>(AMOUNTS[1]);
   const [coin, setCoin] = useState<string>(COINS[0]);
+  const [payCoin, setPayCoin] = useState<string>(coins[0]?.key ?? "usdt-trc20");
 
   return (
     <div className="stack-tight">
@@ -55,10 +59,34 @@ export default function TopUpMethods({
                 : "Pick an amount and a coin, and ask for an address — we reply the same day with where to send it, and credit the balance as soon as it lands. Same ledger the automatic gateway will write to."}
             </p>
 
+            {ready && coins.length > 0 && (
+              <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+                {coins.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    className="btn btn-ghost mono"
+                    title={c.note}
+                    onClick={() => setPayCoin(c.key)}
+                    style={{
+                      padding: ".3rem .6rem",
+                      fontSize: ".8125rem",
+                      ...(payCoin === c.key
+                        ? { background: "var(--ink)", color: "var(--paper)" }
+                        : {}),
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
               {AMOUNTS.map((cents) =>
                 ready ? (
                   <form action={action} key={cents} style={{ display: "inline" }}>
+                    <input type="hidden" name="coin" value={payCoin} />
                     <button
                       name="amount"
                       value={String(cents)}
@@ -112,16 +140,7 @@ export default function TopUpMethods({
                   ))}
                 </div>
 
-                <a
-                  className="btn"
-                  href={`mailto:hi@mozg.sh?subject=${encodeURIComponent(
-                    `Top up ${formatCents(amount)} in ${coin}`,
-                  )}&body=${encodeURIComponent(
-                    `Account: ${email}\nAmount: ${formatCents(amount)}\nCoin: ${coin}\n\nSend me an address, please.`,
-                  )}`}
-                >
-                  Ask for a {coin} address
-                </a>
+                <a className="btn" href="/chat">Ask for a {coin} address in chatmozg</a>
               </>
             )}
 
@@ -158,7 +177,7 @@ export default function TopUpMethods({
         <p className="eyebrow">PayPal · Apple Pay · Google Pay</p>
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
           Also planned. If one of these is the only way you can pay, write to{" "}
-          <a href="mailto:hi@mozg.sh">hi@mozg.sh</a> — knowing what people need
+          <a href="/chat">chatmozg</a> — knowing what people need
           decides what ships first.
         </p>
         <button className="btn btn-ghost" disabled>

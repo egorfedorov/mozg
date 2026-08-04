@@ -109,9 +109,7 @@ export default async function BetaPage() {
                   Feed it a docs site that confuses it. Ask a brain something it
                   scored well on and got wrong anyway. Find the button that does
                   nothing. Every report goes to a human the same day:{" "}
-                  <a href="mailto:hi@mozg.sh?subject=beta%20bug" style={{ textDecoration: "underline" }}>
-                    hi@mozg.sh
-                  </a>{" "}
+                  <a href="/chat" style={{ textDecoration: "underline" }}>chatmozg</a>{" "}
                   or{" "}
                   <a
                     href="https://github.com/egorfedorov/mozg-plugin/issues"
@@ -148,7 +146,7 @@ export default async function BetaPage() {
                   A doc site your agents keep misquoting, a spec you keep
                   re-pasting, a field with no good brain yet — name it and we
                   will likely build it within days. The best brains in the
-                  catalogue started as one sentence in an email.
+                  catalogue started as one sentence in the chat.
                 </span>
               </span>
             </div>
@@ -168,9 +166,9 @@ export default async function BetaPage() {
             Report a real bug or a real gap during the beta — one we act on —
             and your account gets a year of Pro, free, when plans go live. Not
             as a promo trick: the people who helped sand the edges shouldn&apos;t
-            pay for the polished thing. Write to{" "}
-            <a href="mailto:hi@mozg.sh" style={{ textDecoration: "underline" }}>
-              hi@mozg.sh
+            pay for the polished thing. Say so in{" "}
+            <a href="/chat" style={{ textDecoration: "underline" }}>
+              chatmozg
             </a>{" "}
             and it is noted the same day.
           </p>

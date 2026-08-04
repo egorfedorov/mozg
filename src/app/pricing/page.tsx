@@ -114,7 +114,7 @@ export default async function PricingPage() {
 
           <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)", marginTop: ".9rem" }}>
             Plan billing is being wired up — until then upgrades are done by
-            hand within a day: <a href="mailto:hi@mozg.sh">hi@mozg.sh</a>. The
+            hand within a day: <a href="/chat">chatmozg</a>. The
             limits are live; the invoice is the manual part.
           </p>
         </section>

@@ -20,12 +20,30 @@ export const metadata = { title: "Admin — mozg", robots: { index: false, follo
 export default async function AdminPage() {
   await requireAdmin();
 
-  const [h, money, ledger, brains, payouts, totals] = await Promise.all([
+  const [h, money, ledger, brains, payouts, payments, totals] = await Promise.all([
     health(),
     adminMoney(),
     adminLedger(12),
     adminBrains(200),
     openPayouts(),
+    query<{
+      email: string;
+      amount_cents: number;
+      status: string;
+      provider: string;
+      pay_coin: string | null;
+      purpose: string;
+      brain_title: string | null;
+      created_at: string;
+    }>(
+      `select u.email, t.amount_cents, t.status, t.provider, t.pay_coin,
+              t.purpose, b.title as brain_title,
+              to_char(t.created_at at time zone 'UTC', 'MM-DD HH24:MI') as created_at
+         from topups t
+         join "user" u on u.id = t.user_id
+         left join brains b on b.id = t.buy_brain_id
+        order by t.created_at desc limit 20`,
+    ),
     query<{ users: number; brains: number; notes: number; public_brains: number; paid_brains: number }>(
       `select
          (select count(*)::int from "user") as users,
@@ -134,6 +152,24 @@ export default async function AdminPage() {
             </div>
           </Section>
         )}
+
+        <Section title="Payments" aside="who paid, who is waiting">
+          <Rows empty="No invoices yet. The first one shows up the moment someone opens a payment page.">
+            {payments.map((p, i) => (
+              <Row
+                key={i}
+                title={`${formatCents(p.amount_cents)} · ${p.email}`}
+                sub={
+                  (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
+                  `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
+                }
+                meta={p.created_at}
+                side={p.status}
+                tint={p.status === "paid" ? "green" : p.status === "pending" ? "orange" : "red"}
+              />
+            ))}
+          </Rows>
+        </Section>
 
         <Section title="Money" aside="the ledger, not the balances">
           <Stats>

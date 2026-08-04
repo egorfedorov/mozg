@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/session";
 import { anyCryptoReady, recentTopups } from "@/lib/payments";
+import { availableCoins } from "@/lib/mozgpay-chains";
 import { formatCents } from "@/lib/money-math";
 import AppShell from "@/components/AppShell";
 import { Section, Rows, Row } from "@/components/ui";
@@ -26,7 +27,11 @@ export default async function TopUpPage() {
   return (
     <AppShell active="/settings/balance" eyebrow={user.email} title="Top up balance">
       <div className="stack">
-        <TopUpMethods ready={anyCryptoReady} email={user.email} />
+        <TopUpMethods
+          ready={anyCryptoReady}
+          email={user.email}
+          coins={availableCoins().map((c) => ({ key: c.key, label: c.label, note: c.note }))}
+        />
 
         <Section title="Recent top-ups" aside={<Link href="/settings/balance">balance →</Link>}>
           <Rows empty="Nothing yet. A top-up appears here the moment it is started, and turns into balance when the payment lands.">

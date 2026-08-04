@@ -290,10 +290,7 @@ export default async function ExplorePage({
               Publish a brain, set a price, keep {100 - PLATFORM_FEE_PERCENT}% of
               every sale. Buyers get read access through their agent — the licence
               forbids reselling it. And if the brain you need is missing:{" "}
-              <a
-                href="mailto:hi@mozg.sh?subject=Brain%20request"
-                style={{ textDecoration: "underline" }}
-              >
+              <a href="/chat">
                 name it
               </a>{" "}
               — good requests get built within days.

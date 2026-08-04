@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import QRCode from "qrcode";
+import { COINS } from "@/lib/mozgpay-chains";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -32,12 +34,13 @@ export default async function PayPage({
     chain: string | null;
     pay_address: string | null;
     pay_amount: string | null;
+    pay_coin: string | null;
     purpose: string;
     buy_title: string | null;
     expires_at: Date | null;
   }>(
     `select t.reference, t.amount_cents, t.status, t.chain, t.pay_address,
-            t.pay_amount::text, t.purpose, b.title as buy_title, t.expires_at
+            t.pay_amount::text, t.pay_coin, t.purpose, b.title as buy_title, t.expires_at
        from topups t left join brains b on b.id = t.buy_brain_id
       where t.reference = $1 and t.user_id = $2 and t.provider = 'mozgpay'`,
     [reference, user.id],
@@ -46,6 +49,23 @@ export default async function PayPage({
 
   const pending = invoice.status === "pending";
   const paid = invoice.status === "paid";
+
+  const coin = COINS.find((c) => c.key === invoice.pay_coin) ?? COINS[0];
+  const symbol = coin.label.split(" ")[0];
+
+  // "100", not "100.000000" — the tail shows only when it means something.
+  const shownAmount = (invoice.pay_amount ?? "").replace(/\.?0+$/, "");
+  const hasFingerprint = shownAmount.includes(".") && coin.stable;
+
+  const qr =
+    pending && invoice.pay_address
+      ? await QRCode.toString(invoice.pay_address, {
+          type: "svg",
+          margin: 0,
+          width: 168,
+          color: { dark: "#14161a", light: "#0000" },
+        })
+      : null;
 
   return (
     <>
@@ -77,30 +97,43 @@ export default async function PayPage({
         ) : pending ? (
           <>
             <div className="panel" style={{ display: "grid", gap: "1rem" }}>
-              <div>
-                <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
-                  Amount — all six decimals matter
-                </p>
-                <code className="mono" style={{ fontSize: "1.5rem", userSelect: "all" }}>
-                  {invoice.pay_amount} USDT
-                </code>
-                <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".35rem 0 0" }}>
-                  the decimals are how this payment is recognised — a rounded
-                  amount will not match
-                </p>
-              </div>
-              <div>
-                <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
-                  To this address · {String(invoice.chain).toUpperCase()} · TRC-20
-                </p>
-                <code className="mono" style={{ fontSize: ".9375rem", userSelect: "all", overflowWrap: "anywhere" }}>
-                  {invoice.pay_address}
-                </code>
+              <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ flex: "1 1 260px", display: "grid", gap: "1rem" }}>
+                  <div>
+                    <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
+                      Amount — send exactly this
+                    </p>
+                    <code className="mono" style={{ fontSize: "1.5rem", userSelect: "all" }}>
+                      {shownAmount} {symbol}
+                    </code>
+                    {hasFingerprint && (
+                      <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".35rem 0 0" }}>
+                        the decimals are how this payment is recognised — a
+                        rounded amount will not match
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
+                      To this address · {coin.label} · {coin.network}
+                    </p>
+                    <code className="mono" style={{ fontSize: ".9375rem", userSelect: "all", overflowWrap: "anywhere" }}>
+                      {invoice.pay_address}
+                    </code>
+                  </div>
+                </div>
+                {qr && (
+                  <div
+                    aria-label="Address as a QR code"
+                    style={{ padding: ".75rem", border: "1.5px solid var(--ink)", background: "var(--paper)" }}
+                    dangerouslySetInnerHTML={{ __html: qr }}
+                  />
+                )}
               </div>
               <AutoRefresh
                 active
                 intervalMs={10_000}
-                label="Watching the network — this page updates itself on confirmation (usually under a minute)"
+                label={`Watching the network — this page updates itself on confirmation${coin.note ? ` (${coin.note})` : ""}`}
               />
             </div>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>

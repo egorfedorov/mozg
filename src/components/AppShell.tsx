@@ -24,6 +24,7 @@ const GROUPS: {
       { href: "/mind", label: "Your mind" },
       { href: "/brains/new", label: "New brain" },
       { href: "/connect", label: "Connect an agent" },
+      { href: "/chat", label: "chatmozg" },
     ],
   },
   {
@@ -70,6 +71,7 @@ export default async function AppShell({
           title: "Operator",
           items: [
             { href: "/admin", label: "System" },
+            { href: "/admin/chat", label: "Chat" },
             { href: "/admin/users", label: "People" },
             { href: "/admin/brains", label: "All brains" },
           ],

@@ -61,10 +61,15 @@ const schema = z.object({
   NOWPAYMENTS_API_KEY: z.string().optional(),
   NOWPAYMENTS_IPN_SECRET: z.string().optional(),
 
-  // mozgpay: our own USDT (TRC-20) acceptance. The address is the owner's
-  // wallet — the server watches it, it cannot spend from it. Optional
-  // TronGrid key raises the polling rate limit.
+  // mozgpay: our own crypto acceptance. Addresses are the owner's wallets —
+  // the server watches them, it cannot spend from them. Each coin turns on
+  // by its address existing. Optional TronGrid key raises rate limits;
+  // MOZGPAY_ETH_RPC overrides the public Ethereum RPC.
   MOZGPAY_TRON_ADDRESS: z.string().optional(),
+  MOZGPAY_ETH_ADDRESS: z.string().optional(),
+  MOZGPAY_SOL_ADDRESS: z.string().optional(),
+  MOZGPAY_BTC_ADDRESS: z.string().optional(),
+  MOZGPAY_ETH_RPC: z.string().url().default("https://eth.llamarpc.com"),
   TRONGRID_API_KEY: z.string().optional(),
 
   // Nightly note consolidation. Off until the similarity threshold separates

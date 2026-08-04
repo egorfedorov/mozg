@@ -13,9 +13,10 @@ import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
 const RESERVED = new Set([
-  "admin", "api", "b", "beta", "brains", "changelog", "connect", "explore",
-  "gift", "guide", "make", "mcp", "pricing", "settings", "sign-in", "sign-up",
-  "vs", "why", "www", "support", "help",
+  "admin", "api", "b", "beta", "brains", "changelog", "chat", "connect",
+  "explore", "gift", "guide", "make", "mcp", "mind", "pay", "pricing",
+  "settings", "sign-in", "sign-up", "vs", "vs-skills", "why", "www",
+  "support", "help",
 ]);
 
 export async function updateProfile(_prev: unknown, formData: FormData) {
@@ -104,10 +105,11 @@ export async function startTopUp(
   if (!user) redirect("/sign-in");
 
   const amountCents = Number(formData.get("amount") ?? 0);
+  const coin = String(formData.get("coin") ?? "") || undefined;
   // Our own rail first: no middleman, no fee, the author's wallet directly.
   // The gateway stays as the fallback for the day we want hosted checkout.
   const res = mozgpayReady
-    ? await createOwnInvoice({ userId: user.id, amountCents })
+    ? await createOwnInvoice({ userId: user.id, amountCents, coin })
     : await createInvoice({ userId: user.id, amountCents });
 
   if (!res.ok) {

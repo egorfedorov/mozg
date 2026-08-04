@@ -92,7 +92,7 @@ export default async function SettingsPage() {
               hit first. Email what you are building and we will switch your account
               over the same day.
             </p>
-            <a className="btn" href="mailto:hi@mozg.sh?subject=Pro%20access" style={{ marginTop: "1rem" }}>
+            <a className="btn" href="/chat" style={{ marginTop: "1rem" }}>
               Ask for Pro
             </a>
           </div>
