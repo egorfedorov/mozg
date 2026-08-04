@@ -157,6 +157,107 @@ export default async function MarketingPage() {
         back.
       </p>
 
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Launch runbook — go top to bottom</h2>
+      <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)", marginBottom: "1.5rem" }}>
+        {[
+          {
+            when: "Day 1",
+            what: "glama.ai — MCP server directory",
+            how: "glama.ai/mcp/servers → Add server. Paste the «MCP directory listing» block below.",
+            art: "—",
+          },
+          {
+            when: "Day 1",
+            what: "smithery.ai",
+            how: "smithery.ai → Submit/Add server (GitHub sign-in). Same listing block.",
+            art: "—",
+          },
+          {
+            when: "Day 1",
+            what: "mcp.so",
+            how: "mcp.so → Submit. Same listing block.",
+            art: "—",
+          },
+          {
+            when: "Day 1",
+            what: "pulsemcp.com + mcpservers.org",
+            how: "Both have a Submit form/repo. Same listing block, shorter description field takes the ~160-char one.",
+            art: "—",
+          },
+          {
+            when: "Day 1",
+            what: "awesome-mcp-servers (GitHub PR)",
+            how: "github.com/punkpeye/awesome-mcp-servers → edit README → section «Knowledge & Memory» → add the PR line from the block below, alphabetical order. PR title: Add mozg.",
+            art: "—",
+          },
+          {
+            when: "Day 2",
+            what: "r/mcp",
+            how: "reddit.com/r/mcp → post the «r/mcp post» block. Reply to every comment within the hour.",
+            art: "social-exam.jpg",
+          },
+          {
+            when: "Day 3",
+            what: "r/ClaudeAI",
+            how: "reddit.com/r/ClaudeAI → the «r/ClaudeAI post» block. Don't post both subreddits the same day.",
+            art: "social-exam.jpg",
+          },
+          {
+            when: "Day 4-5",
+            what: "Dev.to article",
+            how: "dev.to/new → paste the full markdown block (front-matter included) → cover image devto-cover.jpg → publish. Cross-post to Hashnode after, canonical = dev.to.",
+            art: "devto-cover.jpg",
+          },
+          {
+            when: "Week 2 · Tue-Thu",
+            what: "Show HN",
+            how: "news.ycombinator.com/submit at 14:00-16:00 UTC. Title+URL from the «Show HN» block; post the first comment yourself immediately. Answer everything for 2 hours. Never ask for upvotes.",
+            art: "—",
+          },
+          {
+            when: "Week 2, day after HN",
+            what: "X thread",
+            how: "Three tweets from the «X thread» block, image on the first tweet.",
+            art: "social-exam.jpg",
+          },
+          {
+            when: "Week 2",
+            what: "Stake Engine Discord",
+            how: "The RU block below, in the community/showcase channel. You're a known member — post as yourself, not as an ad.",
+            art: "—",
+          },
+          {
+            when: "Week 3 · Tue-Wed",
+            what: "Product Hunt",
+            how: "producthunt.com/posts/new at 00:01 PT. Name/tagline/description from LAUNCH.md. First comment: the founder story. Gallery: all three images + screenshots of a brain page and learn course.",
+            art: "all three",
+          },
+          {
+            when: "Week 3",
+            what: "learn angle",
+            how: "r/learnprogramming-style communities, story-first: «I turned my agent's knowledge base into a course and tried to beat its exam score». Link learn.mozg.sh only when asked or at the bottom.",
+            art: "learn-social.jpg",
+          },
+          {
+            when: "Always",
+            what: "Every new brain = a post",
+            how: "One brain a week to ≥85%, announce with the X thread pattern. Every external link gets ?utm_source=<platform> so PostHog can name the winner.",
+            art: "rotate",
+          },
+        ].map((s, i) => (
+          <div key={i} style={{ background: "var(--paper-2)", padding: ".8rem 1rem", display: "flex", gap: "1rem", alignItems: "baseline", flexWrap: "wrap" }}>
+            <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-red)", width: "7.5rem", flexShrink: 0 }}>
+              {String(i + 1).padStart(2, "0")} · {s.when}
+            </span>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <strong>{s.what}</strong>
+              <p style={{ margin: ".2rem 0 0", color: "var(--ink-2)", fontSize: ".9375rem" }}>{s.how}</p>
+            </div>
+            <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>{s.art}</span>
+          </div>
+        ))}
+      </div>
+
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Positioning</h2>
       <Block title="One-liner" text={oneLiner} />
       <Block title="Boilerplate (100 words)" hint="press kits, directories" text={boilerplate} />

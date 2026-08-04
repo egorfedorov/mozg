@@ -12,6 +12,7 @@
     "db:reset": "tsx --env-file-if-exists=.env scripts/migrate.ts --reset",
     "worker": "tsx watch --env-file-if-exists=.env src/worker/index.ts",
     "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/worker/index.mjs && esbuild scripts/migrate.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/migrate.mjs",
+    "build:tools": "esbuild scripts/paid.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/paid.mjs && esbuild scripts/exam.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/exam.mjs && esbuild scripts/catalogue.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/catalogue.mjs && esbuild scripts/failed-checks.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/failed-checks.mjs",
     "worker:prod": "node dist/worker/index.mjs",
     "db:migrate:prod": "node dist/migrate.mjs",
     "ingest": "tsx --env-file-if-exists=.env scripts/ingest.ts",

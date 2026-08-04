@@ -46,7 +46,7 @@ RUN npm run build
 # The worker and the migration runner ship as esbuild bundles (dist/), built
 # from the same source tree as the web app — npm ci --omit=dev in the runtime
 # stage means no tsx down there to run the TypeScript directly.
-RUN npm run build:worker
+RUN npm run build:worker && npm run build:tools
 
 FROM node:20-slim AS runtime
 WORKDIR /app
