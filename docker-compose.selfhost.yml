@@ -1,0 +1,110 @@
+# Self-hosting mozg, in one command:
+#
+#   cp .env.selfhost.example .env && docker compose -f docker-compose.selfhost.yml up
+#
+# Everything comes up together — Postgres with pgvector, the embedder, the
+# app and the worker — migrations included. The only thing you must edit is
+# ANTHROPIC_API_KEY (or an OpenAI-compatible one; see .env.selfhost.example).
+#
+# Differences from docker-compose.prod.yml, deliberately: the app is exposed
+# on 3300 directly (no nginx in front, so you can open it), the database
+# password has a working default, and a one-shot `migrate` service runs the
+# schema before the app starts, so nothing is left for you to remember.
+#
+# First boot downloads ~2.2 GB of embedding weights into a volume. That is
+# the slow part; every later start is seconds.
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mozg
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mozg}
+      POSTGRES_DB: mozg
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mozg -d mozg"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  embed:
+    build: ./services/embed
+    restart: unless-stopped
+    volumes:
+      - models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8099/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      # Weights download on first boot; do not call it dead meanwhile.
+      start_period: 1200s
+
+  # One-shot: identity tables and the app schema, then exit. The app waits for
+  # this to complete, so a fresh clone never meets a half-built database.
+  migrate:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-selfhost}
+    command: ["node", "dist/migrate.mjs"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD:-mozg}@db:5432/mozg
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-selfhost}
+    restart: unless-stopped
+    ports:
+      - "${MOZG_PORT:-3300}:3300"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD:-mozg}@db:5432/mozg
+      EMBED_URL: http://embed:8099
+      STORAGE_LOCAL_DIR: /data/storage
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3300/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  worker:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-selfhost}
+    restart: unless-stopped
+    command: ["node", "dist/worker/index.mjs"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD:-mozg}@db:5432/mozg
+      EMBED_URL: http://embed:8099
+      STORAGE_LOCAL_DIR: /data/storage
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  models:
+  storage:
