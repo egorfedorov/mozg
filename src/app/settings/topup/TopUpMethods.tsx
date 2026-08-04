@@ -21,12 +21,10 @@ const COINS = ["USDT", "USDC", "BTC", "ETH", "TON", "SOL", "LTC"];
 
 export default function TopUpMethods({
   ready,
-  email,
   coins = [],
 }: {
   /** True once any crypto rail is configured. */
   ready: boolean;
-  email: string;
   /** mozgpay coins available for direct payment. */
   coins?: { key: string; label: string; note?: string }[];
 }) {

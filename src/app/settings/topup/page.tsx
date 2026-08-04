@@ -29,7 +29,6 @@ export default async function TopUpPage() {
       <div className="stack">
         <TopUpMethods
           ready={anyCryptoReady}
-          email={user.email}
           coins={availableCoins().map((c) => ({ key: c.key, label: c.label, note: c.note }))}
         />
 

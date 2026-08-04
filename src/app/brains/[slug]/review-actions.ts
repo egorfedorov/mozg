@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { maybeOne, query, toVector } from "@/db";
+import { maybeOne, query } from "@/db";
 import type { Note } from "@/db/types";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { approve } from "@/lib/review";

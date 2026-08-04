@@ -13,6 +13,9 @@ const LIVE_MINUTES = 15;
 export default async function AdminUsersPage() {
   const admin = await requireAdmin();
   const users = await adminUsers();
+  // A server component renders once per request, so the clock cannot drift
+  // between renders the way the purity rule guards against on the client.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   return (

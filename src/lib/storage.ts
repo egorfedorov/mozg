@@ -59,15 +59,16 @@ let s3Driver: Storage | null = null;
 function getS3(): Storage {
   if (s3Driver) return s3Driver;
 
-  // Imported lazily so the local-dev path never loads the AWS SDK.
-  const {
-    S3Client,
-    PutObjectCommand,
-    GetObjectCommand,
-    DeleteObjectCommand,
-  } = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");
-  const { getSignedUrl } =
-    require("@aws-sdk/s3-request-presigner") as typeof import("@aws-sdk/s3-request-presigner");
+  // Imported lazily so the local-dev path never loads the AWS SDK. `require`
+  // rather than `await import` keeps getS3 synchronous — going async would
+  // ripple through every caller for a load that happens once.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sdk = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const presign = require("@aws-sdk/s3-request-presigner") as typeof import("@aws-sdk/s3-request-presigner");
+
+  const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = sdk;
+  const { getSignedUrl } = presign;
 
   const client = new S3Client({
     region: env.S3_REGION,

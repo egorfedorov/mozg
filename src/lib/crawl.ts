@@ -337,8 +337,9 @@ async function sitemapPages(
   }
   if (doc.status !== 200 || !doc.text.includes("<")) return null;
 
-  let { locs, isIndex } = parseSitemap(doc.text);
-  if (isIndex) {
+  const root = parseSitemap(doc.text);
+  let locs = root.locs;
+  if (root.isIndex) {
     // One level of index is the spec's own shape; deeper nesting is not.
     const children: string[] = [];
     for (const sitemapUrl of locs.slice(0, 10)) {

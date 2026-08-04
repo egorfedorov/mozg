@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { gradeCard } from "./actions";
 import { sectionGrade, type Grade } from "@/lib/learn";
@@ -30,6 +30,12 @@ function savedDepth(): Depth {
   } catch {}
   return "standard";
 }
+
+/** The stored depth never changes behind our back — the only writer is this
+    component — so the subscription is a no-op and the value is read once per
+    render instead of being copied into state by an effect. */
+const noStoreUpdates = () => () => {};
+const standardDepth = (): Depth => "standard";
 
 /**
  * The lesson player. The mechanic is read-then-recall in small chunks:
@@ -73,7 +79,11 @@ export default function LessonPlayer({
   const [step, setStep] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [misses, setMisses] = useState(0);
-  const [depth, setDepth] = useState<Depth>("standard");
+  // Server render has no localStorage, so the saved depth arrives on the client
+  // only; a pick during this sitting wins over it.
+  const stored = useSyncExternalStore(noStoreUpdates, savedDepth, standardDepth);
+  const [picked, setPicked] = useState<Depth | null>(null);
+  const depth = picked ?? stored;
   // Each card's last grade this sitting — the evidence section grades are
   // aggregated from when the queue runs dry.
   const finalGrades = useRef<Record<string, Grade>>({});
@@ -85,12 +95,8 @@ export default function LessonPlayer({
     intro?.eli5 || intro?.expert || items.some((i) => i.altBack?.eli5 || i.altBack?.expert),
   );
 
-  useEffect(() => {
-    setDepth(savedDepth());
-  }, []);
-
   function pickDepth(d: Depth) {
-    setDepth(d);
+    setPicked(d);
     try {
       localStorage.setItem(DEPTH_KEY, d);
     } catch {}

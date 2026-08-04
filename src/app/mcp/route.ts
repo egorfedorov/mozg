@@ -32,9 +32,6 @@ interface RpcRequest {
   params?: Record<string, unknown>;
 }
 
-const ok = (id: RpcRequest["id"], result: unknown) =>
-  NextResponse.json({ jsonrpc: "2.0", id, result });
-
 const fail = (id: RpcRequest["id"], code: number, message: string, status = 200) =>
   NextResponse.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
 
