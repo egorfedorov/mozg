@@ -4,16 +4,19 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import AppShell from "@/components/AppShell";
 import ProfileForm from "./ProfileForm";
-import { limitsFor } from "@/lib/plans";
+import PlanPanel from "./PlanPanel";
+import { limitsFor, type PaidPlan } from "@/lib/plans";
+import { pendingPlanRequest } from "@/lib/upgrade";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Account — mozg" };
 
 /**
- * Plan and usage. There is no checkout yet — upgrades are handled by hand while
- * we find out what people actually hit limits on. The quotas are real from day
- * one because they protect the API bill, not the revenue.
+ * Plan and usage. Upgrades are a month at a time, two doors: pay from the
+ * balance (instant) or ask (an operator switches the account by hand). The
+ * quotas are real from day one because they protect the API bill, not the
+ * revenue.
  */
 
 export default async function SettingsPage() {
@@ -37,6 +40,11 @@ export default async function SettingsPage() {
     [user.id],
   );
 
+  const pending = await pendingPlanRequest(user.id);
+  // Only plans strictly above the current one are worth offering.
+  const targets: PaidPlan[] =
+    user.plan === "free" ? ["pro", "team"] : user.plan === "pro" ? ["team"] : [];
+
   return (
     <AppShell active="/settings" eyebrow={user.email} title="Plan & profile">
       <section>
@@ -58,7 +66,9 @@ export default async function SettingsPage() {
                 Current plan
               </p>
               <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-                resets on the 1st
+                {user.paidUntil
+                  ? `paid until ${new Date(user.paidUntil).toISOString().slice(0, 10)}`
+                  : "resets on the 1st"}
               </span>
             </div>
             <div className="score-big" style={{ textTransform: "lowercase" }}>
@@ -81,22 +91,13 @@ export default async function SettingsPage() {
           </div>
         </div>
 
-        {user.plan === "free" && (
-          <div className="panel" style={{ marginTop: "1.5rem" }}>
-            <p className="eyebrow">Need more room</p>
-            <h3 className="h2" style={{ margin: ".4rem 0 .6rem" }}>
-              Pro is handled by hand right now.
-            </h3>
-            <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
-              There is no checkout yet — we are still finding out which limit people
-              hit first. Email what you are building and we will switch your account
-              over the same day.
-            </p>
-            <a className="btn" href="/chat" style={{ marginTop: "1rem" }}>
-              Ask for Pro
-            </a>
-          </div>
-        )}
+        <PlanPanel
+          balanceCents={counts.balance_cents}
+          pending={
+            pending ? { plan: pending.plan, createdAt: pending.created_at.toISOString() } : null
+          }
+          targets={targets}
+        />
       </section>
 
       <section style={{ marginTop: "2.5rem" }}>

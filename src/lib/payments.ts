@@ -3,6 +3,7 @@ import { maybeOne, query, tx } from "@/db";
 import { env } from "@/lib/env";
 import { creditTopUp, purchaseBrain } from "@/lib/money";
 import { availableCoins, coinByKey, usdPrice } from "@/lib/mozgpay-chains";
+import { captureServer } from "@/lib/analytics";
 
 /**
  * Crypto top-ups through NOWPayments.
@@ -233,6 +234,29 @@ export async function settleOwnInvoice(
 }
 
 /**
+ * Stable JSON: object keys sorted at EVERY depth, arrays keep their order.
+ *
+ * The previous form — `JSON.stringify(obj, Object.keys(obj).sort())` — used
+ * the replacer array, which silently drops nested keys not in the whitelist:
+ * two callbacks differing only inside a nested object canonicalized to the
+ * same string, so one signature covered both. For a flat object this output
+ * is byte-identical to that historical form, so signatures NOWPayments has
+ * already sent still verify.
+ */
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`);
+    return `{${entries.join(",")}}`;
+  }
+  // `?? "null"` only covers undefined, which JSON.parse can never produce.
+  return JSON.stringify(value) ?? "null";
+}
+
+/**
  * NOWPayments signs the JSON body with HMAC-SHA512 over its keys sorted
  * alphabetically. Compared in constant time — a signature check that leaks
  * timing is a signature check an attacker can walk.
@@ -247,7 +271,7 @@ export function validSignature(rawBody: string, header: string | null): boolean 
     return false;
   }
 
-  const sorted = JSON.stringify(parsed, Object.keys(parsed as object).sort());
+  const sorted = canonicalJson(parsed);
   const expected = createHmac("sha512", env.NOWPAYMENTS_IPN_SECRET)
     .update(sorted)
     .digest("hex");
@@ -362,6 +386,13 @@ export async function completeFollowUp(outcome: WebhookOutcome): Promise<void> {
     buyerId: userId,
     sellerId: brain.owner_id,
   }).catch((err) => ({ ok: false as const, reason: String(err) as never }));
+  if (bought.ok) {
+    captureServer(userId, "brain_purchased", {
+      brain_id: buyBrainId,
+      price_cents: bought.paidCents,
+      via: "crypto",
+    });
+  }
   console.log(
     `[payments] follow-up purchase ${buyBrainId}: ` +
       (bought.ok ? "done" : `left as balance (${bought.reason})`),
@@ -385,6 +416,7 @@ export async function recentTopups(userId: string, limit = 5) {
 
 /** Used by the check script to build a signed body the way the provider does. */
 export function signForTest(body: object): string {
-  const sorted = JSON.stringify(body, Object.keys(body).sort());
-  return createHmac("sha512", env.NOWPAYMENTS_IPN_SECRET ?? "").update(sorted).digest("hex");
+  return createHmac("sha512", env.NOWPAYMENTS_IPN_SECRET ?? "")
+    .update(canonicalJson(body))
+    .digest("hex");
 }

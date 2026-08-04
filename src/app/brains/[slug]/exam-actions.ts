@@ -80,6 +80,27 @@ export async function removeCheck(formData: FormData) {
   revalidatePath(`/brains/${slug}`);
 }
 
+/**
+ * "Not worth filling" — the owner closes a gap suggestion without adding
+ * material. Dismissed stays dismissed: the exam's on-conflict insert never
+ * resurrects it, or the list would re-grow the rows the owner just cleared.
+ */
+export async function dismissGapSuggestion(formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const slug = String(formData.get("slug"));
+  const brain = await ownedBrain(slug, user.id);
+  if (!brain) return;
+
+  await query(
+    `update gap_suggestions set status = 'dismissed', resolved_at = now()
+      where id = $1 and brain_id = $2 and status = 'pending'`,
+    [String(formData.get("id")), brain.id],
+  );
+  revalidatePath(`/brains/${slug}`);
+}
+
 export async function runExamNow(formData: FormData) {
   const user = await currentUser();
   if (!user) redirect("/sign-in");

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { rateLimited } from "@/lib/rate-limit";
-import { emailReady } from "@/lib/env";
+import { emailReady, env } from "@/lib/env";
 import { sendMail } from "@/lib/mail";
 
 /**
@@ -38,7 +38,7 @@ export async function sendChatMessage(_prev: unknown, formData: FormData) {
   // a mail hiccup must not eat the message that IS safely stored.
   if (emailReady) {
     sendMail({
-      to: "egorfdrv@gmail.com",
+      to: env.OPERATOR_EMAIL,
       subject: `chatmozg: ${user.email}`,
       text: `${body}\n\n— reply at https://mozg.sh/admin/chat`,
     }).catch(() => {});

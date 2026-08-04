@@ -7,6 +7,7 @@ import { one, query, maybeOne } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { slugify } from "@/lib/brains";
+import { captureServer } from "@/lib/analytics";
 import { TOPIC_KEYS } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
 import { checkFetchableUrl } from "@/lib/url-guard";
@@ -109,6 +110,11 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     ],
   );
 
+  // Activation: the first brain is the moment the product becomes real.
+  if (count === 0) {
+    captureServer(user.id, "first_brain_created", { brain_id: brain.id, via: "web" });
+  }
+
   // One link at creation is the whole point of the field: the crawl worker
   // expands it into a source per page and the exam runs as material lands.
   if (docsUrl) {
@@ -173,6 +179,9 @@ export async function quickStart(_prev: unknown, formData: FormData) {
      returning *`,
     [user.id, slug, title.slice(0, 80)],
   );
+  if (count === 0) {
+    captureServer(user.id, "first_brain_created", { brain_id: brain.id, via: "quickstart" });
+  }
   const site = await one<{ id: string }>(
     `insert into sources (brain_id, kind, url, original_name)
      values ($1, 'site', $2, $3) returning id`,

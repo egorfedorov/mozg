@@ -2,6 +2,8 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
+import { searchCollective } from "@/lib/search";
+import { TOPICS, isTopic, topicLabel } from "@/lib/topics";
 
 export const metadata = {
   title: "The collective mind — mozg",
@@ -13,8 +15,23 @@ export const metadata = {
  * The collective-mind longread. Every mechanism described here is shipped and
  * measurable — the page's persuasion budget is the same as /vs-skills: no
  * claim an exam score or a database row can't back.
+ *
+ * It opens with the working half: one search box over every public brain.
+ * The pitch below claims knowledge compounds; the box lets a skeptic check
+ * what it has compounded into so far.
  */
-export default function CollectivePage() {
+export default async function CollectivePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; topic?: string }>;
+}) {
+  const { q: rawQ, topic: rawTopic } = await searchParams;
+  const q = (rawQ ?? "").trim().slice(0, 200);
+  const topic = isTopic(rawTopic) ? rawTopic : null;
+  // Below three characters the hybrid search is noise, not an answer — the
+  // API says the same with a 400.
+  const results = q.length >= 3 ? await searchCollective(q, { topic }) : null;
+
   return (
     <>
       <TopBar />
@@ -34,6 +51,91 @@ export default function CollectivePage() {
           Here is the loop, mechanism by mechanism. Nothing on this page is a
           roadmap; all of it runs today.
         </p>
+
+        {/* ── the working half: one box over every public brain ────────── */}
+        <section style={{ marginTop: "clamp(2rem, 5vw, 3rem)" }}>
+          <form
+            action="/collective"
+            method="get"
+            style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", maxWidth: 720 }}
+          >
+            <input
+              type="search"
+              name="q"
+              required
+              minLength={3}
+              maxLength={200}
+              defaultValue={q}
+              placeholder="Ask every public brain at once — e.g. how do webhook retries work?"
+              style={{
+                flex: "1 1 320px",
+                padding: ".7rem .9rem",
+                border: "1.5px solid var(--ink)",
+                background: "var(--paper)",
+                font: "inherit",
+              }}
+            />
+            <select
+              name="topic"
+              defaultValue={topic ?? ""}
+              style={{
+                padding: ".7rem .6rem",
+                border: "1.5px solid var(--ink)",
+                background: "var(--paper)",
+                font: "inherit",
+              }}
+            >
+              <option value="">all topics</option>
+              {TOPICS.map((t) => (
+                <option key={t.key} value={t.key}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <button className="btn" type="submit">
+              Search the collective
+            </button>
+          </form>
+
+          {results !== null && (
+            <div style={{ marginTop: "1.5rem", maxWidth: 720 }}>
+              {results.length === 0 ? (
+                <p style={{ color: "var(--ink-2)" }}>
+                  No public brain answers that yet
+                  {topic ? ` in ${topicLabel(topic)}` : ""}. The catalogue
+                  grows one miss at a time —{" "}
+                  <Link href="/explore" style={{ textDecoration: "underline" }}>
+                    browse what is already learning
+                  </Link>
+                  , or <Link href="/make" style={{ textDecoration: "underline" }}>start the brain that should have known</Link>.
+                </p>
+              ) : (
+                <>
+                  <p className="eyebrow" style={{ marginBottom: ".75rem" }}>
+                    {results.length} brain{results.length === 1 ? "" : "s"} answer
+                    {topic ? ` · ${topicLabel(topic)}` : ""}
+                  </p>
+                  <div className="rows">
+                    {results.map((r) => (
+                      <Link key={r.slug} className="row" href={`/b/${r.handle}/${r.slug}`}>
+                        <span style={{ minWidth: 0 }}>
+                          <strong>{r.title}</strong>
+                          {r.answers.map((a) => (
+                            <span key={a.title} className="row-sub">
+                              {a.snippet}
+                            </span>
+                          ))}
+                          <span className="row-meta">{r.handle}/{r.slug}</span>
+                        </span>
+                        <span className="row-side">→</span>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </section>
 
         {/* ── 1: misses become questions ─────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>

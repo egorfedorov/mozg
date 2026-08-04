@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { effectivePlan } from "@/lib/plans";
 import type { Plan } from "@/db/types";
 
 export interface SessionUser {
@@ -7,36 +8,36 @@ export interface SessionUser {
   email: string;
   name: string | null;
   image: string | null;
+  /** The plan in force right now — an expired paid plan reads as free. */
   plan: Plan;
+  /** When the paid plan runs out; null on free and on hand-set plans. */
+  paidUntil: Date | string | null;
   handle: string | null;
+}
+
+function shape(sessionUser: Record<string, unknown> & { id: string; email: string }): SessionUser {
+  const paidUntil = (sessionUser.paidUntil ?? sessionUser.paid_until ?? null) as Date | string | null;
+  return {
+    id: sessionUser.id,
+    email: sessionUser.email,
+    name: (sessionUser.name as string | null) ?? null,
+    image: (sessionUser.image as string | null) ?? null,
+    plan: effectivePlan((sessionUser.plan as Plan) ?? "free", paidUntil),
+    paidUntil,
+    handle: (sessionUser.handle as string | null) ?? null,
+  };
 }
 
 /** Current user, or null. Safe to call from any server component. */
 export async function currentUser(): Promise<SessionUser | null> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
-  const u = session.user as unknown as Record<string, unknown>;
-  return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name ?? null,
-    image: session.user.image ?? null,
-    plan: (u.plan as Plan) ?? "free",
-    handle: (u.handle as string | null) ?? null,
-  };
+  return shape(session.user as unknown as Record<string, unknown> & { id: string; email: string });
 }
 
 /** For route handlers, where `headers()` is not available. */
 export async function requireUser(req: Request): Promise<SessionUser> {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user) throw new Error("unauthorized");
-  const u = session.user as unknown as Record<string, unknown>;
-  return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name ?? null,
-    image: session.user.image ?? null,
-    plan: (u.plan as Plan) ?? "free",
-    handle: (u.handle as string | null) ?? null,
-  };
+  return shape(session.user as unknown as Record<string, unknown> & { id: string; email: string });
 }

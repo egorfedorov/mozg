@@ -5,6 +5,7 @@ import { accessForSlug } from "@/lib/access";
 import { currentUser } from "@/lib/session";
 import LearnShell from "../../../LearnShell";
 import Session, { type Card } from "../Session";
+import { sectionKey, type LessonPayload } from "@/worker/lesson";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,32 @@ export default async function ReviewPage({
   const cards = [...due, ...newNotes, ...newChecks];
   const backHref = `/learn/${handle}/${slug}`;
 
+  // Whole sections come due too: a section whose cards sagged is scheduled
+  // for a re-read. The key is a hash of the section's content, so the due
+  // rows are resolved back to headings through the compiled lessons — the
+  // same derivation the study page used to write them.
+  const dueSectionKeys = await query<{ item_id: string }>(
+    `select item_id from learn_progress
+      where user_id = $1 and brain_id = $2 and kind = 'section' and due_at <= now()
+      order by due_at`,
+    [user.id, brain.id],
+  );
+  const sectionReviews: { key: string; heading: string; cat: string }[] = [];
+  if (dueSectionKeys.length) {
+    const dueKeys = new Set(dueSectionKeys.map((r) => r.item_id));
+    const lessons = await query<{ category: string; payload: LessonPayload }>(
+      `select category, payload from lessons where brain_id = $1`,
+      [brain.id],
+    );
+    for (const l of lessons) {
+      if (category && l.category !== category) continue;
+      for (const s of l.payload.sections) {
+        const key = sectionKey(brain.id, l.category, s.heading, s.note_ids);
+        if (dueKeys.has(key)) sectionReviews.push({ key, heading: s.heading, cat: l.category });
+      }
+    }
+  }
+
   return (
     <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 820 }}>
@@ -96,14 +123,35 @@ export default async function ReviewPage({
         )}
       </p>
 
-      {cards.length === 0 ? (
-        <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem" }}>
-          <p className="h2" style={{ margin: 0 }}>Nothing due here.</p>
-          <p style={{ color: "var(--ink-2)", marginBottom: 0 }}>
-            Every card in this module is scheduled for later — that is the
-            system working. <Link href={backHref} style={{ textDecoration: "underline" }}>Back to the course.</Link>
+      {sectionReviews.length > 0 && (
+        <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.25rem 1.5rem", marginBottom: "1.5rem" }}>
+          <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .5rem" }}>
+            sections due for a re-read
           </p>
+          {sectionReviews.map((s) => (
+            <p key={s.key} style={{ margin: ".25rem 0" }}>
+              <Link
+                href={`${backHref}/study/${encodeURIComponent(s.cat)}`}
+                style={{ textDecoration: "underline", fontWeight: 650 }}
+              >
+                § {s.heading}
+              </Link>{" "}
+              <span style={{ color: "var(--ink-2)" }}>— {s.cat}</span>
+            </p>
+          ))}
         </div>
+      )}
+
+      {cards.length === 0 ? (
+        sectionReviews.length === 0 && (
+          <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem" }}>
+            <p className="h2" style={{ margin: 0 }}>Nothing due here.</p>
+            <p style={{ color: "var(--ink-2)", marginBottom: 0 }}>
+              Every card in this module is scheduled for later — that is the
+              system working. <Link href={backHref} style={{ textDecoration: "underline" }}>Back to the course.</Link>
+            </p>
+          </div>
+        )
       ) : (
         <Session brainId={brain.id} cards={cards} backHref={backHref} />
       )}

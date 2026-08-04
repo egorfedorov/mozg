@@ -16,6 +16,9 @@ export interface User {
   image: string | null;
   plan: Plan;
   handle: string | null;
+  /** Set when the plan was paid for (balance checkout or an approved request).
+      Null on a hand-set plan, which does not expire. See effectivePlan. */
+  paid_until: Date | null;
 }
 
 export interface Brain {
@@ -49,7 +52,8 @@ export type LedgerKind =
   | "earning"
   | "payout"
   | "refund"
-  | "adjustment";
+  | "adjustment"
+  | "plan";
 
 export interface LedgerEntry {
   id: string;
@@ -93,6 +97,9 @@ export interface Source {
   cost_cents: number | null;
   /** Cached extraction so a queue retry skips the paid step; see 0011. */
   extract_payload: unknown;
+  /** Set by the maintenance refresh when the page's text moved; compared
+   *  against processed_at to tell a refresh re-ingest from a first read. */
+  changed_at: Date | null;
   created_at: Date;
   processed_at: Date | null;
 }
@@ -110,6 +117,8 @@ export interface Note {
   agent_client: string | null;
   status: NoteStatus;
   superseded_by: string | null;
+  /** Feedback-driven ranking multiplier, clamped 0.5-2.0; see note-weight.ts. */
+  weight: number;
   created_at: Date;
 }
 
@@ -128,8 +137,23 @@ export interface Check {
   question: string;
   expect: string;
   weight: number;
-  origin: "generated" | "manual";
+  /** generated = from the goal; manual = owner-written; usage = zero-result
+   *  searches (exam-time); search_gap = clustered weak searches (0042). */
+  origin: "generated" | "manual" | "usage" | "search_gap";
+  /** negative = out-of-scope probe: passing means the brain has NO answer. */
+  kind: "positive" | "negative";
   enabled: boolean;
+}
+
+/** A failed "material missing" check surfaced to the owner (0043). */
+export interface GapSuggestion {
+  id: string;
+  brain_id: string;
+  check_id: string | null;
+  question: string;
+  status: "pending" | "accepted" | "dismissed";
+  created_at: Date;
+  resolved_at: Date | null;
 }
 
 export interface CheckRun {
@@ -138,6 +162,9 @@ export interface CheckRun {
   score: number | null;
   model: string | null;
   cost_cents: number | null;
+  /** full = a real sitting; mini = the cheap single-vote probe after a
+   *  content refresh (0047) — it never moves the brain's official score. */
+  kind: "full" | "mini";
   status: "running" | "done" | "failed";
   error: string | null;
   started_at: Date;

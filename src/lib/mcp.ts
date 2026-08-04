@@ -8,14 +8,17 @@ import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
 import { normalizeCategory } from "@/lib/category";
 import { clipExcerpt } from "@/lib/excerpt";
+import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
+import { captureServer } from "@/lib/analytics";
 import { gateFor, hasPaid } from "@/lib/paywall";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { storage, storageKey } from "@/lib/storage";
-import { enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { enqueueIngest, enqueueCrawl, enqueueSummary } from "@/worker/queue";
+import { summariesStale } from "@/worker/summary";
 import type { TokenOwner } from "@/lib/tokens";
 
 /**
@@ -125,22 +128,30 @@ export const TOOLS: ToolDef[] = [
   {
     name: "brain_feedback",
     description:
-      "Report that a specific note is wrong, outdated or misleading — after " +
-      "you verified it against reality (the API answered differently, the " +
-      "docs changed, the code contradicts it). The note keeps answering until " +
-      "its owner reviews the report; say what you observed, not just that you " +
-      "disagree. Do not use this for notes that are merely incomplete — " +
-      "brain_write a better one instead where you have write access.",
+      "Report how a specific note held up in real use. Negative: the note is " +
+      "wrong, outdated or misleading — after you verified it against reality " +
+      "(the API answered differently, the docs changed, the code contradicts " +
+      "it); the note keeps answering until its owner reviews the report. " +
+      "Positive: the note proved correct and useful for your task. Both shift " +
+      "how the note ranks in future searches. Say what you observed, not just " +
+      "that you agree or disagree. Do not use this for notes that are merely " +
+      "incomplete — brain_write a better one instead where you have write access.",
     inputSchema: {
       type: "object",
       properties: {
         brain: { type: "string", description: "Brain handle." },
         note_id: { type: "string", description: "id from a brain_search result." },
+        useful: {
+          type: "boolean",
+          description:
+            "true when the note proved correct and helped your task; false or " +
+            "omitted reports it as wrong or outdated.",
+        },
         reason: {
           type: "string",
           description:
-            "What is wrong and how you know — one or two sentences with the " +
-            "observed behaviour.",
+            "What you observed — one or two sentences with the behaviour you " +
+            "saw, good or bad.",
         },
       },
       required: ["brain", "note_id", "reason"],
@@ -330,6 +341,9 @@ export interface ToolOutcome {
   brainId?: string;
   ownerId?: string;
   results?: number;
+  /** Fused score of the best hit, for the weak-search harvest (0042). Only
+   *  set by brain_search. */
+  topScore?: number;
 }
 
 export async function callTool(
@@ -471,11 +485,32 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
   if (!resolved) return notFound(handle);
 
   const brief = await briefBrain(resolved.brain.id);
+
+  // Lazy summary compilation, same pattern as lessons on the study page: the
+  // brief notices the brain outgrew its summaries and queues a recompile, so
+  // the NEXT brief leads with them. Fire-and-forget — the answer below is
+  // complete without them.
+  if (await summariesStale(resolved.brain.id)) {
+    void enqueueSummary(resolved.brain.id).catch(() => {});
+  }
+
   const parts = [
     `Brain: ${resolved.brain.title} (${handle})`,
     `Goal: ${brief.goal ?? "not set"}`,
     `${brief.noteCount} notes.`,
   ];
+
+  // Summaries first: the synthesised "what it knows" per category is the
+  // fastest orientation the brain can offer, before the raw category tree
+  // and long before search. Not searchable themselves by design (0041) —
+  // they restate the notes, so indexing them would only fuzz up retrieval.
+  if (brief.summaries.length) {
+    parts.push(
+      "",
+      "What it knows, per category:",
+      ...brief.summaries.map((s) => `  ${s.category}: ${s.body}`),
+    );
+  }
 
   // A parent is a map, not a store. Say what it groups before anything else —
   // an agent that reads this should know it can search here for everything, or
@@ -639,6 +674,7 @@ async function brainSearch(
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: hits.length,
+    topScore: hits[0]?.score,
   };
 }
 
@@ -860,18 +896,28 @@ async function brainFeedback(
     return { text: `No active note ${args.note_id} in ${handle}.`, isError: true };
   }
 
+  const useful = args.useful === true;
+  const signal = useful ? "up" : "down";
+
   await query(
-    `insert into note_flags (brain_id, note_id, caller_id, reason)
-     values ($1, $2, $3, $4)
-     on conflict (note_id, caller_id) do update set reason = $4, created_at = now()`,
-    [resolved.brain.id, note.id, owner.userId, reason],
+    `insert into note_flags (brain_id, note_id, caller_id, reason, signal)
+     values ($1, $2, $3, $4, $5)
+     on conflict (note_id, caller_id) do update
+       set reason = $4, signal = $5, created_at = now()`,
+    [resolved.brain.id, note.id, owner.userId, reason, signal],
   );
 
+  // The stored weight is a cache of the flags; writing a flag without
+  // refreshing it would leave search ranking on yesterday's verdict.
+  await refreshNoteWeight(note.id);
+
   return {
-    text:
-      `Reported "${note.title}" to the owner of ${handle}. The note keeps ` +
-      "answering until they review it — if your task needs the corrected fact " +
-      "now, state it to the user directly rather than re-searching.",
+    text: useful
+      ? `Noted — "${note.title}" held up in real use. It will rank a little ` +
+        "higher for the next agent."
+      : `Reported "${note.title}" to the owner of ${handle}. The note keeps ` +
+        "answering until they review it — if your task needs the corrected fact " +
+        "now, state it to the user directly rather than re-searching.",
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,
@@ -988,6 +1034,11 @@ async function brainCreate(
       priceCents,
     ],
   );
+
+  // Same activation event as the web form — the first brain, by any door.
+  if (count === 0) {
+    captureServer(owner.userId, "first_brain_created", { brain_id: brain.id, via: "mcp" });
+  }
 
   return {
     text:

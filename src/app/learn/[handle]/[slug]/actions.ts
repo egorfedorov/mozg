@@ -8,11 +8,13 @@ import { schedule, type Grade } from "@/lib/learn";
 /**
  * Record one graded card. The scheduling itself is pure (lib/learn); this is
  * the read-modify-write around it. Guarded by canRead so progress rows can
- * only exist for brains this person could open anyway.
+ * only exist for brains this person could open anyway. kind 'section' is a
+ * whole lesson section, keyed by its content hash (sectionKey in
+ * worker/lesson) — no notes/checks row backs it, the schedule is the row.
  */
 export async function gradeCard(input: {
   brainId: string;
-  kind: "note" | "check";
+  kind: "note" | "check" | "section";
   itemId: string;
   grade: Grade;
 }): Promise<{ dueInMs: number } | { error: string }> {
@@ -20,6 +22,7 @@ export async function gradeCard(input: {
   const userId = user?.id;
   if (!userId) return { error: "sign in" };
   if (!["again", "good", "easy"].includes(input.grade)) return { error: "bad grade" };
+  if (!["note", "check", "section"].includes(input.kind)) return { error: "bad kind" };
   if (!(await canRead(input.brainId, userId))) return { error: "no access" };
 
   const prev = await maybeOne<{

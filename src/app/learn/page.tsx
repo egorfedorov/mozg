@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { query } from "@/db";
+import { achievedBrainIds } from "@/lib/achievements";
 import { currentUser } from "@/lib/session";
 import LearnShell from "./LearnShell";
 import { tintFor } from "@/lib/brains";
@@ -91,6 +92,10 @@ export default async function LearnHome() {
     [brains.map((b) => `${b.handle}/${b.slug}`)],
   );
 
+  // Brains this person has outscored — the duel's badge follows the course
+  // onto the shelf, own rows and free rows alike.
+  const beaten = user ? await achievedBrainIds(user.id) : new Set<string>();
+
   return (
     <LearnShell>
 
@@ -137,6 +142,7 @@ export default async function LearnHome() {
                 {b.score != null ? ` · agent ${b.score}%` : ""}
                 {b.due > 0 ? ` · ${b.due} due` : ""}
                 {b.seen > 0 ? ` · ${b.seen} seen` : ""}
+                {beaten.has(b.id) ? " · ★ you beat the agent" : ""}
               </p>
             </Link>
           ))}
@@ -175,6 +181,7 @@ export default async function LearnHome() {
                   <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
                     {b.cards} cards
                     {b.score != null ? ` · agent ${b.score}%` : ""}
+                    {beaten.has(b.id) ? " · ★ you beat the agent" : ""}
                   </p>
                 </Link>
               ))}

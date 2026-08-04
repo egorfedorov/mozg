@@ -74,6 +74,13 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     return { status: "ready", notes: source.note_count };
   }
 
+  // The maintenance refresh re-queues a source with changed_at newer than
+  // its last completed processing — that is what "this ingest brings in
+  // updated content" means, and the post-ingest exam probe keys on it.
+  const wasRefresh =
+    source.changed_at !== null &&
+    (source.processed_at === null || source.changed_at > source.processed_at);
+
   const brain = await one<Brain>(`select * from brains where id = $1`, [
     source.brain_id,
   ]);
@@ -125,11 +132,11 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
       // speed of the queue. Rolling 24h, per owner, sized by plan; a source
       // over the line fails with the reason in its error and the maintenance
       // pass requeues it once the window has rolled.
-      const owner = await one<{ plan: string }>(
-        `select u.plan from "user" u where u.id = $1`,
+      const owner = await one<{ plan: string; paid_until: Date | null }>(
+        `select u.plan, u.paid_until from "user" u where u.id = $1`,
         [brain.owner_id],
       );
-      const budget = limitsFor(owner.plan as never).dailyExtractCents;
+      const budget = limitsFor(owner.plan as never, owner.paid_until).dailyExtractCents;
       const { spent } = await one<{ spent: number }>(
         `select coalesce(sum(s.cost_cents), 0)::int as spent
            from sources s join brains b on b.id = s.brain_id
@@ -274,13 +281,19 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     // else is queued for this brain; if a page slips in right after this
     // check, the maintenance pass catches the gap (content_changed_at >
     // score_at) within six hours.
+    //
+    // A refresh re-ingest gets the mini probe instead of a full sitting:
+    // re-judge the existing checks with one vote and record what regressed.
+    // The full exam belongs to new material and manual re-sits — re-buying
+    // it on every rewritten page would pay three votes to learn "two checks
+    // flipped".
     if (brain.goal) {
       const { pending } = await one<{ pending: number }>(
         `select count(*)::int as pending from sources
           where brain_id = $1 and status in ('queued', 'processing')`,
         [brain.id],
       );
-      if (pending === 0) await enqueueExam(brain.id);
+      if (pending === 0) await enqueueExam(brain.id, wasRefresh ? { mini: true } : undefined);
     }
 
     return { status: "ready", notes: inserted, costCents: extracted.usage.costCents };

@@ -44,7 +44,7 @@ export async function runDigest(): Promise<number> {
          (select count(*)::int from calls c join brains b on b.id = c.brain_id
            where b.owner_id = $1 and c.created_at > now() - interval '7 days') as calls,
          (select count(*)::int from note_flags f join brains b on b.id = f.brain_id
-           where b.owner_id = $1) as flags,
+           where b.owner_id = $1 and f.signal = 'down') as flags,
          (select count(*)::int from notes n join brains b on b.id = n.brain_id
            where b.owner_id = $1 and n.status = 'pending') as pending,
          (select count(*)::int from learn_progress p

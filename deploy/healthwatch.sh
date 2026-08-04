@@ -12,7 +12,6 @@ set -u
 
 ENV_FILE="${MOZG_ENV:-/opt/mozg/.env}"
 URL="${MOZG_URL:-https://mozg.sh}/api/health"
-ALERT_TO="${MOZG_ALERT_TO:-egorfdrv@gmail.com}"
 STATE_FILE="/var/tmp/mozg-healthwatch.state"
 
 # Key and sender come from the app's env file, parsed rather than sourced —
@@ -23,6 +22,11 @@ if [ -z "$RESEND_API_KEY" ] || [ -z "$EMAIL_FROM" ]; then
   echo "$(date -Is)  no RESEND_API_KEY/EMAIL_FROM in $ENV_FILE — cannot alert"
   exit 1
 fi
+
+# Who gets the alert: OPERATOR_EMAIL from the environment, then from the env
+# file, then the legacy MOZG_ALERT_TO, then the built-in operator address.
+ALERT_TO="${OPERATOR_EMAIL:-$(sed -n 's/^OPERATOR_EMAIL=//p' "$ENV_FILE" | tr -d '"')}"
+ALERT_TO="${ALERT_TO:-${MOZG_ALERT_TO:-egorfdrv@gmail.com}}"
 
 body=$(curl -s --max-time 20 "$URL")
 code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$URL")

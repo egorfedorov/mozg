@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { env } from "@/lib/env";
+import { confirmedAt } from "@/lib/confirmations";
 import { mozgpayReady, settleOwnInvoice, completeFollowUp } from "@/lib/payments";
 import { COINS, type Coin } from "@/lib/mozgpay-chains";
 
@@ -36,25 +37,54 @@ export interface MozgpayReport {
 
 async function readTron(coin: Coin): Promise<Transfer[]> {
   const address = coin.address()!;
+  const headers: Record<string, string> = env.TRONGRID_API_KEY
+    ? { "TRON-PRO-API-KEY": env.TRONGRID_API_KEY }
+    : {};
   const res = await fetch(
     `https://api.trongrid.io/v1/accounts/${address}/transactions/trc20` +
       `?only_confirmed=true&only_to=true&limit=100&contract_address=${coin.contract}`,
-    {
-      headers: env.TRONGRID_API_KEY ? { "TRON-PRO-API-KEY": env.TRONGRID_API_KEY } : {},
-      signal: AbortSignal.timeout(20_000),
-    },
+    { headers, signal: AbortSignal.timeout(20_000) },
   );
   if (!res.ok) throw new Error(`trongrid ${res.status}`);
   const body = (await res.json()) as {
     data?: { transaction_id: string; to: string; value: string; block_timestamp: number; token_info?: { decimals?: number } }[];
   };
-  return (body.data ?? [])
-    .filter((t) => t.to === address)
-    .map((t) => ({
+
+  // The solidity node reports the newest solidified block — Tron's own
+  // finality line, reached ~19 SR confirmations after inclusion.
+  const solidRes = await fetch("https://api.trongrid.io/walletsolidity/getnowblock", {
+    method: "POST",
+    headers,
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!solidRes.ok) throw new Error(`trongrid solidity ${solidRes.status}`);
+  const solid = (await solidRes.json()) as { block_header?: { raw_data?: { number?: number } } };
+  const solidTip = solid.block_header?.raw_data?.number ?? 0;
+
+  const out: Transfer[] = [];
+  for (const t of (body.data ?? []).filter((t) => t.to === address).slice(0, 50)) {
+    // The list's only_confirmed filter is TronGrid's word for "in a solid
+    // block", but the list carries no height — ask the solidity node so the
+    // depth rule has a real block number to count from.
+    const infoRes = await fetch("https://api.trongrid.io/walletsolidity/gettransactioninfobyid", {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ value: t.transaction_id }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!infoRes.ok) throw new Error(`trongrid solidity ${infoRes.status}`);
+    const info = (await infoRes.json()) as { blockNumber?: number };
+    // Not in a solid block yet, or not deep enough past it — the invoice
+    // stays pending and the next watch tick looks again.
+    if (!info.blockNumber) continue;
+    if (!confirmedAt(info.blockNumber, solidTip, env.MOZGPAY_TRON_CONFIRMATIONS)) continue;
+    out.push({
       txId: t.transaction_id,
       amount: (Number(t.value) / 10 ** (t.token_info?.decimals ?? coin.decimals)).toFixed(coin.decimals),
       timestampMs: t.block_timestamp,
-    }));
+    });
+  }
+  return out;
 }
 
 const TRANSFER_TOPIC =
@@ -86,6 +116,9 @@ async function readEvm(coin: Coin): Promise<Transfer[]> {
 
   const out: Transfer[] = [];
   for (const log of logs.slice(-50)) {
+    // A log in "latest" is ~1 confirmation. Count only once enough blocks sit
+    // on top; a younger transfer just waits for the next watch tick.
+    if (!confirmedAt(Number(log.blockNumber), latest, env.MOZGPAY_EVM_CONFIRMATIONS)) continue;
     const value = Number(BigInt(log.data)) / 10 ** coin.decimals;
     // One block-timestamp call per candidate is fine at these volumes.
     const block = (await rpc("eth_getBlockByNumber", [log.blockNumber, false])) as {
@@ -115,25 +148,31 @@ async function readSol(coin: Coin): Promise<Transfer[]> {
     return body.result;
   };
 
-  const sigs = (await rpc("getSignaturesForAddress", [address, { limit: 25 }])) as {
+  // Finalized is Solana's irreversible commitment; the slot-depth rule below
+  // then counts slots on top of the one carrying the transfer.
+  const sigs = (await rpc("getSignaturesForAddress", [address, { limit: 25, commitment: "finalized" }])) as {
     signature: string;
     blockTime: number | null;
     err: unknown;
   }[];
+
+  const tipSlot = Number(await rpc("getSlot", [{ commitment: "finalized" }]));
 
   const out: Transfer[] = [];
   for (const s of sigs) {
     if (s.err || !s.blockTime) continue;
     const tx = (await rpc("getTransaction", [
       s.signature,
-      { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
+      { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" },
     ])) as {
+      slot?: number;
       meta?: {
         preTokenBalances?: { owner?: string; mint?: string; uiTokenAmount?: { amount?: string } }[];
         postTokenBalances?: { owner?: string; mint?: string; uiTokenAmount?: { amount?: string } }[];
       };
     } | null;
-    if (!tx?.meta) continue;
+    if (!tx?.meta || tx.slot == null) continue;
+    if (!confirmedAt(tx.slot, tipSlot, env.MOZGPAY_SOL_CONFIRMATIONS)) continue;
 
     const balFor = (list?: { owner?: string; mint?: string; uiTokenAmount?: { amount?: string } }[]) =>
       list?.find((b) => b.owner === address && b.mint === coin.contract)?.uiTokenAmount?.amount ?? "0";
@@ -151,18 +190,33 @@ async function readSol(coin: Coin): Promise<Transfer[]> {
 
 async function readBtc(coin: Coin): Promise<Transfer[]> {
   const address = coin.address()!;
-  const res = await fetch(`https://mempool.space/api/address/${address}/txs`, {
-    signal: AbortSignal.timeout(20_000),
-  });
+  const [res, tipRes] = await Promise.all([
+    fetch(`https://mempool.space/api/address/${address}/txs`, {
+      signal: AbortSignal.timeout(20_000),
+    }),
+    fetch("https://mempool.space/api/blocks/tip/height", {
+      signal: AbortSignal.timeout(20_000),
+    }),
+  ]);
   if (!res.ok) throw new Error(`mempool.space ${res.status}`);
+  if (!tipRes.ok) throw new Error(`mempool.space tip ${tipRes.status}`);
+  const tip = Number(await tipRes.text());
   const txs = (await res.json()) as {
     txid: string;
-    status: { confirmed: boolean; block_time?: number };
+    status: { confirmed: boolean; block_time?: number; block_height?: number };
     vout: { scriptpubkey_address?: string; value: number }[];
   }[];
 
   return txs
-    .filter((t) => t.status.confirmed && t.status.block_time)
+    // confirmed is 1 block; count only once the tx sits deep enough under
+    // the tip. A shallower one stays pending for the next watch tick.
+    .filter(
+      (t) =>
+        t.status.confirmed &&
+        t.status.block_time &&
+        t.status.block_height != null &&
+        confirmedAt(t.status.block_height, tip, env.MOZGPAY_BTC_CONFIRMATIONS),
+    )
     .map((t) => ({
       txId: t.txid,
       amount: (

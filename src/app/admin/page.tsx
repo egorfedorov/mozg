@@ -7,10 +7,11 @@ import {
   adminLedger,
   adminBrains,
   openPayouts,
+  openPlanRequests,
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
-import { settleWithdrawal } from "./actions";
+import { settleWithdrawal, resolveUpgrade } from "./actions";
 import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +21,13 @@ export const metadata = { title: "Admin — mozg", robots: { index: false, follo
 export default async function AdminPage() {
   await requireAdmin();
 
-  const [h, money, ledger, brains, payouts, payments, totals] = await Promise.all([
+  const [h, money, ledger, brains, payouts, requests, payments, totals] = await Promise.all([
     health(),
     adminMoney(),
     adminLedger(12),
     adminBrains(200),
     openPayouts(),
+    openPlanRequests(),
     query<{
       email: string;
       amount_cents: number;
@@ -139,6 +141,55 @@ export default async function AdminPage() {
                           <form action={settleWithdrawal}>
                             <input type="hidden" name="id" value={p.id} />
                             <input type="hidden" name="paid" value="no" />
+                            <button type="submit" data-danger="true">
+                              Reject
+                            </button>
+                          </form>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        )}
+
+        {requests.length > 0 && (
+          <Section title="Plan requests" aside={`${requests.length} waiting`}>
+            <p className="lede" style={{ marginBottom: ".75rem" }}>
+              Approving grants the plan for 30 days without touching the
+              balance — the door for people who paid off-band. A user with
+              enough on the balance can skip this queue and pay in settings.
+            </p>
+            <div className="adm-scroll">
+              <table className="adm">
+                <thead>
+                  <tr>
+                    <th>Asked</th>
+                    <th>Who</th>
+                    <th>Plan</th>
+                    <th style={{ textAlign: "right" }}>Balance</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((r) => (
+                    <tr key={r.id}>
+                      <td className="mono">{r.created_at.slice(0, 10)}</td>
+                      <td>{r.handle ?? r.email}</td>
+                      <td className="mono">{r.plan}</td>
+                      <td className="num">{formatCents(r.balance_cents)}</td>
+                      <td>
+                        <span style={{ display: "flex", gap: ".3rem" }}>
+                          <form action={resolveUpgrade}>
+                            <input type="hidden" name="id" value={r.id} />
+                            <input type="hidden" name="approve" value="yes" />
+                            <button type="submit">Approve</button>
+                          </form>
+                          <form action={resolveUpgrade}>
+                            <input type="hidden" name="id" value={r.id} />
+                            <input type="hidden" name="approve" value="no" />
                             <button type="submit" data-danger="true">
                               Reject
                             </button>

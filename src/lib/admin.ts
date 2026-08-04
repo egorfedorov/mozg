@@ -216,6 +216,27 @@ export async function openPayouts(): Promise<AdminPayout[]> {
   );
 }
 
+export interface AdminPlanRequest {
+  id: string;
+  email: string;
+  handle: string | null;
+  plan: string;
+  balance_cents: number;
+  created_at: string;
+}
+
+/** Plan upgrades waiting on a human to approve or reject. */
+export async function openPlanRequests(): Promise<AdminPlanRequest[]> {
+  return query<AdminPlanRequest>(
+    `select r.id::text, u.email, u.handle, r.plan, u.balance_cents,
+            to_char(r.created_at at time zone 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+       from plan_requests r join "user" u on u.id = r.user_id
+      where r.status = 'pending'
+      order by r.created_at`,
+  );
+}
+
 export interface AdminLedgerRow {
   id: string;
   email: string;

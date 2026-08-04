@@ -11,6 +11,10 @@ export const dynamic = "force-dynamic";
  * would need a dedicated connection held open per viewer plus a trigger; the
  * poll is one indexed query against a table we already write to. Swap it if
  * viewer counts ever make the polling visible in the database load.
+ *
+ * The tick re-schedules itself with setTimeout only after it finishes — an
+ * interval would stack overlapping queries on a slow database and let their
+ * cursor writes race.
  */
 
 const POLL_MS = 2000;
@@ -56,11 +60,23 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
       send("ready", { since: cursor });
 
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let stopped = false;
+      const stop = () => {
+        stopped = true;
+        if (timer) clearTimeout(timer);
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      };
+
       const tick = async () => {
+        if (stopped) return;
         if (Date.now() - started > MAX_LIFETIME_MS) {
           send("bye", { reason: "timeout" });
-          clearInterval(timer);
-          controller.close();
+          stop();
           return;
         }
 
@@ -74,6 +90,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
             [id, cursor],
           );
 
+          // The client may have hung up while the query ran — the controller
+          // is closed then, and writing to it would throw.
+          if (stopped) return;
+
           for (const row of rows) {
             cursor = row.id;
             send("call", row);
@@ -85,17 +105,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           // A transient database error should not kill the stream; the next
           // tick retries and the cursor has not moved.
         }
+
+        if (!stopped) timer = setTimeout(tick, POLL_MS);
       };
 
-      const timer = setInterval(tick, POLL_MS);
-      req.signal.addEventListener("abort", () => {
-        clearInterval(timer);
-        try {
-          controller.close();
-        } catch {
-          /* already closed */
-        }
-      });
+      timer = setTimeout(tick, POLL_MS);
+      req.signal.addEventListener("abort", stop);
     },
   });
 

@@ -4,6 +4,7 @@ import { betterAuth } from "better-auth";
 import { pool } from "../db";
 import { env, emailReady } from "./env";
 import { sendMail } from "./mail";
+import { captureServer } from "./analytics";
 
 /**
  * Identity. better-auth owns the "user"/"session"/"account"/"verification"
@@ -68,6 +69,9 @@ export const auth = betterAuth({
     additionalFields: {
       plan: { type: "string", defaultValue: "free", input: false },
       handle: { type: "string", required: false, input: false },
+      // When the paid plan runs out (0040). Read via effectivePlan — never
+      // trusted on its own. Null on a hand-set plan, which does not expire.
+      paidUntil: { type: "date", required: false, input: false, fieldName: "paid_until" },
     },
   },
 
@@ -75,6 +79,9 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          // The top of the v1 funnel: signup → first brain_search (PLAN.md).
+          captureServer(user.id, "user_signed_up");
+
           // Public namespace for brains: /b/{handle}/{slug}. Derive from the
           // email local part, then disambiguate — the unique index is the
           // real guard, this loop just avoids burning attempts.
@@ -96,6 +103,15 @@ export const auth = betterAuth({
             );
             if (res.rowCount) return;
           }
+        },
+      },
+    },
+    session: {
+      create: {
+        // Fires on sign-in (and once more on sign-up, which auto-signs in —
+        // the events answer different questions, so that is fine).
+        after: async (session) => {
+          captureServer(session.userId, "user_signed_in");
         },
       },
     },

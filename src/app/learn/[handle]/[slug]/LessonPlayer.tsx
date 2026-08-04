@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { gradeCard } from "./actions";
+import { sectionGrade, type Grade } from "@/lib/learn";
 
 export interface LessonItem {
   type: "read" | "recall" | "question";
@@ -11,6 +12,23 @@ export interface LessonItem {
   kind: "note" | "check";
   front: string;
   back: string;
+  /** A section's own quiz question, asked right after the section ends. */
+  quiz?: boolean;
+  /** The connective text in other depths, when the lesson was compiled with them. */
+  altBack?: { eli5?: string; expert?: string };
+}
+
+export type Depth = "standard" | "eli5" | "expert";
+
+const DEPTH_KEY = "mozg:lesson-depth";
+const DEPTHS: Depth[] = ["eli5", "standard", "expert"];
+
+function savedDepth(): Depth {
+  try {
+    const d = localStorage.getItem(DEPTH_KEY);
+    if (d === "eli5" || d === "expert") return d;
+  } catch {}
+  return "standard";
 }
 
 /**
@@ -18,28 +36,84 @@ export interface LessonItem {
  * a few notes are read, then the same notes come back title-first and the
  * learner tries to say the content before revealing it. Retrieval right
  * after reading is what moves material to long-term memory — re-reading
- * alone demonstrably does not. Module exam questions close the lesson.
+ * alone demonstrably does not. A section bound to exam questions closes with
+ * one of them; the rest of the module's exam questions close the lesson.
  *
  * "Again" re-queues the item a few steps ahead, not at the end: relearning
  * works best moments later, while the miss still stings.
+ *
+ * Three extras on top of the bare mechanic:
+ * - weak first: when the learner's history re-ranked the sections, a small
+ *   marker says the hardest material is leading.
+ * - depths: lessons compiled with eli5/expert variants get a depth switch;
+ *   only the connective text (intro, section leads) changes, never the
+ *   notes. The choice persists in localStorage.
+ * - section grades: when the sitting ends, every section touched earns one
+ *   aggregate grade from its cards' final grades, scheduling the section
+ *   itself for re-reading.
  */
 export default function LessonPlayer({
   brainId,
   items,
   backHref,
   nextHref,
+  intro,
+  adapted,
+  sections,
 }: {
   brainId: string;
   items: LessonItem[];
   backHref: string;
   nextHref: string | null;
+  intro?: { standard: string; eli5?: string; expert?: string };
+  adapted?: boolean;
+  sections?: { key: string; itemIds: string[] }[];
 }) {
   const [queue, setQueue] = useState(items);
   const [step, setStep] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [misses, setMisses] = useState(0);
+  const [depth, setDepth] = useState<Depth>("standard");
+  // Each card's last grade this sitting — the evidence section grades are
+  // aggregated from when the queue runs dry.
+  const finalGrades = useRef<Record<string, Grade>>({});
+  const sectionsGraded = useRef(false);
   const total = items.length;
   const item = queue[0];
+
+  const hasDepths = Boolean(
+    intro?.eli5 || intro?.expert || items.some((i) => i.altBack?.eli5 || i.altBack?.expert),
+  );
+
+  useEffect(() => {
+    setDepth(savedDepth());
+  }, []);
+
+  function pickDepth(d: Depth) {
+    setDepth(d);
+    try {
+      localStorage.setItem(DEPTH_KEY, d);
+    } catch {}
+  }
+
+  // The sitting is over: schedule the sections themselves. Only sections
+  // whose cards were actually graded count, and each card's final grade is
+  // the one that matters — an "again" that was later relearned to "good"
+  // is a good.
+  useEffect(() => {
+    if (item || sectionsGraded.current || !sections?.length) return;
+    sectionsGraded.current = true;
+    const asked = new Set(items.map((i) => i.id));
+    for (const s of sections) {
+      const grades = s.itemIds
+        .filter((id) => asked.has(id))
+        .map((id) => finalGrades.current[id])
+        .filter((g): g is Grade => Boolean(g));
+      if (!grades.length) continue;
+      void gradeCard({ brainId, kind: "section", itemId: s.key, grade: sectionGrade(grades) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item]);
 
   function advance() {
     setRevealed(false);
@@ -49,6 +123,7 @@ export default function LessonPlayer({
 
   function grade(g: "again" | "good" | "easy") {
     const current = queue[0];
+    finalGrades.current[current.id] = g;
     void gradeCard({ brainId, kind: current.kind, itemId: current.id, grade: g });
     if (g === "again") {
       setMisses((m) => m + 1);
@@ -108,10 +183,43 @@ export default function LessonPlayer({
       ? "read"
       : item.type === "recall"
         ? "recall — say it before you look"
-        : "exam question";
+        : item.quiz
+          ? "section quiz"
+          : "exam question";
+
+  const back = depth !== "standard" ? (item.altBack?.[depth] ?? item.back) : item.back;
+  const introText =
+    intro && depth !== "standard" ? (intro[depth] ?? intro.standard) : intro?.standard;
 
   return (
     <div>
+      {introText && (
+        <p className="lede" style={{ maxWidth: "62ch", marginTop: 0 }}>{introText}</p>
+      )}
+      {hasDepths && (
+        <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .75rem" }}>
+          depth:{" "}
+          {DEPTHS.map((d) => (
+            <button
+              key={d}
+              onClick={() => pickDepth(d)}
+              className="mono"
+              style={{
+                fontSize: ".75rem",
+                background: "none",
+                border: "none",
+                padding: "0 .35rem",
+                cursor: "pointer",
+                color: d === depth ? "var(--ink)" : "var(--ink-3)",
+                textDecoration: d === depth ? "underline" : "none",
+                fontWeight: d === depth ? 700 : 400,
+              }}
+            >
+              {d}
+            </button>
+          ))}
+        </p>
+      )}
       {/* One thin bar, always moving — finishing must feel near. */}
       <div style={{ height: 8, border: "1.5px solid var(--ink)", background: "var(--paper)", marginBottom: ".6rem" }}>
         <div style={{ height: "100%", width: `${Math.round((step / total) * 100)}%`, background: "var(--color-riso-green)", transition: "width .2s" }} />
@@ -119,6 +227,7 @@ export default function LessonPlayer({
       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .75rem" }}>
         {step + 1} / {total} ·{" "}
         <span style={{ color: item.type === "read" ? "var(--ink-3)" : "var(--color-riso-red)" }}>{label}</span>
+        {adapted && <span title="Sections you struggle with lead the lesson"> · weak first</span>}
       </p>
 
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.5rem" }}>
@@ -133,7 +242,7 @@ export default function LessonPlayer({
               ...(item.type === "read" ? { marginTop: ".75rem" } : { borderTop: "1px solid var(--rule)", paddingTop: "1rem" }),
             }}
           >
-            {item.back}
+            {back}
           </p>
         )}
       </div>

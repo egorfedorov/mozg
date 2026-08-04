@@ -38,6 +38,42 @@ export const PLANS: Record<Plan, PlanLimits> = {
   admin: { brains: 10_000, sources: 100_000, calls: 1_000_000, dailyExtractCents: 100_000, examSittings: Infinity, write: true, exports: true },
 };
 
-export function limitsFor(plan: Plan): PlanLimits {
-  return PLANS[plan] ?? PLANS.free;
+export function limitsFor(
+  plan: Plan,
+  paidUntil?: Date | string | null,
+): PlanLimits {
+  return PLANS[effectivePlan(plan, paidUntil)] ?? PLANS.free;
+}
+
+/** The plans that can be bought. */
+export type PaidPlan = "pro" | "team";
+
+/**
+ * Monthly price in cents. There is no card checkout yet — this is what the
+ * pay-from-balance upgrade charges, and what the settings page shows.
+ */
+export const PLAN_PRICE_CENTS: Record<PaidPlan, number> = {
+  pro: 2500,
+  team: 9500,
+};
+
+/** How long one payment keeps a plan alive. Not a subscription — nothing renews. */
+export const PLAN_PERIOD_DAYS = 30;
+
+/**
+ * The plan an account actually has right now.
+ *
+ * A paid plan is a 30-day purchase: once paid_until passes it reads as free.
+ * paid_until null means the plan was set by hand (the operator), and a hand
+ * does not expire — otherwise the first nightly read would quietly downgrade
+ * every account an operator ever granted.
+ */
+export function effectivePlan(
+  plan: Plan,
+  paidUntil?: Date | string | null,
+  now: Date = new Date(),
+): Plan {
+  if (plan !== "pro" && plan !== "team") return plan;
+  if (!paidUntil) return plan;
+  return new Date(paidUntil).getTime() > now.getTime() ? plan : "free";
 }

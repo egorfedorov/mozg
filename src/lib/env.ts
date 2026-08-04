@@ -5,6 +5,14 @@ import { z } from "zod";
  * a missing var should fail at boot with a readable message, not at 3am inside
  * an ingest job.
  */
+/**
+ * A blank line in a .env file parses to "", which would defeat .default()
+ * (and coerce to 0 for numbers — dangerous for settlement depths). Treat
+ * empty as unset so the default applies.
+ */
+const defaulted = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema);
+
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
 
@@ -71,6 +79,14 @@ const schema = z.object({
   MOZGPAY_BTC_ADDRESS: z.string().optional(),
   MOZGPAY_ETH_RPC: z.string().url().default("https://eth.llamarpc.com"),
   TRONGRID_API_KEY: z.string().optional(),
+  // Settlement depth: a transfer counts only once this many blocks (Solana:
+  // slots) sit on top of the one carrying it. Tron counts from the solidified
+  // tip, so 0 means inclusion in a solid block is enough. Below the threshold
+  // the invoice just stays pending for the watcher's next tick.
+  MOZGPAY_EVM_CONFIRMATIONS: defaulted(z.coerce.number().int().min(0).default(12)),
+  MOZGPAY_BTC_CONFIRMATIONS: defaulted(z.coerce.number().int().min(0).default(3)),
+  MOZGPAY_SOL_CONFIRMATIONS: defaulted(z.coerce.number().int().min(0).default(32)),
+  MOZGPAY_TRON_CONFIRMATIONS: defaulted(z.coerce.number().int().min(0).default(0)),
 
   // Nightly note consolidation. Off until the similarity threshold separates
   // duplicates from neighbours on real material — measured on bge-m3, three
@@ -85,6 +101,10 @@ const schema = z.object({
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.
   ADMIN_EMAILS: z.string().default(""),
+
+  // Where user chat messages and ops alerts (deploy/healthwatch.sh) go. The
+  // default keeps existing deploys mailing the operator as before.
+  OPERATOR_EMAIL: defaulted(z.string().email().default("egorfdrv@gmail.com")),
 });
 
 const parsed = schema.safeParse(process.env);

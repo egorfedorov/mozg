@@ -59,7 +59,7 @@ say "4/5  backup + migrations"
 # database first, so a bad migration means restoring a minutes-old backup from
 # /var/backups/mozg instead of last night's.
 ssh "$HOST" "$DIR/deploy/backup.sh"
-ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app npm run db:migrate 2>&1 | tail -3"
+ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app npm run db:migrate:prod 2>&1 | tail -3"
 
 say "5/5  smoke test"
 fail=0

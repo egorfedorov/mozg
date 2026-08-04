@@ -293,9 +293,11 @@ volume, а не в образе: 2.2 ГБ в слое сделали бы бол
 **4. Схема (один раз):**
 
 ```bash
-docker compose -f docker-compose.prod.yml exec app npm run auth:migrate
-docker compose -f docker-compose.prod.yml exec app npm run db:migrate
+docker compose -f docker-compose.prod.yml exec app npm run db:migrate:prod
 ```
+
+(identity-таблицы better-auth приезжают миграцией 0000_auth.sql — отдельный
+`auth:migrate` внутри контейнера не нужен, CLI там всё равно no-op.)
 
 **5. Проверить:**
 

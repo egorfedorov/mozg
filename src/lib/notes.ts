@@ -98,9 +98,13 @@ export interface DuplicatePair {
  * changed. Left alone they crowd the search results and make the brain look
  * fuller than it is.
  *
- * lazy: a self-join over chunks, so it is O(n²) within one brain and the query
- * is capped. Fine to a few thousand notes; index it or move to a clustering
- * pass if brains get much larger than that.
+ * One indexed kNN lookup per chunk, not a self-join: the HNSW index on
+ * chunks.embedding can only answer "nearest to a given vector", so each chunk
+ * asks for its 5 nearest chunks from other notes and a note pair survives if
+ * either direction makes the cut. That is O(n·log n) over chunks instead of
+ * O(n²), at the price of an approximation: a pair is missed only when five or
+ * more chunks of *other* notes are all closer to every chunk of the pair —
+ * for a duplicate display and a merge heuristic that is a fine trade.
  */
 const NEAR = 0.12;
 
@@ -134,22 +138,40 @@ export async function duplicatePairs(
     b_created: string;
     distance: number;
   }>(
-    `with pairs as (
+    `with near as (
        select x.note_id as a_id, y.note_id as b_id,
-              min(x.embedding <=> y.embedding) as distance
+              (x.embedding <=> y.embedding) as distance
          from chunks x
-         join chunks y
-           on y.brain_id = x.brain_id and y.note_id > x.note_id
-         -- Filter inside the self-join, not after it: pairing every chunk of
-         -- a dead note against everything else is the expensive part, and the
-         -- outer filter used to pay for it and then throw the pairs away.
+         -- Filter on the driving side too: pairing chunks of a dead note
+         -- against everything else is the expensive part, and the outer
+         -- filter used to pay for it and then throw the pairs away.
          join notes xa on xa.id = x.note_id and xa.status = 'active'
-         join notes yb on yb.id = y.note_id and yb.status = 'active'
-        where x.brain_id = $1 and (x.embedding <=> y.embedding) < $2
-          -- Age gate is optional: the duplicate display shows fresh pairs too,
-          -- only automated merging needs to stay away from work in progress.
-          and ($4::int is null or (xa.created_at < now() - make_interval(hours => $4)
-                               and yb.created_at < now() - make_interval(hours => $4)))
+         cross join lateral (
+           select y.note_id, y.embedding
+             from chunks y
+             join notes yb on yb.id = y.note_id and yb.status = 'active'
+            where y.brain_id = x.brain_id
+              and y.note_id <> x.note_id
+              -- Without the is-not-null, a brain with five unembedded chunks
+              -- would fill every kNN window with NULLs and hide real pairs
+              -- (ASC orders NULLs last, but only among what the index scans).
+              and y.embedding is not null
+              -- Age gate is optional: the duplicate display shows fresh pairs
+              -- too, only automated merging stays away from work in progress.
+              and ($4::int is null or yb.created_at < now() - make_interval(hours => $4))
+            order by y.embedding <=> x.embedding
+            limit 5
+         ) y
+        where x.brain_id = $1
+          and (x.embedding <=> y.embedding) < $2
+          and ($4::int is null or xa.created_at < now() - make_interval(hours => $4))
+     ),
+     pairs as (
+       -- Both directions of the same pair can surface; collapse to one row
+       -- with the smaller id as a, as the old self-join returned.
+       select least(a_id, b_id) as a_id, greatest(a_id, b_id) as b_id,
+              min(distance) as distance
+         from near
         group by 1, 2
         order by 3
         limit $3

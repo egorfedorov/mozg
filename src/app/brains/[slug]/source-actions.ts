@@ -75,6 +75,18 @@ export async function addUrls(_prev: unknown, formData: FormData) {
 
   if (!lines.length) return { error: "Paste at least one URL." };
 
+  // Set when the form was opened from a gap suggestion (0043): actually
+  // queueing material for it marks the suggestion accepted.
+  const suggestionId = String(formData.get("suggestion") ?? "");
+  const acceptSuggestion = async () => {
+    if (!suggestionId) return;
+    await query(
+      `update gap_suggestions set status = 'accepted', resolved_at = now()
+        where id = $1 and brain_id = $2 and status = 'pending'`,
+      [suggestionId, brain.id],
+    );
+  };
+
   // "Learn the whole site": the single URL becomes a crawl root the worker
   // expands into a source per discovered page. Same path the MCP tool takes.
   if (formData.get("crawl") === "on") {
@@ -91,6 +103,7 @@ export async function addUrls(_prev: unknown, formData: FormData) {
       [brain.id, check.url, `${new URL(check.url).hostname} (whole site)`],
     );
     await enqueueCrawl(site.id);
+    await acceptSuggestion();
     revalidatePath(`/brains/${slug}`);
     return { added: 1, refused: [], site: check.url };
   }
@@ -114,6 +127,7 @@ export async function addUrls(_prev: unknown, formData: FormData) {
     added.push(check.url);
   }
 
+  if (added.length) await acceptSuggestion();
   revalidatePath(`/brains/${slug}`);
   return { added: added.length, refused };
 }

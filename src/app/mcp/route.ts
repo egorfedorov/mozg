@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { query } from "@/db";
+import { query, maybeOne } from "@/db";
 import { TOOLS, callTool } from "@/lib/mcp";
 import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
+import { captureServer } from "@/lib/analytics";
 
 /**
  * MCP endpoint — JSON-RPC 2.0 over HTTP.
@@ -183,8 +184,8 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       // before it; a failed insert must still not fail the tool call.
       await query(
         `insert into calls
-           (brain_id, caller_id, owner_id, tool, query, results, latency_ms, ok)
-         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           outcome.brainId ?? null,
           owner.userId,
@@ -192,10 +193,26 @@ async function handle(rpc: RpcRequest, owner: Owner) {
           name,
           typeof args.query === "string" ? args.query.slice(0, 500) : null,
           outcome.results ?? null,
+          outcome.topScore ?? null,
           Date.now() - started,
           !outcome.isError,
         ],
       ).catch(() => {});
+
+      // The v1 activation metric (PLAN.md): signup → first brain_search. The
+      // metering row above just landed, so a count of one means this was it.
+      if (name === "brain_search" && !outcome.isError) {
+        const seen = await maybeOne<{ n: number }>(
+          `select count(*)::int as n from calls
+            where caller_id = $1 and tool = 'brain_search'`,
+          [owner.userId],
+        ).catch(() => null);
+        if (seen?.n === 1) {
+          captureServer(owner.userId, "first_brain_search", {
+            brain_id: outcome.brainId ?? null,
+          });
+        }
+      }
 
       return {
         jsonrpc: "2.0" as const,

@@ -90,7 +90,7 @@ export default async function PublicBrainPage({
   const examDiff = await query<{ gained: number; lost: number }>(
     `with runs as (
        select id, row_number() over (order by started_at desc) as rn
-         from check_runs where brain_id = $1 and status = 'done' limit 2
+         from check_runs where brain_id = $1 and status = 'done' and kind = 'full' limit 2
      )
      select count(*) filter (where cur.passed and prev.passed is distinct from true)::int as gained,
             count(*) filter (where not cur.passed and prev.passed)::int as lost
@@ -103,7 +103,7 @@ export default async function PublicBrainPage({
     [brain.id],
   ).then((r) => r[0] ?? { gained: 0, lost: 0 });
 
-  const [categories, samples, balance, added, children, parent, passedChecks] = await Promise.all([
+  const [categories, samples, balance, added, children, parent, passedChecks, examTotals] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
     // buying, never the bodies that were paid for.
@@ -125,17 +125,33 @@ export default async function PublicBrainPage({
     // Questions the brain passed on its own latest exam. The strongest thing
     // a storefront can show: not the author's claim, the grader's receipt.
     // Questions only, never the answers — those are what is being sold.
+    // Positive checks only: a passed negative probe means "rightly has no
+    // answer", which is a strange thing to ask a brain for.
     query<{ question: string; category: string }>(
       `select c.question, c.category
          from check_results r join checks c on c.id = r.check_id
         where r.run_id = (
           select id from check_runs where brain_id = $1 and status = 'done'
           order by started_at desc limit 1
-        ) and r.passed
+        ) and r.passed and c.kind = 'positive' and c.enabled
         order by c.weight desc, c.category
-        limit 5`,
+        limit 8`,
       [brain.id],
     ),
+    // The receipt's totals: how much of its own exam the brain passes, and
+    // how cleanly it refuses what is out of scope (anti-bluff probes).
+    query<{ pos_passed: number; pos_total: number; neg_passed: number; neg_total: number }>(
+      `select count(*) filter (where c.kind = 'positive' and r.passed)::int as pos_passed,
+              count(*) filter (where c.kind = 'positive')::int as pos_total,
+              count(*) filter (where c.kind = 'negative' and r.passed)::int as neg_passed,
+              count(*) filter (where c.kind = 'negative')::int as neg_total
+         from check_results r join checks c on c.id = r.check_id
+        where r.run_id = (
+          select id from check_runs where brain_id = $1 and status = 'done'
+          order by started_at desc limit 1
+        )`,
+      [brain.id],
+    ).then((r) => r[0] ?? null),
   ]);
 
   // What actually has to be bought. For a child of a paid family that is the
@@ -299,7 +315,14 @@ export default async function PublicBrainPage({
           <section style={{ margin: "0 0 2.5rem" }}>
             <div className="section-head">
               <h2 className="h2">Ask it things like</h2>
-              <span className="eyebrow">passed on its latest exam — graded, not claimed</span>
+              <span className="eyebrow">
+                {examTotals && examTotals.pos_total > 0
+                  ? `answers ${examTotals.pos_passed}/${examTotals.pos_total} on its latest exam` +
+                    (examTotals.neg_total > 0
+                      ? ` · anti-bluff ${examTotals.neg_passed}/${examTotals.neg_total}`
+                      : "")
+                  : "passed on its latest exam — graded, not claimed"}
+              </span>
             </div>
             <div className="rows">
               {passedChecks.map((c) => (
@@ -440,6 +463,14 @@ export default async function PublicBrainPage({
                   </span>
                 </div>
               ))
+            )}
+
+            {brain.visibility === "public" && brain.score !== null && (
+              <div style={{ padding: ".9rem 1.25rem", borderTop: "1.5px solid var(--ink)" }}>
+                <Link className="navlink" href={`/b/${handle}/${brain.slug}/badge`}>
+                  exam badge — share this score →
+                </Link>
+              </div>
             )}
           </section>
         </div>

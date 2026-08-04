@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { one, query, tx } from "@/db";
-import type { Brain, Check } from "@/db/types";
+import { maybeOne, one, query, tx } from "@/db";
+import type { Brain, Check, Plan } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
+import { findRegressions } from "@/lib/regressions";
 import { searchBrain } from "@/lib/search";
 import { familyIds } from "@/lib/families";
-import { limitsFor } from "@/lib/plans";
+import { effectivePlan, limitsFor } from "@/lib/plans";
 import { discoverPages, pickTopUpPages } from "@/lib/crawl";
 import { enqueueIngest, PRIORITY } from "@/worker/queue";
 
@@ -40,6 +41,9 @@ const generated = z.object({
         .number()
         .catch(1)
         .transform((w) => Math.min(5, Math.max(1, Math.round(w)))),
+      // Anything that is not a clean "negative" is a coverage check — a model
+      // that invents a third kind meant "positive".
+      kind: z.enum(["positive", "negative"]).catch("positive"),
     }),
   ),
 });
@@ -56,6 +60,13 @@ const GEN_SCHEMA = {
           question: { type: "string", description: "What a user would actually ask." },
           expect: { type: "string", description: "What a correct answer must contain." },
           weight: { type: "number", description: "1-5, how central this is to the goal." },
+          kind: {
+            type: "string",
+            enum: ["positive", "negative"],
+            description:
+              "positive: the brain SHOULD answer this. negative: an out-of-scope " +
+              "probe the brain should NOT be able to answer.",
+          },
         },
         required: ["category", "question", "expect", "weight"],
         additionalProperties: false,
@@ -98,7 +109,14 @@ export async function generateChecks(brain: Brain): Promise<number> {
           "Crucially: include checks for aspects the goal implies but the notes do " +
           "NOT currently cover. Those failures are the point — they tell the user " +
           "what material is missing. An exam that only asks what the brain already " +
-          "knows is worthless.",
+          "knows is worthless.\n\n" +
+          "Also include 2-3 checks with kind \"negative\": plausible questions a " +
+          "user might genuinely ask this brain that are OUTSIDE its scope — " +
+          "neighbouring topics, adjacent products, common confusions the goal " +
+          "does not cover. For these, `expect` must say that the correct " +
+          "behaviour is to admit the topic is not covered rather than to guess. " +
+          "They test that the brain does not bluff. Weight them 1-2: they are " +
+          "probes, not the core exam.",
     content: [
       {
         type: "text",
@@ -145,9 +163,9 @@ export async function generateChecks(brain: Brain): Promise<number> {
     ]);
     for (const c of checks) {
       await client.query(
-        `insert into checks (brain_id, category, question, expect, weight)
-         values ($1, $2, $3, $4, $5)`,
-        [brain.id, c.category, c.question, c.expect, c.weight],
+        `insert into checks (brain_id, category, question, expect, weight, kind)
+         values ($1, $2, $3, $4, $5, $6)`,
+        [brain.id, c.category, c.question, c.expect, c.weight, c.kind],
       );
     }
   });
@@ -198,6 +216,12 @@ export interface ExamResult {
   /** Verdicts carried from the previous run because their category's
    *  material had not moved — the incremental re-sit's savings, visible. */
   carried: number;
+  /** Out-of-scope probes (kind = 'negative') scored separately, so a brain
+   *  that bluffs is visible even when its coverage is perfect. They ALSO
+   *  count in `score` like any other check — bluffing is a quality defect,
+   *  not a side metric. */
+  negativePassed: number;
+  negativeTotal: number;
 }
 
 /**
@@ -239,29 +263,71 @@ export async function syncUsageChecks(brain: Brain, scope: string[]): Promise<nu
   return added;
 }
 
-export async function runExam(brainId: string): Promise<ExamResult | null> {
+export interface ExamOptions {
+  /**
+   * The cheap probe run after a refresh re-ingests a rewritten page: re-judge
+   * the existing enabled checks with a single judge vote — no check
+   * generation, no usage sync, no carried passes, no site top-up. It records
+   * regressions and marks the brain examined, but the official score stays
+   * the last full sitting's: one vote is a staleness signal, not a number to
+   * put on the storefront.
+   */
+  mini?: boolean;
+}
+
+/** One probe per brain per day is plenty — refreshes trickle, they do not burst. */
+const MINI_INTERVAL = "1 day";
+
+export async function runExam(
+  brainId: string,
+  opts: ExamOptions = {},
+): Promise<ExamResult | null> {
+  const mini = opts.mini ?? false;
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain.goal) return null;
 
-  // The trial plan buys one sitting per brain — enough to see the loop close,
-  // not enough to grind a free account into a maintained brain.
-  const owner = await one<{ plan: string }>(
-    `select plan from "user" where id = $1`,
-    [brain.owner_id],
-  );
-  const allowed = limitsFor(owner.plan as never).examSittings;
-  if (Number.isFinite(allowed)) {
-    const sat = await one<{ n: number }>(
-      `select count(*)::int as n from check_runs where brain_id = $1 and status = 'done'`,
+  if (mini) {
+    // Rate-limit the probe, not the sitting: a brain whose sources change
+    // twice in a day gets re-judged once.
+    const recent = await maybeOne(
+      `select 1 from check_runs
+        where brain_id = $1 and kind = 'mini'
+          and started_at > now() - interval '${MINI_INTERVAL}'`,
       [brainId],
     );
-    if (sat.n >= allowed) {
-      console.log(`[exam] ${brainId} skipped — ${owner.plan} plan allows ${allowed} sitting(s)`);
+    if (recent) {
+      console.log(`[exam] ${brainId} mini skipped — probed less than ${MINI_INTERVAL} ago`);
       return null;
     }
-  }
+  } else {
+    // The trial plan buys one sitting per brain — enough to see the loop
+    // close, not enough to grind a free account into a maintained brain. The
+    // plan in force, not the plan on the row: a lapsed paid_until reads as
+    // free here, same as everywhere else limits are enforced (tokens.ts,
+    // session). Mini probes are ours, not the owner's — they never count
+    // against this.
+    const owner = await one<{ plan: Plan; paid_until: Date | null }>(
+      `select plan, paid_until from "user" where id = $1`,
+      [brain.owner_id],
+    );
+    const allowed = limitsFor(owner.plan, owner.paid_until).examSittings;
+    if (Number.isFinite(allowed)) {
+      const sat = await one<{ n: number }>(
+        `select count(*)::int as n from check_runs
+          where brain_id = $1 and status = 'done' and kind = 'full'`,
+        [brainId],
+      );
+      if (sat.n >= allowed) {
+        console.log(
+          `[exam] ${brainId} skipped — ${effectivePlan(owner.plan, owner.paid_until)} ` +
+            `plan allows ${allowed} sitting(s)`,
+        );
+        return null;
+      }
+    }
 
-  await syncUsageChecks(brain, await familyIds(brain));
+    await syncUsageChecks(brain, await familyIds(brain));
+  }
 
   let checks = await query<Check>(
     `select * from checks where brain_id = $1 and enabled`,
@@ -269,6 +335,9 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
   );
 
   if (!checks.length) {
+    // A probe never writes the exam — without checks there is nothing to
+    // re-judge, and generating them is the expensive path mini exists to avoid.
+    if (mini) return null;
     await generateChecks(brain);
     checks = await query<Check>(`select * from checks where brain_id = $1 and enabled`, [
       brainId,
@@ -277,9 +346,9 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
   }
 
   const run = await one<{ id: string }>(
-    `insert into check_runs (brain_id, model, status) values ($1, $2, 'running')
+    `insert into check_runs (brain_id, model, status, kind) values ($1, $2, 'running', $3)
      returning id`,
-    [brainId, env.MODEL_JUDGE],
+    [brainId, env.MODEL_JUDGE, mini ? "mini" : "full"],
   );
 
   try {
@@ -303,7 +372,21 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       [brainId],
     ).then((r) => r[0] ?? null);
 
-    const touched = prev
+    // The previous sitting's verdicts, for the regression diff at the end —
+    // and, in a full run, for the carried passes below.
+    const prevResults = prev
+      ? await query<{
+          check_id: string;
+          passed: boolean;
+          reason: string | null;
+          retrieval_hits: number | null;
+          retrieval_top_score: number | null;
+        }>(`select * from check_results where run_id = $1`, [prev.id])
+      : [];
+
+    // A mini probe re-judges everything: carrying a pass because "the
+    // category did not move" is exactly the assumption a refresh disproved.
+    const touched = !mini && prev
       ? new Set(
           (
             await query<{ category: string }>(
@@ -321,14 +404,7 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       string,
       { passed: boolean; reason: string; hits: number; top: number | null }
     >();
-    if (prev) {
-      const prevResults = await query<{
-        check_id: string;
-        passed: boolean;
-        reason: string | null;
-        retrieval_hits: number | null;
-        retrieval_top_score: number | null;
-      }>(`select * from check_results where run_id = $1`, [prev.id]);
+    if (prev && !mini) {
       for (const r of prevResults) {
         const check = checks.find((c) => c.id === r.check_id);
         if (check && r.passed && !touched.has(check.category)) {
@@ -377,8 +453,10 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       // moves the same brain ±10 points between re-sits — with votes, two
       // runs on unchanged material give the same score, which is what makes
       // a small score change readable as a real one. See JUDGE_VOTES in env.
+      // A mini probe buys a single vote: it looks for flips, not for a
+      // score stable enough to publish.
       const votes = await Promise.all(
-        Array.from({ length: env.JUDGE_VOTES }, () => judge(batch)),
+        Array.from({ length: mini ? 1 : env.JUDGE_VOTES }, () => judge(batch)),
       );
       cost += votes.reduce((n, v) => n + v.costCents, 0);
 
@@ -426,6 +504,8 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
     }
 
     // Weighted, so a central check counts for more than a peripheral one.
+    // Negative probes are in this sum too — a brain that answers everything
+    // confidently should score lower than one that admits its edges.
     const totalWeight = results.reduce((n, r) => n + r.check.weight, 0);
     const passedWeight = results
       .filter((r) => r.passed)
@@ -437,18 +517,68 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
               finished_at = now() where id = $1`,
       [run.id, score, Math.round(cost)],
     );
-    await query(`update brains set score = $2, score_at = now() where id = $1`, [
-      brainId,
-      score,
-    ]);
+    if (mini) {
+      // Marked examined so examStaleBrains does not queue a full sitting on
+      // top of the probe — but brains.score keeps the last full sitting's
+      // number: one vote is a staleness signal, not a storefront figure.
+      await query(`update brains set score_at = now() where id = $1`, [brainId]);
+    } else {
+      await query(`update brains set score = $2, score_at = now() where id = $1`, [
+        brainId,
+        score,
+      ]);
+    }
+
+    // The staleness signal this run can see and the score cannot: a check
+    // that passed last sitting and fails now. Recorded for both kinds of
+    // run — a full sitting after an update reveals the same flips the probe
+    // hunts for. The open-row unique index makes a still-failing check one
+    // regression, not a new row per sitting.
+    const cur = results.map((r) => ({ check_id: r.check.id, passed: r.passed }));
+    for (const checkId of findRegressions(prevResults, cur)) {
+      await query(
+        `insert into exam_regressions (brain_id, check_id, run_id)
+         values ($1, $2, $3) on conflict do nothing`,
+        [brainId, checkId, run.id],
+      );
+    }
+    // A pass closes whatever regression was open on that check — a recovered
+    // answer is not stale anymore.
+    const passedNow = results.filter((r) => r.passed).map((r) => r.check.id);
+    if (passedNow.length) {
+      await query(
+        `update exam_regressions set resolved = true, resolved_at = now()
+          where brain_id = $1 and not resolved and check_id = any($2::uuid[])`,
+        [brainId, passedNow],
+      );
+    }
 
     // Close what can be closed without a human: questions that failed with
     // zero retrieval hits mean the material is simply absent — and if this
     // brain was built from a crawled site, the site itself is the first
-    // place to look for it. Non-fatal by design: a topping-up failure must
-    // never fail the exam that triggered it.
-    const missing = results.filter((r) => !r.passed && r.retrievalHits === 0);
-    if (missing.length) {
+    // place to look for it. Negative probes are excluded on purpose: a
+    // failed probe means the brain answers something it should refuse, and
+    // ADDING the out-of-scope material would teach it to bluff for real.
+    // Non-fatal by design: a topping-up failure must never fail the exam
+    // that triggered it.
+    const missing = results.filter(
+      (r) => !r.passed && r.retrievalHits === 0 && r.check.kind !== "negative",
+    );
+    // A probe only reports; closing gaps (suggestions, site top-up) is the
+    // full sitting's job.
+    if (!mini && missing.length) {
+      // File each missing-material failure as a suggestion the owner can act
+      // on from the brain page (0043). Nothing is added automatically — the
+      // suggestion remembers what is missing; the owner picks the source. On
+      // conflict means a re-failed check changes nothing, and a dismissed
+      // suggestion stays dismissed.
+      for (const m of missing) {
+        await query(
+          `insert into gap_suggestions (brain_id, check_id, question)
+           values ($1, $2, $3) on conflict (brain_id, check_id) do nothing`,
+          [brainId, m.check.id, m.check.question.slice(0, 500)],
+        );
+      }
       await topUpFromSites(
         brain,
         missing.map((m) => `${m.check.category}: ${m.check.question}`),
@@ -460,12 +590,15 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       );
     }
 
+    const negativeResults = results.filter((r) => r.check.kind === "negative");
     return {
       score,
       passed: results.filter((r) => r.passed).length,
       total: results.length,
       costCents: cost,
       carried: carried.size,
+      negativePassed: negativeResults.filter((r) => r.passed).length,
+      negativeTotal: negativeResults.length,
     };
   } catch (err) {
     await query(
@@ -557,7 +690,14 @@ async function judge(
       "Pass it only if the passages actually contain what `expect` describes. " +
       "Judge the passages, not your own knowledge — if you know the answer but " +
       "the passages do not state it, that is a fail. Partial or vague coverage " +
-      "is a fail; the point is to find gaps, not to be generous.",
+      "is a fail; the point is to find gaps, not to be generous.\n\n" +
+      "Items marked kind=negative are deliberate out-of-scope probes: the " +
+      "CORRECT behaviour for the knowledge base is to have no answer. The " +
+      "verdict inverts — pass a negative item when the retrieved passages do " +
+      "not actually answer the question (the brain would have to admit it " +
+      "does not know), and fail it when the passages contain a plausible, " +
+      "confident answer. A brain that can bluff its way through a question " +
+      "outside its scope is worse than one with a gap.",
     content: [
       {
         type: "text",
@@ -565,6 +705,7 @@ async function judge(
           .map(
             (b) =>
               `<check id="${b.check.id}">\n` +
+              (b.check.kind === "negative" ? `<kind>negative</kind>\n` : "") +
               `<question>${b.check.question}</question>\n` +
               `<expect>${b.check.expect}</expect>\n` +
               `<retrieved>\n${b.context || "(nothing returned)"}\n</retrieved>\n` +

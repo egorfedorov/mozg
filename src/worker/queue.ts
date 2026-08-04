@@ -16,6 +16,7 @@ export const QUEUES = {
   digest: "digest",
   mozgpay: "mozgpay",
   lesson: "lesson",
+  summary: "summary",
 } as const;
 
 /**
@@ -73,6 +74,18 @@ export async function enqueueLesson(brainId: string, category: string): Promise<
     { brainId, category },
     { singletonKey: `${brainId}:${category}`, singletonSeconds: 600 },
   );
+}
+
+/**
+ * Lazy summary compilation, triggered by brain_brief when the brain's content
+ * moved past its newest summary. Whole-brain rather than per-category (the
+ * request path must not pay for per-category hashes — the job computes
+ * them); the singleton window keeps a chatty agent from queueing a compile
+ * on every brief.
+ */
+export async function enqueueSummary(brainId: string): Promise<void> {
+  const b = await getBoss();
+  await b.send(QUEUES.summary, { brainId }, { singletonKey: brainId, singletonSeconds: 600 });
 }
 
 export async function enqueueIngest(
@@ -141,12 +154,18 @@ export async function scheduleMozgpay(): Promise<void> {
   await b.schedule(QUEUES.mozgpay, "* * * * *", {}, { tz: "UTC" });
 }
 
-export async function enqueueExam(brainId: string): Promise<void> {
+export async function enqueueExam(
+  brainId: string,
+  opts: { mini?: boolean } = {},
+): Promise<void> {
   const b = await getBoss();
-  // One exam per brain in flight; a burst of uploads should not queue ten runs.
+  // One exam per brain in flight; a burst of uploads should not queue ten
+  // runs. The mini probe gets its own key so a full sitting queued in the
+  // same minute does not swallow it (or vice versa) — its own once-a-day
+  // gate in runExam is the real throttle.
   await b.send(
     QUEUES.exam,
-    { brainId },
-    { singletonKey: brainId, singletonSeconds: 60 },
+    { brainId, mini: opts.mini ?? false },
+    { singletonKey: opts.mini ? `${brainId}:recheck` : brainId, singletonSeconds: 60 },
   );
 }

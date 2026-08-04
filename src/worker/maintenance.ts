@@ -1,6 +1,7 @@
 import { query } from "@/db";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
+import { growSearchGapChecks } from "@/worker/search-gaps";
 
 /**
  * Keeping brains honest without being asked.
@@ -215,6 +216,7 @@ export async function runMaintenance(): Promise<{
   examined: number;
   recrawled: number;
   resumed: number;
+  gapChecks: number;
 }> {
   const resumed = await requeueBudgetPaused();
   const recrawled = await recrawlSites();
@@ -222,5 +224,10 @@ export async function runMaintenance(): Promise<{
   // After the refresh, so a page that changed a minute ago is re-examined in
   // the same pass rather than waiting a full day for the next one.
   const examined = await examStaleBrains();
-  return { refresh, examined: examined.length, recrawled, resumed };
+  // Real searches that came back weak become exam checks, so the next
+  // sitting measures what callers actually asked and could not get. After
+  // examStaleBrains deliberately: a check added now is graded by the exam
+  // this pass just queued, not by one a pass away.
+  const gapChecks = await growSearchGapChecks();
+  return { refresh, examined: examined.length, recrawled, resumed, gapChecks: gapChecks.added };
 }

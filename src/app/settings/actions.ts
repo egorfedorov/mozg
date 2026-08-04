@@ -8,6 +8,7 @@ import { currentUser } from "@/lib/session";
 import { requestPayout, MIN_PAYOUT_CENTS } from "@/lib/money";
 import { formatCents } from "@/lib/money-math";
 import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
+import { requestPlanUpgrade, payPlanFromBalance } from "@/lib/upgrade";
 
 /** Handles are a public namespace — /b/{handle}/{slug} — so they are strict. */
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
@@ -125,4 +126,43 @@ export async function startTopUp(
 
   revalidatePath("/settings/balance");
   return { payUrl: res.invoice.payUrl, amountCents: res.invoice.amountCents };
+}
+
+/* ─── plan upgrades ──────────────────────────────────────────────────────── */
+
+/** Ask for a plan — an operator switches the account by hand. */
+export async function requestUpgrade(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const parsed = z.enum(["pro", "team"]).safeParse(formData.get("plan"));
+  if (!parsed.success) return { error: "Unknown plan." };
+
+  const res = await requestPlanUpgrade(user.id, parsed.data);
+  if (!res.ok) {
+    return { error: "You already have a request waiting — it has to be answered first." };
+  }
+
+  revalidatePath("/settings");
+  return { ok: true as const, plan: parsed.data };
+}
+
+/**
+ * Buy a month of the plan from the balance. The price is read inside
+ * payPlanFromBalance's own transaction — never from this form.
+ */
+export async function payUpgrade(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const parsed = z.enum(["pro", "team"]).safeParse(formData.get("plan"));
+  if (!parsed.success) return { error: "Unknown plan." };
+
+  const res = await payPlanFromBalance({ userId: user.id, plan: parsed.data });
+  if (!res.ok) {
+    return { error: "Not enough on your balance. Top up below, then pay." };
+  }
+
+  revalidatePath("/settings");
+  return { ok: true as const, plan: parsed.data, paidCents: res.paidCents };
 }

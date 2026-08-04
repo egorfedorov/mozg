@@ -19,7 +19,8 @@ export type LedgerKind =
   | "earning"
   | "payout"
   | "refund"
-  | "adjustment";
+  | "adjustment"
+  | "plan";
 
 interface MoveOptions {
   client: PoolClient;
@@ -35,8 +36,12 @@ interface MoveOptions {
 /**
  * Move money for one user and record it. Must run inside a transaction that
  * has already locked the row when the amount is negative.
+ *
+ * Exported for movements that live in their own module (the plan upgrade in
+ * lib/upgrade.ts) — the two rules at the top of this file apply to them
+ * exactly as they do here.
  */
-async function move(opts: MoveOptions): Promise<void> {
+export async function move(opts: MoveOptions): Promise<void> {
   const { client, userId, amountCents } = opts;
   if (amountCents === 0) throw new Error("refusing to record a zero movement");
 

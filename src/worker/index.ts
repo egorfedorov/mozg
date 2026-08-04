@@ -6,6 +6,7 @@ import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
+import { compileSummaries } from "@/worker/summary";
 import { runMaintenance } from "@/worker/maintenance";
 import { runConsolidation } from "@/worker/consolidate";
 import { embedHealthy } from "@/lib/embed";
@@ -112,14 +113,15 @@ async function main() {
     QUEUES.exam,
     { batchSize: 1, pollingIntervalSeconds: 5 },
     async ([job]) => {
-      const { brainId } = job.data as { brainId: string };
+      const { brainId, mini } = job.data as { brainId: string; mini?: boolean };
       const started = Date.now();
       try {
-        const result = await runExam(brainId);
+        const result = await runExam(brainId, { mini });
         console.log(
           result
             ? `[exam] ${brainId} ${result.score}% (${result.passed}/${result.total}` +
-                `${result.carried ? `, ${result.carried} carried` : ""}) ` +
+                `${result.carried ? `, ${result.carried} carried` : ""}` +
+                `${result.negativeTotal ? `, anti-bluff ${result.negativePassed}/${result.negativeTotal}` : ""}) ` +
                 `${result.costCents.toFixed(1)}¢ ${Date.now() - started}ms`
             : `[exam] ${brainId} skipped — brain has no goal`,
         );
@@ -139,11 +141,11 @@ async function main() {
     async () => {
       const started = Date.now();
       try {
-        const { refresh, examined, recrawled, resumed } = await runMaintenance();
+        const { refresh, examined, recrawled, resumed, gapChecks } = await runMaintenance();
         console.log(
           `[maintenance] checked=${refresh.checked} unchanged=${refresh.unchanged} ` +
             `changed=${refresh.changed} failed=${refresh.failed} reexam=${examined} ` +
-            `recrawl=${recrawled} resumed=${resumed} ${Date.now() - started}ms`,
+            `recrawl=${recrawled} resumed=${resumed} gapchecks=${gapChecks} ${Date.now() - started}ms`,
         );
       } catch (err) {
         console.error(
@@ -192,6 +194,24 @@ async function main() {
     const { brainId, category } = job.data as { brainId: string; category: string };
     const outcome = await compileLesson(brainId, category);
     console.log(`[lesson] ${brainId} "${category}" ${outcome}`);
+  });
+
+  await boss.work(QUEUES.summary, { batchSize: 1, pollingIntervalSeconds: 10 }, async ([job]) => {
+    const { brainId } = job.data as { brainId: string };
+    const started = Date.now();
+    try {
+      const r = await compileSummaries(brainId);
+      console.log(
+        `[summary] ${brainId} compiled=${r.compiled} current=${r.current} ` +
+          `pruned=${r.pruned} ${r.costCents.toFixed(1)}¢ ${Date.now() - started}ms`,
+      );
+    } catch (err) {
+      console.error(
+        `[summary] ${brainId} FAILED after ${Date.now() - started}ms:`,
+        err instanceof Error ? err.message : err,
+      );
+      throw err;
+    }
   });
 
   await boss.work(QUEUES.mozgpay, { batchSize: 1, pollingIntervalSeconds: 15 }, async () => {

@@ -102,7 +102,7 @@ export async function categoryScores(
        from checks c
        left join latest l on l.brain_id = c.brain_id
        left join check_results r on r.check_id = c.id and r.run_id = l.id
-      where c.brain_id = any($1::uuid[]) and c.enabled
+      where c.brain_id = any($1::uuid[]) and c.enabled and c.kind = 'positive'
       group by c.brain_id, c.category
       order by c.brain_id, 4 desc nulls last, c.category`,
     [brainIds],

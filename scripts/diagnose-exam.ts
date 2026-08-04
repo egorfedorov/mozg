@@ -1,15 +1,18 @@
 /**
  * Why did the exam fail?
  *
- * Three very different causes look identical in the score:
- *   thin      — the judge was shown a related note and it did not answer
- *   retrieval — the answer is in the brain but ranked below what the exam sees
- *   missing   — the answer is not in the brain at all
+ * Four very different causes look identical in the score:
+ *   thin         — the judge was shown a related note and it did not answer
+ *   retrieval    — the answer is in the brain but ranked below what the exam sees
+ *   missing      — the answer is not in the brain at all
+ *   hallucination — a negative (out-of-scope) probe the brain answers
+ *                   confidently: it bluffs instead of refusing
  *
- * The fix differs completely — rewrite or deepen the note, improve ranking, or
- * add sources — so guessing is expensive. The distinction that matters is the
- * exam's own retrieval depth: anything the judge already saw and still failed
- * is not a ranking problem, whatever a wider search turns up.
+ * The fix differs completely — rewrite or deepen the note, improve ranking,
+ * add sources, or STOP covering a neighbouring topic — so guessing is
+ * expensive. The distinction that matters is the exam's own retrieval depth:
+ * anything the judge already saw and still failed is not a ranking problem,
+ * whatever a wider search turns up.
  *
  *   npm run diagnose -- --brain design
  */
@@ -67,12 +70,23 @@ async function main() {
   const thin: Check[] = [];
   const retrieval: Check[] = [];
   const content: Check[] = [];
+  const hallucination: Check[] = [];
 
   // The exam is scored on what the judge is shown, so the same scope has to be
   // used here or the diagnosis describes a different system.
   const scope = await familyIds(brain);
 
   for (const check of failed) {
+    // A failed negative probe is not a content problem: the brain holds
+    // material that lets it bluff through a question it should refuse.
+    // Adding material would make it worse, so these get their own bucket.
+    if (check.kind === "negative") {
+      hallucination.push(check);
+      console.log(`  HALLUCINATION  ${check.question}`);
+      console.log(`                 out-of-scope probe, but the brain answers it confidently — it bluffs\n`);
+      continue;
+    }
+
     const { hits } = await searchBrain(scope, check.question, { limit: WIDE });
     const rank = hits.findIndex((h) => covers(`${h.title} ${h.excerpt}`, check.expect));
 
@@ -99,6 +113,7 @@ async function main() {
   console.log(`  thin notes:         ${thin.length}  (judge saw it, it did not answer)`);
   console.log(`  retrieval problems: ${retrieval.length}  (present, ranked below the exam's ${EXAM_DEPTH})`);
   console.log(`  missing material:   ${content.length}  (not in the brain at all)`);
+  console.log(`  hallucinations:     ${hallucination.length}  (out-of-scope probes the brain bluffs through)`);
   console.log(`${"─".repeat(70)}\n`);
 
   if (content.length) {
@@ -114,8 +129,15 @@ async function main() {
 
   // Name the largest cause, and say what actually fixes it. The point of this
   // script is to stop the wrong thing being built.
-  const worst = Math.max(thin.length, retrieval.length, content.length);
-  if (worst === thin.length) {
+  const worst = Math.max(thin.length, retrieval.length, content.length, hallucination.length);
+  if (worst === hallucination.length) {
+    console.log(
+      "\n→ bluffing is the cap. The brain answers questions outside its scope\n" +
+        "  instead of refusing them. The material that lets it bluff is the\n" +
+        "  problem — do NOT add more; consider trimming or flagging the notes\n" +
+        "  that answer those probes.",
+    );
+  } else if (worst === thin.length) {
     console.log(
       "\n→ the notes are the cap. Search finds the right material and it does not\n" +
         "  answer the question — the source is vague, or extraction summarised away\n" +

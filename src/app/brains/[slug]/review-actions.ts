@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { maybeOne, query, toVector } from "@/db";
 import type { Note } from "@/db/types";
+import { refreshNoteWeight } from "@/lib/note-weight";
 import { approve } from "@/lib/review";
 import { currentUser } from "@/lib/session";
 
@@ -44,11 +45,14 @@ export async function dismissFlag(formData: FormData) {
   const user = await currentUser();
   if (!user) redirect("/sign-in");
 
-  await query(
+  const deleted = await query<{ note_id: string }>(
     `delete from note_flags f using brains b
-      where f.id = $1 and b.id = f.brain_id and b.owner_id = $2`,
+      where f.id = $1 and b.id = f.brain_id and b.owner_id = $2
+      returning f.note_id`,
     [String(formData.get("id")), user.id],
   );
+  // A dismissed flag no longer counts against the note's ranking weight.
+  if (deleted.length) await refreshNoteWeight(deleted[0].note_id);
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
 

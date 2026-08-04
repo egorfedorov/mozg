@@ -5,5 +5,7 @@
  * which makes a stub-module the one reliable place for this.
  */
 process.env.DATABASE_URL ??= "postgres://localhost:5432/mozg-test";
+// payments.ts verifies webhook HMACs against this; a throwaway test secret.
+process.env.NOWPAYMENTS_IPN_SECRET ??= "test-ipn-secret";
 
 export {};

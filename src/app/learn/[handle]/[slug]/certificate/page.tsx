@@ -33,7 +33,8 @@ export default async function CertificatePage({
     ).then((r) => r[0]),
     query<{ learned: number }>(
       `select count(*)::int as learned from learn_progress
-        where user_id = $1 and brain_id = $2 and reps > 0`,
+        where user_id = $1 and brain_id = $2 and reps > 0
+          and kind in ('note', 'check')`,
       [user.id, brain.id],
     ).then((r) => r[0]),
   ]);

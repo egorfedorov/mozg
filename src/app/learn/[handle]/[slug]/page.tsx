@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
+import { achievementAt, recordAchievement } from "@/lib/achievements";
+import { accessibleChildren } from "@/lib/families";
+import { beatTheAgent, pathStatuses } from "@/lib/learn";
 import { currentUser } from "@/lib/session";
 import LearnShell from "../../LearnShell";
 
@@ -26,7 +29,7 @@ export default async function CoursePage({
   if (!found?.brain || !found.access) notFound();
   const brain = found.brain;
 
-  const [noteMods, checkMods, progress, due, streak] = await Promise.all([
+  const [noteMods, checkMods, progress, due, streak, family, beatenAt] = await Promise.all([
     query<{ cat: string; total: number }>(
       `select coalesce(category, 'general') as cat, count(*)::int as total
          from notes where brain_id = $1 and status = 'active'
@@ -45,12 +48,14 @@ export default async function CoursePage({
          left join notes n on p.kind = 'note' and n.id = p.item_id
          left join checks c on p.kind = 'check' and c.id = p.item_id
         where p.user_id = $1 and p.brain_id = $2 and p.reps > 0
+          and p.kind in ('note', 'check')
         group by 1`,
       [user.id, brain.id],
     ),
     query<{ n: number }>(
       `select count(*)::int as n from learn_progress
-        where user_id = $1 and brain_id = $2 and due_at <= now()`,
+        where user_id = $1 and brain_id = $2 and due_at <= now()
+          and kind in ('note', 'check')`,
       [user.id, brain.id],
     ).then((r) => r[0].n),
     // Consecutive days ending today or yesterday (yesterday keeps the flame
@@ -66,6 +71,12 @@ export default async function CoursePage({
                      order by day desc limit 1)`,
       [user.id],
     ).then((r) => r[0]?.n ?? 0),
+    // The family's children, in shelf order (title — the same order
+    // childrenOf uses everywhere else). For a child brain this is its
+    // siblings, itself included; for a lone brain it is empty and the path
+    // block simply does not render.
+    accessibleChildren(brain.parent_id ?? brain.id, user.id),
+    achievementAt(user.id, brain.id),
   ]);
 
   const learnedBy = new Map(progress.map((p) => [p.cat, p.learned]));
@@ -83,6 +94,42 @@ export default async function CoursePage({
   const totalCards = modules.reduce((n, m) => n + m.total, 0);
   const totalLearned = modules.reduce((n, m) => n + m.learned, 0);
   const pct = totalCards ? Math.round((totalLearned / totalCards) * 100) : 0;
+
+  // The duel is won the first time the learner's percent passes the brain's
+  // own exam score. Recording it here — on the cheap render path — keeps the
+  // badge even when the brain re-sits its exam and climbs back ahead.
+  let wonAt = beatenAt;
+  if (!wonAt && totalCards > 0 && beatTheAgent(pct, brain.score)) {
+    await recordAchievement(user.id, brain.id);
+    wonAt = new Date();
+  }
+
+  // Per-child progress for the family path — the same "learned" definition
+  // the modules above use, batched over the family's brains.
+  const pathProgress = family.length
+    ? await query<{ brain_id: string; cards: number; learned: number }>(
+        `select b.id as brain_id,
+                (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
+              + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
+                (select count(*) from learn_progress p
+                  where p.user_id = $2 and p.brain_id = b.id and p.reps > 0
+                    and p.kind in ('note', 'check'))::int as learned
+           from brains b where b.id = any($1::uuid[])`,
+        [family.map((f) => f.id), user.id],
+      )
+    : [];
+  const pathById = new Map(pathProgress.map((p) => [p.brain_id, p]));
+  const path = family.map((f) => {
+    const p = pathById.get(f.id);
+    const cards = p?.cards ?? 0;
+    const learned = Math.min(p?.learned ?? 0, cards);
+    return { ...f, cards, learned, pct: cards ? Math.round((learned / cards) * 100) : 0 };
+  });
+  const statuses = pathStatuses(path.map((p) => p.pct));
+  const pathCards = path.reduce((n, p) => n + p.cards, 0);
+  const pathPct = pathCards
+    ? Math.round((path.reduce((n, p) => n + p.learned, 0) / pathCards) * 100)
+    : 0;
 
   return (
     <LearnShell>
@@ -122,6 +169,20 @@ export default async function CoursePage({
             <p className="h2" style={{ margin: 0, color: "var(--ink-2)" }}>{brain.score}%</p>
           </div>
         )}
+        {brain.score != null && (
+          <div>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>CHALLENGE</p>
+            {wonAt ? (
+              <p style={{ margin: 0, fontWeight: 650, color: "var(--color-riso-green)" }}>
+                ★ You beat your agent
+              </p>
+            ) : (
+              <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".35rem 0 0" }}>
+                pass {brain.score}% to beat it
+              </p>
+            )}
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 160 }}>
           <div style={{ height: 10, border: "1.5px solid var(--ink)", background: "var(--paper)" }}>
             <div style={{ height: "100%", width: `${pct}%`, background: "var(--color-riso-green)" }} />
@@ -149,6 +210,71 @@ export default async function CoursePage({
           </Link>
         )}
       </div>
+
+      {path.length > 0 && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "2rem 0 1rem" }}>
+            <h2 className="h2" style={{ margin: 0 }}>Path</h2>
+            <span className="eyebrow">{pathPct}% of the family learned</span>
+          </div>
+          <div style={{ height: 10, border: "1.5px solid var(--ink)", background: "var(--paper)", marginBottom: "1rem" }}>
+            <div style={{ height: "100%", width: `${pathPct}%`, background: "var(--color-riso-green)" }} />
+          </div>
+          <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)" }}>
+            {path.map((p, i) => (
+              <div
+                key={p.id}
+                style={{
+                  background: "var(--paper-2)",
+                  padding: "1rem 1.25rem",
+                  display: "flex",
+                  gap: "1rem",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", width: "2ch" }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <p style={{ margin: 0, fontWeight: 650 }}>
+                    {p.title}
+                    {p.id === brain.id && (
+                      <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                        {" "}· this course
+                      </span>
+                    )}
+                  </p>
+                  <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".15rem 0 0" }}>
+                    {p.cards} cards · {p.pct}% learned
+                  </p>
+                </div>
+                <div style={{ width: 90, height: 8, border: "1px solid var(--ink)", background: "var(--paper)" }}>
+                  <div style={{ height: "100%", width: `${p.pct}%`, background: p.pct === 100 ? "var(--color-riso-green)" : "var(--color-riso-red)" }} />
+                </div>
+                <span
+                  className="tag"
+                  style={{
+                    color:
+                      statuses[i] === "done"
+                        ? "var(--color-riso-green)"
+                        : statuses[i] === "current"
+                          ? "var(--ink)"
+                          : "var(--ink-3)",
+                  }}
+                >
+                  {statuses[i]}
+                </span>
+                {p.id !== brain.id && (
+                  <Link className="btn btn-ghost" style={{ padding: ".4rem .8rem" }} href={`/learn/${handle}/${p.slug}`}>
+                    {statuses[i] === "done" ? "Review" : "Open"}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="h2" style={{ margin: "2rem 0 1rem" }}>Syllabus</h2>
       <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)" }}>

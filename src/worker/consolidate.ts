@@ -50,7 +50,7 @@ const MIN_ACTIVE_NOTES = 15;
 /** Brains per run. One enormous account must not starve the rest. */
 const BRAIN_BATCH = 10;
 
-/** Pairs to consider per brain; duplicatePairs is an O(n²) self-join. */
+/** Pairs to consider per brain; duplicatePairs is one indexed kNN per chunk. */
 const PAIR_LIMIT = 60;
 
 /**

@@ -12,6 +12,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import { approveNote, rejectNote, dismissFlag } from "./review-actions";
 import { runExamNow, addCheck, removeCheck } from "./exam-actions";
 import { retrySource, deleteSource, waiveScan } from "./source-actions";
+import GapSuggestions from "@/components/GapSuggestions";
 import { maybeOne, query } from "@/db";
 import type { Brain, Note, Source } from "@/db/types";
 import { currentUser } from "@/lib/session";
@@ -56,7 +57,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags, freshNotes] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags, freshNotes, gapSuggestions] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -93,10 +94,12 @@ export default async function BrainPage({
          from calls where brain_id = $1 order by id desc limit 12`,
       [brain.id],
     ).then((r) => r.reverse()),
+    // The official curve: full sittings only — a mini probe's single-vote
+    // score is a staleness signal, not a point on it.
     query<{ score: number }>(
       `select score from (
          select score, started_at from check_runs
-          where brain_id = $1 and status = 'done' and score is not null
+          where brain_id = $1 and status = 'done' and kind = 'full' and score is not null
           order by started_at desc limit 16
        ) t order by started_at`,
       [brain.id],
@@ -110,9 +113,13 @@ export default async function BrainPage({
     // What stands between this brain and 100%, from the latest run. The
     // retrieval count tells the owner which of the two fixes applies —
     // that distinction is the whole value of showing failures at all.
-    query<{ category: string; question: string; retrieval_hits: number | null }>(
-      `select c.category, c.question, r.retrieval_hits
+    // `regressed` marks the sharper case: the check passed until a content
+    // update rewrote the answer out from under it (0047).
+    query<{ category: string; question: string; kind: string; retrieval_hits: number | null; regressed: boolean }>(
+      `select c.category, c.question, c.kind, r.retrieval_hits,
+              (g.id is not null) as regressed
          from check_results r join checks c on c.id = r.check_id
+         left join exam_regressions g on g.check_id = c.id and not g.resolved
         where r.run_id = (
           select id from check_runs where brain_id = $1 and status = 'done'
           order by started_at desc limit 1
@@ -125,7 +132,7 @@ export default async function BrainPage({
       `select f.id, f.note_id, n.title as note_title, f.reason,
               to_char(f.created_at at time zone 'UTC', 'YYYY-MM-DD') as flagged_at
          from note_flags f join notes n on n.id = f.note_id
-        where f.brain_id = $1 and n.status = 'active'
+        where f.brain_id = $1 and n.status = 'active' and f.signal = 'down'
         order by f.created_at desc limit 20`,
       [brain.id],
     ),
@@ -136,9 +143,18 @@ export default async function BrainPage({
         order by created_at desc limit 3`,
       [brain.id],
     ),
+    // Open gap suggestions (0043): failed "material missing" checks the
+    // owner can fill with a source, straight from this page.
+    query<{ id: string; question: string }>(
+      `select id, question from gap_suggestions
+        where brain_id = $1 and status = 'pending'
+        order by created_at limit 20`,
+      [brain.id],
+    ),
   ]);
 
   const totalChecks = categories.reduce((n, c) => n + c.total, 0);
+  const staleChecks = failedChecks.filter((f) => f.regressed).length;
   const inFlight = sources.filter(
     (s) => s.status === "queued" || s.status === "processing",
   ).length;
@@ -191,6 +207,11 @@ export default async function BrainPage({
               <Link className="navlink" href={`/brains/${brain.slug}/share`}>
                 sharing &amp; export →
               </Link>
+              {brain.visibility === "public" && brain.score !== null && user.handle && (
+                <Link className="navlink" href={`/b/${user.handle}/${brain.slug}/badge`}>
+                  public exam badge →
+                </Link>
+              )}
             </p>
           </div>
         </div>
@@ -349,6 +370,11 @@ export default async function BrainPage({
                 <summary className="mono" style={{ fontSize: ".8125rem", cursor: "pointer" }}>
                   To reach 100% — {failedChecks.length} failed check
                   {failedChecks.length === 1 ? "" : "s"}, and what fixes each
+                  {staleChecks > 0 && (
+                    <span style={{ color: "var(--color-riso-red)" }}>
+                      {" "}· {staleChecks} went stale after an update
+                    </span>
+                  )}
                 </summary>
                 {failedChecks.map((f, i) => (
                   <div key={i} style={{ margin: ".75rem 0 0", fontSize: ".875rem" }}>
@@ -359,23 +385,38 @@ export default async function BrainPage({
                     )}
                     <div style={{ display: "flex", gap: ".6rem", alignItems: "baseline" }}>
                       <span style={{ flex: 1 }}>{f.question}</span>
+                      {f.regressed && (
+                        <span
+                          className="tag"
+                          style={{ flexShrink: 0, fontSize: ".6875rem", color: "var(--color-riso-red)" }}
+                          title="This check passed before the last content update and fails now — a source was rewritten and the old answer no longer holds. Re-read the source or fix the note; the mark clears when the check passes again."
+                        >
+                          went stale
+                        </span>
+                      )}
                       <span
                         className="tag"
                         style={{
                           flexShrink: 0,
                           fontSize: ".6875rem",
                           color:
-                            (f.retrieval_hits ?? 0) <= 1
+                            f.kind === "negative" || (f.retrieval_hits ?? 0) <= 1
                               ? "var(--color-riso-red)"
                               : "var(--color-riso-orange)",
                         }}
                         title={
-                          (f.retrieval_hits ?? 0) <= 1
-                            ? "Search returned nothing useful for this question — the material is not in the brain. Add pages or notes that answer it."
-                            : "Search found related notes but they do not answer — the source glossed over it, or extraction summarised the detail away. Re-read the source or write the fact as a note."
+                          f.kind === "negative"
+                            ? "This question is deliberately out of scope — the brain should have refused it, but its notes answer confidently. Do NOT add material; flag or trim the notes that let it bluff."
+                            : (f.retrieval_hits ?? 0) <= 1
+                              ? "Search returned nothing useful for this question — the material is not in the brain. Add pages or notes that answer it."
+                              : "Search found related notes but they do not answer — the source glossed over it, or extraction summarised the detail away. Re-read the source or write the fact as a note."
                         }
                       >
-                        {(f.retrieval_hits ?? 0) <= 1 ? "add material" : "deepen notes"}
+                        {f.kind === "negative"
+                          ? "stop bluffing"
+                          : (f.retrieval_hits ?? 0) <= 1
+                            ? "add material"
+                            : "deepen notes"}
                       </span>
                     </div>
                   </div>
@@ -383,6 +424,8 @@ export default async function BrainPage({
                 <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: "1rem 0 0" }}>
                   add material — nothing in the brain covers it; feed pages or write the fact.
                   deepen notes — it is in there but vague; re-read the source or state the specific value.
+                  stop bluffing — an out-of-scope probe the brain answers anyway; flag the notes that answer it.
+                  went stale — it passed until a source update rewrote the answer; re-read the page or fix the note.
                 </p>
               </details>
             )}
@@ -449,6 +492,8 @@ export default async function BrainPage({
             )}
           </section>
         </div>
+
+        <GapSuggestions slug={brain.slug} suggestions={gapSuggestions} />
 
         <section style={{ marginTop: "2rem" }}>
           <CallLog brainId={brain.id} recent={recentCalls} />

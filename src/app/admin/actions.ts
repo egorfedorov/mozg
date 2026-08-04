@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { query } from "@/db";
 import { adjustBalance as moveBalance, settlePayout } from "@/lib/money";
+import { resolvePlanRequest } from "@/lib/upgrade";
 import { requireAdmin } from "@/lib/admin";
 import { TOPIC_KEYS } from "@/lib/topics";
 
@@ -88,6 +89,30 @@ export async function settleWithdrawal(formData: FormData) {
 
   console.log(
     `[admin] ${admin.email} settled payout ${parsed.data.id} paid=${parsed.data.paid} — ${res.ok ? "ok" : res.reason}`,
+  );
+  revalidatePath("/admin");
+}
+
+/**
+ * Answer a plan request. Approving grants the plan with a 30-day clock (no
+ * money moves — this is the off-band payment door); rejecting just closes it.
+ */
+export async function resolveUpgrade(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({ id: z.string().uuid(), approve: z.enum(["yes", "no"]) })
+    .safeParse({ id: formData.get("id"), approve: formData.get("approve") });
+  if (!parsed.success) return;
+
+  const res = await resolvePlanRequest({
+    requestId: parsed.data.id,
+    approve: parsed.data.approve === "yes",
+    resolvedBy: admin.email,
+  });
+
+  console.log(
+    `[admin] ${admin.email} ${parsed.data.approve === "yes" ? "approved" : "rejected"} plan request ${parsed.data.id} — ${res.ok ? "ok" : res.reason}`,
   );
   revalidatePath("/admin");
 }

@@ -7,6 +7,7 @@ import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { purchaseBrain } from "@/lib/money";
 import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
+import { captureServer } from "@/lib/analytics";
 
 /**
  * Buy access to a brain from the account balance.
@@ -78,6 +79,11 @@ export async function buyBrain(_prev: unknown, formData: FormData) {
   });
 
   if (result.ok) {
+    captureServer(user.id, "brain_purchased", {
+      brain_id: brain.id,
+      price_cents: result.paidCents,
+      via: "balance",
+    });
     revalidatePath(`/b/${formData.get("handle")}/${brain.slug}`);
     return { ok: true as const };
   }

@@ -51,8 +51,8 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
   if (source.status === "ready") return { queued: 0, skipped: 0, via: "done" };
   if (!source.url) throw new Error("site source has no url");
 
-  const brain = await one<Brain & { plan: string }>(
-    `select b.*, u.plan from brains b join "user" u on u.id = b.owner_id
+  const brain = await one<Brain & { plan: string; paid_until: Date | null }>(
+    `select b.*, u.plan, u.paid_until from brains b join "user" u on u.id = b.owner_id
       where b.id = $1`,
     [source.brain_id],
   );
@@ -66,7 +66,7 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
   try {
     // The plan's source cap is the crawl cap: discovery past the quota would
     // queue pages the ingest path then refuses, in a different voice.
-    const limits = limitsFor(brain.plan as never);
+    const limits = limitsFor(brain.plan as never, brain.paid_until);
     const remaining = limits.sources - brain.source_count;
     if (remaining < 1) {
       throw new Error(

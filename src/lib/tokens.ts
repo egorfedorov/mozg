@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query } from "@/db";
 import type { Plan } from "@/db/types";
-import { limitsFor } from "@/lib/plans";
+import { limitsFor, effectivePlan } from "@/lib/plans";
 
 /**
  * MCP access tokens.
@@ -49,8 +49,14 @@ export async function verifyToken(raw: string | null): Promise<TokenOwner | null
   if (!token.startsWith(PREFIX)) return null;
 
   const hash = hashToken(token);
-  const row = await maybeOne<{ id: string; user_id: string; token_hash: string; plan: Plan }>(
-    `select t.id, t.user_id, t.token_hash, u.plan
+  const row = await maybeOne<{
+    id: string;
+    user_id: string;
+    token_hash: string;
+    plan: Plan;
+    paid_until: Date | null;
+  }>(
+    `select t.id, t.user_id, t.token_hash, u.plan, u.paid_until
        from mcp_tokens t
        join "user" u on u.id = t.user_id
       where t.token_hash = $1 and t.revoked_at is null`,
@@ -69,7 +75,9 @@ export async function verifyToken(raw: string | null): Promise<TokenOwner | null
     () => {},
   );
 
-  return { userId: row.user_id, tokenId: row.id, plan: row.plan };
+  // The plan in force, not the plan on the row: an expired paid plan reads
+  // as free, so a lapsed month tightens the quota instead of riding on.
+  return { userId: row.user_id, tokenId: row.id, plan: effectivePlan(row.plan, row.paid_until) };
 }
 
 export async function revokeToken(userId: string, tokenId: string): Promise<void> {

@@ -107,7 +107,7 @@ services:
         GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     networks: [default, rendernet]
-    command: ["npm", "run", "worker:prod"]
+    command: ["node", "dist/worker/index.mjs"]
     env_file: .env
     environment:
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
@@ -120,7 +120,7 @@ services:
       db:
         condition: service_healthy
     # No HTTP port to probe and no pgrep in the slim image, so the check walks
-    # /proc for the worker's tsx process. Docker's restart policy covers a
+    # /proc for the worker's node process. Docker's restart policy covers a
     # clean crash; this catches the stranger case where the container is alive
     # but the worker process is gone.
     healthcheck:

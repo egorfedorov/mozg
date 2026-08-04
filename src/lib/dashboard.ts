@@ -109,12 +109,14 @@ export async function needsAttention(userId: string): Promise<Attention[]> {
     ),
     // Agent reports on live notes. First in the list below: someone's task
     // already hit the bad note — this is the freshest signal on the screen.
+    // Only 'down' signals: a "this helped" report shifts the note's ranking
+    // weight on its own and needs no owner action.
     query<{ slug: string; title: string; n: number }>(
       `select b.slug, b.title, count(*)::int as n
          from note_flags f
          join notes n on n.id = f.note_id and n.status = 'active'
          join brains b on b.id = f.brain_id
-        where b.owner_id = $1
+        where b.owner_id = $1 and f.signal = 'down'
         group by b.slug, b.title order by n desc`,
       [userId],
     ),

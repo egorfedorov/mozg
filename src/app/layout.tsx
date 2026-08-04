@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
 import { env } from "@/lib/env";
+import Analytics from "@/components/Analytics";
 import "./globals.css";
 
 // Cyrillic throughout: brains will hold Russian notes, and a fallback glyph in
@@ -47,7 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       {/* No footer here on purpose: it belongs to the public side of the site.
           A workspace ends in work, not in a wall of links out. */}
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
