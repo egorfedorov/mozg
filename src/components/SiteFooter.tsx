@@ -12,8 +12,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/why", label: "Why mozg" },
       { href: "/vs", label: "A brain and a Skill file" },
       { href: "/explore", label: "Catalogue" },
-      { href: "/explore?price=free", label: "Free brains" },
-      { href: "/explore?price=paid", label: "Paid brains" },
+      { href: "/explore?price=free", label: "Free brains (all official)" },
+      { href: "/explore?price=paid", label: "Marketplace" },
     ],
   },
   {
