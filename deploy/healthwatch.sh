@@ -49,18 +49,24 @@ send() {
       "$EMAIL_FROM" "$ALERT_TO" "$1" "$2")" > /dev/null
 }
 
-if [ "$now" = "down" ] && [ "$prev" = "up" ]; then
+if [ "$now" = "down" ] && [ "$count" = "1" ]; then
+  # One failed check is usually a deploy restart caught mid-flight. Log it,
+  # alert only if the next check agrees — a real outage survives five minutes.
+  echo "$(date -Is)  down once (HTTP $code) — waiting for a second strike"
+elif [ "$now" = "down" ] && [ "$count" = "2" ]; then
   send "mozg.sh is DOWN" \
-    "health check failed (HTTP $code) at $(date -u -Is).\\n\\nResponse: $(printf '%s' "$body" | head -c 300 | tr '"' "'")\\n\\nLook: ssh Mirca 'cd /opt/mozg && docker compose -f docker-compose.prod.yml logs --tail 50 app worker'"
+    "health check failed twice in a row (HTTP $code), first seen ~5 minutes ago.\\n\\nResponse: $(printf '%s' "$body" | head -c 300 | tr '"' "'")\\n\\nLook: ssh Mirca 'cd /opt/mozg && docker compose -f docker-compose.prod.yml logs --tail 50 app worker'"
   echo "$(date -Is)  DOWN (HTTP $code) — alert sent"
 elif [ "$now" = "down" ] && [ $((count % 12)) -eq 0 ]; then
   send "mozg.sh is still down (~$((count * 5)) min)" \
     "health check has been failing for about $((count * 5)) minutes."
   echo "$(date -Is)  still down ($count checks) — reminder sent"
-elif [ "$now" = "up" ] && [ "$prev" = "down" ]; then
+elif [ "$now" = "up" ] && [ "$prev" = "down" ] && [ "$prev_count" -ge 2 ]; then
   send "mozg.sh recovered" \
     "health is back to ok at $(date -u -Is) after about $((prev_count * 5)) minutes down."
   echo "$(date -Is)  recovered — alert sent"
+elif [ "$now" = "up" ] && [ "$prev" = "down" ]; then
+  echo "$(date -Is)  recovered from a single blip — no alert was owed"
 else
   echo "$(date -Is)  $now"
 fi
