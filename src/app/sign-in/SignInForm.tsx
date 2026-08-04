@@ -32,9 +32,11 @@ function humanError(message: string | undefined, mode: "in" | "up"): string {
 
 export default function SignInForm({
   githubEnabled,
+  googleEnabled,
   signUpEnabled,
 }: {
   githubEnabled: boolean;
+  googleEnabled: boolean;
   /** Password sign-up is closed until mail can be sent — see lib/auth.ts. */
   signUpEnabled: boolean;
 }) {
@@ -78,8 +80,19 @@ export default function SignInForm({
           : "One brain free, no card. Upgrade when you hit the limit."}
       </p>
 
-      {githubEnabled && (
+      {(githubEnabled || googleEnabled) && (
         <>
+          {googleEnabled && (
+            <button
+              className="btn btn-ghost"
+              style={{ width: "100%", justifyContent: "center", marginBottom: githubEnabled ? ".75rem" : 0 }}
+              onClick={() => signIn.social({ provider: "google", callbackURL: next })}
+              type="button"
+            >
+              Continue with Google
+            </button>
+          )}
+          {githubEnabled && (
           <button
             className="btn btn-ghost"
             style={{ width: "100%", justifyContent: "center" }}
@@ -88,6 +101,7 @@ export default function SignInForm({
           >
             Continue with GitHub
           </button>
+          )}
 
           <div
             className="mono"

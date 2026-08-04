@@ -10,6 +10,7 @@ export default function SignInPage() {
   // shown only when the provider is actually configured, so it can never be a
   // button that leads to an error page.
   const githubEnabled = Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET);
+  const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 
-  return <SignInForm githubEnabled={githubEnabled} signUpEnabled={emailReady} />;
+  return <SignInForm githubEnabled={githubEnabled} googleEnabled={googleEnabled} signUpEnabled={emailReady} />;
 }
