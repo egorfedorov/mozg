@@ -37,6 +37,20 @@ else
   now="down"
 fi
 
+# The agent's-eye check: /api/health can be green while the thing agents
+# actually do — search a brain over MCP — is broken (dead embedder auth,
+# a bad deploy of the tool layer). One real search against a known brain;
+# a result containing note_id proves the whole read path. Needs
+# MOZG_WATCH_TOKEN in the env file; silently skipped without it.
+WATCH_TOKEN="${MOZG_WATCH_TOKEN:-$(sed -n 's/^MOZG_WATCH_TOKEN=//p' "$ENV_FILE" | tr -d '"')}"
+if [ "$now" = "up" ] && [ -n "$WATCH_TOKEN" ]; then
+  mcp=$(curl -s --max-time 30 "${URL%/api/health}/mcp"     -H "content-type: application/json" -H "accept: application/json"     -H "authorization: Bearer $WATCH_TOKEN"     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"brain_search","arguments":{"brain":"mozg/stake-engine","query":"authenticate wallet session"}}}')
+  if ! printf '%s' "$mcp" | grep -q 'note_id'; then
+    now="down"
+    body="MCP probe failed: brain_search returned no notes. Raw: $(printf '%s' "$mcp" | head -c 200)"
+  fi
+fi
+
 # state file: "<up|down> <consecutive checks in this state>"
 prev="up"; prev_count=0
 if [ -f "$STATE_FILE" ]; then

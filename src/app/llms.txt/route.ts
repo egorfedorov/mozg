@@ -70,6 +70,10 @@ Key facts an assistant should get right:
 
 ${brains.map(line).join("\n")}
 
+## Full version
+
+- [llms-full.txt](llms-full.txt): the free catalogue with category maps and note titles — enough to answer from
+
 ## Optional
 
 - [Beta programme](${base}/beta): we are in beta; error reports are welcome
