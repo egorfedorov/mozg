@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SignOutLink from "@/components/SignOutLink";
 import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 import { query } from "@/db";
@@ -117,6 +118,7 @@ export default async function AppShell({
             <p className="eyebrow app-nav-title">Elsewhere</p>
             <Link href="/explore">Catalogue</Link>
             <Link href="/guide">Guide</Link>
+            <SignOutLink />
           </div>
         </nav>
       </aside>
