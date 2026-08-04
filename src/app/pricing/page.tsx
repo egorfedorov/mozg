@@ -5,6 +5,7 @@ import Contents from "@/components/Contents";
 import { PLANS } from "@/lib/plans";
 import { PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { currentUser } from "@/lib/session";
+import { foundingSpotsLeft, FOUNDING_LIMIT } from "@/lib/upgrade";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ const PLAN_PITCH: Record<string, string> = {
 
 export default async function PricingPage() {
   const user = await currentUser();
+  const spots = await foundingSpotsLeft();
   const shown = (["free", "pro", "team"] as const).map((k) => ({
     key: k,
     ...PLANS[k],
@@ -58,6 +60,23 @@ export default async function PricingPage() {
           catalogue</strong> once if it saves you building one, and you top up a{" "}
           <strong>balance</strong> to do the buying.
         </p>
+
+        {spots > 0 && (
+          <p
+            className="mono"
+            style={{
+              display: "inline-block",
+              border: "1.5px solid var(--color-riso-red)",
+              color: "var(--color-riso-red)",
+              padding: ".45rem .8rem",
+              fontSize: ".8125rem",
+              marginTop: ".75rem",
+            }}
+          >
+            Founding members: the first {FOUNDING_LIMIT} paying accounts keep
+            −50% forever · {spots} spot{spots === 1 ? "" : "s"} left
+          </p>
+        )}
 
         {/* ── plans ─────────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>

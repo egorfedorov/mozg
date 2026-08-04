@@ -62,21 +62,51 @@ export type PayPlanResult =
  * PLAN_PRICE_CENTS here, never from the caller — same rule as purchaseBrain:
  * a posted price is a number the buyer chose.
  */
+/** The launch offer: this many first-paying accounts keep half price forever. */
+export const FOUNDING_LIMIT = 50;
+
+export async function foundingSpotsLeft(): Promise<number> {
+  const row = await maybeOne<{ n: number }>(
+    `select count(*)::int as n from "user" where founding`,
+  );
+  return Math.max(0, FOUNDING_LIMIT - (row?.n ?? 0));
+}
+
 export async function payPlanFromBalance(opts: {
   userId: string;
   plan: PaidPlan;
 }): Promise<PayPlanResult> {
-  const priceCents = PLAN_PRICE_CENTS[opts.plan];
-
   return tx(async (client) => {
     // Lock first — two clicks a millisecond apart must not both see enough.
-    const locked = await client.query<{ balance_cents: number }>(
-      `select balance_cents from "user" where id = $1 for update`,
+    const locked = await client.query<{ balance_cents: number; founding: boolean }>(
+      `select balance_cents, founding from "user" where id = $1 for update`,
       [opts.userId],
     );
     if (!locked.rows.length) throw new Error(`no such user: ${opts.userId}`);
+
+    // Founding pricing, decided inside the lock: an existing founder keeps
+    // half price forever; a new payer takes a spot if any remain. Counting
+    // inside the transaction means fifty-one concurrent first payments still
+    // produce exactly fifty founders.
+    const wasFounding = locked.rows[0].founding;
+    let founding = wasFounding;
+    if (!founding) {
+      const spots = await client.query<{ n: number }>(
+        `select count(*)::int as n from "user" where founding`,
+      );
+      founding = spots.rows[0].n < FOUNDING_LIMIT;
+    }
+    const priceCents = founding
+      ? Math.round(PLAN_PRICE_CENTS[opts.plan] / 2)
+      : PLAN_PRICE_CENTS[opts.plan];
+
+    // The insufficient return COMMITS (tx only rolls back on throw), so the
+    // spot is claimed strictly after the money clears.
     if (locked.rows[0].balance_cents < priceCents) {
       return { ok: false as const, reason: "insufficient" as const };
+    }
+    if (founding && !wasFounding) {
+      await client.query(`update "user" set founding = true where id = $1`, [opts.userId]);
     }
 
     await move({
@@ -84,7 +114,7 @@ export async function payPlanFromBalance(opts: {
       userId: opts.userId,
       amountCents: -priceCents,
       kind: "plan",
-      note: `${opts.plan} plan, ${PLAN_PERIOD_DAYS} days`,
+      note: `${opts.plan} plan, ${PLAN_PERIOD_DAYS} days${founding ? ", founding −50%" : ""}`,
     });
 
     await client.query(

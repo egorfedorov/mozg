@@ -454,6 +454,271 @@ const PACKS: Pack[] = [
     },
     children: [],
   },
+  {
+    // The backend-as-a-service surface models improvise on hardest: row level
+    // security policies, auth flows and storage rules are specified precisely
+    // enough that an invented policy is a security bug, and the platform keeps
+    // shipping new products after every training cut.
+    key: "supabase",
+    repo: "supabase/supabase",
+    prefix: "apps/docs/content/guides/",
+    endings: [".mdx"],
+    topic: "web",
+    parent: {
+      slug: "supabase",
+      title: "Supabase",
+      goal:
+        "Answer questions about building on Supabase as documented today: " +
+        "row level security and policies, the auth flows and their exact " +
+        "configuration, the database features and extensions, storage rules, " +
+        "edge functions, realtime, and how to run the platform locally and " +
+        "self-hosted.",
+    },
+    children: [
+      {
+        slug: "supabase-auth",
+        title: "Supabase · Auth",
+        goal:
+          "Answer questions about Supabase Auth exactly as specified: sign-up " +
+          "and sign-in methods, OAuth providers and their setup, magic links " +
+          "and OTP, MFA, session management, server-side auth, and how auth " +
+          "users map to row level security policies.",
+        areas: ["auth"],
+      },
+      {
+        slug: "supabase-database",
+        title: "Supabase · Database",
+        goal:
+          "Answer questions about the Supabase database: connecting from " +
+          "every framework, query patterns with supabase-js, row level " +
+          "security policies and their exact syntax, Postgres extensions, " +
+          "full text search, indexes, migrations and connection pooling.",
+        areas: ["database"],
+      },
+      {
+        slug: "supabase-functions",
+        title: "Supabase · Edge Functions",
+        goal:
+          "Answer questions about Supabase Edge Functions: creating and " +
+          "deploying functions with the CLI, the Deno runtime and its limits, " +
+          "handling requests and secrets, background tasks, and integrating " +
+          "functions with auth and the database.",
+        areas: ["functions"],
+      },
+      {
+        slug: "supabase-storage",
+        title: "Supabase · Storage",
+        goal:
+          "Answer questions about Supabase Storage exactly as specified: " +
+          "buckets and their access levels, uploads and downloads from every " +
+          "client, access control through storage RLS policies, image " +
+          "transformations, resumable uploads and the CDN.",
+        areas: ["storage"],
+      },
+      {
+        slug: "supabase-realtime",
+        title: "Supabase · Realtime",
+        goal:
+          "Answer questions about Supabase Realtime: postgres changes " +
+          "subscriptions, broadcast and presence, channel configuration and " +
+          "its options, authorization for realtime, quotas, and what changed " +
+          "between realtime versions.",
+        areas: ["realtime"],
+      },
+    ],
+  },
+  {
+    // E2E test APIs churn between releases — locators, auto-waiting rules and
+    // the test runner's configuration are quoted from memory and wrong. The
+    // docs ship the same page in four languages side by side; the skip keeps
+    // out python/java/csharp copies so the brain never mixes APIs across
+    // languages.
+    key: "playwright",
+    repo: "microsoft/playwright",
+    prefix: "docs/src/",
+    endings: [".md"],
+    skip: ["-python.md", "-java.md", "-csharp.md"],
+    topic: "web",
+    parent: {
+      slug: "playwright",
+      title: "Playwright",
+      goal:
+        "Answer questions about testing with Playwright as documented today: " +
+        "locators and their strictness rules, actions and auto-waiting, " +
+        "assertions, fixtures and test isolation, the configuration file and " +
+        "every option, traces and debugging, and CI — the JavaScript/TypeScript " +
+        "API, not another language's port.",
+    },
+    children: [
+      {
+        slug: "playwright-api",
+        title: "Playwright · API reference",
+        goal:
+          "Answer questions about the Playwright library API exactly as " +
+          "specified: every class — Browser, BrowserContext, Page, Locator, " +
+          "Frame, Request, Response and the rest — with each method's " +
+          "arguments, return types and default values.",
+        areas: ["api"],
+      },
+      {
+        slug: "playwright-test-api",
+        title: "Playwright · Test runner API",
+        goal:
+          "Answer questions about the @playwright/test runner API: the test " +
+          "and expect objects, fixtures, the config object and every reporter " +
+          "with its options.",
+        areas: ["test-api", "test-reporter-api"],
+      },
+    ],
+  },
+  {
+    // An ORM's API is a paraphrase trap: models invent query-builder methods
+    // and column types that almost exist. The docs live in a separate website
+    // repository, not in drizzle-orm itself; release notes are skipped — a
+    // brain answering from changelogs mixes old and new APIs.
+    key: "drizzle",
+    repo: "drizzle-team/drizzle-orm-docs",
+    prefix: "src/content/docs/",
+    endings: [".mdx"],
+    skip: ["/latest-releases"],
+    topic: "web",
+    parent: {
+      slug: "drizzle",
+      title: "Drizzle ORM",
+      goal:
+        "Answer questions about Drizzle ORM as documented today: schema " +
+        "declaration and column types, the query builder and relational " +
+        "queries, migrations with drizzle-kit, transactions, relations, and " +
+        "connecting to every supported database and driver.",
+    },
+    children: [
+      {
+        slug: "drizzle-pg",
+        title: "Drizzle · PostgreSQL",
+        goal:
+          "Answer questions about Drizzle with PostgreSQL exactly as " +
+          "specified: pg-core column types and constraints, indexes, the " +
+          "query API for Postgres, and connecting through every Postgres " +
+          "driver — node-postgres, postgres.js, Neon, Supabase and the rest.",
+        areas: ["pg"],
+      },
+      {
+        slug: "drizzle-sqlite",
+        title: "Drizzle · SQLite",
+        goal:
+          "Answer questions about Drizzle with SQLite: sqlite-core column " +
+          "types, the query API, and every SQLite driver — better-sqlite3, " +
+          "libsql/Turso, D1, Bun and Expo SQLite.",
+        areas: ["sqlite"],
+      },
+      {
+        slug: "drizzle-mysql",
+        title: "Drizzle · MySQL",
+        goal:
+          "Answer questions about Drizzle with MySQL: mysql-core column " +
+          "types, the query API, and connecting through mysql2, PlanetScale " +
+          "and the other supported drivers.",
+        areas: ["mysql"],
+      },
+    ],
+  },
+  {
+    // Small framework, exact API: middleware signatures, context helpers and
+    // adapter specifics are easy to half-remember, and the framework ships
+    // fast enough that training data mixes versions. One brain — Hono is one
+    // job.
+    key: "hono",
+    repo: "honojs/website",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "web",
+    parent: {
+      slug: "hono",
+      title: "Hono",
+      goal:
+        "Answer questions about building web APIs with Hono as documented " +
+        "today: routing and context, every built-in middleware and helper " +
+        "with its exact options, validation, JSX, the RPC client, and " +
+        "running on every runtime — Cloudflare Workers, Deno, Bun, Node and " +
+        "the rest.",
+    },
+    children: [],
+  },
+  {
+    // The whole cloudflare-docs repo holds every Cloudflare product; the
+    // prefix scopes strictly to Workers, where the runtime APIs, bindings
+    // and wrangler configuration are specified precisely enough that a
+    // paraphrased wrangler.toml is a broken deploy.
+    key: "cloudflare",
+    repo: "cloudflare/cloudflare-docs",
+    prefix: "src/content/docs/workers/",
+    endings: [".mdx", ".md"],
+    topic: "web",
+    parent: {
+      slug: "cloudflare-workers",
+      title: "Cloudflare Workers",
+      goal:
+        "Answer questions about building on Cloudflare Workers as documented " +
+        "today: the request/response lifecycle, bindings to KV, D1, R2, " +
+        "Queues and Durable Objects, wrangler configuration, local " +
+        "development and testing, observability, limits and pricing " +
+        "relevant behaviour, and framework guides.",
+    },
+    children: [
+      {
+        slug: "cloudflare-runtime-apis",
+        title: "Cloudflare Workers · Runtime APIs",
+        goal:
+          "Answer questions about the Workers runtime APIs exactly as " +
+          "specified: fetch handlers and the Fetch API surface, Cache API, " +
+          "WebSockets, Streams, KV, R2, D1, Durable Objects, Queues, " +
+          "analytics and every other runtime binding with its methods and " +
+          "options.",
+        areas: ["runtime-apis"],
+      },
+      {
+        slug: "cloudflare-wrangler",
+        title: "Cloudflare Workers · Wrangler",
+        goal:
+          "Answer questions about wrangler and Worker configuration: every " +
+          "wrangler command with its flags, the wrangler.toml/jsonc " +
+          "configuration fields, environments, bindings declarations, " +
+          "migrations for Durable Objects, and secrets management.",
+        areas: ["wrangler", "configuration"],
+      },
+    ],
+  },
+  {
+    // Models quote shadcn/ui component props and theming from whatever
+    // version they memorised; the CLI, registry and CSS-variable theming are
+    // documented precisely and changed with Tailwind v4. The changelog
+    // directory is skipped — release notes would contradict the current docs.
+    key: "shadcn",
+    repo: "shadcn-ui/ui",
+    prefix: "apps/v4/content/docs/",
+    endings: [".mdx"],
+    skip: ["/changelog"],
+    topic: "web",
+    parent: {
+      slug: "shadcn-ui",
+      title: "shadcn/ui",
+      goal:
+        "Answer questions about shadcn/ui as documented today: installation " +
+        "per framework, the CLI and its commands, theming with CSS variables, " +
+        "dark mode, the registry, and every component's usage and props.",
+    },
+    children: [
+      {
+        slug: "shadcn-components",
+        title: "shadcn/ui · Components",
+        goal:
+          "Answer questions about each shadcn/ui component exactly as " +
+          "documented: installation, usage examples, props and variants for " +
+          "every component from accordion to typography.",
+        areas: ["components"],
+      },
+    ],
+  },
 ];
 
 interface Args {
