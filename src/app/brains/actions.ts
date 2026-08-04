@@ -61,8 +61,8 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   if (count >= limit) {
     return {
       error:
-        user.plan === "free"
-          ? "The free plan holds one brain. Upgrade to add more."
+        limit === 0
+          ? "Building brains is a Pro feature — the free plan reads, buys and connects. Upgrade in settings."
           : `You have reached ${limit} brains on the ${user.plan} plan.`,
     };
   }

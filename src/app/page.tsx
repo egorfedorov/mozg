@@ -440,8 +440,8 @@ export default async function Home() {
         >
           {[
             ["Using brains", "free, always", "searching spends no tokens and no credits — money is spent once, when a brain is built"],
-            ["Building your own", "free to start", "one brain on the free plan; $15/mo when you need twenty"],
-            ["Catalogue brains", "$0–29, once", "you see the exam score and the questions it passes before paying; 95% goes to the author"],
+            ["Building your own", "$25/mo", "twenty brains, a thousand sources each, agents write lessons back"],
+            ["Catalogue brains", "$0–49, once", "you see the exam score and the questions it passes before paying; 95% goes to the author"],
           ].map(([t, price, d]) => (
             <div key={t} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
               <p className="eyebrow" style={{ margin: 0 }}>
@@ -486,8 +486,8 @@ export default async function Home() {
               Stop explaining the same thing.
             </h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              The free plan holds one brain, fifty sources and three hundred agent
-              calls a month — enough to find out whether this works for you.
+              Free reads the catalogue, buys brains and connects your agents —
+              three hundred calls a month. Building your own starts at $25.
             </p>
           </div>
           <Link className="btn" href={user ? "/brains" : "/sign-in"}>

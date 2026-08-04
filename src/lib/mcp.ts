@@ -897,9 +897,13 @@ async function brainCreate(
   if (count >= limits.brains) {
     return {
       text:
-        `The ${owner.plan} plan holds ${limits.brains} brain${limits.brains === 1 ? "" : "s"} ` +
-        `and ${count} already exist. Tell the user to upgrade at mozg.sh/settings, ` +
-        "or to reuse an existing brain.",
+        limits.brains === 0
+          ? "Building brains is a Pro feature — this account's free plan reads, " +
+            "buys and connects. Tell the user to upgrade at mozg.sh/pricing; " +
+            "do not retry."
+          : `The ${owner.plan} plan holds ${limits.brains} brain${limits.brains === 1 ? "" : "s"} ` +
+            `and ${count} already exist. Tell the user to upgrade at mozg.sh/settings, ` +
+            "or to reuse an existing brain.",
       isError: true,
     };
   }

@@ -24,7 +24,9 @@ export interface PlanLimits {
 }
 
 export const PLANS: Record<Plan, PlanLimits> = {
-  free: { brains: 1, sources: 50, calls: 300, dailyExtractCents: 300, write: false, exports: false },
+  // Free reads, buys and connects; building is the paid act. Zero is a
+  // deliberate product decision, not a small limit.
+  free: { brains: 0, sources: 0, calls: 300, dailyExtractCents: 0, write: false, exports: false },
   pro: { brains: 20, sources: 1000, calls: 10_000, dailyExtractCents: 3000, write: true, exports: true },
   team: { brains: 100, sources: 5000, calls: 50_000, dailyExtractCents: 10_000, write: true, exports: true },
   // The operator's own account: the catalogue lives here, so the caps are

@@ -22,12 +22,12 @@ export const metadata = {
 
 const PLAN_PRICES: Record<string, string> = {
   free: "$0",
-  pro: "$15/mo",
-  team: "$49/mo",
+  pro: "$25/mo",
+  team: "$95/mo",
 };
 
 const PLAN_PITCH: Record<string, string> = {
-  free: "Enough to find out whether this works for you.",
+  free: "Read the catalogue, buy brains, connect your agents. Building is the paid act.",
   pro: "For one person who builds brains and works with agents daily.",
   team: "For a team feeding shared brains and many agents.",
 };
@@ -98,8 +98,12 @@ export default async function PricingPage() {
                     color: "var(--ink-2)",
                   }}
                 >
-                  <li>{p.brains === 1 ? "1 brain" : `${p.brains} brains`}</li>
-                  <li>{p.sources.toLocaleString()} sources per brain</li>
+                  <li>{p.brains === 0 ? "— building needs Pro" : `${p.brains} brains`}</li>
+                  <li>
+                    {p.sources === 0
+                      ? "catalogue + purchased brains"
+                      : `${p.sources.toLocaleString()} sources per brain`}
+                  </li>
                   <li>{p.calls.toLocaleString()} agent calls / month</li>
                   <li>{p.write ? "✓ agents write lessons back" : "— agents read only"}</li>
                   <li>{p.exports ? "✓ export as CLAUDE.md / Skill" : "— no export"}</li>
