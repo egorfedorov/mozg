@@ -8,7 +8,7 @@ import { currentUser } from "@/lib/session";
 import { requestPayout, MIN_PAYOUT_CENTS } from "@/lib/money";
 import { formatCents } from "@/lib/money-math";
 import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
-import { requestPlanUpgrade, payPlanFromBalance } from "@/lib/upgrade";
+import { requestPlanUpgrade, payPlanFromBalance, checkPromo } from "@/lib/upgrade";
 
 /** Handles are a public namespace — /b/{handle}/{slug} — so they are strict. */
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
@@ -158,7 +158,27 @@ export async function payUpgrade(_prev: unknown, formData: FormData) {
   const parsed = z.enum(["pro", "team"]).safeParse(formData.get("plan"));
   if (!parsed.success) return { error: "Unknown plan." };
 
-  const res = await payPlanFromBalance({ userId: user.id, plan: parsed.data });
+  // A wrong code must fail loudly before money moves — silently charging
+  // full price to someone who typed a code is how trust dies.
+  const promoCode = String(formData.get("promo") ?? "").trim();
+  if (promoCode) {
+    const check = await checkPromo(promoCode, user.id);
+    if (!check.ok) {
+      const why = {
+        unknown: "That code does not exist.",
+        expired: "That code has expired.",
+        exhausted: "That code has been fully used.",
+        "already-used": "You already used that code.",
+      }[check.reason ?? "unknown"];
+      return { error: `Promo code: ${why}` };
+    }
+  }
+
+  const res = await payPlanFromBalance({
+    userId: user.id,
+    plan: parsed.data,
+    promoCode: promoCode || undefined,
+  });
   if (!res.ok) {
     return { error: "Not enough on your balance. Top up below, then pay." };
   }

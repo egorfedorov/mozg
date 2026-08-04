@@ -101,6 +101,8 @@ export default function SiteFooter() {
         <span>mozg.sh</span>
         <span>Brains are licensed CC BY-NC-SA by default — copying is fine, reselling is not.</span>
         <span style={{ flex: 1 }} />
+        <a href="/beta">beta</a>
+        <a href="/changelog">changelog</a>
         <a href="/chat">chatmozg</a>
       </div>
     </footer>

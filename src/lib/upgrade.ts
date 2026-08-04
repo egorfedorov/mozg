@@ -72,9 +72,38 @@ export async function foundingSpotsLeft(): Promise<number> {
   return Math.max(0, FOUNDING_LIMIT - (row?.n ?? 0));
 }
 
+export interface PromoCheck {
+  ok: boolean;
+  percentOff?: number;
+  reason?: "unknown" | "expired" | "exhausted" | "already-used";
+}
+
+/** Validate a code for this user without spending it — the pricing UI's
+    "check" and the checkout's precondition share one truth. */
+export async function checkPromo(code: string, userId: string): Promise<PromoCheck> {
+  const promo = await maybeOne<{ percent_off: number; max_uses: number; expires_at: Date | null }>(
+    `select percent_off, max_uses, expires_at from promo_codes where code = $1`,
+    [code.trim().toUpperCase()],
+  );
+  if (!promo) return { ok: false, reason: "unknown" };
+  if (promo.expires_at && promo.expires_at < new Date()) return { ok: false, reason: "expired" };
+  const used = await maybeOne<{ n: number; mine: number }>(
+    `select count(*)::int as n,
+            count(*) filter (where user_id = $2)::int as mine
+       from promo_redemptions where code = $1`,
+    [code.trim().toUpperCase(), userId],
+  );
+  if ((used?.mine ?? 0) > 0) return { ok: false, reason: "already-used" };
+  if ((used?.n ?? 0) >= promo.max_uses) return { ok: false, reason: "exhausted" };
+  return { ok: true, percentOff: promo.percent_off };
+}
+
 export async function payPlanFromBalance(opts: {
   userId: string;
   plan: PaidPlan;
+  /** Optional promo code — the better of promo and founding applies, they
+      never stack: a discount on a discount is a pricing bug, not generosity. */
+  promoCode?: string;
 }): Promise<PayPlanResult> {
   return tx(async (client) => {
     // Lock first — two clicks a millisecond apart must not both see enough.
@@ -96,26 +125,66 @@ export async function payPlanFromBalance(opts: {
       );
       founding = spots.rows[0].n < FOUNDING_LIMIT;
     }
-    const priceCents = founding
-      ? Math.round(PLAN_PRICE_CENTS[opts.plan] / 2)
-      : PLAN_PRICE_CENTS[opts.plan];
+
+    // The promo, validated under the code's row lock so max_uses cannot be
+    // overrun by concurrent redeemers. The better of promo and founding
+    // applies — never both.
+    const code = opts.promoCode?.trim().toUpperCase() || null;
+    let promoPercent = 0;
+    if (code) {
+      const promo = await client.query<{ percent_off: number; max_uses: number; expires_at: Date | null }>(
+        `select percent_off, max_uses, expires_at from promo_codes
+          where code = $1 for update`,
+        [code],
+      );
+      if (promo.rows.length && (!promo.rows[0].expires_at || promo.rows[0].expires_at > new Date())) {
+        const used = await client.query<{ n: number; mine: number }>(
+          `select count(*)::int as n,
+                  count(*) filter (where user_id = $2)::int as mine
+             from promo_redemptions where code = $1`,
+          [code, opts.userId],
+        );
+        if (used.rows[0].mine === 0 && used.rows[0].n < promo.rows[0].max_uses) {
+          promoPercent = promo.rows[0].percent_off;
+        }
+      }
+    }
+
+    const foundingPercent = founding ? 50 : 0;
+    const promoWins = promoPercent > foundingPercent;
+    const percentOff = Math.max(promoPercent, foundingPercent);
+    const fullCents = PLAN_PRICE_CENTS[opts.plan];
+    const priceCents = Math.round((fullCents * (100 - percentOff)) / 100);
 
     // The insufficient return COMMITS (tx only rolls back on throw), so the
-    // spot is claimed strictly after the money clears.
+    // spot and the redemption are claimed strictly after the money clears.
     if (locked.rows[0].balance_cents < priceCents) {
       return { ok: false as const, reason: "insufficient" as const };
     }
     if (founding && !wasFounding) {
       await client.query(`update "user" set founding = true where id = $1`, [opts.userId]);
     }
+    if (promoWins && code) {
+      await client.query(
+        `insert into promo_redemptions (code, user_id, plan, discount_cents)
+         values ($1, $2, $3, $4)`,
+        [code, opts.userId, opts.plan, fullCents - priceCents],
+      );
+    }
 
-    await move({
-      client,
-      userId: opts.userId,
-      amountCents: -priceCents,
-      kind: "plan",
-      note: `${opts.plan} plan, ${PLAN_PERIOD_DAYS} days${founding ? ", founding −50%" : ""}`,
-    });
+    // A 100% code buys the month with no money moving — the ledger records
+    // movements, not gifts, and move() rightly refuses a zero.
+    if (priceCents > 0) {
+      await move({
+        client,
+        userId: opts.userId,
+        amountCents: -priceCents,
+        kind: "plan",
+        note:
+          `${opts.plan} plan, ${PLAN_PERIOD_DAYS} days` +
+          (promoWins ? `, promo ${code} −${percentOff}%` : founding ? ", founding −50%" : ""),
+      });
+    }
 
     await client.query(
       `update "user"

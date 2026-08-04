@@ -6,9 +6,36 @@ import { NextRequest, NextResponse } from "next/server";
  * subdomain are rewritten into /learn, so the service has clean URLs
  * (learn.mozg.sh/mozg/expo) without a second deployment to operate.
  */
+const SESSION_COOKIE = "__Secure-better-auth.session_token";
+const MIGRATED_MARK = "ck_domain";
+
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
-  if (!host.startsWith("learn.")) return NextResponse.next();
+  if (!host.startsWith("learn.")) {
+    // Sessions issued before cookies widened to .mozg.sh are pinned to this
+    // host and invisible to learn.mozg.sh. Re-issue the same token once with
+    // the wide domain — the marker cookie stops us doing it on every request.
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    if (host.startsWith("mozg.sh") && token && !req.cookies.get(MIGRATED_MARK)) {
+      const res = NextResponse.next();
+      res.cookies.set(SESSION_COOKIE, token, {
+        domain: ".mozg.sh",
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      res.cookies.set(MIGRATED_MARK, "1", {
+        domain: ".mozg.sh",
+        path: "/",
+        secure: true,
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return res;
+    }
+    return NextResponse.next();
+  }
 
   const { pathname } = req.nextUrl;
 

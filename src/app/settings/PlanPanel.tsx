@@ -75,14 +75,29 @@ export default function PlanPanel({
             </div>
 
             <span style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-              {balanceCents >= PLAN_PRICE_CENTS[plan] && (
-                <form action={payAction}>
-                  <input type="hidden" name="plan" value={plan} />
-                  <button className="btn" type="submit" disabled={payPending}>
-                    {payPending ? "Paying…" : `Pay ${formatCents(PLAN_PRICE_CENTS[plan])} from balance`}
-                  </button>
-                </form>
-              )}
+              {/* Always rendered: a 100% promo code makes the month free, so
+                  hiding the form behind the full-price balance check would
+                  lock out exactly the person the code was minted for. */}
+              <form action={payAction} style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
+                <input type="hidden" name="plan" value={plan} />
+                <input
+                  name="promo"
+                  placeholder="Promo code"
+                  autoComplete="off"
+                  style={{
+                    width: "9.5rem",
+                    padding: ".45rem .6rem",
+                    border: "1.5px solid var(--ink)",
+                    background: "var(--paper)",
+                    font: "inherit",
+                    fontSize: ".8125rem",
+                    textTransform: "uppercase",
+                  }}
+                />
+                <button className="btn" type="submit" disabled={payPending}>
+                  {payPending ? "Paying…" : `Pay ${formatCents(PLAN_PRICE_CENTS[plan])} from balance`}
+                </button>
+              </form>
               {!pending && (
                 <form action={reqAction}>
                   <input type="hidden" name="plan" value={plan} />
