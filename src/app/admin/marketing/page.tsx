@@ -596,6 +596,26 @@ export default async function MarketingPage() {
 
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Evergreen</h2>
       <Block
+        title="Star ask — tweet-length"
+        hint="pick one; first is strongest"
+        text={
+          "EN:\n" +
+          "We open-sourced a brain that has to pass an exam before your AI " +
+          "agent trusts it.\n" +
+          "Every user makes it smarter. A star makes it findable. ⭐\n" +
+          "github.com/egorfedorov/mozg\n\n" +
+          "EN (cheeky):\n" +
+          "My code answers exam questions. Yours just vibes.\n" +
+          "Open source, AGPL, free catalogue ⭐ github.com/egorfedorov/mozg\n\n" +
+          "RU:\n" +
+          "Открыл исходники mozg — мозги для ИИ-агентов, которые сдают " +
+          "экзамен, прежде чем им верить.\n" +
+          "Чем больше людей пользуется — тем умнее мозги. Звезда = следующий " +
+          "человек его найдёт ⭐\n" +
+          "github.com/egorfedorov/mozg"
+        }
+      />
+      <Block
         title="The star ask"
         hint="X / Discord / end of any post — never begs, always trades"
         text={
