@@ -123,6 +123,31 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: "brain_feedback",
+    description:
+      "Report that a specific note is wrong, outdated or misleading — after " +
+      "you verified it against reality (the API answered differently, the " +
+      "docs changed, the code contradicts it). The note keeps answering until " +
+      "its owner reviews the report; say what you observed, not just that you " +
+      "disagree. Do not use this for notes that are merely incomplete — " +
+      "brain_write a better one instead where you have write access.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Brain handle." },
+        note_id: { type: "string", description: "id from a brain_search result." },
+        reason: {
+          type: "string",
+          description:
+            "What is wrong and how you know — one or two sentences with the " +
+            "observed behaviour.",
+        },
+      },
+      required: ["brain", "note_id", "reason"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "brain_create",
     description:
       "Create a new brain. Use when the user asks to start one, or when you " +
@@ -323,6 +348,8 @@ export async function callTool(
       return brainRead(args, owner);
     case "brain_write":
       return brainWrite(args, owner);
+    case "brain_feedback":
+      return brainFeedback(args, owner);
     case "brain_create":
       return brainCreate(args, owner);
     case "brain_add_source":
@@ -771,6 +798,50 @@ async function brainWrite(
             "brain_read that note and write again stating what it gets wrong."
           : "")
       : `Saved to ${handle}. It is searchable now.`,
+    brainId: resolved.brain.id,
+    ownerId: resolved.brain.owner_id,
+    results: 1,
+  };
+}
+
+/**
+ * An agent reports a note as wrong. Any reader may flag — a viewer of a
+ * bought brain caught the bug in production, and that is exactly the reader
+ * whose report matters. Idempotent per reader+note via the unique constraint.
+ */
+async function brainFeedback(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+
+  const reason = String(args.reason ?? "").trim().slice(0, 1000);
+  if (!reason) {
+    return { text: "Say what you observed — an empty report helps nobody.", isError: true };
+  }
+
+  const note = await maybeOne<{ id: string; title: string }>(
+    `select id, title from notes where id = $1 and brain_id = $2 and status = 'active'`,
+    [String(args.note_id ?? ""), resolved.brain.id],
+  );
+  if (!note) {
+    return { text: `No active note ${args.note_id} in ${handle}.`, isError: true };
+  }
+
+  await query(
+    `insert into note_flags (brain_id, note_id, caller_id, reason)
+     values ($1, $2, $3, $4)
+     on conflict (note_id, caller_id) do update set reason = $4, created_at = now()`,
+    [resolved.brain.id, note.id, owner.userId, reason],
+  );
+
+  return {
+    text:
+      `Reported "${note.title}" to the owner of ${handle}. The note keeps ` +
+      "answering until they review it — if your task needs the corrected fact " +
+      "now, state it to the user directly rather than re-searching.",
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,

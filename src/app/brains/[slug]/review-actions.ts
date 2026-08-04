@@ -34,6 +34,24 @@ export async function approveNote(formData: FormData) {
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
 
+/**
+ * Close an agent's flag on a note. Either the owner fixed the note (or
+ * removed it on the notes page) and the report did its job, or they looked
+ * and disagreed — both end the same way: the flag is resolved by a human
+ * who read it, which is all a flag ever asks for.
+ */
+export async function dismissFlag(formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  await query(
+    `delete from note_flags f using brains b
+      where f.id = $1 and b.id = f.brain_id and b.owner_id = $2`,
+    [String(formData.get("id")), user.id],
+  );
+  revalidatePath(`/brains/${String(formData.get("slug"))}`);
+}
+
 export async function rejectNote(formData: FormData) {
   const user = await currentUser();
   if (!user) redirect("/sign-in");

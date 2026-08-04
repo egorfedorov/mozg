@@ -6,7 +6,7 @@ import { query } from "@/db";
  */
 
 export interface Attention {
-  kind: "review" | "failed" | "no-goal" | "gap" | "unexamined" | "unreachable";
+  kind: "review" | "failed" | "no-goal" | "gap" | "unexamined" | "unreachable" | "flagged";
   brainSlug: string;
   brainTitle: string;
   count?: number;
@@ -45,7 +45,7 @@ export async function dashboardStats(userId: string): Promise<DashboardStats> {
  * belong on the screen.
  */
 export async function needsAttention(userId: string): Promise<Attention[]> {
-  const [pending, failed, noGoal, unexamined, gaps, unreachable] = await Promise.all([
+  const [pending, failed, noGoal, unexamined, gaps, unreachable, flagged] = await Promise.all([
     query<{ slug: string; title: string; n: number }>(
       `select b.slug, b.title, count(*)::int as n
          from notes n join brains b on b.id = n.brain_id
@@ -107,9 +107,31 @@ export async function needsAttention(userId: string): Promise<Attention[]> {
         group by b.slug, b.title order by n desc`,
       [userId],
     ),
+    // Agent reports on live notes. First in the list below: someone's task
+    // already hit the bad note — this is the freshest signal on the screen.
+    query<{ slug: string; title: string; n: number }>(
+      `select b.slug, b.title, count(*)::int as n
+         from note_flags f
+         join notes n on n.id = f.note_id and n.status = 'active'
+         join brains b on b.id = f.brain_id
+        where b.owner_id = $1
+        group by b.slug, b.title order by n desc`,
+      [userId],
+    ),
   ]);
 
   const items: Attention[] = [];
+
+  for (const r of flagged) {
+    items.push({
+      kind: "flagged",
+      brainSlug: r.slug,
+      brainTitle: r.title,
+      count: r.n,
+      detail: `${r.n} note${r.n === 1 ? "" : "s"} flagged as wrong by agents mid-task`,
+      href: `/brains/${r.slug}`,
+    });
+  }
 
   for (const r of pending) {
     items.push({

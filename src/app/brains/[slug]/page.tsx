@@ -9,7 +9,7 @@ import AddUrls from "@/components/AddUrls";
 import GoalEditor from "@/components/GoalEditor";
 import CallLog from "@/components/CallLog";
 import AutoRefresh from "@/components/AutoRefresh";
-import { approveNote, rejectNote } from "./review-actions";
+import { approveNote, rejectNote, dismissFlag } from "./review-actions";
 import { runExamNow, addCheck, removeCheck } from "./exam-actions";
 import { retrySource, deleteSource, waiveScan } from "./source-actions";
 import { maybeOne, query } from "@/db";
@@ -56,7 +56,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -119,6 +119,14 @@ export default async function BrainPage({
         ) and not r.passed
         order by c.category, c.question
         limit 30`,
+      [brain.id],
+    ),
+    query<{ id: string; note_id: string; note_title: string; reason: string; flagged_at: string }>(
+      `select f.id, f.note_id, n.title as note_title, f.reason,
+              to_char(f.created_at at time zone 'UTC', 'YYYY-MM-DD') as flagged_at
+         from note_flags f join notes n on n.id = f.note_id
+        where f.brain_id = $1 and n.status = 'active'
+        order by f.created_at desc limit 20`,
       [brain.id],
     ),
   ]);
@@ -415,6 +423,61 @@ export default async function BrainPage({
         <section style={{ marginTop: "2rem" }}>
           <CallLog brainId={brain.id} recent={recentCalls} />
         </section>
+
+        {flags.length > 0 && (
+          <section style={{ marginTop: "3rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                marginBottom: "1rem",
+              }}
+            >
+              <h2 className="h2">Agents flagged these notes</h2>
+              <span className="eyebrow">{flags.length} report{flags.length === 1 ? "" : "s"}</span>
+            </div>
+            <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
+              An agent using this brain mid-task says a note did not match
+              reality. The note keeps answering until you decide — fix or
+              remove it on the notes page, then close the report.
+            </p>
+            <div className="panel" style={{ padding: 0 }}>
+              {flags.map((f) => (
+                <div
+                  key={f.id}
+                  style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--rule)" }}
+                >
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "baseline" }}>
+                    <strong style={{ flex: 1 }}>{f.note_title}</strong>
+                    <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
+                      {f.flagged_at}
+                    </span>
+                  </div>
+                  <p style={{ margin: ".4rem 0 .75rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+                    {f.reason}
+                  </p>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <Link
+                      className="mono"
+                      style={{ fontSize: ".8125rem", textDecoration: "underline" }}
+                      href={`/brains/${brain.slug}/notes?q=${encodeURIComponent(f.note_title.slice(0, 40))}`}
+                    >
+                      open the note →
+                    </Link>
+                    <form action={dismissFlag}>
+                      <input type="hidden" name="id" value={f.id} />
+                      <input type="hidden" name="slug" value={brain.slug} />
+                      <button className="mono" style={linkButton}>
+                        handled — close report
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {pending.length > 0 && (
           <section style={{ marginTop: "3rem" }}>

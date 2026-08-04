@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Your brains — mozg" };
 
 const ATTENTION: Record<string, { tint: "red" | "blue" | "violet" | "orange"; action: string }> = {
+  flagged: { tint: "red", action: "Look" },
   review: { tint: "violet", action: "Review" },
   failed: { tint: "red", action: "Look" },
   "no-goal": { tint: "orange", action: "Set a goal" },
