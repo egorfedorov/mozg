@@ -14,6 +14,10 @@ import type { NoteKind } from "@/db/types";
 
 const NOTE_KINDS = ["fact", "rule", "layout", "example", "pitfall"] as const;
 
+/** Bumped when the extraction prompt changes meaningfully — it invalidates
+ *  the extraction cache, which cannot see the prompt any other way. */
+export const EXTRACT_PROMPT_VERSION = "v2";
+
 export interface ExtractedNote {
   title: string;
   body: string;
@@ -119,9 +123,12 @@ function systemPrompt(
     // currently fails. Every (re)read is a chance to close them.
     ...(focus.length
       ? [
-          "The brain currently FAILS these exam questions. If this source",
-          "contains their answers, capture them precisely — exact values,",
-          "exact names — even if you would otherwise judge the detail minor:",
+          "IN ADDITION to the full extraction above — never instead of it —",
+          "the brain currently FAILS these exam questions. If this source",
+          "contains their answers, capture them precisely, exact values and",
+          "exact names, even if you would otherwise judge the detail minor.",
+          "Do not narrow the rest of your extraction because of this list;",
+          "everything the goal needs still gets extracted as usual:",
           ...focus.map((q) => `- ${q}`),
           "",
         ]

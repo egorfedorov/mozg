@@ -4,7 +4,7 @@ import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { limitsFor } from "@/lib/plans";
 import { embedPassages } from "@/lib/embed";
-import { extractFromImage, extractFromPdf, extractFromText, type ExtractResult } from "@/lib/extract";
+import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSION, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
 import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
@@ -338,7 +338,7 @@ async function cachedTextExtract(
   const key = [
     contentHash(text),
     env.MODEL_EXTRACT,
-    contentHash(`${brain.goal ?? ""}\n${focus.join("\n")}`),
+    contentHash(`${EXTRACT_PROMPT_VERSION}\n${brain.goal ?? ""}\n${focus.join("\n")}`),
   ];
 
   const hit = await maybeOne<{ payload: ExtractResult }>(

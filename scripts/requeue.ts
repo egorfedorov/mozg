@@ -59,10 +59,12 @@ async function main() {
   console.log(`\nrequeuing ${sources.length} source(s)${reread ? " for a full re-read" : ""}\n`);
   for (const s of sources) {
     if (reread) {
-      // Drop what the old prompt produced, or the brain keeps the summaries
-      // next to the verbatim rewrite. The cached payload goes with it — that
-      // cache is exactly what pins a source to the prompt it was read with.
-      await query(`delete from notes where source_id = $1`, [s.id]);
+      // The old notes STAY. A re-read that comes back narrower than the
+      // original must not be able to lose knowledge — this happened: a
+      // focused re-read dropped a brain from 80% to 60% because deletion ran
+      // first. New notes supersede their near-duplicates through the normal
+      // dedup; genuinely new facts add; old facts nothing replaced survive.
+      // Knowledge ratchets up or stays — never silently down.
     }
     await query(
       `update sources set status = 'queued', error = null, reject_reason = null,
