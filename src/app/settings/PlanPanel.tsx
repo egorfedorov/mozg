@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useActionState } from "react";
-import { requestUpgrade, payUpgrade } from "./actions";
+import { requestUpgrade, payUpgrade, checkPromoAction } from "./actions";
 import { formatCents } from "@/lib/money-math";
 import { PLAN_PRICE_CENTS, type PaidPlan } from "@/lib/plans";
 
@@ -30,6 +31,25 @@ export default function PlanPanel({
   const [reqState, reqAction, reqPending] = useActionState(requestUpgrade, null);
   const [payState, payAction, payPending] = useActionState(payUpgrade, null);
 
+  // The promo field checks itself the moment it is applied: the button price
+  // updates when the code is real, the reason shows when it is not — nobody
+  // should learn a code's fate from a failed payment.
+  const [promo, setPromo] = useState("");
+  const [promoResult, setPromoResult] = useState<
+    null | { ok: true; percentOff: number } | { ok: false; message: string }
+  >(null);
+  const [checking, startChecking] = useTransition();
+  const activeCode = promoResult?.ok ? promo : "";
+  const priceFor = (plan: PaidPlan) =>
+    promoResult?.ok
+      ? Math.round((PLAN_PRICE_CENTS[plan] * (100 - promoResult.percentOff)) / 100)
+      : PLAN_PRICE_CENTS[plan];
+  function applyPromo() {
+    const code = promo.trim();
+    if (!code) return setPromoResult(null);
+    startChecking(async () => setPromoResult(await checkPromoAction(code)));
+  }
+
   if (!targets.length) return null;
 
   return (
@@ -49,6 +69,37 @@ export default function PlanPanel({
           live immediately, or ask and we switch the account by hand.
         </p>
       )}
+
+      <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", alignItems: "center", marginTop: "1rem" }}>
+        <input
+          value={promo}
+          onChange={(e) => { setPromo(e.target.value.toUpperCase()); setPromoResult(null); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
+          placeholder="Promo code"
+          autoComplete="off"
+          style={{
+            width: "11rem",
+            padding: ".45rem .6rem",
+            border: promoResult ? `1.5px solid var(${promoResult.ok ? "--color-riso-green" : "--color-riso-red"})` : "1.5px solid var(--ink)",
+            background: "var(--paper)",
+            font: "inherit",
+            fontSize: ".8125rem",
+          }}
+        />
+        <button type="button" className="btn btn-ghost" onClick={applyPromo} disabled={checking || !promo.trim()} style={{ padding: ".45rem .8rem" }}>
+          {checking ? "Checking…" : "Apply"}
+        </button>
+        {promoResult?.ok && (
+          <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-green)" }}>
+            {promoResult.percentOff === 100 ? "free month applied" : `−${promoResult.percentOff}% applied`}
+          </span>
+        )}
+        {promoResult && !promoResult.ok && (
+          <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-red)" }}>
+            {promoResult.message}
+          </span>
+        )}
+      </div>
 
       <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
         {targets.map((plan) => (
@@ -80,23 +131,19 @@ export default function PlanPanel({
                   lock out exactly the person the code was minted for. */}
               <form action={payAction} style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
                 <input type="hidden" name="plan" value={plan} />
-                <input
-                  name="promo"
-                  placeholder="Promo code"
-                  autoComplete="off"
-                  style={{
-                    width: "9.5rem",
-                    padding: ".45rem .6rem",
-                    border: "1.5px solid var(--ink)",
-                    background: "var(--paper)",
-                    font: "inherit",
-                    fontSize: ".8125rem",
-                    textTransform: "uppercase",
-                  }}
-                />
+                <input type="hidden" name="promo" value={activeCode} />
                 <button className="btn" type="submit" disabled={payPending}>
-                  {payPending ? "Paying…" : `Pay ${formatCents(PLAN_PRICE_CENTS[plan])} from balance`}
+                  {payPending
+                    ? "Paying…"
+                    : priceFor(plan) === 0
+                      ? "Activate the free month"
+                      : `Pay ${formatCents(priceFor(plan))} from balance`}
                 </button>
+                {promoResult?.ok && priceFor(plan) > 0 && (
+                  <s className="mono" style={{ alignSelf: "center", fontSize: ".75rem", color: "var(--ink-3)" }}>
+                    {formatCents(PLAN_PRICE_CENTS[plan])}
+                  </s>
+                )}
               </form>
               {!pending && (
                 <form action={reqAction}>

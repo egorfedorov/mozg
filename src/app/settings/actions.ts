@@ -147,6 +147,25 @@ export async function requestUpgrade(_prev: unknown, formData: FormData) {
   return { ok: true as const, plan: parsed.data };
 }
 
+/** Live promo validation for the checkout UI — same truth the payment uses. */
+export async function checkPromoAction(
+  code: string,
+): Promise<{ ok: true; percentOff: number } | { ok: false; message: string }> {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  const check = await checkPromo(code, user.id);
+  if (check.ok) return { ok: true, percentOff: check.percentOff! };
+  return {
+    ok: false,
+    message: {
+      unknown: "That code does not exist.",
+      expired: "That code has expired.",
+      exhausted: "That code has been fully used.",
+      "already-used": "You already used that code.",
+    }[check.reason ?? "unknown"],
+  };
+}
+
 /**
  * Buy a month of the plan from the balance. The price is read inside
  * payPlanFromBalance's own transaction — never from this form.
