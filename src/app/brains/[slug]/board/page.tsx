@@ -67,14 +67,22 @@ export default async function BoardPage({
     gapsByCategory.set(g.category, [...(gapsByCategory.get(g.category) ?? []), g.question]);
   }
 
-  // Columns: every category either the notes or the exam knows about.
+  // Columns: every category either the notes or the exam knows about — but
+  // work first: columns with empty slots lead, then the fullest, and a
+  // column with neither cards nor gaps is a label, not a column.
   const columns = [
     ...new Set([
       ...groups.map((g) => g.category),
       ...byCategory.keys(),
       ...gapsByCategory.keys(),
     ]),
-  ];
+  ]
+    .filter((c) => (byCategory.get(c)?.length ?? 0) > 0 || (gapsByCategory.get(c)?.length ?? 0) > 0)
+    .sort(
+      (a, b) =>
+        (gapsByCategory.get(b)?.length ?? 0) - (gapsByCategory.get(a)?.length ?? 0) ||
+        (byCategory.get(b)?.length ?? 0) - (byCategory.get(a)?.length ?? 0),
+    );
   const stateOf = (c: string) => groups.find((g) => g.category === c)?.state ?? "unexamined";
 
   return (
