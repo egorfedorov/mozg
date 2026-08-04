@@ -17,10 +17,10 @@ export default function LearnShell({ children }: { children: React.ReactNode }) 
           <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
             a mozg service
           </span>
-          <Link className="mono" href="/explore" style={{ marginLeft: "auto", fontSize: ".8125rem" }}>
+          <Link className="mono" href="https://mozg.sh/explore" style={{ marginLeft: "auto", fontSize: ".8125rem" }}>
             catalogue
           </Link>
-          <Link className="mono" href="/" style={{ fontSize: ".8125rem" }}>
+          <Link className="mono" href="https://mozg.sh" style={{ fontSize: ".8125rem" }}>
             mozg.sh →
           </Link>
         </div>

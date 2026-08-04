@@ -32,6 +32,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // The shared footer and shell link to mozg pages with relative hrefs (they
+  // must — the same components render on mozg.sh). On this host those paths
+  // belong to the main site, so they go home instead of 404ing under /learn.
+  const MOZG_PATHS = [
+    "/why", "/vs", "/vs-skills", "/collective", "/make", "/guide", "/connect",
+    "/explore", "/pricing", "/beta", "/changelog", "/chat", "/brains",
+    "/settings", "/b", "/mind", "/gift", "/pay", "/admin", "/llms.txt",
+  ];
+  if (MOZG_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);
+  }
+
   const url = req.nextUrl.clone();
   url.pathname = `/learn${pathname === "/" ? "" : pathname}`;
   return NextResponse.rewrite(url);
