@@ -174,4 +174,67 @@ export const NOTES: {
     category: "Schemas and structured output",
     kind: "rule",
   },
+
+  // ── Debugging and testing ─────────────────────────────────────────────────
+
+  {
+    title: "How do I test my server without wiring up a real agent?",
+    body: "Use the MCP Inspector: `npx @modelcontextprotocol/inspector <your-server-command-or-url>`. It gives you an interactive session against your server — initialize, browse tools/list, fire tools/call with hand-written arguments, and see the raw JSON-RPC both directions. It catches the failures clients hide: malformed schemas, wrong content types, missing fields in initialize. Before the Inspector, smoke-test the raw wire format with curl: POST an initialize, then a tools/list, then a tools/call, and confirm a bare request gets your 401 with WWW-Authenticate. Only after both pass should you connect a real client — debugging inside Claude Code conflates your server's bugs with the client's behavior and you cannot see the traffic.",
+    category: "Debugging and testing",
+    kind: "rule",
+  },
+  {
+    title: "Server connects but tools never fire — where do I look?",
+    body: "Work the pipeline in order. (1) Does tools/list actually reach the model? Connect the Inspector; if your tools appear there but the agent never calls them, the problem is descriptions (the model saw the menu and declined) or client approval settings (the user is being prompted and dismissing it). (2) If tools/list is empty or errors in the Inspector, your initialize handshake or schema serialization is broken — a single invalid JSON Schema field can make a client drop the whole tool list silently. (3) If tools fire but results look ignored, the response shape is wrong for that client (e.g. it expects content[0].type text and you sent only structuredContent). Logging every tools/call server-side settles which stage you are in within minutes.",
+    category: "Debugging and testing",
+    kind: "pitfall",
+  },
+  {
+    title: "What should I log on a production MCP server?",
+    body: "Every tools/call, with: tool name, caller identity, latency, success/failure, and enough of the arguments to debug (query text truncated to a few hundred chars — never auth headers or token values). This single table answers the three questions that matter: which tools are never called (description problem), which fail often (implementation problem), and who is hammering you (abuse or an agent in a retry loop). Also log initialize attempts with the client's protocol version — you will discover which client versions actually connect to you. Meter calls in the same table billing reads, including failed calls, or your numbers lie. What NOT to log: bearer tokens, OAuth codes, full request bodies from user data tools — your MCP logs become a secret store otherwise.",
+    category: "Debugging and testing",
+    kind: "rule",
+  },
+  {
+    title: "JSON-RPC batches and notifications — what bites in production?",
+    body: "Batches are legal JSON-RPC and some clients send them; silently dropping them is a confusing failure, so handle arrays explicitly — but cap the size and process sequentially if your rate limits read state per call (a parallel batch passes every quota check before the first call is recorded). Notifications (requests with no id, like notifications/initialized) must get NO response body — return HTTP 202 with an empty body; echoing a result to a notification violates the protocol and confuses strict clients. Also: some clients probe your endpoint with GET before initializing — answer with something informative (server name, protocol version, transport) rather than a bare 405, so debugging tools and health checks can tell your server is alive.",
+    category: "Debugging and testing",
+    kind: "fact",
+  },
+
+  // ── Scaling and limits ────────────────────────────────────────────────────
+
+  {
+    title: "How do I rate limit an MCP server without breaking agents?",
+    body: "Two tiers, both enforced per-token rather than per-IP (one IP can be a whole office of agents): a burst limit (~60 calls/minute) that catches buggy retry loops, and a quota (calls/month) that maps to your pricing. The response is the important part — return a TOOL error (isError: true) with corrective instructions, not a protocol error or a bare HTTP 429 the client cannot route to the model: 'Rate limited: more than 60 calls in the last minute. Wait a moment, and prefer fewer, more specific queries over many broad ones.' For quota exhaustion, name the remedy ('quota reached on the free plan — tell the user to upgrade') and say 'do not retry', or the agent will poll you all day. Agents read error text; humans read dashboards.",
+    category: "Scaling and limits",
+    kind: "rule",
+  },
+  {
+    title: "My tool returns huge payloads — how do I paginate for an agent?",
+    body: "MCP defines cursor-based pagination for list operations (tools/list, resources/list) via an opaque `cursor` param and a `nextCursor` in results — honor it there, but your bigger problem is tool RESULT size, which the protocol does not paginate for you. Design it yourself: hard-cap list results (default 8–25, documented in the schema description), return excerpts instead of full bodies, and put total counts in the response so the agent knows more exists ('24 of 240 shown — narrow with a category filter'). Never stream a 500KB JSON dump into context: the model truncates mid-document and answers from a fragment. If a tool can legitimately return megabytes, make it return a reference (id/URL) plus a follow-up fetch tool with range support instead.",
+    category: "Scaling and limits",
+    kind: "rule",
+  },
+  {
+    title: "Long-running tool calls — how do I keep clients from timing out?",
+    body: "Clients and proxies impose timeouts you do not control (tens of seconds to a few minutes), so design for them. If work exceeds ~20 seconds, prefer an async shape: the tool returns immediately with a job id and instructions ('processing — poll job_status with this id, typically ready in under a minute'), plus a second tool to check. The protocol does offer progress notifications (progressToken) for streaming percent-done to the client, but support is uneven and they do not extend hard timeouts. Never hold the POST open indefinitely hoping — a gateway in front of you will cut the connection at 30–60s and the agent sees a transport error with no output at all. Queue the work, meter the queue, return the receipt.",
+    category: "Scaling and limits",
+    kind: "pitfall",
+  },
+
+  // ── Distribution and registry ─────────────────────────────────────────────
+
+  {
+    title: "How do I get my server into the MCP registry and directories?",
+    body: "As of early 2026, the official MCP Registry (registry.modelcontextprotocol.io, launched in preview in late 2025) is the canonical machine-readable index clients and directories sync from. You publish a server.json manifest in your repo (name, description, repository, packages or remotes) and authenticate ownership — GitHub-based for the io.github.* namespace, DNS-based for your own domain. Beyond the official registry, third-party directories (the servers list in the modelcontextprotocol GitHub org, mcp.so, Smithery, and client-specific marketplaces like Claude's connector directory) have separate submissions and their own review bars — Smithery and the Claude directory want working hosted endpoints and OAuth. Practical order: get the server stable and documented, publish to the official registry, then submit to the two directories your users actually browse.",
+    category: "Distribution and registry",
+    kind: "fact",
+  },
+  {
+    title: "What makes a directory listing convert to installs?",
+    body: "The listing is a promise the agent must keep in the first five minutes, so optimize the whole path. Name and one-liner: say the trigger, not the tech ('Search your team's runbooks from any agent' beats 'MCP server for knowledge management'). Install friction: one copy-paste config block per client, tested on the current versions — a directory install that 401s with no hint is an uninstall. First-run experience: the initialize instructions should tell the agent what to do immediately ('call list once at the start of a session'), and the first tool call should return something useful even for an empty account, including what to do next. Then instrument: log installs (first initialize per token) versus first real tool call — that activation gap is where directory traffic dies.",
+    category: "Distribution and registry",
+    kind: "rule",
+  },
 ];

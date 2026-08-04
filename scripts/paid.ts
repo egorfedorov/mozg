@@ -22,6 +22,10 @@ import { NOTES as complianceNotes } from "../content/paid/compliance";
 import { NOTES as auditorNotes } from "../content/paid/auditor";
 import { NOTES as appstoreNotes } from "../content/paid/appstore";
 import { NOTES as quantNotes } from "../content/paid/quant";
+import { NOTES as pixijsNotes } from "../content/paid/pixijs";
+import { NOTES as stripeNotes } from "../content/paid/stripe";
+import { NOTES as solanaNotes } from "../content/paid/solana";
+import { NOTES as mcpdevNotes } from "../content/paid/mcpdev";
 
 export interface PaidNote {
   title: string;
@@ -98,6 +102,68 @@ const PAID: PaidPack[] = [
     topic: "trading",
     priceCents: 2900,
     load: async () => quantNotes,
+  },
+  {
+    key: "pixijs",
+    slug: "pixijs-casino",
+    title: "PixiJS 8 for Casino Games",
+    goal:
+      "Answer the questions of building a casino or slot game frontend on " +
+      "PixiJS 8: the v8 API and its migration traps from v7, render loop " +
+      "and ticker discipline, texture memory management and GPU leaks, " +
+      "batching and draw-call budgets, reel and symbol architecture, " +
+      "Spine integration, mobile performance budgets, and the asset " +
+      "loading lifecycle — as production rules with numbers, not theory.",
+    topic: "gamedev",
+    priceCents: 2900,
+    load: async () => pixijsNotes,
+  },
+  {
+    key: "stripe",
+    slug: "stripe-in-production",
+    title: "Stripe in Production",
+    goal:
+      "Answer the production questions the Stripe API docs do not cover: " +
+      "webhook delivery semantics and idempotency, subscription lifecycle " +
+      "and status transitions, dunning and failed-payment recovery, " +
+      "Checkout and Payment Intent flows with SCA, testing strategy and " +
+      "going live, migrating subscribers between accounts, billing edge " +
+      "cases, and dispute handling — the failure modes that cost money.",
+    topic: "web",
+    priceCents: 1900,
+    load: async () => stripeNotes,
+  },
+  {
+    key: "solana",
+    slug: "solana-anchor-auditor",
+    title: "Solana & Anchor Auditor",
+    goal:
+      "Answer like a security auditor reviewing Solana programs and Anchor " +
+      "code: the account-model attack classes (missing signer and owner " +
+      "checks, account confusion, reinitialization), PDA and bump pitfalls, " +
+      "arbitrary CPI and program confusion, what Anchor constraints " +
+      "actually enforce, token math and Token-2022 hazards, the mechanics " +
+      "of real Solana incidents, and the tooling and manual workflow of " +
+      "an audit.",
+    topic: "security",
+    priceCents: 4900,
+    load: async () => solanaNotes,
+  },
+  {
+    key: "mcpdev",
+    slug: "mcp-server-development",
+    title: "MCP Server Development in Practice",
+    goal:
+      "Answer the practical questions of building and shipping an MCP " +
+      "server that the specification does not cover: transports and " +
+      "deployment choices, OAuth 2.1 and dynamic client registration " +
+      "pitfalls, tool description engineering that decides whether agents " +
+      "call your tools, differences between Claude Code, Cursor, Codex " +
+      "and ChatGPT clients, schema and output design, debugging servers " +
+      "that connect but never fire, and distribution through registries.",
+    topic: "ai",
+    priceCents: 1900,
+    load: async () => mcpdevNotes,
   },
 ];
 
