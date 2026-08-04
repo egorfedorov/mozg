@@ -64,5 +64,12 @@ export async function gradeCard(input: {
     ],
   );
 
+  // The streak's memory: today had activity. Idempotent, one row per day.
+  await query(
+    `insert into learn_days (user_id, day) values ($1, current_date)
+     on conflict do nothing`,
+    [userId],
+  );
+
   return { dueInMs: next.dueInMs };
 }

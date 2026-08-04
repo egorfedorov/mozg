@@ -5,6 +5,7 @@ import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
 import { searchBrain } from "@/lib/search";
 import { familyIds } from "@/lib/families";
+import { limitsFor } from "@/lib/plans";
 import { discoverPages, pickTopUpPages } from "@/lib/crawl";
 import { enqueueIngest, PRIORITY } from "@/worker/queue";
 
@@ -241,6 +242,24 @@ export async function syncUsageChecks(brain: Brain, scope: string[]): Promise<nu
 export async function runExam(brainId: string): Promise<ExamResult | null> {
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain.goal) return null;
+
+  // The trial plan buys one sitting per brain — enough to see the loop close,
+  // not enough to grind a free account into a maintained brain.
+  const owner = await one<{ plan: string }>(
+    `select plan from "user" where id = $1`,
+    [brain.owner_id],
+  );
+  const allowed = limitsFor(owner.plan as never).examSittings;
+  if (Number.isFinite(allowed)) {
+    const sat = await one<{ n: number }>(
+      `select count(*)::int as n from check_runs where brain_id = $1 and status = 'done'`,
+      [brainId],
+    );
+    if (sat.n >= allowed) {
+      console.log(`[exam] ${brainId} skipped — ${owner.plan} plan allows ${allowed} sitting(s)`);
+      return null;
+    }
+  }
 
   await syncUsageChecks(brain, await familyIds(brain));
 

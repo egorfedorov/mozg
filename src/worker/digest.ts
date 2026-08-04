@@ -14,6 +14,7 @@ interface OwnerWeek {
   calls: number;
   flags: number;
   pending: number;
+  due_cards: number;
   brains: { title: string; score: number | null; calls: number }[];
 }
 
@@ -23,6 +24,12 @@ export async function runDigest(): Promise<number> {
   const owners = await query<{ id: string; email: string }>(
     `select distinct u.id, u.email from "user" u
       join brains b on b.owner_id = u.id
+     where u."emailVerified"
+     union
+     -- Learners get the letter too: a due pile with no reminder is a course
+     -- that quietly ends.
+     select distinct u.id, u.email from "user" u
+      join learn_progress p on p.user_id = u.id
      where u."emailVerified"`,
   );
 
@@ -40,12 +47,14 @@ export async function runDigest(): Promise<number> {
            where b.owner_id = $1) as flags,
          (select count(*)::int from notes n join brains b on b.id = n.brain_id
            where b.owner_id = $1 and n.status = 'pending') as pending,
+         (select count(*)::int from learn_progress p
+           where p.user_id = $1 and p.due_at <= now()) as due_cards,
          '[]'::jsonb as brains`,
       [owner.id, owner.email],
     );
 
     // Nothing moved — no mail. The absence is the feature.
-    if (w.notes_added === 0 && w.calls === 0 && w.flags === 0 && w.pending === 0) continue;
+    if (w.notes_added === 0 && w.calls === 0 && w.flags === 0 && w.pending === 0 && w.due_cards === 0) continue;
 
     const tops = await query<{ title: string; score: number | null; n: number }>(
       `select b.title, b.score,
@@ -74,12 +83,17 @@ export async function runDigest(): Promise<number> {
       w.flags || w.pending
         ? `Things waiting on you: https://mozg.sh/brains`
         : `Dashboard: https://mozg.sh/brains`,
+      ...(w.due_cards
+        ? [``, `${w.due_cards} card(s) due for review — a few minutes keeps the streak: https://mozg.sh/learn`]
+        : []),
     ];
 
     try {
       await sendMail({
         to: owner.email,
-        subject: `mozg week: ${w.calls} calls, ${w.notes_added} new notes`,
+        subject: w.calls || w.notes_added
+          ? `mozg week: ${w.calls} calls, ${w.notes_added} new notes`
+          : `learn: ${w.due_cards} card(s) due for review`,
         text: lines.join("\n"),
       });
       sent++;

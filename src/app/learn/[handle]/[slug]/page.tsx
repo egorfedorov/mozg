@@ -26,7 +26,7 @@ export default async function CoursePage({
   if (!found?.brain || !found.access) notFound();
   const brain = found.brain;
 
-  const [noteMods, checkMods, progress, due] = await Promise.all([
+  const [noteMods, checkMods, progress, due, streak] = await Promise.all([
     query<{ cat: string; total: number }>(
       `select coalesce(category, 'general') as cat, count(*)::int as total
          from notes where brain_id = $1 and status = 'active'
@@ -53,6 +53,19 @@ export default async function CoursePage({
         where user_id = $1 and brain_id = $2 and due_at <= now()`,
       [user.id, brain.id],
     ).then((r) => r[0].n),
+    // Consecutive days ending today or yesterday (yesterday keeps the flame
+    // alive until tonight's session, the way every streak product does it).
+    query<{ n: number }>(
+      `with d as (select day from learn_days where user_id = $1),
+       run as (
+         select day, day + (row_number() over (order by day desc))::int as grp
+           from d
+       )
+       select count(*)::int as n from run
+        where grp = (select grp from run where day in (current_date, current_date - 1)
+                     order by day desc limit 1)`,
+      [user.id],
+    ).then((r) => r[0]?.n ?? 0),
   ]);
 
   const learnedBy = new Map(progress.map((p) => [p.cat, p.learned]));
@@ -117,9 +130,22 @@ export default async function CoursePage({
             {totalLearned} of {totalCards} cards learned
           </p>
         </div>
+        {streak > 0 && (
+          <div>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>STREAK</p>
+            <p className="h2" style={{ margin: 0 }}>
+              {streak}<span style={{ fontSize: ".8em" }}> day{streak === 1 ? "" : "s"}</span>
+            </p>
+          </div>
+        )}
         {due > 0 && (
           <Link className="btn" href={`/learn/${handle}/${slug}/review`}>
             Review {due} due
+          </Link>
+        )}
+        {pct >= 80 && (
+          <Link className="btn btn-ghost" href={`/learn/${handle}/${slug}/certificate`}>
+            Certificate →
           </Link>
         )}
       </div>

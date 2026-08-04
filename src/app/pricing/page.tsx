@@ -27,7 +27,7 @@ const PLAN_PRICES: Record<string, string> = {
 };
 
 const PLAN_PITCH: Record<string, string> = {
-  free: "Read the catalogue, buy brains, connect your agents. Building is the paid act.",
+  free: "Read the catalogue, buy brains, connect your agents — plus one trial brain: up to 30 pages and one exam sitting, so you see the whole loop before paying.",
   pro: "For one person who builds brains and works with agents daily.",
   team: "For a team feeding shared brains and many agents.",
 };

@@ -85,6 +85,24 @@ export default async function PublicBrainPage({
 
   const { brain, preview } = found;
 
+  // The last two sittings, diffed: what the brain learned between them is
+  // the collective-mind claim made visible on the shop floor.
+  const examDiff = await query<{ gained: number; lost: number }>(
+    `with runs as (
+       select id, row_number() over (order by started_at desc) as rn
+         from check_runs where brain_id = $1 and status = 'done' limit 2
+     )
+     select count(*) filter (where cur.passed and prev.passed is distinct from true)::int as gained,
+            count(*) filter (where not cur.passed and prev.passed)::int as lost
+       from check_results cur
+       join runs r1 on r1.id = cur.run_id and r1.rn = 1
+       left join check_results prev
+         on prev.check_id = cur.check_id
+        and prev.run_id = (select id from runs where rn = 2)
+      where (select count(*) from runs) = 2`,
+    [brain.id],
+  ).then((r) => r[0] ?? { gained: 0, lost: 0 });
+
   const [categories, samples, balance, added, children, parent, passedChecks] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
@@ -236,6 +254,17 @@ export default async function PublicBrainPage({
               {brain.score === null ? "not examined" : `trained ${brain.score}%`}
               {rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`}
             </p>
+            {(examDiff.gained > 0 || examDiff.lost > 0) && (
+              <p className="mono" style={{ fontSize: ".75rem", marginTop: ".35rem" }}>
+                <span style={{ color: "var(--color-riso-green)" }}>
+                  since last sitting: +{examDiff.gained} newly passed
+                </span>
+                {examDiff.lost > 0 && (
+                  <span style={{ color: "var(--color-riso-red)" }}> · −{examDiff.lost} lost</span>
+                )}
+                {" "}— this brain is learning
+              </p>
+            )}
           </div>
         </div>
 
