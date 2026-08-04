@@ -363,6 +363,39 @@ export default async function Home() {
           </p>
         </section>
 
+        {/* The lead magnet: the same knowledge, for the human. Free course,
+            no card — the cheapest honest way in. */}
+        <section
+          style={{
+            marginTop: "clamp(3rem, 8vw, 4.5rem)",
+            border: "1.5px solid var(--ink)",
+            background: "var(--paper-2)",
+            padding: "clamp(1.25rem, 4vw, 2rem)",
+            display: "flex",
+            gap: "1.5rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>
+              Free course · learn<span style={{ color: "var(--color-riso-green)" }}>.</span>
+            </p>
+            <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
+              Learn prompt engineering from the brain your agent uses.
+            </h2>
+            <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
+              Anthropic&apos;s prompt-engineering material as a spaced-repetition
+              course: read, recall, quiz — with the brain&apos;s own exam as the
+              final. Free, no card, and your agent can query the same brain
+              while you study it.
+            </p>
+          </div>
+          <Link className="btn" href="/learn/mozg/prompt-engineering">
+            Start the course
+          </Link>
+        </section>
+
         <div style={{ margin: "clamp(3rem, 8vw, 4.5rem) 0 2.5rem" }}>
           <Scribble />
         </div>
