@@ -735,6 +735,757 @@ const PACKS: Pack[] = [
       },
     ],
   },
+  {
+    // Vite ships a major a year and each one renames config options and
+    // deprecates plugin hooks — models answer with the major they memorised.
+    // blog and changes are release notes; releases.md is policy, not usage.
+    key: "vite",
+    repo: "vitejs/vite",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: [
+      "docs/blog",
+      "docs/changes",
+      "docs/releases.md",
+      "docs/team.md",
+      "docs/live.md",
+    ],
+    topic: "web",
+    parent: {
+      slug: "vite",
+      title: "Vite",
+      goal:
+        "Answer questions about Vite as documented today: the dev server and " +
+        "how HMR works, the features pages (TypeScript, JSX, CSS, assets, " +
+        "env variables and modes), building for production, the plugin API " +
+        "and its hooks, SSR, backend integration, and every config option " +
+        "with its type and default — current behaviour, not last major's.",
+    },
+    children: [
+      {
+        slug: "vite-guide",
+        title: "Vite · Guide",
+        goal:
+          "Answer questions from the Vite guide: dependency pre-bundling and " +
+          "when it breaks, HMR and its client API, how imports of CSS, JSON, " +
+          "workers and static assets behave, env variables and modes, SSR " +
+          "and backend integration, and the troubleshooting entries.",
+        areas: ["guide"],
+      },
+      {
+        slug: "vite-config",
+        title: "Vite · Config reference",
+        goal:
+          "Answer questions about Vite configuration exactly as specified: " +
+          "every shared, server, build, preview, dependency-optimisation and " +
+          "worker option with its name, type and default value.",
+        areas: ["config"],
+      },
+    ],
+  },
+  {
+    // Vitest's config surface is huge and churns between majors — reporters,
+    // coverage providers and browser mode options are quoted from memory and
+    // wrong. blog, team and releases are housekeeping.
+    key: "vitest",
+    repo: "vitest-dev/vitest",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: [
+      "docs/blog",
+      "docs/team.md",
+      "docs/releases.md",
+      "docs/todo.md",
+    ],
+    topic: "web",
+    parent: {
+      slug: "vitest",
+      title: "Vitest",
+      goal:
+        "Answer questions about testing with Vitest as documented today: " +
+        "writing tests and assertions, mocking with vi, the config file and " +
+        "every option, coverage providers, browser mode, workspaces, the " +
+        "CLI and its flags — the current API, not an earlier major's.",
+    },
+    children: [
+      {
+        slug: "vitest-guide",
+        title: "Vitest · Guide",
+        goal:
+          "Answer questions from the Vitest guide: writing and running " +
+          "tests, mocking functions, modules and timers with vi, snapshot " +
+          "testing, coverage, browser mode, workspaces, test context and " +
+          "the CLI commands with their flags.",
+        areas: ["guide"],
+      },
+      {
+        slug: "vitest-api",
+        title: "Vitest · API reference",
+        goal:
+          "Answer questions about the Vitest API exactly as specified: " +
+          "describe, test, expect and the vi object with every method's " +
+          "signature, and every assertion matcher with its behaviour.",
+        areas: ["api"],
+      },
+      {
+        slug: "vitest-config",
+        title: "Vitest · Config reference",
+        goal:
+          "Answer questions about Vitest configuration exactly as specified: " +
+          "every test, coverage, browser, pool and reporter option with its " +
+          "name, type and default value.",
+        areas: ["config"],
+      },
+    ],
+  },
+  {
+    // Models answer React questions in class-component and pre-hooks idioms
+    // they memorised; react.dev documents the current model and, uniquely,
+    // the compiler errors and warnings verbatim — the pages where quoting a
+    // paraphrase is quoting the wrong error. blog and community are not the
+    // library.
+    key: "react",
+    repo: "reactjs/react.dev",
+    prefix: "src/content/",
+    endings: [".md"],
+    skip: ["src/content/blog", "src/content/community"],
+    topic: "web",
+    parent: {
+      slug: "react",
+      title: "React",
+      goal:
+        "Answer questions about React as documented on react.dev today: " +
+        "components and JSX, state and the rules of hooks, effects and when " +
+        "not to use them, the reference API with each hook's exact signature " +
+        "and rules, and the compiler errors and warnings as they are worded.",
+    },
+    children: [
+      {
+        slug: "react-learn",
+        title: "React · Learn",
+        goal:
+          "Answer questions from the React learn docs: describing the UI, " +
+          "adding interactivity with state, managing state with reducers and " +
+          "context, escape hatches — refs, effects and their lifecycle — " +
+          "and installation and setup for every framework.",
+        areas: ["learn"],
+      },
+      {
+        slug: "react-reference",
+        title: "React · API reference",
+        goal:
+          "Answer questions about the React API exactly as specified: every " +
+          "hook, component, directive and API in react and react-dom with " +
+          "its signature, parameters, return value and usage rules.",
+        areas: ["reference"],
+      },
+      {
+        slug: "react-errors",
+        title: "React · Errors and warnings",
+        goal:
+          "Answer questions about a specific React error or warning message: " +
+          "what the message says verbatim, what causes it and how to fix it.",
+        areas: ["errors", "warnings"],
+      },
+    ],
+  },
+  {
+    // Vue 3's Composition API and <script setup> postdate most training
+    // data, which still answers in Options API. The docs repo ships about,
+    // partners and sponsor pages beside the docs — housekeeping, not Vue.
+    key: "vue",
+    repo: "vuejs/docs",
+    prefix: "src/",
+    endings: [".md"],
+    skip: ["src/about", "src/partners", "src/sponsor", "src/translations"],
+    topic: "web",
+    parent: {
+      slug: "vue",
+      title: "Vue",
+      goal:
+        "Answer questions about Vue 3 as documented today: the reactivity " +
+        "system and its APIs, single-file components and <script setup>, " +
+        "the Composition API, template syntax and directives, built-in " +
+        "components, and the API reference with exact signatures.",
+    },
+    children: [
+      {
+        slug: "vue-guide",
+        title: "Vue · Guide",
+        goal:
+          "Answer questions from the Vue guide: reactivity fundamentals, " +
+          "computed and watchers, template syntax and every directive, " +
+          "components — props, emits, slots and provide/inject — " +
+          "composables, transitions, routing and state management, and the " +
+          "best-practice and performance pages.",
+        areas: ["guide"],
+      },
+      {
+        slug: "vue-api",
+        title: "Vue · API reference",
+        goal:
+          "Answer questions about the Vue API exactly as specified: every " +
+          "global and composition API, built-in directive and component, " +
+          "compiler option and runtime flag with its signature and options.",
+        areas: ["api"],
+      },
+      {
+        slug: "vue-tutorial",
+        title: "Vue · Tutorial",
+        goal:
+          "Answer questions following the official Vue tutorial: each step " +
+          "from declarative rendering through component basics, with the " +
+          "exact syntax the tutorial teaches.",
+        areas: ["tutorial"],
+      },
+    ],
+  },
+  {
+    // Astro's islands model and content collections changed shape across
+    // majors, and models answer in the version they memorised. The docs repo
+    // is heavily i18n'd — the prefix pins the English content so the brain
+    // never sees the same page in twelve languages.
+    key: "astro",
+    repo: "withastro/docs",
+    prefix: "src/content/docs/en/",
+    endings: [".mdx", ".md"],
+    topic: "web",
+    parent: {
+      slug: "astro",
+      title: "Astro",
+      goal:
+        "Answer questions about Astro as documented today: .astro " +
+        "components and the islands architecture, routing and pages, " +
+        "content collections, integrations, rendering modes and adapters, " +
+        "the configuration reference with every option, and the error " +
+        "reference entries as they are worded.",
+    },
+    children: [
+      {
+        slug: "astro-guides",
+        title: "Astro · Guides",
+        goal:
+          "Answer questions from the Astro guides: connecting CMSs and " +
+          "backends, deploying to every platform with its adapter and " +
+          "settings, adding integrations, migrating a site to Astro, and " +
+          "the media and image guides.",
+        areas: ["guides"],
+      },
+      {
+        slug: "astro-reference",
+        title: "Astro · Reference",
+        goal:
+          "Answer questions about the Astro reference exactly as specified: " +
+          "every configuration option with its type and default, the " +
+          "runtime APIs, template directives, adapter API, and each error " +
+          "message with its cause and fix.",
+        areas: ["reference"],
+      },
+      {
+        slug: "astro-tutorial",
+        title: "Astro · Tutorial",
+        goal:
+          "Answer questions following the official build-a-blog tutorial: " +
+          "each unit from setup through pages, components, layouts, the " +
+          "Astro API and islands, in the order the tutorial teaches them.",
+        areas: ["tutorial"],
+      },
+      {
+        slug: "astro-recipes",
+        title: "Astro · Recipes",
+        goal:
+          "Answer how to implement the documented Astro recipes: RSS, " +
+          "sitemaps, i18n, authentication, forms, Docker deployment and the " +
+          "rest, with working code shapes.",
+        areas: ["recipes"],
+      },
+    ],
+  },
+  {
+    // FastAPI's docs ship in a dozen languages inside one repo — the prefix
+    // pins English. Dependency injection, security flows and status-code
+    // handling are specified precisely and quoted from memory sloppily.
+    // release-notes and the _llm-test probe page are not the framework.
+    key: "fastapi",
+    repo: "tiangolo/fastapi",
+    prefix: "docs/en/docs/",
+    endings: [".md"],
+    skip: ["/release-notes.md", "docs/en/docs/_llm-test.md"],
+    topic: "backend",
+    parent: {
+      slug: "fastapi",
+      title: "FastAPI",
+      goal:
+        "Answer questions about FastAPI as documented today: path " +
+        "operations and parameters, request and response models with " +
+        "Pydantic, dependency injection, security and OAuth2 flows, " +
+        "middleware and CORS, background tasks, WebSockets, testing with " +
+        "TestClient, and deployment — with exact signatures and defaults.",
+    },
+    children: [
+      {
+        slug: "fastapi-tutorial",
+        title: "FastAPI · Tutorial",
+        goal:
+          "Answer questions from the FastAPI tutorial: path and query " +
+          "parameters with their validation options, request bodies and " +
+          "response models, dependencies, security, middleware, static " +
+          "files, testing and debugging — each with working code shapes.",
+        areas: ["tutorial"],
+      },
+      {
+        slug: "fastapi-advanced",
+        title: "FastAPI · Advanced",
+        goal:
+          "Answer questions from the FastAPI advanced guide: advanced " +
+          "dependency patterns, sub-applications and mounting, WebSockets, " +
+          "lifespan events, custom request and APIRoute classes, and the " +
+          "advanced security setups.",
+        areas: ["advanced"],
+      },
+      {
+        slug: "fastapi-deployment",
+        title: "FastAPI · Deployment",
+        goal:
+          "Answer questions about deploying FastAPI as documented: server " +
+          "options, HTTPS, Docker, behind a proxy, and the deployment " +
+          "concepts pages.",
+        areas: ["deployment"],
+      },
+      {
+        slug: "fastapi-reference",
+        title: "FastAPI · Reference",
+        goal:
+          "Answer questions about the FastAPI reference exactly as " +
+          "specified: the FastAPI class and its parameters, APIRouter, " +
+          "Request and Response classes, status codes and exceptions, and " +
+          "every parameter class with its arguments.",
+        areas: ["reference"],
+      },
+    ],
+  },
+  {
+    // Pydantic v2 rewrote the validation API — validators, ConfigDict,
+    // model methods — after models learned v1, so they answer in syntax
+    // that no longer exists. Error codes and type coercion rules are
+    // specified precisely enough that a paraphrase misleads.
+    key: "pydantic",
+    repo: "pydantic/pydantic",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "backend",
+    parent: {
+      slug: "pydantic",
+      title: "Pydantic",
+      goal:
+        "Answer questions about Pydantic as documented today: model " +
+        "definition and field types, validation and serialization, " +
+        "ConfigDict options, custom validators and serializers, JSON " +
+        "Schema generation, settings management, the API reference, and " +
+        "the validation error codes — v2 semantics, not v1.",
+    },
+    children: [
+      {
+        slug: "pydantic-concepts",
+        title: "Pydantic · Concepts",
+        goal:
+          "Answer questions about the Pydantic concepts: models and their " +
+          "config, fields and aliases, validators and serializers, " +
+          "dataclasses, JSON Schema, strict mode, type adapters, and how " +
+          "each standard and custom type is coerced.",
+        areas: ["concepts"],
+      },
+      {
+        slug: "pydantic-api",
+        title: "Pydantic · API reference",
+        goal:
+          "Answer questions about the Pydantic API exactly as specified: " +
+          "BaseModel and its methods, Field, ConfigDict, the decorators, " +
+          "TypeAdapter and the rest — each with its signature and options.",
+        areas: ["api"],
+      },
+      {
+        slug: "pydantic-integrations",
+        title: "Pydantic · Integrations",
+        goal:
+          "Answer how Pydantic integrates with the documented tools: " +
+          "mypy, Hypothesis, devtools, datamodel-code-generator and the " +
+          "rest, with the configuration each one needs.",
+        areas: ["integrations"],
+      },
+    ],
+  },
+  {
+    // Bun ships weekly and its API surface — Bun.serve, the bundler, the
+    // test runner, bun pm — looks almost like Node's, which is exactly why
+    // models improvise it wrong. snippets are include fragments, not pages.
+    key: "bun",
+    repo: "oven-sh/bun",
+    prefix: "docs/",
+    endings: [".md", ".mdx"],
+    skip: ["docs/snippets"],
+    topic: "backend",
+    parent: {
+      slug: "bun",
+      title: "Bun",
+      goal:
+        "Answer questions about Bun as documented today: the runtime APIs " +
+        "with their exact signatures, the bundler and its options, the " +
+        "package manager commands, the test runner, Node.js compatibility " +
+        "and its limits, and the guides — current behaviour, not Node " +
+        "behaviour guessed by analogy.",
+    },
+    children: [
+      {
+        slug: "bun-runtime",
+        title: "Bun · Runtime",
+        goal:
+          "Answer questions about the Bun runtime exactly as specified: " +
+          "Bun.serve, Bun.file and file I/O, Bun.$ shell, SQLite, " +
+          "WebSockets, TCP, transpiler and every other Bun.* API with its " +
+          "arguments and options, plus Node compatibility details.",
+        areas: ["runtime"],
+      },
+      {
+        slug: "bun-bundler",
+        title: "Bun · Bundler",
+        goal:
+          "Answer questions about the Bun bundler: Bun.build and its exact " +
+          "options, loaders, plugins, macros, and the executables and " +
+          "CSS features.",
+        areas: ["bundler"],
+      },
+      {
+        slug: "bun-pm",
+        title: "Bun · Package manager",
+        goal:
+          "Answer questions about bun's package manager exactly as " +
+          "specified: install, add, remove, update, link, publish, x and " +
+          "the rest — each command's flags, workspaces, lockfile and " +
+          "registry configuration.",
+        areas: ["pm"],
+      },
+      {
+        slug: "bun-test",
+        title: "Bun · Test runner",
+        goal:
+          "Answer questions about the Bun test runner: writing tests, " +
+          "the expect matchers, mocking, snapshots, coverage, and how it " +
+          "differs from Jest where the docs say so.",
+        areas: ["test"],
+      },
+    ],
+  },
+  {
+    // The denoland/docs repo holds every Deno product at its root — the
+    // prefix scopes strictly to the runtime manual, where the permission
+    // flags and CLI options are specified precisely and training data
+    // still mixes Deno 1 and Deno 2 idioms.
+    key: "deno",
+    repo: "denoland/docs",
+    prefix: "runtime/",
+    endings: [".md", ".mdx"],
+    topic: "backend",
+    parent: {
+      slug: "deno",
+      title: "Deno",
+      goal:
+        "Answer questions about the Deno runtime as documented today: " +
+        "the permission model and its flags, the CLI commands and their " +
+        "options, configuration with deno.json, Node and npm " +
+        "compatibility, testing, linting and formatting, and the runtime " +
+        "APIs — Deno 2 behaviour, not Deno 1.",
+    },
+    children: [
+      {
+        slug: "deno-fundamentals",
+        title: "Deno · Fundamentals",
+        goal:
+          "Answer questions from the Deno fundamentals and getting-started " +
+          "docs: the security and permission model, modules and imports, " +
+          "the runtime Web APIs, workspaces, and running scripts with the " +
+          "exact flags.",
+        areas: ["fundamentals", "getting_started", "run"],
+      },
+      {
+        slug: "deno-reference",
+        title: "Deno · Reference",
+        goal:
+          "Answer questions from the Deno reference docs exactly as " +
+          "specified: every CLI command with its flags, the deno.json " +
+          "configuration fields, environment variables, and the runtime " +
+          "API surface.",
+        areas: ["reference"],
+      },
+    ],
+  },
+  {
+    // Prisma Client's query API is a paraphrase trap — models invent
+    // relation filters and nested writes that almost exist. The docs moved
+    // into a monorepo app; the prefix scopes to the docs content and skips
+    // the blog that sits beside it.
+    key: "prisma",
+    repo: "prisma/docs",
+    prefix: "apps/docs/content/docs/",
+    endings: [".mdx", ".md"],
+    topic: "data",
+    parent: {
+      slug: "prisma",
+      title: "Prisma",
+      goal:
+        "Answer questions about Prisma as documented today: the schema " +
+        "language and its attributes, Prisma Client queries and their " +
+        "exact options, relations and nested writes, migrations with " +
+        "Prisma Migrate, the CLI commands, and the Prisma Postgres and " +
+        "Accelerate products.",
+    },
+    children: [
+      {
+        slug: "prisma-orm",
+        title: "Prisma · ORM",
+        goal:
+          "Answer questions about Prisma ORM exactly as specified: schema " +
+          "models, fields and attributes, every Prisma Client method with " +
+          "its arguments — findMany filters, relation queries, nested " +
+          "writes, transactions — raw queries, and connecting to each " +
+          "supported database.",
+        areas: ["orm"],
+      },
+      {
+        slug: "prisma-guides",
+        title: "Prisma · Guides",
+        goal:
+          "Answer questions from the Prisma guides: framework integration " +
+          "walkthroughs, deployment recipes, testing, seeding, and the " +
+          "migration-from-other-tools guides.",
+        areas: ["guides"],
+      },
+      {
+        slug: "prisma-cli",
+        title: "Prisma · CLI",
+        goal:
+          "Answer questions about the Prisma CLI exactly as specified: " +
+          "every command — init, generate, migrate, db, studio, validate " +
+          "and the rest — with its flags and environment variables.",
+        areas: ["cli"],
+      },
+    ],
+  },
+  {
+    // kubernetes/website is thousands of pages across locales and a
+    // generated API reference; the prefix pins English and the skip keeps
+    // out everything but concepts and tasks — the prose where behaviour is
+    // specified precisely and where a model's memorised kubectl and API
+    // versions are stalest.
+    key: "kubernetes",
+    repo: "kubernetes/website",
+    prefix: "content/en/docs/",
+    endings: [".md"],
+    skip: [
+      "content/en/docs/reference/",
+      "content/en/docs/contribute/",
+      "content/en/docs/doc-contributor-tools/",
+      "content/en/docs/setup/",
+      "content/en/docs/tutorials/",
+      "content/en/docs/home/",
+      "content/en/docs/test.md",
+    ],
+    topic: "devops",
+    parent: {
+      slug: "kubernetes",
+      title: "Kubernetes",
+      goal:
+        "Answer questions about Kubernetes as documented today: the " +
+        "concepts — workloads, services, networking, storage, " +
+        "configuration, scheduling, security and cluster architecture — " +
+        "and the task how-tos, with the resource kinds, field names and " +
+        "kubectl invocations as the docs specify them.",
+    },
+    children: [
+      {
+        slug: "kubernetes-concepts",
+        title: "Kubernetes · Concepts",
+        goal:
+          "Answer questions about Kubernetes concepts exactly as " +
+          "documented: pods and every workload resource, services and " +
+          "ingress, volumes and storage classes, ConfigMaps and Secrets, " +
+          "scheduling and eviction, RBAC and security, networking and the " +
+          "cluster architecture.",
+        areas: ["concepts"],
+      },
+      {
+        slug: "kubernetes-tasks",
+        title: "Kubernetes · Tasks",
+        goal:
+          "Answer how to perform the documented Kubernetes tasks: " +
+          "configuring pods and containers, running jobs, administering " +
+          "clusters, managing TLS, extending the API, monitoring and " +
+          "debugging — with the exact manifests and kubectl commands.",
+        areas: ["tasks"],
+      },
+    ],
+  },
+  {
+    // Godot 4 renamed half the engine from Godot 3, and models still
+    // answer in 3.x API. classes/ is the generated API reference —
+    // hundreds of pages that would drown the manual, which is where the
+    // behaviour is actually specified. The repo is reStructuredText; the
+    // ingest is an LLM, so .rst is fine.
+    key: "godot",
+    repo: "godotengine/godot-docs",
+    prefix: "",
+    endings: [".rst"],
+    skip: ["classes/", "about/", "community/", "engine_details/", "404.rst"],
+    topic: "gamedev",
+    parent: {
+      slug: "godot",
+      title: "Godot Engine",
+      goal:
+        "Answer questions about the Godot engine as the current manual " +
+        "documents it: the editor workflow, scenes and nodes, GDScript, " +
+        "2D and 3D rendering, physics, animation, UI, input, audio, " +
+        "exporting and best practices — Godot 4 APIs, not Godot 3.",
+    },
+    children: [
+      {
+        slug: "godot-getting-started",
+        title: "Godot · Getting started",
+        goal:
+          "Answer questions from the Godot getting-started docs: the " +
+          "introduction series, the step-by-step editor walkthrough, and " +
+          "the first 2D and 3D game tutorials exactly as written.",
+        areas: ["getting_started"],
+      },
+      {
+        slug: "godot-tutorials",
+        title: "Godot · Tutorials",
+        goal:
+          "Answer questions from the Godot tutorials: 2D and 3D features, " +
+          "scripting with GDScript and C#, physics, animation, shaders, " +
+          "UI, input, audio, navigation, networking, performance, plugins " +
+          "and export — each with the node and API names the manual uses.",
+        areas: ["tutorials"],
+      },
+    ],
+  },
+  {
+    // LangChain's docs moved to langchain-ai/docs and the v1 agent API
+    // replaced the chains API models memorised. python/ and javascript/
+    // here are per-provider integration directories — hundreds of one-link
+    // pages, the exact junk shape the seeder measured — so the pack keeps
+    // the core langchain, langgraph and deepagents docs only.
+    key: "langchain",
+    repo: "langchain-ai/docs",
+    prefix: "src/oss/",
+    endings: [".mdx", ".md"],
+    skip: [
+      "src/oss/python/",
+      "src/oss/javascript/",
+      "src/oss/contributing/",
+    ],
+    topic: "ai",
+    parent: {
+      slug: "langchain",
+      title: "LangChain & LangGraph",
+      goal:
+        "Answer questions about LangChain, LangGraph and Deep Agents as " +
+        "documented today: the v1 agent abstraction, models and messages, " +
+        "tools and structured output, LangGraph graphs with state, nodes " +
+        "and edges, persistence and human-in-the-loop, and deployment — " +
+        "the current API, not the 0.x chains API.",
+    },
+    children: [
+      {
+        slug: "langchain-core",
+        title: "LangChain · Agents",
+        goal:
+          "Answer questions about LangChain as documented today: building " +
+          "agents, model initialisation and message types, tool calling, " +
+          "structured output, streaming, context engineering and the " +
+          "middleware and retrieval patterns.",
+        areas: ["langchain"],
+      },
+      {
+        slug: "langgraph",
+        title: "LangChain · LangGraph",
+        goal:
+          "Answer questions about LangGraph exactly as documented: " +
+          "defining graphs with state, nodes and edges, persistence and " +
+          "checkpointing, human-in-the-loop, memory, streaming, subgraphs " +
+          "and deployment.",
+        areas: ["langgraph"],
+      },
+      {
+        slug: "deepagents",
+        title: "LangChain · Deep Agents",
+        goal:
+          "Answer questions about Deep Agents as documented: creating an " +
+          "agent, subagents, backends and filesystem tools, context " +
+          "engineering, human-in-the-loop and customisation options.",
+        areas: ["deepagents"],
+      },
+    ],
+  },
+  {
+    // Better Auth shipped after most training cuts, so models improvise
+    // its options, plugin config and adapter setup. The docs are precise
+    // about all three — exactly the material a brain exists for.
+    key: "better-auth",
+    repo: "better-auth/better-auth",
+    prefix: "docs/content/docs/",
+    endings: [".mdx"],
+    topic: "web",
+    parent: {
+      slug: "better-auth",
+      title: "Better Auth",
+      goal:
+        "Answer questions about Better Auth as documented today: " +
+        "installation and configuration, every authentication method and " +
+        "its options, the plugin system, database adapters, client APIs " +
+        "for each framework, and the reference — exact option names and " +
+        "defaults, not invented ones.",
+    },
+    children: [
+      {
+        slug: "better-auth-authentication",
+        title: "Better Auth · Authentication",
+        goal:
+          "Answer questions about Better Auth's authentication methods " +
+          "exactly as documented: email and password, social sign-on and " +
+          "each provider's setup, magic links, passkeys, two-factor, " +
+          "sessions and account linking — with each method's options.",
+        areas: ["authentication"],
+      },
+      {
+        slug: "better-auth-plugins",
+        title: "Better Auth · Plugins",
+        goal:
+          "Answer questions about Better Auth plugins exactly as " +
+          "documented: every built-in plugin — organization, admin, " +
+          "two-factor, passkey, magic-link and the rest — with its " +
+          "configuration, schema additions and client methods.",
+        areas: ["plugins"],
+      },
+      {
+        slug: "better-auth-concepts",
+        title: "Better Auth · Concepts",
+        goal:
+          "Answer questions about Better Auth's concepts: the database " +
+          "schema, sessions, users and accounts, hooks, rate limiting, " +
+          "email delivery and how the pieces fit together.",
+        areas: ["concepts"],
+      },
+      {
+        slug: "better-auth-reference",
+        title: "Better Auth · Reference",
+        goal:
+          "Answer questions from the Better Auth reference: the options " +
+          "object with every field and default, the API endpoints and " +
+          "their payloads, error codes, and the CLI commands.",
+        areas: ["reference"],
+      },
+    ],
+  },
 ];
 
 interface Args {
