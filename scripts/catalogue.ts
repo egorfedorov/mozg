@@ -39,6 +39,22 @@ interface Pack {
   versioned?: boolean;
 }
 
+/**
+ * Pages that cost a model call and yield nothing, in every repository:
+ * contributor lists, changelogs, licences, translation stubs, and the
+ * community-provider directories that are one link each. Measured, not
+ * guessed — fifty paid-for-nothing extractions in one day's seeding were
+ * all of these shapes.
+ */
+const JUNK: RegExp[] = [
+  /contributors?/i,
+  /changelog/i,
+  /^.*\/(license|licence|code[-_]of[-_]conduct|security)\.(md|mdx)$/i,
+  /community[-_]providers?\//i,
+  /\/(acknowledge?ments?|credits|sponsors)/i,
+  /\/(migration[-_]guide|upgrade[-_]guide)s?\/(v?\d|legacy)/i,
+];
+
 /** Directories named like a release date, e.g. 2026-07-28. */
 const DATED = /(^|\/)(\d{4}-\d{2}-\d{2})(\/|$)/;
 
@@ -760,7 +776,8 @@ async function docPages(pack: Pack): Promise<string[]> {
       (p) =>
         p.startsWith(pack.prefix) &&
         pack.endings.some((e) => p.endsWith(e)) &&
-        !(pack.skip ?? []).some((s) => p.includes(s)),
+        !(pack.skip ?? []).some((s) => p.includes(s)) &&
+        !JUNK.some((j) => j.test(p)),
     )
     .sort();
 }

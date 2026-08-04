@@ -21,7 +21,7 @@ async function sit(id: string, slug: string) {
     `select score from brains where id = $1`,
     [id],
   );
-  const result = await runExam(id);
+  const result = await runExam(id, { force: true });
   if (!result) {
     console.log(`  ${slug.padEnd(26)} skipped — no goal`);
     return;

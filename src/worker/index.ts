@@ -132,10 +132,14 @@ async function main() {
     QUEUES.exam,
     { batchSize: 1, pollingIntervalSeconds: 5 },
     async ([job]) => {
-      const { brainId, mini } = job.data as { brainId: string; mini?: boolean };
+      const { brainId, mini, force } = job.data as {
+        brainId: string;
+        mini?: boolean;
+        force?: boolean;
+      };
       const started = Date.now();
       try {
-        const result = await withBrainOwner(brainId, () => runExam(brainId, { mini }));
+        const result = await withBrainOwner(brainId, () => runExam(brainId, { mini, force }));
         console.log(
           result
             ? `[exam] ${brainId} ${result.score}% (${result.passed}/${result.total}` +

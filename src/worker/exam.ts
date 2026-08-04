@@ -266,6 +266,12 @@ export async function syncUsageChecks(brain: Brain, scope: string[]): Promise<nu
 
 export interface ExamOptions {
   /**
+   * Sit regardless of the cooldown. The CLI and the owner's "re-sit" button
+   * pass it: a person asking for a score now has already decided it is worth
+   * the money.
+   */
+  force?: boolean;
+  /**
    * The cheap probe run after a refresh re-ingests a rewritten page: re-judge
    * the existing enabled checks with a single judge vote — no check
    * generation, no usage sync, no carried passes, no site top-up. It records
@@ -277,6 +283,13 @@ export interface ExamOptions {
 }
 
 /** One probe per brain per day is plenty — refreshes trickle, they do not burst. */
+/**
+ * How long a full sitting stays fresh. Six hours matches the maintenance
+ * pass: material that changed since then gets its score re-measured, and
+ * material that did not is not re-judged for the third time today.
+ */
+const FULL_INTERVAL = "6 hours";
+
 const MINI_INTERVAL = "1 day";
 
 export async function runExam(
@@ -286,6 +299,24 @@ export async function runExam(
   const mini = opts.mini ?? false;
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain.goal) return null;
+
+  // A full sitting costs three judge votes per check. Seeding a catalogue
+  // pack finishes one brain after another and each finish queues one — the
+  // day a dozen packs land, that is dozens of full sittings for material
+  // whose score moved by a point. One sitting per brain per cooldown window,
+  // unless a person asked.
+  if (!mini && !opts.force) {
+    const recentFull = await maybeOne(
+      `select 1 from check_runs
+        where brain_id = $1 and kind = 'full' and status = 'done'
+          and started_at > now() - interval '${FULL_INTERVAL}'`,
+      [brainId],
+    );
+    if (recentFull) {
+      console.log(`[exam] ${brainId} skipped — sat within the last ${FULL_INTERVAL}`);
+      return null;
+    }
+  }
 
   if (mini) {
     // Rate-limit the probe, not the sitting: a brain whose sources change

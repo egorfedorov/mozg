@@ -2,7 +2,8 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { query, maybeOne } from "@/db";
 import { env } from "@/lib/env";
-import { structured } from "@/lib/claude";
+import { costCents, structured } from "@/lib/claude";
+import { recordSpend } from "@/lib/spend";
 import { contentHash } from "@/lib/page";
 
 /**
@@ -197,7 +198,7 @@ export async function compileLesson(brainId: string, category: string): Promise<
     [brainId],
   );
 
-  const { data: raw } = await structured<unknown>({
+  const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
     toolName: "arrange_lesson",
     toolDescription: "Save the lesson plan. Call once with the full arrangement.",
@@ -237,6 +238,11 @@ export async function compileLesson(brainId: string, category: string): Promise<
             : ""),
       },
     ],
+  });
+
+  await recordSpend("lesson", costCents(env.MODEL_EXTRACT, usage), {
+    brainId,
+    model: env.MODEL_EXTRACT,
   });
 
   const parsed = lessonShape.safeParse(raw);

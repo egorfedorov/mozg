@@ -56,6 +56,25 @@ export default async function AdminPage() {
     ),
   ]);
 
+  // What today actually cost us: extraction and exams keep their cost on
+  // their own rows, everything else lands in `spend`. BYOK calls are absent
+  // by design — that money was never ours.
+  const [cost] = await query<{ day: number; week: number }>(
+    `select
+       (select coalesce(sum(cost_cents), 0) from sources
+         where processed_at > now() - interval '24 hours')
+     + (select coalesce(sum(cost_cents), 0) from check_runs
+         where started_at > now() - interval '24 hours')
+     + (select coalesce(sum(cents), 0) from spend
+         where created_at > now() - interval '24 hours') as day,
+       (select coalesce(sum(cost_cents), 0) from sources
+         where processed_at > now() - interval '7 days')
+     + (select coalesce(sum(cost_cents), 0) from check_runs
+         where started_at > now() - interval '7 days')
+     + (select coalesce(sum(cents), 0) from spend
+         where created_at > now() - interval '7 days') as week`,
+  );
+
   const t = totals[0];
   const attention = brains.filter((b) => b.failed_sources > 0).slice(0, 8);
 
@@ -71,6 +90,14 @@ export default async function AdminPage() {
               label="Embeddings"
               dot={h.embeddings ? "ok" : "down"}
               value={h.embeddings ? "up" : "down"}
+            />
+            <Stat
+              label="Model spend 24h"
+              value={`$${(Number(cost?.day ?? 0) / 100).toFixed(2)}`}
+            />
+            <Stat
+              label="…last 7 days"
+              value={`$${(Number(cost?.week ?? 0) / 100).toFixed(2)}`}
             />
             <Stat
               label="Ingest queue"

@@ -119,6 +119,7 @@ export async function runExamNow(formData: FormData) {
     ]);
   }
 
-  await enqueueExam(brain.id);
+  // The owner clicked; the cooldown is for machines, not people.
+  await enqueueExam(brain.id, { force: true });
   revalidatePath(`/brains/${slug}`);
 }

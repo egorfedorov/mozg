@@ -156,7 +156,7 @@ export async function scheduleMozgpay(): Promise<void> {
 
 export async function enqueueExam(
   brainId: string,
-  opts: { mini?: boolean } = {},
+  opts: { mini?: boolean; force?: boolean } = {},
 ): Promise<void> {
   const b = await getBoss();
   // One exam per brain in flight; a burst of uploads should not queue ten
@@ -165,7 +165,7 @@ export async function enqueueExam(
   // gate in runExam is the real throttle.
   await b.send(
     QUEUES.exam,
-    { brainId, mini: opts.mini ?? false },
+    { brainId, mini: opts.mini ?? false, force: opts.force ?? false },
     { singletonKey: opts.mini ? `${brainId}:recheck` : brainId, singletonSeconds: 60 },
   );
 }

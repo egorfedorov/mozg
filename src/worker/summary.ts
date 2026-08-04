@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { maybeOne, query } from "@/db";
 import { costCents, structured } from "@/lib/claude";
+import { recordSpend } from "@/lib/spend";
 import { env } from "@/lib/env";
 import {
   MIN_SUMMARY_NOTES,
@@ -205,6 +206,8 @@ export async function compileSummaries(brainId: string): Promise<SummaryReport> 
     );
     report.compiled++;
   }
+
+  await recordSpend("summary", report.costCents, { brainId, model: env.MODEL_JUDGE });
 
   return report;
 }
