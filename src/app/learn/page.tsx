@@ -2,6 +2,7 @@ import Link from "next/link";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import LearnShell from "./LearnShell";
+import { tintFor } from "@/lib/brains";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export default async function LearnHome() {
   // Brains this person can study: their library and free public ones. For a
   // visitor, the free shelf is the pitch.
   const brains = await query<{
+    id: string;
+    color: string;
     handle: string;
     slug: string;
     title: string;
@@ -34,25 +37,25 @@ export default async function LearnHome() {
   }>(
     user
       ? `with mine as (
-           select b.id, u.handle, b.slug, b.title, b.goal, b.score from brains b
+           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from brains b
              join "user" u on u.id = b.owner_id
             where b.owner_id = $1
            union
-           select b.id, u.handle, b.slug, b.title, b.goal, b.score from library l
+           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from library l
              join brains b on b.id = l.brain_id join "user" u on u.id = b.owner_id
             where l.user_id = $1
            union
-           select b.id, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
              join brains b on b.id = pu.brain_id join "user" u on u.id = b.owner_id
             where pu.buyer_id = $1
            union
            -- A bundle purchase is a course bundle too: the parent's children
            -- belong on the buyer's shelf.
-           select b.id, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
              join brains b on b.parent_id = pu.brain_id join "user" u on u.id = b.owner_id
             where pu.buyer_id = $1
          )
-         select m.handle, m.slug, m.title, m.goal, m.score,
+         select m.id, m.color, m.handle, m.slug, m.title, m.goal, m.score,
                 (select count(*) from notes n where n.brain_id = m.id and n.status = 'active')::int
                 + (select count(*) from checks c where c.brain_id = m.id and c.enabled)::int as cards,
                 (select count(*) from learn_progress p
@@ -60,7 +63,7 @@ export default async function LearnHome() {
                 (select count(*) from learn_progress p
                   where p.user_id = $1 and p.brain_id = m.id)::int as seen
            from mine m order by due desc, cards desc limit 40`
-      : `select u.handle, b.slug, b.title, b.goal, b.score,
+      : `select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score,
                 (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
                 + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
                 0 as due, 0 as seen
@@ -74,7 +77,7 @@ export default async function LearnHome() {
   // The free shelf shows for everyone — a signed-in person with an empty
   // library is exactly the visitor who needs somewhere to start.
   const free = await query<(typeof brains)[number]>(
-    `select u.handle, b.slug, b.title, b.goal, b.score,
+    `select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score,
             (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
             + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
             0 as due, 0 as seen
@@ -119,21 +122,19 @@ export default async function LearnHome() {
             <Link
               key={`${b.handle}/${b.slug}`}
               href={`/learn/${b.handle}/${b.slug}`}
-              style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.1rem", display: "block" }}
+              className="card"
+              data-tint={tintFor(b)}
             >
-              <h3 className="h3" style={{ margin: "0 0 .35rem" }}>{b.title}</h3>
-              {b.goal && (
-                <p style={{ color: "var(--ink-2)", fontSize: ".875rem", margin: "0 0 .6rem" }}>
-                  {b.goal.split("\n")[0].slice(0, 120)}
-                </p>
-              )}
-              <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: 0 }}>
+              <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
+                course · {b.handle}
+              </span>
+              <h3 className="card-title">{b.title}</h3>
+              <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
+              <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
                 {b.cards} cards
                 {b.score != null ? ` · agent ${b.score}%` : ""}
-                {b.due > 0 && (
-                  <span style={{ color: "var(--color-riso-red)" }}> · {b.due} due</span>
-                )}
-                {b.seen > 0 && ` · ${b.seen} seen`}
+                {b.due > 0 ? ` · ${b.due} due` : ""}
+                {b.seen > 0 ? ` · ${b.seen} seen` : ""}
               </p>
             </Link>
           ))}
@@ -158,15 +159,15 @@ export default async function LearnHome() {
                 <Link
                   key={`${b.handle}/${b.slug}`}
                   href={`/learn/${b.handle}/${b.slug}`}
-                  style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.1rem", display: "block" }}
+                  className="card"
+                  data-tint={tintFor(b)}
                 >
-                  <h3 className="h3" style={{ margin: "0 0 .35rem" }}>{b.title}</h3>
-                  {b.goal && (
-                    <p style={{ color: "var(--ink-2)", fontSize: ".875rem", margin: "0 0 .6rem" }}>
-                      {b.goal.split("\n")[0].slice(0, 120)}
-                    </p>
-                  )}
-                  <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: 0 }}>
+                  <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
+                    free course · {b.handle}
+                  </span>
+                  <h3 className="card-title">{b.title}</h3>
+                  <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
+                  <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
                     {b.cards} cards
                     {b.score != null ? ` · agent ${b.score}%` : ""}
                   </p>
