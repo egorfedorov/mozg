@@ -182,6 +182,9 @@ export default async function BrainPage({
               {LICENSE_LABEL[brain.license]}
             </p>
             <p style={{ marginTop: ".75rem", display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
+              <Link className="navlink" href={`/brains/${brain.slug}/board`}>
+                the board →
+              </Link>
               <Link className="navlink" href={`/brains/${brain.slug}/notes`}>
                 browse notes →
               </Link>
