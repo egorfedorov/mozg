@@ -3,6 +3,7 @@ import { query, maybeOne } from "@/db";
 import { TOOLS, callTool } from "@/lib/mcp";
 import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 import type { Plan } from "@/db/types";
 import { captureServer } from "@/lib/analytics";
 
@@ -61,7 +62,9 @@ export async function POST(req: Request) {
   if (!owner) {
     // 401 + WWW-Authenticate is what MCP clients look for to prompt for
     // auth; resource_metadata points OAuth-capable ones at discovery.
-    const base = new URL(req.url).origin;
+    // Behind nginx the request origin is localhost — the advertised URL must
+    // be the public one.
+    const base = env.NEXT_PUBLIC_APP_URL;
     return NextResponse.json(
       { jsonrpc: "2.0", id: null, error: { code: -32001, message: "Unauthorized" } },
       {
