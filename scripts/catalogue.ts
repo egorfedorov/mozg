@@ -310,6 +310,45 @@ const PACKS: Pack[] = [
     ],
   },
   {
+    // Expo ships SDK majors faster than any model retrains, and the docs
+    // repo keeps every version side by side — the skip keeps out the 1000+
+    // pages of older SDK copies that would make the brain contradict itself.
+    key: "expo",
+    repo: "expo/expo",
+    prefix: "docs/pages/",
+    endings: [".mdx"],
+    skip: ["docs/pages/versions/", "docs/pages/ja/", "docs/pages/archive/", "docs/pages/internal/"],
+    topic: "mobile",
+    parent: {
+      slug: "expo",
+      title: "Expo & React Native",
+      goal:
+        "Answer questions about building mobile apps with Expo as documented " +
+        "today: EAS Build, Update and Submit, Expo Router navigation, the " +
+        "module API, config plugins, and the guides — current SDK behaviour, " +
+        "not last year's.",
+    },
+    children: [
+      {
+        slug: "expo-eas",
+        title: "Expo · EAS",
+        goal:
+          "Answer questions about EAS exactly as specified: Build profiles and " +
+          "eas.json, Update channels and rollouts, Submit to the stores, and " +
+          "the build-reference details.",
+        areas: ["eas", "eas-update", "eas-insights", "build", "build-reference", "custom-builds", "workflow", "submit", "distribution"],
+      },
+      {
+        slug: "expo-router",
+        title: "Expo · Router",
+        goal:
+          "Answer questions about Expo Router: file-based routes, layouts, " +
+          "navigation APIs, typed routes and the advanced patterns.",
+        areas: ["router"],
+      },
+    ],
+  },
+  {
     // Svelte 5 rewrote the component model (runes, snippets, event
     // attributes) after most models learned Svelte 4 — the exact failure mode
     // a brain exists for: the model answers confidently in yesterday's syntax.

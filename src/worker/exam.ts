@@ -58,11 +58,16 @@ const GEN_SCHEMA = {
 export async function generateChecks(brain: Brain): Promise<number> {
   if (!brain.goal) return 0;
 
+  // The same scope the exam retrieves over — for a parent that means the
+  // family. Generating from the parent's own (often empty) notes produced
+  // exams with no anchor in what the family actually holds: every question
+  // a gap question, every sitting a zero.
+  const scope = await familyIds(brain);
   const titles = await query<{ title: string; category: string | null }>(
     `select title, category from notes
-      where brain_id = $1 and status = 'active'
+      where brain_id = any($1::uuid[]) and status = 'active'
       order by created_at desc limit 200`,
-    [brain.id],
+    [scope],
   );
 
   const { data: raw } = await structured<unknown>({
