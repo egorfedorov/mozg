@@ -26,12 +26,15 @@ import { clustersFromPairs } from "@/lib/consolidate";
  */
 
 /**
- * Similarity ~0.88, deliberately looser than write-time dedup's 0.93: dedup
- * catches near-copies, this catches "the same fact in different words". Going
- * lower starts merging notes that merely share a topic, and a merge that
- * glues unrelated facts together is worse than the duplicates it removes.
+ * Similarity ~0.91 — validated on production data (2026-08-04, 300 sampled
+ * chunks across the six largest brains): below distance 0.09 every sampled
+ * pair was the same fact in different words; between 0.09 and 0.12 the pairs
+ * turned into *related but distinct* facts — "NativeTabs SDK 54" vs "SDK 55
+ * and later", adapter-cloudflare vs adapter-cloudflare-workers — which must
+ * never merge. Dedup's write-time 0.93 catches near-copies; this catches
+ * paraphrases and stops before versions.
  */
-const CONSOLIDATE_DISTANCE = 0.12;
+const CONSOLIDATE_DISTANCE = 0.09;
 
 /**
  * Notes younger than this are left alone even when they pair up — an agent

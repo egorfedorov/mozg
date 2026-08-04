@@ -310,6 +310,45 @@ const PACKS: Pack[] = [
     ],
   },
   {
+    // The most-asked stack there is, and the one agents hallucinate hardest
+    // on: models memorised the Pages Router era, the App Router rewrote the
+    // mental model. The prefix deliberately excludes docs/02-pages — legacy
+    // material in the same brain would resurrect exactly the confusion this
+    // brain exists to end.
+    key: "nextjs",
+    repo: "vercel/next.js",
+    prefix: "docs/01-app/",
+    endings: [".mdx"],
+    topic: "web",
+    parent: {
+      slug: "nextjs",
+      title: "Next.js App Router",
+      goal:
+        "Answer questions about building Next.js applications with the App " +
+        "Router as documented today: routing, layouts, server and client " +
+        "components, data fetching and caching, server actions, and the " +
+        "current API surface — not the Pages Router era the models memorised.",
+    },
+    children: [
+      {
+        slug: "nextjs-api",
+        title: "Next.js · API reference",
+        goal:
+          "Answer questions about the Next.js API surface exactly as specified: " +
+          "components, file conventions, functions, directives and config options.",
+        areas: ["03-api-reference"],
+      },
+      {
+        slug: "nextjs-guides",
+        title: "Next.js · Guides",
+        goal:
+          "Answer questions from the Next.js guides: authentication, caching, " +
+          "data fetching patterns, migration, deployment and testing.",
+        areas: ["02-guides"],
+      },
+    ],
+  },
+  {
     // Expo ships SDK majors faster than any model retrains, and the docs
     // repo keeps every version side by side — the skip keeps out the 1000+
     // pages of older SDK copies that would make the brain contradict itself.
