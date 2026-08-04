@@ -15,7 +15,7 @@ with a measured score and a public list of what it does *not* know.
 [![MCP](https://img.shields.io/badge/protocol-MCP-14161a)](https://mozg.sh/connect)
 
 [Start here](https://mozg.sh/start) · [Catalogue](https://mozg.sh/explore) ·
-[Why not a context file](https://mozg.sh/vs) · [Self-host guide](docs/SELFHOST.md)
+[Why not a context file](https://mozg.sh/vs) · [Self-host guide](docs/SELFHOST.md) · [Roadmap](docs/ROADMAP.md)
 
 </div>
 
