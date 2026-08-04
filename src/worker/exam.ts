@@ -5,6 +5,8 @@ import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
 import { searchBrain } from "@/lib/search";
 import { familyIds } from "@/lib/families";
+import { discoverPages, pickTopUpPages } from "@/lib/crawl";
+import { enqueueIngest, PRIORITY } from "@/worker/queue";
 
 /**
  * The exam — point B, made measurable.
@@ -274,6 +276,24 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       score,
     ]);
 
+    // Close what can be closed without a human: questions that failed with
+    // zero retrieval hits mean the material is simply absent — and if this
+    // brain was built from a crawled site, the site itself is the first
+    // place to look for it. Non-fatal by design: a topping-up failure must
+    // never fail the exam that triggered it.
+    const missing = results.filter((r) => !r.passed && r.retrievalHits === 0);
+    if (missing.length) {
+      await topUpFromSites(
+        brain,
+        missing.map((m) => `${m.check.category}: ${m.check.question}`),
+      ).catch((err) =>
+        console.warn(
+          `[exam] top-up for ${brain.slug} failed: ` +
+            (err instanceof Error ? err.message : String(err)),
+        ),
+      );
+    }
+
     return {
       score,
       passed: results.filter((r) => r.passed).length,
@@ -287,6 +307,50 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       [run.id, err instanceof Error ? err.message.slice(0, 500) : String(err)],
     );
     throw err;
+  }
+}
+
+/**
+ * Feed the gaps from the brain's own crawl roots. Discovery lists what the
+ * site holds (cheap — a tree, an llms.txt or a sitemap), pickTopUpPages ranks
+ * unread pages against the failed questions, and the winners are queued like
+ * any crawled page. The next exam then measures whether they helped.
+ */
+async function topUpFromSites(brain: Brain, failedTexts: string[]): Promise<void> {
+  const sites = await query<{ id: string; url: string }>(
+    `select id, url from sources
+      where brain_id = $1 and kind = 'site' and url is not null
+      order by created_at limit 2`,
+    [brain.id],
+  );
+  if (!sites.length) return;
+
+  const existing = new Set(
+    (
+      await query<{ url: string }>(
+        `select url from sources where brain_id = $1 and url is not null`,
+        [brain.id],
+      )
+    ).map((r) => r.url),
+  );
+
+  for (const site of sites) {
+    const found = await discoverPages(site.url, 300).catch(() => null);
+    if (!found) continue;
+
+    const picks = pickTopUpPages(found.pages, failedTexts, existing);
+    for (const url of picks) {
+      const source = await one<{ id: string }>(
+        `insert into sources (brain_id, kind, url, original_name)
+         values ($1, 'url', $2, $3) returning id`,
+        [brain.id, url, `${new URL(url).pathname.slice(1)} (added for a failed check)`],
+      );
+      await enqueueIngest(source.id, PRIORITY.crawl);
+      existing.add(url);
+    }
+    if (picks.length) {
+      console.log(`[exam] ${brain.slug}: queued ${picks.length} page(s) to close gaps`);
+    }
   }
 }
 

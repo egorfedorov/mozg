@@ -188,6 +188,24 @@ test("a JS shell that links its repository falls back to github", async () => {
   assert.equal(findGitHubRepoInHtml(`<p>no links</p>`), null);
 });
 
+test("gap top-up picks unread pages whose path words match the failed questions", async () => {
+  const { pickTopUpPages } = await import("./crawl");
+  const picked = pickTopUpPages(
+    [
+      "https://x.com/docs/api/bet-replay",
+      "https://x.com/docs/api/authenticate",
+      "https://x.com/docs/pricing",
+      "https://x.com/docs/api/balance",
+    ],
+    ["What does the bet-replay endpoint return?", "How does authenticate work?"],
+    new Set(["https://x.com/docs/api/balance"]),
+  );
+  assert.deepEqual(picked, [
+    "https://x.com/docs/api/bet-replay",
+    "https://x.com/docs/api/authenticate",
+  ]);
+});
+
 test("versioned docs keep only the newest release, drafts drop", async () => {
   const { currentVersionOnly } = await import("./crawl");
   const { kept, dropped, version } = currentVersionOnly([

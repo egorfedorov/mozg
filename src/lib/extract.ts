@@ -74,7 +74,11 @@ const JSON_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-function systemPrompt(goal: string | null, categories: string[]): string {
+function systemPrompt(
+  goal: string | null,
+  categories: string[],
+  focus: string[] = [],
+): string {
   return [
     "You build knowledge packs that AI coding agents read later, through a",
     "search tool. You are given one screenshot at a time.",
@@ -106,6 +110,22 @@ function systemPrompt(goal: string | null, categories: string[]): string {
     "options' loses exactly the row a reader will come looking for. A long note",
     "that preserves the table beats three short notes that describe it.",
     "",
+    "Working code examples are first-class material: keep them whole in an",
+    "'example' note, verbatim, with one line saying what the example shows.",
+    "Agents ask for 'show me an example' constantly, and a paraphrased snippet",
+    "does not run.",
+    "",
+    // The exam steering the extraction: these are the questions the brain
+    // currently fails. Every (re)read is a chance to close them.
+    ...(focus.length
+      ? [
+          "The brain currently FAILS these exam questions. If this source",
+          "contains their answers, capture them precisely — exact values,",
+          "exact names — even if you would otherwise judge the detail minor:",
+          ...focus.map((q) => `- ${q}`),
+          "",
+        ]
+      : []),
     categories.length
       ? `Categories already used in this brain, reuse where they fit:\n${categories.map((c) => `- ${c}`).join("\n")}`
       : "",
@@ -154,13 +174,13 @@ const TOOL_DESCRIPTION =
 
 export async function extractFromImage(
   image: Buffer,
-  opts: { goal: string | null; categories?: string[] },
+  opts: { goal: string | null; categories?: string[]; focus?: string[] },
 ): Promise<ExtractResult> {
   const { data, mediaType } = await prepareImage(image);
 
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
-    system: systemPrompt(opts.goal, opts.categories ?? []),
+    system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
     toolName: "save_notes",
     toolDescription: TOOL_DESCRIPTION,
     schema: JSON_SCHEMA,
@@ -206,11 +226,11 @@ function finish(raw: unknown, usage: Usage): ExtractResult {
  */
 export async function extractFromPdf(
   pdf: Buffer,
-  opts: { goal: string | null; categories?: string[]; label?: string },
+  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[] },
 ): Promise<ExtractResult> {
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
-    system: systemPrompt(opts.goal, opts.categories ?? []),
+    system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
     toolName: "save_notes",
     toolDescription: TOOL_DESCRIPTION,
     schema: JSON_SCHEMA,
@@ -282,7 +302,7 @@ const SEGMENT_CONCURRENCY = 4;
 
 export async function extractFromText(
   text: string,
-  opts: { goal: string | null; categories?: string[]; label?: string },
+  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[] },
 ): Promise<ExtractResult> {
   const parts = segments(text);
 
@@ -295,7 +315,7 @@ export async function extractFromText(
     try {
       const { data: raw, usage: u } = await structured<unknown>({
         model: env.MODEL_EXTRACT,
-        system: systemPrompt(opts.goal, opts.categories ?? []),
+        system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
         toolName: "save_notes",
         toolDescription: TOOL_DESCRIPTION,
         schema: JSON_SCHEMA,

@@ -86,9 +86,10 @@ function finalize(all: string[], cap: number, via: Discovery["via"], extraNote?:
 /** File endings that are documentation, for GitHub trees. */
 const DOC_ENDINGS = [".md", ".mdx", ".svx", ".txt", ".rst", ".adoc"];
 
-/** Never worth fetching on a link walk. */
+/** Never worth fetching on a link walk. PDFs are deliberately absent: specs
+ *  live in them, and the ingest side reads them through the PDF pipeline. */
 const SKIP_ENDINGS =
-  /\.(png|jpe?g|gif|svg|webp|ico|css|js|mjs|json|xml|pdf|zip|tar|gz|mp4|webm|woff2?|ttf|eot)$/i;
+  /\.(png|jpe?g|gif|svg|webp|ico|css|js|mjs|json|xml|zip|tar|gz|mp4|webm|woff2?|ttf|eot)$/i;
 
 // ─── GitHub ──────────────────────────────────────────────────────────────────
 
@@ -479,6 +480,50 @@ async function walkPages(
       ? `stopped at ${cap} fetched pages; more links were left unvisited`
       : undefined,
   );
+}
+
+// ─── closing exam gaps from a known source ───────────────────────────────────
+
+/**
+ * Which not-yet-ingested pages of an already-trusted site most plausibly
+ * answer the failed exam questions. Pure lexical overlap between question
+ * words and URL path words — crude, but it only ever ranks pages from a
+ * source the owner already chose, so a wrong pick costs one cheap page,
+ * never a hallucinated URL.
+ */
+export function pickTopUpPages(
+  candidates: string[],
+  failedTexts: string[],
+  existing: Set<string>,
+  limit = 5,
+): string[] {
+  const terms = new Set(
+    failedTexts
+      .join(" ")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 3),
+  );
+  if (!terms.size) return [];
+
+  return candidates
+    .filter((c) => !existing.has(c))
+    .map((c) => {
+      let path = c;
+      try {
+        path = new URL(c).pathname;
+      } catch {
+        // Keep as-is; raw paths score the same way.
+      }
+      const words = path.toLowerCase().split(/[^\p{L}\p{N}]+/u);
+      const score = words.filter((w) => w.length > 3 && terms.has(w)).length;
+      return { c, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.c);
 }
 
 // ─── entry point ─────────────────────────────────────────────────────────────

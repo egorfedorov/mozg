@@ -10,6 +10,7 @@ import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
 import { storage } from "@/lib/storage";
 import { fetchPageText, contentHash } from "@/lib/page";
+import { checkFetchableUrl } from "@/lib/url-guard";
 import { enqueueExam } from "@/worker/queue";
 
 /**
@@ -304,13 +305,41 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
  * and quietly worse. Images and PDFs skip the cache — they duplicate rarely
  * and hashing their meaning is a different problem.
  */
+/**
+ * The exam steering every read: the questions the brain currently fails go
+ * into the extraction prompt, so a re-read of a source is never blind — it
+ * hunts for exactly what the score says is missing. Empty for a brain that
+ * has no exam yet, or passes it.
+ */
+async function failedFocus(brainId: string): Promise<string[]> {
+  const rows = await query<{ question: string }>(
+    `select c.question
+       from check_results r join checks c on c.id = r.check_id
+      where r.run_id = (
+        select id from check_runs where brain_id = $1 and status = 'done'
+        order by started_at desc limit 1
+      ) and not r.passed
+      order by c.weight desc
+      limit 12`,
+    [brainId],
+  );
+  return rows.map((r) => r.question);
+}
+
 async function cachedTextExtract(
   text: string,
   brain: Brain,
   categories: string[],
   label?: string,
 ): Promise<ExtractResult> {
-  const key = [contentHash(text), env.MODEL_EXTRACT, contentHash(brain.goal ?? "")];
+  const focus = await failedFocus(brain.id);
+  // Focus is part of the goal hash: a focused re-read is a different ask
+  // than the blind first read, and must not be answered from its cache.
+  const key = [
+    contentHash(text),
+    env.MODEL_EXTRACT,
+    contentHash(`${brain.goal ?? ""}\n${focus.join("\n")}`),
+  ];
 
   const hit = await maybeOne<{ payload: ExtractResult }>(
     `select payload from extract_cache
@@ -322,7 +351,7 @@ async function cachedTextExtract(
     return { ...hit.payload, usage: { ...hit.payload.usage, costCents: 0 } };
   }
 
-  const result = await extractFromText(text, { goal: brain.goal, categories, label });
+  const result = await extractFromText(text, { goal: brain.goal, categories, label, focus });
 
   await query(
     `insert into extract_cache (content_hash, model, goal_hash, payload, note_count)
@@ -352,6 +381,36 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
 
   if (source.kind === "url") {
     if (!source.url) throw new Error("url source has no url");
+
+    // A crawled link can be a PDF — payment specs and hardware docs live in
+    // them. Text scraping would feed the model binary soup; the PDF path
+    // hands the document over whole, layout included.
+    if (/\.pdf(\?|#|$)/i.test(source.url)) {
+      // Same SSRF re-check every other fetch does — DNS can change between
+      // the add and the read, and a PDF fetch is still a fetch.
+      const guard = await checkFetchableUrl(source.url);
+      if (!guard.ok) throw new Error(`refusing to fetch: ${guard.reason}`);
+
+      const res = await fetch(source.url, {
+        signal: AbortSignal.timeout(60_000),
+        headers: { "user-agent": "mozg/0.1 (+https://mozg.sh)" },
+      });
+      if (!res.ok) throw new Error(`fetch ${source.url} -> ${res.status}`);
+      const bytes = Buffer.from(await res.arrayBuffer());
+      if (bytes.length > 20 * 1024 * 1024) throw new Error("PDF is over 20 MB");
+
+      await query(
+        `update sources set content_hash = $2, checked_at = now(), mime = 'application/pdf'
+          where id = $1`,
+        [source.id, contentHash(bytes.toString("base64"))],
+      );
+      return extractFromPdf(bytes, {
+        goal: brain.goal,
+        categories,
+        label: source.url,
+        focus: await failedFocus(brain.id),
+      });
+    }
 
     const text = await fetchPageText(source.url);
 
