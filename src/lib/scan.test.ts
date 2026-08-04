@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scanSecrets, scanPII, scanInjection, redact, mask, entropy } from "./scan";
+import { scanSecrets, scanPII, scanInjection, redact, mask, entropy, secretGate } from "./scan";
 
 const ids = (fs: { rule: string }[]) => fs.map((f) => f.rule).sort();
 
@@ -103,4 +103,23 @@ test("injection scan: catches steering, passes normal docs", () => {
     "You are now able to stream responses. Run the build command before deploying.",
   );
   assert.equal(clean.length, 0);
+});
+
+test("secret gate: uploads are refused, public pages are redacted", () => {
+  // Clean input never routes anywhere but through.
+  assert.equal(secretGate({ kind: "url", findings: 0, waived: false }), "pass");
+  assert.equal(secretGate({ kind: "image", findings: 0, waived: false }), "pass");
+
+  // A screenshot or a pasted file can carry the user's own live credential.
+  assert.equal(secretGate({ kind: "image", findings: 2, waived: false }), "reject");
+  assert.equal(secretGate({ kind: "file", findings: 1, waived: false }), "reject");
+  assert.equal(secretGate({ kind: "text", findings: 1, waived: false }), "reject");
+
+  // A documentation page's key was published as an example by its authors;
+  // dropping the page costs the reader the material and prevents no leak.
+  assert.equal(secretGate({ kind: "url", findings: 1, waived: false }), "redact");
+
+  // A waiver is the owner saying they looked, whatever the source.
+  assert.equal(secretGate({ kind: "image", findings: 3, waived: true }), "pass");
+  assert.equal(secretGate({ kind: "url", findings: 3, waived: true }), "pass");
 });

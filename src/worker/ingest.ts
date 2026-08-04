@@ -6,7 +6,7 @@ import { limitsFor } from "@/lib/plans";
 import { byokStorage } from "@/lib/byok";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSION, type ExtractResult } from "@/lib/extract";
-import { scanSecrets } from "@/lib/scan";
+import { redact, scanSecrets, secretGate } from "@/lib/scan";
 import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
 import { storage } from "@/lib/storage";
@@ -174,7 +174,42 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
         JSON.stringify(findings),
       ]);
     }
-    if (findings.length && !source.scan_waived) {
+    // A page fetched from a public URL is a different case from an upload, and
+    // the gate was treating them the same. The scanner exists to stop a user's
+    // own secret from entering a shared brain — a screenshot of their terminal,
+    // a note their agent wrote. Nothing in a public documentation page is the
+    // user's secret: the key in it is an example, already published by whoever
+    // wrote the docs, and there is no leak left to prevent.
+    //
+    // Rejecting them cost twice. Sixty pages were thrown away on production —
+    // Supabase's "connecting to postgres" and "managing user data", Hono's JWT
+    // helper, ten AI SDK provider pages — which is exactly the material someone
+    // asks a brain about. And the extraction was already paid for before the
+    // gate ran, so we paid for notes we deleted.
+    //
+    // Redacting keeps the shape and drops the string: an agent reads
+    // `SUPABASE_KEY=eyJ••••••I0` and learns which variable to set, not a
+    // credential. Findings are still recorded on the source, so what the page
+    // contained stays auditable.
+    const gate = secretGate({
+      kind: source.kind,
+      findings: findings.length,
+      waived: Boolean(source.scan_waived),
+    });
+    if (gate === "redact") {
+      extracted = {
+        ...extracted,
+        notes: extracted.notes.map((n) => ({
+          ...n,
+          title: redact(n.title),
+          body: redact(n.body),
+        })),
+      };
+      await query(`update sources set findings = $2 where id = $1`, [
+        sourceId,
+        JSON.stringify(findings),
+      ]);
+    } else if (gate === "reject") {
       await query(
         `update sources
             set status = 'rejected', reject_reason = 'secrets_detected',

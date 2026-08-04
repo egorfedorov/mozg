@@ -207,6 +207,29 @@ export function scan(text: string): { secrets: Finding[]; pii: Finding[] } {
   return { secrets: scanSecrets(text), pii: scanPII(text) };
 }
 
+/** What the ingest gate does with a source that scanned dirty. */
+export type GateAction = "pass" | "redact" | "reject";
+
+/**
+ * The gate's decision, in one place so ingest and any future writer cannot
+ * disagree about it.
+ *
+ * An upload is refused: a screenshot of a terminal or a pasted file can carry
+ * the user's own live credential, and a shared brain is the wrong place for it.
+ * A public URL is redacted instead — whatever key a documentation page shows was
+ * published by its authors as an example, so there is no leak to prevent, and
+ * refusing the page only costs the reader the material. A waiver is the owner
+ * saying they have looked; the text is then kept as written.
+ */
+export function secretGate(opts: {
+  kind: string;
+  findings: number;
+  waived: boolean;
+}): GateAction {
+  if (!opts.findings || opts.waived) return "pass";
+  return opts.kind === "url" ? "redact" : "reject";
+}
+
 /**
  * Replace every detected secret in-place. Used when a user chooses to keep a
  * source after review — we persist the redacted text, never the original.
