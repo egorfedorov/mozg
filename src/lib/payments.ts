@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { query, tx } from "@/db";
+import { maybeOne, query, tx } from "@/db";
 import { env } from "@/lib/env";
-import { creditTopUp } from "@/lib/money";
+import { creditTopUp, purchaseBrain } from "@/lib/money";
 
 /**
  * Crypto top-ups through NOWPayments.
@@ -22,6 +22,12 @@ const API = "https://api.nowpayments.io/v1";
 
 /** Wired up? Everything here is inert until both keys exist. */
 export const paymentsReady = Boolean(env.NOWPAYMENTS_API_KEY && env.NOWPAYMENTS_IPN_SECRET);
+
+/** Our own rails: USDT straight to the owner's wallet, no middleman. */
+export const mozgpayReady = Boolean(env.MOZGPAY_TRON_ADDRESS);
+
+/** Either rail being live is enough for the UI to offer crypto. */
+export const anyCryptoReady = paymentsReady || mozgpayReady;
 
 /** Smallest useful top-up: below this the network fee is most of it. */
 export const MIN_TOPUP_CENTS = 500;
@@ -100,6 +106,107 @@ export async function createInvoice(opts: {
     ok: true,
     invoice: { reference, payUrl: body.invoice_url, amountCents: opts.amountCents },
   };
+}
+
+/**
+ * A mozgpay invoice: our row, the owner's address, and an amount whose last
+ * decimals are a fingerprint no other open invoice on that address shares.
+ * USDT is treated 1:1 with USD — the peg's drift is smaller than the
+ * fingerprint, and a price feed would add a failure mode to save pennies.
+ */
+export async function createOwnInvoice(opts: {
+  userId: string;
+  amountCents: number;
+  purpose?: "topup" | "buy";
+  buyBrainId?: string;
+}): Promise<{ ok: true; invoice: Invoice } | { ok: false; reason: string }> {
+  if (!mozgpayReady) return { ok: false, reason: "unconfigured" };
+  if (opts.amountCents < MIN_TOPUP_CENTS || opts.amountCents > MAX_TOPUP_CENTS) {
+    return { ok: false, reason: "amount" };
+  }
+
+  const reference = `mzp_${randomBytes(12).toString("base64url")}`;
+  const base = opts.amountCents / 100;
+
+  // A few tries at a free fingerprint; the partial unique index is the
+  // referee, so two concurrent invoices cannot land on one amount.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const fingerprint = (randomBytes(2).readUInt16BE(0) % 9899) + 100; // 100..9999
+    const amount = (base + fingerprint / 1_000_000).toFixed(6);
+    try {
+      await query(
+        `insert into topups
+           (user_id, amount_cents, provider, reference, purpose, buy_brain_id,
+            chain, pay_address, pay_amount, expires_at)
+         values ($1, $2, 'mozgpay', $3, $4, $5, 'tron', $6, $7, now() + interval '3 hours')`,
+        [
+          opts.userId,
+          opts.amountCents,
+          reference,
+          opts.purpose ?? "topup",
+          opts.purpose === "buy" ? (opts.buyBrainId ?? null) : null,
+          env.MOZGPAY_TRON_ADDRESS,
+          amount,
+        ],
+      );
+      return {
+        ok: true,
+        invoice: { reference, payUrl: `/pay/${reference}`, amountCents: opts.amountCents },
+      };
+    } catch (err) {
+      // Unique violation on the fingerprint — roll again. Anything else is real.
+      if (!(err instanceof Error && /topups_open_fingerprint/.test(err.message))) throw err;
+    }
+  }
+  return { ok: false, reason: "could not find a free amount fingerprint" };
+}
+
+/**
+ * Settle a mozgpay invoice the watcher matched on-chain. The same locked
+ * transaction shape as the webhook path: became-paid and got-credited are one
+ * commit, and the ledger's unique reference makes replays no-ops.
+ */
+export async function settleOwnInvoice(
+  reference: string,
+  txId: string,
+): Promise<WebhookOutcome> {
+  return tx(async (client) => {
+    const { rows } = await client.query<{
+      id: string;
+      user_id: string;
+      amount_cents: number;
+      status: string;
+      purpose: string;
+      buy_brain_id: string | null;
+    }>(
+      `select id, user_id, amount_cents, status, purpose, buy_brain_id
+         from topups where reference = $1 for update`,
+      [reference],
+    );
+    const row = rows[0];
+    if (!row) return { credited: false as const, reason: "unknown" as const };
+    if (row.status !== "pending") return { credited: false as const, reason: "already" as const };
+
+    await client.query(
+      `update topups set status = 'paid', settled_at = now(), provider_ref = $2
+        where id = $1`,
+      [row.id, txId],
+    );
+    await creditTopUp(client, {
+      userId: row.user_id,
+      amountCents: row.amount_cents,
+      externalRef: reference,
+      note: "crypto top-up (mozgpay)",
+    });
+
+    return {
+      credited: true as const,
+      amountCents: row.amount_cents,
+      ...(row.purpose === "buy" && row.buy_brain_id
+        ? { followUp: { userId: row.user_id, buyBrainId: row.buy_brain_id } }
+        : {}),
+    };
+  });
 }
 
 /**
@@ -208,6 +315,34 @@ export async function applyWebhook(payload: {
         : {}),
     };
   });
+}
+
+/**
+ * The buy-intent follow-up, shared by every settlement path (webhook and
+ * watcher): the credit's transaction has committed, now spend the balance on
+ * the brain the invoice was for. Failure degrades to money on the balance.
+ */
+export async function completeFollowUp(outcome: WebhookOutcome): Promise<void> {
+  if (!outcome.credited || !outcome.followUp) return;
+  const { userId, buyBrainId } = outcome.followUp;
+
+  const brain = await maybeOne<{ owner_id: string }>(
+    `select owner_id from brains where id = $1`,
+    [buyBrainId],
+  );
+  if (!brain) {
+    console.warn(`[payments] follow-up brain ${buyBrainId} is gone — money stays as balance`);
+    return;
+  }
+  const bought = await purchaseBrain({
+    brainId: buyBrainId,
+    buyerId: userId,
+    sellerId: brain.owner_id,
+  }).catch((err) => ({ ok: false as const, reason: String(err) as never }));
+  console.log(
+    `[payments] follow-up purchase ${buyBrainId}: ` +
+      (bought.ok ? "done" : `left as balance (${bought.reason})`),
+  );
 }
 
 export async function recentTopups(userId: string, limit = 5) {

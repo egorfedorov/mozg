@@ -6,7 +6,7 @@ import { maybeOne } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { purchaseBrain } from "@/lib/money";
-import { createInvoice } from "@/lib/payments";
+import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
 
 /**
  * Buy access to a brain from the account balance.
@@ -34,12 +34,19 @@ export async function buyWithCrypto(_prev: unknown, formData: FormData) {
   if (!brain) return { error: "That brain is not available." };
   if (brain.price_cents <= 0) return { error: "This brain is free; nothing to buy." };
 
-  const res = await createInvoice({
-    userId: user.id,
-    amountCents: brain.price_cents,
-    purpose: "buy",
-    buyBrainId: brain.id,
-  });
+  const res = mozgpayReady
+    ? await createOwnInvoice({
+        userId: user.id,
+        amountCents: brain.price_cents,
+        purpose: "buy",
+        buyBrainId: brain.id,
+      })
+    : await createInvoice({
+        userId: user.id,
+        amountCents: brain.price_cents,
+        purpose: "buy",
+        buyBrainId: brain.id,
+      });
   if (!res.ok) {
     return {
       error:

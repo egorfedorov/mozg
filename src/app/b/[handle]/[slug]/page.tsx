@@ -15,7 +15,7 @@ import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
 import { accessibleChildren, parentOf } from "@/lib/families";
 import { gateFor } from "@/lib/paywall";
-import { paymentsReady } from "@/lib/payments";
+import { anyCryptoReady } from "@/lib/payments";
 import { isoDate } from "@/lib/dates";
 
 /**
@@ -301,7 +301,7 @@ export default async function PublicBrainPage({
               partOf={gate && gate.brainId !== brain.id ? (parent?.title ?? null) : null}
               balanceCents={balance}
               signedIn={Boolean(user)}
-              cryptoReady={paymentsReady}
+              cryptoReady={anyCryptoReady}
             />
           ) : (
           <section className="term">

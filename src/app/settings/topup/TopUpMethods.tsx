@@ -51,7 +51,7 @@ export default function TopUpMethods({
           <>
             <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
               {ready
-                ? "Pick an amount, then choose the coin on the payment page. The balance updates when the network confirms — usually a few minutes."
+                ? "Pick an amount — you get an address and an exact sum, and the balance updates itself when the network confirms, usually under a minute. Paid straight to the wallet, no processor in the middle."
                 : "Pick an amount and a coin, and ask for an address — we reply the same day with where to send it, and credit the balance as soon as it lands. Same ledger the automatic gateway will write to."}
             </p>
 

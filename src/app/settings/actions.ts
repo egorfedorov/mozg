@@ -7,7 +7,7 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { requestPayout, MIN_PAYOUT_CENTS } from "@/lib/money";
 import { formatCents } from "@/lib/money-math";
-import { createInvoice } from "@/lib/payments";
+import { createInvoice, createOwnInvoice, mozgpayReady } from "@/lib/payments";
 
 /** Handles are a public namespace — /b/{handle}/{slug} — so they are strict. */
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
@@ -104,7 +104,11 @@ export async function startTopUp(
   if (!user) redirect("/sign-in");
 
   const amountCents = Number(formData.get("amount") ?? 0);
-  const res = await createInvoice({ userId: user.id, amountCents });
+  // Our own rail first: no middleman, no fee, the author's wallet directly.
+  // The gateway stays as the fallback for the day we want hosted checkout.
+  const res = mozgpayReady
+    ? await createOwnInvoice({ userId: user.id, amountCents })
+    : await createInvoice({ userId: user.id, amountCents });
 
   if (!res.ok) {
     return {

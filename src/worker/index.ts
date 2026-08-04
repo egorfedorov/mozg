@@ -1,5 +1,6 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, scheduleDigest, enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl } from "@/worker/queue";
 import { runDigest } from "@/worker/digest";
+import { runMozgpayWatch } from "@/worker/mozgpay";
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
@@ -185,6 +186,14 @@ async function main() {
     console.log(`[digest] sent ${sent} weekly letter(s)`);
   });
   await scheduleDigest();
+
+  await boss.work(QUEUES.mozgpay, { batchSize: 1, pollingIntervalSeconds: 15 }, async () => {
+    const r = await runMozgpayWatch();
+    if (r.matched || r.expired) {
+      console.log(`[mozgpay] matched=${r.matched} expired=${r.expired} seen=${r.seen}`);
+    }
+  });
+  await scheduleMozgpay();
 
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +

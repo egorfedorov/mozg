@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/session";
-import { paymentsReady, recentTopups } from "@/lib/payments";
+import { anyCryptoReady, recentTopups } from "@/lib/payments";
 import { formatCents } from "@/lib/money-math";
 import AppShell from "@/components/AppShell";
 import { Section, Rows, Row } from "@/components/ui";
@@ -26,7 +26,7 @@ export default async function TopUpPage() {
   return (
     <AppShell active="/settings/balance" eyebrow={user.email} title="Top up balance">
       <div className="stack">
-        <TopUpMethods ready={paymentsReady} email={user.email} />
+        <TopUpMethods ready={anyCryptoReady} email={user.email} />
 
         <Section title="Recent top-ups" aside={<Link href="/settings/balance">balance →</Link>}>
           <Rows empty="Nothing yet. A top-up appears here the moment it is started, and turns into balance when the payment lands.">
@@ -37,8 +37,12 @@ export default async function TopUpPage() {
                 sub={STATUS_LABEL[t.status] ?? t.status}
                 meta={t.created_at}
                 side={
-                  t.status === "pending" && t.pay_url ? (
-                    <a href={t.pay_url} target="_blank" rel="noreferrer noopener">
+                  t.status === "pending" ? (
+                    <a
+                      href={t.pay_url ?? `/pay/${t.reference}`}
+                      target={t.pay_url ? "_blank" : undefined}
+                      rel="noreferrer noopener"
+                    >
                       pay →
                     </a>
                   ) : undefined

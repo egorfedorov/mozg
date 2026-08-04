@@ -14,6 +14,7 @@ export const QUEUES = {
   maintenance: "maintenance",
   consolidate: "consolidate",
   digest: "digest",
+  mozgpay: "mozgpay",
 } as const;
 
 /**
@@ -120,6 +121,12 @@ export async function enqueueConsolidation(): Promise<void> {
 export async function scheduleDigest(): Promise<void> {
   const b = await getBoss();
   await b.schedule(QUEUES.digest, "0 9 * * 1", {}, { tz: "UTC" });
+}
+
+/** Every minute — a paying customer is watching the pending screen. */
+export async function scheduleMozgpay(): Promise<void> {
+  const b = await getBoss();
+  await b.schedule(QUEUES.mozgpay, "* * * * *", {}, { tz: "UTC" });
 }
 
 export async function enqueueExam(brainId: string): Promise<void> {

@@ -61,6 +61,12 @@ const schema = z.object({
   NOWPAYMENTS_API_KEY: z.string().optional(),
   NOWPAYMENTS_IPN_SECRET: z.string().optional(),
 
+  // mozgpay: our own USDT (TRC-20) acceptance. The address is the owner's
+  // wallet — the server watches it, it cannot spend from it. Optional
+  // TronGrid key raises the polling rate limit.
+  MOZGPAY_TRON_ADDRESS: z.string().optional(),
+  TRONGRID_API_KEY: z.string().optional(),
+
   // Nightly note consolidation. Off until the similarity threshold separates
   // duplicates from neighbours on real material — measured on bge-m3, three
   // notes stating the same fact sat at 0.15/0.22/0.27 while the first pair of
