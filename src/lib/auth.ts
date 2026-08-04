@@ -11,10 +11,19 @@ import { captureServer } from "./analytics";
  * tables; app tables FK into "user"(id). Run `npm run auth:migrate` before
  * `npm run db:migrate` on a fresh database.
  */
+// learn.mozg.sh is the same product with its own front door, so one session
+// must open both. The cookie widens to .mozg.sh only in production — a domain
+// cookie on localhost would break dev sign-in.
+const onMozg = env.BETTER_AUTH_URL.includes("mozg.sh");
+
 export const auth = betterAuth({
   database: pool,
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: onMozg ? ["https://mozg.sh", "https://learn.mozg.sh"] : undefined,
+  advanced: onMozg
+    ? { crossSubDomainCookies: { enabled: true, domain: ".mozg.sh" } }
+    : undefined,
 
   socialProviders: {
     ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
