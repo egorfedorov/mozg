@@ -225,6 +225,56 @@ const PACKS: Pack[] = [
     ],
   },
   {
+    // Svelte 5 rewrote the component model (runes, snippets, event
+    // attributes) after most models learned Svelte 4 — the exact failure mode
+    // a brain exists for: the model answers confidently in yesterday's syntax.
+    key: "svelte",
+    repo: "sveltejs/svelte.dev",
+    prefix: "apps/svelte.dev/content/docs/",
+    endings: [".md"],
+    topic: "web",
+    parent: {
+      slug: "svelte",
+      title: "Svelte 5 & SvelteKit",
+      goal:
+        "Answer any question about Svelte 5 and SvelteKit as they are " +
+        "documented today: the runes reactivity model, component syntax, " +
+        "SvelteKit routing, loading and deployment, and the CLI tooling — " +
+        "in current syntax, never Svelte 4 idioms.",
+    },
+    children: [
+      {
+        slug: "svelte-5",
+        title: "Svelte · Language",
+        goal:
+          "Answer questions about the Svelte 5 language exactly as specified: " +
+          "each rune ($state, $derived, $effect, $props, $bindable and the " +
+          "rest) with its precise semantics, snippets and render tags, event " +
+          "attributes, component lifecycle, stores, and what replaced every " +
+          "Svelte 4 pattern.",
+        areas: ["svelte"],
+      },
+      {
+        slug: "sveltekit",
+        title: "Svelte · SvelteKit",
+        goal:
+          "Answer questions about SvelteKit: file-based routing, load " +
+          "functions and their exact signatures, form actions, hooks, " +
+          "adapters and deployment, prerendering, and configuration options " +
+          "as they are named in the docs.",
+        areas: ["kit"],
+      },
+      {
+        slug: "svelte-tooling",
+        title: "Svelte · CLI and AI tooling",
+        goal:
+          "Answer questions about the sv CLI (create, add, check, migrate " +
+          "and their flags) and Svelte's AI/LLM integration docs.",
+        areas: ["cli", "ai"],
+      },
+    ],
+  },
+  {
     key: "tailwind",
     repo: "tailwindlabs/tailwindcss.com",
     prefix: "src/docs/",

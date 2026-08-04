@@ -56,7 +56,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -105,6 +105,20 @@ export default async function BrainPage({
       `select id, question, expect from checks
         where brain_id = $1 and origin = 'manual' and enabled
         order by created_at`,
+      [brain.id],
+    ),
+    // What stands between this brain and 100%, from the latest run. The
+    // retrieval count tells the owner which of the two fixes applies —
+    // that distinction is the whole value of showing failures at all.
+    query<{ category: string; question: string; retrieval_hits: number | null }>(
+      `select c.category, c.question, r.retrieval_hits
+         from check_results r join checks c on c.id = r.check_id
+        where r.run_id = (
+          select id from check_runs where brain_id = $1 and status = 'done'
+          order by started_at desc limit 1
+        ) and not r.passed
+        order by c.category, c.question
+        limit 30`,
       [brain.id],
     ),
   ]);
@@ -299,6 +313,49 @@ export default async function BrainPage({
                   </span>
                 )}
               </div>
+            )}
+
+            {failedChecks.length > 0 && (
+              <details style={{ borderTop: "1.5px solid var(--ink)", padding: "1rem 1.25rem" }}>
+                <summary className="mono" style={{ fontSize: ".8125rem", cursor: "pointer" }}>
+                  To reach 100% — {failedChecks.length} failed check
+                  {failedChecks.length === 1 ? "" : "s"}, and what fixes each
+                </summary>
+                {failedChecks.map((f, i) => (
+                  <div key={i} style={{ margin: ".75rem 0 0", fontSize: ".875rem" }}>
+                    {(i === 0 || failedChecks[i - 1].category !== f.category) && (
+                      <p className="eyebrow" style={{ margin: "0 0 .35rem" }}>
+                        {f.category}
+                      </p>
+                    )}
+                    <div style={{ display: "flex", gap: ".6rem", alignItems: "baseline" }}>
+                      <span style={{ flex: 1 }}>{f.question}</span>
+                      <span
+                        className="tag"
+                        style={{
+                          flexShrink: 0,
+                          fontSize: ".6875rem",
+                          color:
+                            (f.retrieval_hits ?? 0) <= 1
+                              ? "var(--color-riso-red)"
+                              : "var(--color-riso-orange)",
+                        }}
+                        title={
+                          (f.retrieval_hits ?? 0) <= 1
+                            ? "Search returned nothing useful for this question — the material is not in the brain. Add pages or notes that answer it."
+                            : "Search found related notes but they do not answer — the source glossed over it, or extraction summarised the detail away. Re-read the source or write the fact as a note."
+                        }
+                      >
+                        {(f.retrieval_hits ?? 0) <= 1 ? "add material" : "deepen notes"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: "1rem 0 0" }}>
+                  add material — nothing in the brain covers it; feed pages or write the fact.
+                  deepen notes — it is in there but vague; re-read the source or state the specific value.
+                </p>
+              </details>
             )}
 
             {brain.goal && (

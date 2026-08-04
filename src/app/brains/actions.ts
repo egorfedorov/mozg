@@ -16,6 +16,8 @@ const createSchema = z.object({
   title: z.string().trim().min(1, "Give the brain a name").max(80),
   goal: z.string().trim().max(4000).optional(),
   docs: z.string().trim().max(2000).optional(),
+  // Same bounds as the share page — one rule, two doors.
+  price: z.coerce.number().min(0).max(1000).catch(0),
   // An unknown topic is a stale form, not something worth an error message.
   topic: z.string().catch("other").transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
   parent: z.string().trim().optional(),
@@ -29,12 +31,16 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     title: formData.get("title"),
     goal: formData.get("goal") || undefined,
     docs: String(formData.get("docs") ?? "") || undefined,
+    price: String(formData.get("price") ?? "0").replace(",", ".") || "0",
     topic: formData.get("topic") ?? "other",
     parent: String(formData.get("parent") ?? "") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
+  // A price means selling, and selling means being visible. Doing this at
+  // creation is a convenience over the share page, not a different rule.
+  const priceCents = Math.round(parsed.data.price * 100);
 
   // Checked before the brain exists — a bad link should be a red line under
   // the field, not a brain created with a source that failed off-screen.
@@ -89,9 +95,18 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   }
 
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal, topic, parent_id)
-     values ($1, $2, $3, $4, $5, $6) returning *`,
-    [user.id, slug, parsed.data.title, parsed.data.goal ?? null, parsed.data.topic, parentId],
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id, visibility, price_cents)
+     values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
+    [
+      user.id,
+      slug,
+      parsed.data.title,
+      parsed.data.goal ?? null,
+      parsed.data.topic,
+      parentId,
+      priceCents > 0 ? "public" : "private",
+      priceCents,
+    ],
   );
 
   // One link at creation is the whole point of the field: the crawl worker

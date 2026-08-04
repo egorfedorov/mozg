@@ -33,18 +33,18 @@ OAuth App на GitHub → новый secret → `GITHUB_CLIENT_SECRET` в `/opt/
 
 Готово, когда вход через GitHub работает с новым значением.
 
-### 2. Публичный репозиторий под плагин
+### 2. ~~Публичный репозиторий под плагин~~ — сделано
 
-Файлы готовы: `plugin/` и `.claude-plugin/marketplace.json` в корне. Но
-`/plugin marketplace add mozg-sh/mozg` требует git-репозиторий, до которого
-дотянется клиент, а основной приватный.
+Живёт на https://github.com/egorfedorov/mozg-plugin (плагин + marketplace.json,
+README в корне). Команды в `src/app/connect/page.tsx` и `plugin/README.md`
+обновлены на `egorfedorov/mozg-plugin`.
 
-Варианты: отдельный маленький публичный репозиторий только с этими двумя
-папками, либо открыть основной. Если имя будет другим — поправить команду в
-`src/app/connect/page.tsx` и `plugin/README.md`.
+При изменении файлов в `plugin/` не забыть продублировать коммит в этот репо
+(источник правды — основной репозиторий).
 
-Готово, когда `/plugin install mozg@mozg` в чистом Claude Code ставит
-подключение и `/brains` показывает список.
+Осталось проверить в чистом Claude Code: `/plugin marketplace add
+egorfedorov/mozg-plugin` → `/plugin install mozg@mozg` → `/mozg:brains`
+показывает список.
 
 ### 3. Ключ почтового провайдера
 

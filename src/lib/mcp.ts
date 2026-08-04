@@ -155,6 +155,14 @@ export const TOOLS: ToolDef[] = [
             "SDK). Searching the parent then searches every child. One level " +
             "only — a child cannot have children.",
         },
+        price_usd: {
+          type: "number",
+          description:
+            "Sell this brain: a price in USD (0-1000) lists it publicly in " +
+            "the catalogue at once — buyers pay once and keep access as it " +
+            "updates. Only when the user explicitly wants to sell; omit " +
+            "otherwise and the brain stays private.",
+        },
       },
       required: ["title", "goal"],
       additionalProperties: false,
@@ -757,6 +765,13 @@ async function brainCreate(
 
   const topic = isTopic(args.topic) ? String(args.topic) : "other";
 
+  // Same bounds and rule as the web form: a price means public, at once.
+  const priceUsd = typeof args.price_usd === "number" ? args.price_usd : 0;
+  if (priceUsd < 0 || priceUsd > 1000) {
+    return { text: "price_usd must be between 0 and 1000.", isError: true };
+  }
+  const priceCents = Math.round(priceUsd * 100);
+
   // A parent has to exist, belong to this user, and not be a child itself. The
   // database enforces all three; resolving here turns a constraint violation
   // into a sentence the agent can act on.
@@ -785,15 +800,27 @@ async function brainCreate(
   }
 
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal, topic, parent_id)
-     values ($1, $2, $3, $4, $5, $6) returning *`,
-    [owner.userId, slug, title, goal, topic, parentId],
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id, visibility, price_cents)
+     values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
+    [
+      owner.userId,
+      slug,
+      title,
+      goal,
+      topic,
+      parentId,
+      priceCents > 0 ? "public" : "private",
+      priceCents,
+    ],
   );
 
   return {
     text:
       `Created "${brain.title}" with the handle ${brain.slug}` +
       (parentHandle ? `, grouped under ${parentHandle}` : "") +
+      (priceCents > 0
+        ? ` — public in the catalogue at $${(priceCents / 100).toFixed(2)}`
+        : "") +
       ".\n\n" +
       `Goal: ${goal}\n\n` +
       "It is empty. Add material with brain_add_source — documentation pages by " +

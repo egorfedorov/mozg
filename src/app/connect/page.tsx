@@ -65,7 +65,7 @@ export default async function ConnectPage() {
               wordBreak: "break-word",
             }}
           >
-{`/plugin marketplace add mozg-sh/mozg
+{`/plugin marketplace add egorfedorov/mozg-plugin
 /plugin install mozg@mozg
 export MOZG_TOKEN=mzg_...`}
           </pre>

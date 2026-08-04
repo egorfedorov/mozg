@@ -72,6 +72,19 @@ export default function NewBrainForm({
         </Field>
 
         <Field
+          label="Price (optional)"
+          hint="In USD. A price makes the brain public in the catalogue right away — buyers pay once and keep access as it updates. Leave 0 to keep it private."
+        >
+          <input
+            name="price"
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            style={{ ...inputStyle, maxWidth: 140 }}
+          />
+        </Field>
+
+        <Field
           label="Documentation link (optional)"
           hint="One link is enough — every page of that documentation is found and read. For docs sites that are JavaScript apps, paste the GitHub repository instead."
         >

@@ -5,7 +5,7 @@ Connects your knowledge brains to the agent over MCP.
 ## Install
 
 ```bash
-/plugin marketplace add mozg-sh/mozg
+/plugin marketplace add egorfedorov/mozg-plugin
 /plugin install mozg@mozg
 ```
 
