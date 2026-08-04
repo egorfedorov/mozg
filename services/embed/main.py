@@ -26,6 +26,18 @@ RERANK_MODEL = os.environ.get("RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
 # top of the RRF fusion rescored anyway.
 RERANK_MAX_DOCS = int(os.environ.get("RERANK_MAX_DOCS", "64"))
 
+# Torch defaults to half the host's cores, which is the wrong split when two of
+# these run side by side: one lane serving interactive search, one chewing
+# through ingest batches. Measured on the 16-core production host, reranking a
+# full candidate set took 7.0s on torch's default 8 threads and 4.2s on 14 — so
+# the number is worth setting deliberately rather than inheriting, and the two
+# lanes together should not ask for more than the host has.
+EMBED_THREADS = int(os.environ.get("EMBED_THREADS", "0"))
+if EMBED_THREADS > 0:
+    import torch
+
+    torch.set_num_threads(EMBED_THREADS)
+
 app = FastAPI(title="mozg-embed")
 _model: SentenceTransformer | None = None
 _reranker: CrossEncoder | None = None
@@ -100,6 +112,7 @@ def health() -> dict[str, object]:
         "dim": _model.get_sentence_embedding_dimension() if loaded else None,
         "reranker": RERANK_MODEL,
         "reranker_loaded": _reranker is not None,
+        "threads": EMBED_THREADS or None,
     }
 
 

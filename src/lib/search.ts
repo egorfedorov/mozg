@@ -28,8 +28,14 @@ import {
 /** RRF damping. 60 is the value from the original paper and behaves well. */
 const K = 60;
 const CANDIDATES = 30;
-/** How many RRF winners the reranker rescores; also the SQL fetch size. */
-const RERANK_CANDIDATES = 25;
+/**
+ * How many RRF winners the reranker rescores; also the SQL fetch size.
+ *
+ * 16 rather than 25 because the service batches 16 pairs at a time: 25 pays for
+ * two batches to rescore nine extra candidates that RRF had already ranked
+ * below the tenth. Recall past rank 16 is not what wins searches.
+ */
+const RERANK_CANDIDATES = 16;
 
 export interface SearchHit {
   note_id: string;
@@ -188,7 +194,9 @@ export async function searchBrain(
   // untouched, which the caller reports as "no-rerank" degradation.
   if (hits.length <= 1) return { hits, degraded, reranked: false };
 
-  const scores = await rerank(text, hits.map((h) => h.excerpt));
+  // Title first: an atomic note's title is the strongest topical signal in it,
+  // and the cross-encoder only reads the head of what it is given.
+  const scores = await rerank(text, hits.map((h) => `${h.title}\n${h.excerpt}`));
   if (!scores) return { hits: hits.slice(0, limit), degraded, reranked: false };
 
   return { hits: applyRerank(hits, scores, limit), degraded, reranked: true };

@@ -454,10 +454,14 @@ export async function runExam(
 
     const contexts = await Promise.all(
       fresh.map(async (check) => {
-        const { hits } = await searchBrain(scope, check.question, { limit: 5 });
+        const { hits, reranked } = await searchBrain(scope, check.question, { limit: 5 });
         return {
           check,
           context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
+          // Whether the cross-encoder actually ran. A sitting graded on plain
+          // RRF order measures a degraded system and records the number as if
+          // it were the brain's — see the check below.
+          reranked: reranked || hits.length <= 1,
           // Kept alongside the verdict so a fail can be told apart later:
           // zero hits means the brain has nothing to answer from, hits with a
           // fail mean the material is there and search or phrasing lost it.
@@ -468,6 +472,24 @@ export async function runExam(
         };
       }),
     );
+
+    // A score is the product's one factual claim, so it must not be published
+    // from a retrieval the caller would not have got. When the reranker is down
+    // or contended, search returns RRF order — good enough to answer with, and
+    // not good enough to grade with: nextjs-api once scored 8/100 this way with
+    // every answer sitting in the brain, and the judge's own reasons said the
+    // passages were about something else entirely.
+    //
+    // Failing the run is the honest outcome. examStaleBrains re-queues it, and
+    // the previous score stays on screen with its own timestamp rather than
+    // being overwritten by a lie.
+    const degradedChecks = contexts.filter((c) => !c.reranked).length;
+    if (degradedChecks > 0) {
+      throw new Error(
+        `retrieval degraded: ${degradedChecks}/${contexts.length} checks were ` +
+          `graded without the reranker — score not recorded`,
+      );
+    }
 
     let cost = 0;
     const results: {

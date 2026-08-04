@@ -161,6 +161,37 @@ export async function examStaleBrains(limit = EXAM_BATCH): Promise<string[]> {
   return stale.map((b) => b.id);
 }
 
+/**
+ * The longest a sitting can honestly still be in progress. A full exam is ~30
+ * checks against a judge; an hour is generous even for a large family.
+ */
+const RUN_MAX_AGE = "60 minutes";
+
+/**
+ * Close sittings nobody is running any more.
+ *
+ * A run is marked 'running' before the first check and 'done' or 'failed' at
+ * the end — so a worker that is killed mid-sitting (a deploy recreates the
+ * container, an OOM, a lost database connection) leaves the row open forever.
+ * Production had 18 of them, the oldest 41 hours old, and they are not
+ * cosmetic: a brain whose latest run says 'running' is a brain the operator
+ * reads as busy rather than as never scored.
+ *
+ * The age guard is what makes this safe rather than a boot-time sweep would be:
+ * autoscale runs up to two workers, so "open right now" does not mean
+ * abandoned — only "open for longer than a sitting can possibly take" does.
+ */
+export async function closeAbandonedRuns(): Promise<number> {
+  const closed = await query<{ id: string }>(
+    `update check_runs
+        set status = 'failed', finished_at = now(),
+            error = coalesce(error, 'abandoned: the worker running this sitting went away')
+      where status = 'running' and started_at < now() - interval '${RUN_MAX_AGE}'
+      returning id`,
+  );
+  return closed.length;
+}
+
 /** How long a crawled site may go without checking for new pages. */
 const RECRAWL_AFTER = "7 days";
 const RECRAWL_BATCH = 10;
@@ -217,8 +248,12 @@ export async function runMaintenance(): Promise<{
   recrawled: number;
   resumed: number;
   gapChecks: number;
+  abandoned: number;
 }> {
   const resumed = await requeueBudgetPaused();
+  // Before examStaleBrains: an abandoned run closed here is a brain that gets
+  // re-queued in the same pass instead of waiting six hours for the next one.
+  const abandoned = await closeAbandonedRuns();
   const recrawled = await recrawlSites();
   const refresh = await refreshUrlSources();
   // After the refresh, so a page that changed a minute ago is re-examined in
@@ -229,5 +264,12 @@ export async function runMaintenance(): Promise<{
   // examStaleBrains deliberately: a check added now is graded by the exam
   // this pass just queued, not by one a pass away.
   const gapChecks = await growSearchGapChecks();
-  return { refresh, examined: examined.length, recrawled, resumed, gapChecks: gapChecks.added };
+  return {
+    refresh,
+    examined: examined.length,
+    recrawled,
+    resumed,
+    gapChecks: gapChecks.added,
+    abandoned,
+  };
 }

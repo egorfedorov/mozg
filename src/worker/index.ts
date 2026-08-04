@@ -164,11 +164,13 @@ async function main() {
     async () => {
       const started = Date.now();
       try {
-        const { refresh, examined, recrawled, resumed, gapChecks } = await runMaintenance();
+        const { refresh, examined, recrawled, resumed, gapChecks, abandoned } =
+          await runMaintenance();
         console.log(
           `[maintenance] checked=${refresh.checked} unchanged=${refresh.unchanged} ` +
             `changed=${refresh.changed} failed=${refresh.failed} reexam=${examined} ` +
-            `recrawl=${recrawled} resumed=${resumed} gapchecks=${gapChecks} ${Date.now() - started}ms`,
+            `recrawl=${recrawled} resumed=${resumed} gapchecks=${gapChecks} ` +
+            `abandoned=${abandoned} ${Date.now() - started}ms`,
         );
       } catch (err) {
         console.error(

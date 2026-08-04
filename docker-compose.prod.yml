@@ -31,11 +31,20 @@ services:
         max-size: 50m
         max-file: "3"
 
+  # Two lanes, one image. Ingest embeds in batches of 64 and never minds
+  # waiting; a search is a person watching an agent think. Sharing one process
+  # meant interactive queries queued behind the batches — that is how a 2.6s
+  # search became 87s at the 95th percentile while the catalogue was seeding.
+  #
+  # The split costs a second copy of the weights (~3 GB) on a host with 56 GB
+  # free, and the thread budgets add up to the 16 cores available.
   embed:
     build: ./services/embed
     restart: unless-stopped
     volumes:
       - models:/models
+    environment:
+      EMBED_THREADS: "6"
     # First boot downloads 2.2 GB of weights into the volume; give it room
     # before the healthcheck starts calling it dead.
     healthcheck:
@@ -61,6 +70,32 @@ services:
         max-size: 50m
         max-file: "3"
 
+  # The interactive lane: only the app talks to it, so a search never waits
+  # behind ingest. Same image, same weights volume, more threads — this is the
+  # one whose latency a user feels.
+  embed-query:
+    build: ./services/embed
+    restart: unless-stopped
+    volumes:
+      - models:/models
+    environment:
+      EMBED_THREADS: "10"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8099/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 900s
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
+
   app:
     build:
       context: .
@@ -78,7 +113,9 @@ services:
       # percent-encode it: the password must not contain @ : or /. Stick to
       # letters, digits, - and _ when rotating.
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
-      EMBED_URL: http://embed:8099
+      # The app is the interactive side: query embedding and reranking both go
+      # to the lane nothing else uses.
+      EMBED_URL: http://embed-query:8099
       RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
@@ -111,7 +148,10 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
+      # Ingest batches on the batch lane; the exam's retrieval on the
+      # interactive one, because a score has to describe what a caller gets.
       EMBED_URL: http://embed:8099
+      EMBED_QUERY_URL: http://embed-query:8099
       RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:

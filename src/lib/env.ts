@@ -35,8 +35,11 @@ const schema = z.object({
 
   EMBED_URL: z.string().url().default("http://localhost:8099"),
   EMBED_DIM: z.coerce.number().int().default(1024),
-  // The reranker lives on the same embed service, so it defaults to EMBED_URL
-  // (filled in after parse). Set it only if /rerank is served elsewhere.
+  // Interactive lane: query embedding and reranking, the two calls a caller
+  // waits on. Separate in production so they never queue behind an ingest
+  // batch; unset (self-host, dev) they are the same process as EMBED_URL and
+  // nothing changes. Both are filled in after parse.
+  EMBED_QUERY_URL: z.string().url().optional(),
   RERANK_URL: z.string().url().optional(),
 
   // Headless renderer for JS-shell docs sites (services/render). Unset, those
@@ -121,7 +124,15 @@ if (!parsed.success) {
   throw new Error(`Invalid environment:\n${issues}\n\nCopy .env.example to .env`);
 }
 
-export const env = { ...parsed.data, RERANK_URL: parsed.data.RERANK_URL ?? parsed.data.EMBED_URL };
+const queryUrl = parsed.data.EMBED_QUERY_URL ?? parsed.data.EMBED_URL;
+
+export const env = {
+  ...parsed.data,
+  EMBED_QUERY_URL: queryUrl,
+  // The reranker only ever serves interactive calls, so it follows the query
+  // lane rather than the ingest one.
+  RERANK_URL: parsed.data.RERANK_URL ?? queryUrl,
+};
 
 /**
  * Can the product send mail? Everything that depends on reaching someone by

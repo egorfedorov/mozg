@@ -13,11 +13,20 @@ import { env } from "@/lib/env";
  */
 
 /**
- * Cross-encoder cost grows with document length and the reranker itself is
- * capped at 512 tokens; past ~2000 chars the tail only slows the pair down
- * without changing its score much.
+ * Cross-encoder cost grows with the tokens it reads, and this dominated search
+ * latency: measured on production, 25 candidates of ~1400 chars cost 14s, the
+ * same 25 at 400 chars cost 3s. The pattern held at every size we tried, which
+ * makes document length — not candidate count — the knob that matters.
+ *
+ * 600 chars is roughly 150 tokens: a note's first lines, which for atomic notes
+ * is what decides relevance. The judgement being made here is "is this passage
+ * about the query", not "does it contain the answer" — the answer is read from
+ * the full note afterwards.
+ *
+ * lazy: if a long note's relevance ever hides past this cut, score
+ * `title + first 600 chars` rather than raising the cap for every pair.
  */
-export const MAX_DOC_CHARS = 2000;
+export const MAX_DOC_CHARS = 600;
 
 /** Trim a document to what the reranker can usefully read. */
 export function clipDocument(text: string): string {
@@ -63,8 +72,12 @@ export async function rerank(
         top_n: documents.length,
       }),
       // A search call is interactive, so unlike ingest's 120s embed timeout
-      // this gives up fast: a slow reranker is as good as a dead one.
-      signal: AbortSignal.timeout(30_000),
+      // this gives up fast: a slow reranker is as good as a dead one. Eight
+      // seconds is roughly twice the measured cost of a full candidate set, so
+      // it only fires when the service is genuinely contended — and then RRF
+      // order in 8s beats perfect order in 30, by which time the agent has
+      // given up on us.
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return null;
 

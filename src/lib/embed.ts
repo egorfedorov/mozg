@@ -5,11 +5,17 @@ import { env } from "@/lib/env";
 const MAX_BATCH = 64;
 
 async function post(texts: string[], kind: "passage" | "query"): Promise<number[][]> {
-  const res = await fetch(`${env.EMBED_URL}/embed`, {
+  // A query goes to the interactive lane and gives up quickly; a passage batch
+  // goes to the ingest lane and may wait, because nobody is watching it. Same
+  // service, deliberately different queues — see docker-compose.prod.yml.
+  const interactive = kind === "query";
+  const base = interactive ? env.EMBED_QUERY_URL : env.EMBED_URL;
+
+  const res = await fetch(`${base}/embed`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ texts, kind }),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(interactive ? 10_000 : 120_000),
   });
 
   if (!res.ok) {
