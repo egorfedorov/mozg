@@ -14,6 +14,7 @@ import Link from "next/link";
  */
 
 const PAGES: { href: string; label: string; note: string }[] = [
+  { href: "/start", label: "Start here", note: "zero to a thinking agent" },
   { href: "/why", label: "Why", note: "the problem this solves" },
   { href: "/vs", label: "Brain or file", note: "and when a file wins" },
   { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
