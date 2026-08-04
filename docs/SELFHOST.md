@@ -101,7 +101,8 @@ claude mcp add --transport http mozg http://localhost:3300/mcp \
 ```
 
 Tools: `brain_list`, `brain_brief`, `brain_search`, `brain_read`,
-`brain_write`, `brain_feedback`, `brain_create`, `brain_add_source`.
+`brain_write`, `brain_write_batch`, `brain_feedback`, `brain_create`,
+`brain_add_source`.
 Auth is a bearer token, not OAuth — `claude mcp add` supports `--header`,
 and a full OAuth provider with dynamic client registration is a week of work
 for the same result.

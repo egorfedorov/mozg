@@ -1,12 +1,15 @@
-import { query, maybeOne, one, tx, toVector } from "@/db";
+import { query, maybeOne, one } from "@/db";
 import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
-import { chunksForNote, estimateTokens } from "@/lib/chunk";
-import { embedPassages } from "@/lib/embed";
-import { findDuplicateNote } from "@/lib/dedup";
+import {
+  writeAgentNote,
+  writeNeedsReview,
+  MAX_BATCH_NOTES,
+  type AgentNoteInput,
+  type WriteNoteResult,
+} from "@/lib/agent-write";
 import { scanSecrets } from "@/lib/scan";
 import { searchBrain, briefBrain } from "@/lib/search";
-import { normalizeCategory } from "@/lib/category";
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
@@ -122,6 +125,41 @@ export const TOOLS: ToolDef[] = [
         category: { type: "string", description: "Reuse an existing category." },
       },
       required: ["brain", "title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "brain_write_batch",
+    description:
+      "Save several lessons at once — the same rules as brain_write, up to 25 " +
+      "notes per call. Prefer this when a training session produced a set of " +
+      "notes: one call instead of many. Each note is scanned, deduplicated and " +
+      "saved on its own, so one rejection loses nothing else — read the " +
+      "per-note results in the reply and only redo the ones that failed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string" },
+        notes: {
+          type: "array",
+          description: "Up to 25 notes, each like a brain_write call.",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Short and searchable." },
+              body: { type: "string", description: "The fact, in full sentences." },
+              kind: {
+                type: "string",
+                enum: ["fact", "rule", "layout", "example", "pitfall"],
+              },
+              category: { type: "string", description: "Reuse an existing category." },
+            },
+            required: ["title", "body"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["brain", "notes"],
       additionalProperties: false,
     },
   },
@@ -362,6 +400,8 @@ export async function callTool(
       return brainRead(args, owner);
     case "brain_write":
       return brainWrite(args, owner);
+    case "brain_write_batch":
+      return brainWriteBatch(args, owner);
     case "brain_feedback":
       return brainFeedback(args, owner);
     case "brain_create":
@@ -735,73 +775,32 @@ async function brainWrite(
     };
   }
 
-  // The plan page says agents can write back on Pro. It said so while nothing
-  // enforced it, which made the sentence a decoration rather than a rule.
+  // Every plan can write today — PLANS.free included, because an agent note
+  // costs a self-hosted bge-m3 embed, not Anthropic extraction spend. The
+  // check stays so a future plan that turns write off is enforced here, not
+  // just advertised on the pricing page.
   if (!limitsFor(owner.plan).write) {
     return {
       text:
-        `Writing back is a Pro feature and this account is on ${owner.plan}. ` +
+        `Writing back is not enabled on the ${owner.plan} plan. ` +
         "Tell the user what you would have saved and that they can turn it on " +
         "at mozg.sh/settings — do not retry.",
       isError: true,
     };
   }
 
-  // Capped like brain_create does (80/4000), only looser — a note is longer
-  // than a goal, but an agent pasting a whole log file should be stopped
-  // somewhere. 200/20000 matches what a human would ever write by hand.
-  const title = String(args.title ?? "").trim().slice(0, 200);
-  const body = String(args.body ?? "").trim().slice(0, 20000);
-  if (!title || !body) {
-    return { text: "Both title and body are required.", isError: true };
+  const pending = writeNeedsReview(resolved.brain, resolved.access);
+  const r = await writeAgentNote(resolved.brain, { pending, agentClient: "mcp" }, args);
+
+  if (r.status === "rejected") {
+    return { text: r.reason, isError: true };
   }
 
-  // Same gate as ingest. An agent paraphrasing a token into a "lesson" is a
-  // real failure mode, and this is the path with no human in the loop.
-  const findings = scanSecrets(`${title}\n${body}`);
-  if (findings.length) {
+  if (r.status === "duplicate") {
     return {
       text:
-        "Rejected: this looks like it contains a credential " +
-        `(${findings.map((f) => f.label).join(", ")}). Rewrite it without the secret.`,
-      isError: true,
-    };
-  }
-
-  const pending = resolved.brain.review_required;
-  const texts = chunksForNote(title, body);
-
-  // The duplicate check needs the note's vector, so the embed moved ahead of
-  // the insert: a failed embed now leaves nothing behind at all, where it used
-  // to strand a pending row (the ghost note review.approve's comment warns
-  // about).
-  //
-  // On the review path the embed only feeds the duplicate check — the note
-  // itself is embedded on approval, and failing the whole write because a
-  // local check could not run would be the tail wagging the dog. The reviewer
-  // is the dedup backstop there.
-  let vectors: number[][] | null = null;
-  try {
-    vectors = await embedPassages(texts);
-  } catch (err) {
-    if (!pending) throw err;
-  }
-
-  // Same threshold as ingest (lib/dedup.ts): an agent re-writing a fact the
-  // brain already holds is the most common duplicate there is, and until now
-  // this path never checked.
-  const duplicate = vectors?.length
-    ? await findDuplicateNote(resolved.brain.id, vectors[0])
-    : null;
-
-  // Without review, refuse outright and say what the brain already has. The
-  // agent can then brain_read the existing note and write again with the
-  // specific difference stated — an update, not a copy.
-  if (duplicate && !pending) {
-    return {
-      text:
-        `Not saved — ${handle} already holds this as "${duplicate.title}" ` +
-        `(note_id: ${duplicate.note_id}).\n\n` +
+        `Not saved — ${handle} already holds this as "${r.existing.title}" ` +
+        `(note_id: ${r.existing.note_id}).\n\n` +
         "Call brain_read on it. If your lesson adds something it lacks, write " +
         "again stating that specific difference or extra detail; do not retry " +
         "the same wording.",
@@ -812,63 +811,13 @@ async function brainWrite(
     };
   }
 
-  // With review, save anyway and flag the look-alike in the response: pending
-  // is the human's territory, and silently refusing could swallow a deliberate
-  // correction to the note it resembles. The reviewer sees both and decides.
-  const note = await one<{ id: string }>(
-    `insert into notes
-       (brain_id, title, body, category, kind, author, agent_client, status, confidence)
-     values ($1, $2, $3, $4, $5, 'agent', $6, 'pending', 0.7)
-     returning id`,
-    [
-      resolved.brain.id,
-      title,
-      body,
-      // Same canonicalisation ingest applies — an agent writing "Type Scale"
-      // must land in the same category as extraction's "type scale".
-      normalizeCategory(typeof args.category === "string" ? args.category : null),
-      typeof args.kind === "string" ? args.kind : "fact",
-      "mcp",
-    ],
-  );
-
-  // Pending notes stay unindexed until approved — otherwise "review required"
-  // would be theatre and unapproved notes would already be answering queries.
-  if (!pending) {
-    await tx(async (client) => {
-      for (let i = 0; i < texts.length; i++) {
-        await client.query(
-          `insert into chunks (brain_id, note_id, content, token_count, embedding)
-           values ($1, $2, $3, $4, $5::vector)`,
-          [
-            resolved.brain.id,
-            note.id,
-            texts[i],
-            estimateTokens(texts[i]),
-            toVector(vectors![i]),
-          ],
-        );
-      }
-      // Flipped active in the same transaction as the chunks that make it
-      // searchable — an "active" note with no chunks is invisible to search,
-      // which looks like the write silently did nothing.
-      await client.query(`update notes set status = 'active' where id = $1`, [note.id]);
-    });
-  }
-
-  if (!pending) {
-    await query(`update brains set content_changed_at = now() where id = $1`, [
-      resolved.brain.id,
-    ]);
-  }
-
   return {
-    text: pending
+    text: r.pending
       ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +
         "in search until approved." +
-        (duplicate
+        (r.lookalike
           ? `\n\nHeads-up: it looks very close to the existing note ` +
-            `"${duplicate.title}" (note_id: ${duplicate.note_id}). The reviewer ` +
+            `"${r.lookalike.title}" (note_id: ${r.lookalike.note_id}). The reviewer ` +
             "sees both and decides — but if this was meant as a correction, " +
             "brain_read that note and write again stating what it gets wrong."
           : "")
@@ -876,6 +825,98 @@ async function brainWrite(
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,
+  };
+}
+
+/**
+ * Many notes, one call. Each note runs the shared pipeline on its own and a
+ * failure is reported in place — one bad note must not lose the rest of the
+ * batch, or agents would go back to one call per note to be safe.
+ */
+async function brainWriteBatch(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+
+  if (!canWrite(resolved.access)) {
+    return {
+      text: `You have read-only access to ${handle}.`,
+      isError: true,
+    };
+  }
+
+  if (!limitsFor(owner.plan).write) {
+    return {
+      text:
+        `Writing back is not enabled on the ${owner.plan} plan. ` +
+        "Tell the user what you would have saved and that they can turn it on " +
+        "at mozg.sh/settings — do not retry.",
+      isError: true,
+    };
+  }
+
+  const notes = Array.isArray(args.notes) ? args.notes : [];
+  if (!notes.length) {
+    return { text: "Pass at least one note in notes.", isError: true };
+  }
+  if (notes.length > MAX_BATCH_NOTES) {
+    return {
+      text:
+        `Too many notes: at most ${MAX_BATCH_NOTES} per call — ` +
+        "split the batch and call again.",
+      isError: true,
+    };
+  }
+
+  const pending = writeNeedsReview(resolved.brain, resolved.access);
+  const lines: string[] = [];
+  let saved = 0;
+
+  for (const raw of notes) {
+    const input = (raw ?? {}) as AgentNoteInput;
+    let r: WriteNoteResult;
+    try {
+      r = await writeAgentNote(resolved.brain, { pending, agentClient: "mcp" }, input);
+    } catch (err) {
+      // err.message can carry pg details — logged, not returned, same rule as
+      // the route's tools/call catch.
+      console.error(`[mcp] brain_write_batch note failed for ${owner.userId}:`, err);
+      const label = String(input.title ?? "").trim().slice(0, 80) || "(untitled)";
+      lines.push(`✗ "${label}" — failed with an internal error; the details are logged.`);
+      continue;
+    }
+
+    if (r.status === "saved") {
+      saved++;
+      lines.push(
+        r.pending
+          ? `✓ "${r.title}" — saved, queued for the owner's review.` +
+            (r.lookalike
+              ? ` Looks very close to "${r.lookalike.title}" ` +
+                `(note_id: ${r.lookalike.note_id}); the reviewer decides.`
+              : "")
+          : `✓ "${r.title}" — saved, searchable now.`,
+      );
+    } else if (r.status === "duplicate") {
+      lines.push(
+        `= "${r.title}" — not saved; already held as "${r.existing.title}" ` +
+          `(note_id: ${r.existing.note_id}). If this was an update, read that ` +
+          "note and write again stating the difference.",
+      );
+    } else {
+      lines.push(`✗ "${r.title}" — ${r.reason}`);
+    }
+  }
+
+  return {
+    text: `${saved} of ${notes.length} notes saved to ${handle}.\n\n` + lines.join("\n"),
+    isError: saved === 0,
+    brainId: resolved.brain.id,
+    ownerId: resolved.brain.owner_id,
+    results: saved,
   };
 }
 

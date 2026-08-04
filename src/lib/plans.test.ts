@@ -29,10 +29,11 @@ test("a hand-set paid plan (paid_until null) does not expire", () => {
 
 test("expiry flows through to the limits", () => {
   assert.equal(limitsFor("pro", "2026-09-01T00:00:00Z").brains, 20);
-  // Expired pro falls back to the free limits, write access included.
+  // Expired pro falls back to the free limits, write access included —
+  // agent writes are open on every plan (see the free row in PLANS).
   const fallen = limitsFor("pro", "2020-01-01T00:00:00Z");
   assert.deepEqual(fallen, limitsFor("free"));
-  assert.equal(fallen.write, false);
+  assert.equal(fallen.write, true);
 });
 
 test("the price table matches the marketed prices", () => {

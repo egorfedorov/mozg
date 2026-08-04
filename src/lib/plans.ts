@@ -30,7 +30,11 @@ export const PLANS: Record<Plan, PlanLimits> = {
   // a brain") must be experienceable before money changes hands, but a free
   // account must never be worth farming. 30 sources (the crawl cap) and a single exam sitting
   // show the whole loop; growing past it is the paid act.
-  free: { brains: 1, sources: 30, calls: 300, dailyExtractCents: 50, examSittings: 1, write: false, exports: false },
+  // write is on for free too: an agent-authored note costs a self-hosted
+  // bge-m3 embed, not Anthropic extraction spend — the API-bill argument for
+  // the gate never applied to brain_write, and it is the only path that reads
+  // this flag.
+  free: { brains: 1, sources: 30, calls: 300, dailyExtractCents: 50, examSittings: 1, write: true, exports: false },
   pro: { brains: 20, sources: 1000, calls: 10_000, dailyExtractCents: 3000, examSittings: Infinity, write: true, exports: true },
   team: { brains: 100, sources: 5000, calls: 50_000, dailyExtractCents: 10_000, examSittings: Infinity, write: true, exports: true },
   // The operator's own account: the catalogue lives here, so the caps are

@@ -21,7 +21,7 @@ Claude Code and `/brains` will list what you can read.
 
 ## What the agent gets
 
-Seven tools. The descriptions tell it *when* to reach for each, which is the
+Eight tools. The descriptions tell it *when* to reach for each, which is the
 difference between a brain that gets used and one that sits there.
 
 | Tool | For |
@@ -30,7 +30,8 @@ difference between a brain that gets used and one that sits there.
 | `brain_brief` | What does this brain cover, and what is it known to be missing? |
 | `brain_search` | Find what this project actually decided, before answering from general knowledge |
 | `brain_read` | Open one note in full |
-| `brain_write` | Save a convention or a pitfall worth keeping (Pro) |
+| `brain_write` | Save a convention or a pitfall worth keeping |
+| `brain_write_batch` | Save a whole set of notes from a training session in one call |
 | `brain_create` | Start a new brain without leaving the editor |
 | `brain_add_source` | Feed it documentation pages or a block of text |
 
