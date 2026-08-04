@@ -225,6 +225,91 @@ const PACKS: Pack[] = [
     ],
   },
   {
+    // Security guidance ages badly in a model's head: the cheat sheets are
+    // revised continuously and are specified as checklists — exactly the
+    // "paraphrase is a bug" material a brain exists for.
+    key: "owasp",
+    repo: "OWASP/CheatSheetSeries",
+    prefix: "cheatsheets/",
+    endings: [".md"],
+    topic: "security",
+    parent: {
+      slug: "owasp-cheatsheets",
+      title: "OWASP Cheat Sheets",
+      goal:
+        "Answer application-security questions the way the OWASP cheat " +
+        "sheets specify today: the concrete controls for authentication, " +
+        "session management, input validation, XSS, CSRF, SQL injection, " +
+        "secrets, JWTs, file uploads and the rest — named headers, named " +
+        "settings and named algorithms, not general advice.",
+    },
+    children: [],
+  },
+  {
+    key: "asvs",
+    repo: "OWASP/ASVS",
+    // Only the current major — 4.0 sits beside it and contradicts it.
+    prefix: "5.0/",
+    endings: [".md"],
+    topic: "security",
+    parent: {
+      slug: "owasp-asvs",
+      title: "OWASP ASVS 5.0",
+      goal:
+        "Answer what the Application Security Verification Standard 5.0 " +
+        "requires: each verification requirement by chapter and number, " +
+        "which level it applies to, and what changed from 4.0.",
+    },
+    children: [],
+  },
+  {
+    // The AI SDK ships breaking majors faster than models retrain, and its
+    // provider matrix is a table nobody remembers correctly.
+    key: "ai-sdk",
+    repo: "vercel/ai",
+    prefix: "content/",
+    endings: [".mdx"],
+    topic: "ai",
+    parent: {
+      slug: "ai-sdk",
+      title: "Vercel AI SDK",
+      goal:
+        "Answer any question about the Vercel AI SDK as documented today: " +
+        "the core generateText/streamText/tool APIs and their exact options, " +
+        "every provider's setup and capabilities, and the cookbook recipes " +
+        "for common patterns.",
+    },
+    children: [
+      {
+        slug: "ai-sdk-core",
+        title: "AI SDK · Core",
+        goal:
+          "Answer questions about the AI SDK core APIs exactly as specified: " +
+          "generateText, streamText, generateObject, tools and tool calling, " +
+          "agents, UI hooks — each function's options, types and defaults.",
+        areas: ["docs"],
+      },
+      {
+        slug: "ai-sdk-providers",
+        title: "AI SDK · Providers",
+        goal:
+          "Answer which AI SDK provider supports what: setup, model ids, " +
+          "capabilities and provider-specific options for every provider in " +
+          "the registry.",
+        areas: ["providers"],
+      },
+      {
+        slug: "ai-sdk-cookbook",
+        title: "AI SDK · Cookbook",
+        goal:
+          "Answer how to implement common AI SDK patterns from the cookbook: " +
+          "RAG, agents, streaming UIs, multimodal chat and the rest, with " +
+          "working code shapes.",
+        areas: ["cookbook"],
+      },
+    ],
+  },
+  {
     // Svelte 5 rewrote the component model (runes, snippets, event
     // attributes) after most models learned Svelte 4 — the exact failure mode
     // a brain exists for: the model answers confidently in yesterday's syntax.
