@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Paper stock and ink, same two values as the interface. -->
+  <rect width="32" height="32" fill="#eceee7"/>
+  <!-- The wordmark's full stop, in Riso bright red. -->
+  <circle cx="16" cy="16" r="7" fill="#f15060"/>
+  <circle cx="16" cy="16" r="7" fill="#14161a" opacity="0.14"
+          style="mix-blend-mode:multiply" transform="translate(2 -2)"/>
+</svg>

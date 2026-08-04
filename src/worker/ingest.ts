@@ -312,14 +312,25 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
  * has no exam yet, or passes it.
  */
 async function failedFocus(brainId: string): Promise<string[]> {
+  // The parent's exam retrieves over the whole family, so its failures are
+  // really the children's failures — and the children are where the source
+  // material lives. A child re-reading only for its own exam would never
+  // chase the family-level gaps. Own failures first; the parent's fill
+  // whatever room is left.
   const rows = await query<{ question: string }>(
-    `select c.question
-       from check_results r join checks c on c.id = r.check_id
-      where r.run_id = (
-        select id from check_runs where brain_id = $1 and status = 'done'
-        order by started_at desc limit 1
-      ) and not r.passed
-      order by c.weight desc
+    `with latest as (
+       select distinct on (brain_id) id, brain_id
+         from check_runs
+        where status = 'done'
+          and brain_id in ($1, (select parent_id from brains where id = $1))
+        order by brain_id, started_at desc
+     )
+     select c.question
+       from check_results r
+       join checks c on c.id = r.check_id
+       join latest l on l.id = r.run_id
+      where not r.passed
+      order by (c.brain_id = $1) desc, c.weight desc
       limit 12`,
     [brainId],
   );

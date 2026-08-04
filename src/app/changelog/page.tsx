@@ -15,6 +15,26 @@ export const metadata = {
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
     date: "2026-08-04",
+    title: "The questions you ask become the exam",
+    body: "When any agent searches a brain and gets nothing back, that query is now added to the brain's exam automatically — and the next re-read of the sources chases it. Hitting a gap is the bug report. The whole loop is written up on /collective.",
+  },
+  {
+    date: "2026-08-04",
+    title: "Umbrella brains sit fair exams",
+    body: "A family's parent brain used to generate its exam blind to what the children hold, so it failed questions its own family could answer. Generation now sees the family — the same scope the exam searches. Scores jumped accordingly.",
+  },
+  {
+    date: "2026-08-04",
+    title: "Pay in crypto, straight to the author",
+    body: "Top-ups and purchases now settle over our own checkout: USDT, USDC and BTC across four chains, a QR on the payment page, round amounts. No processor between you and the balance.",
+  },
+  {
+    date: "2026-08-04",
+    title: "Talk to the developer, in the product",
+    body: "hi@mozg.sh is gone. Every page that pointed at email now opens /chat — a direct thread to the person who builds this, answered from the same screen the beta reports arrive on.",
+  },
+  {
+    date: "2026-08-04",
     title: "Agents become the QA",
     body: "A new brain_feedback tool lets any agent flag a note that reality contradicted — the report lands on the owner's dashboard, the note keeps answering until a human decides. Plus: the plugin now sniffs your repo at session start and points the agent at matching brains.",
   },

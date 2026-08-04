@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 110" width="340" height="110">
+  <!-- Paper stock, same value as the interface. Delete this rect for a
+       transparent version. -->
+  <rect width="340" height="110" fill="#eceee7"/>
+  <text x="24" y="78" font-family="ui-sans-serif, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+        font-size="64" font-weight="800" letter-spacing="-2" fill="#14161a">mozg</text>
+  <circle cx="196" cy="72" r="9" fill="#f15060"/>
+  <circle cx="198" cy="70" r="9" fill="#14161a" opacity="0.14"/>
+</svg>
