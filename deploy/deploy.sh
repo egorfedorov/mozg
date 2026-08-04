@@ -39,6 +39,12 @@ else
   # The embed image carries torch and takes minutes to rebuild; its code
   # changes far less often than the app's.
   ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d --build app worker"
+  # Then bring up anything the compose file gained that the host does not run
+  # yet, without rebuilding it. Naming services to rebuild silently skips new
+  # ones: adding embed-query shipped an app pointed at a host that did not
+  # exist, and search degraded to text-only while every smoke check stayed
+  # green.
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d"
 fi
 
 # A deploy that ships a cached layer is invisible otherwise: the server's git
@@ -70,6 +76,14 @@ for path in / /explore /mcp /robots.txt /.well-known/mcp-registry-auth; do
   printf '  %-14s %s\n' "$path" "$code"
   [ "$code" = 200 ] || fail=1
 done
+
+# Embeddings degrade quietly: without them search silently falls back to full
+# text, answers get worse, and every page still returns 200. /api/health reports
+# it as degraded rather than down (correctly — the site works), so the deploy has
+# to be the one that objects.
+embed=$(curl -s --max-time 25 "$URL/api/health" | sed -n 's/.*"embeddings":"\([^"]*\)".*/\1/p')
+printf '  %-14s %s (expect ok)\n' "embeddings" "${embed:-unknown}"
+[ "$embed" = ok ] || fail=1
 
 # An unauthenticated MCP call must be refused — if this ever returns 200 the
 # whole brain surface is public.

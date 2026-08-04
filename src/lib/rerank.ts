@@ -18,15 +18,15 @@ import { env } from "@/lib/env";
  * same 25 at 400 chars cost 3s. The pattern held at every size we tried, which
  * makes document length — not candidate count — the knob that matters.
  *
- * 600 chars is roughly 150 tokens: a note's first lines, which for atomic notes
- * is what decides relevance. The judgement being made here is "is this passage
- * about the query", not "does it contain the answer" — the answer is read from
- * the full note afterwards.
+ * 400 chars is roughly 100 tokens, and it clips less than it sounds: the average
+ * chunk in production is 323 chars, so most pairs arrive whole. The judgement
+ * being made here is "is this passage about the query", not "does it contain the
+ * answer" — the answer is read from the full note afterwards.
  *
  * lazy: if a long note's relevance ever hides past this cut, score
- * `title + first 600 chars` rather than raising the cap for every pair.
+ * `title + first 400 chars` rather than raising the cap for every pair.
  */
-export const MAX_DOC_CHARS = 600;
+export const MAX_DOC_CHARS = 400;
 
 /** Trim a document to what the reranker can usefully read. */
 export function clipDocument(text: string): string {

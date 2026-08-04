@@ -31,11 +31,12 @@ const CANDIDATES = 30;
 /**
  * How many RRF winners the reranker rescores; also the SQL fetch size.
  *
- * 16 rather than 25 because the service batches 16 pairs at a time: 25 pays for
- * two batches to rescore nine extra candidates that RRF had already ranked
- * below the tenth. Recall past rank 16 is not what wins searches.
+ * 12 rather than 25, measured on the production box at the sizes real chunks
+ * have: 25 candidates cost 14.0s, 16 cost 4.1s, 12 cost 2.0s. Recall past rank
+ * 12 is not what wins searches — RRF has already agreed twice by then — and this
+ * is the difference between an agent waiting seven seconds and two.
  */
-const RERANK_CANDIDATES = 16;
+const RERANK_CANDIDATES = 12;
 
 export interface SearchHit {
   note_id: string;
