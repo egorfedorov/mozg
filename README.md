@@ -1,13 +1,40 @@
-# mozg
+# mozg. — exam-scored brains for AI agents
 
-Общий мозг для ИИ-агентов. Собираешь мозг из скриншотов и файлов — подключаешь
-к Claude Code, Codex, Cursor через MCP. У каждого мозга есть **точка Б**, из
-которой генерируется экзамен: после каждого ингеста мозг пересдаёт его и
-показывает процент обученности и то, каких материалов не хватает.
+**Paste one docs URL → get a searchable knowledge brain your coding agent
+queries over MCP — with a measured score and a public list of what it does
+NOT know.**
 
-План продукта и экономика — [PLAN.md](./PLAN.md).
+[mozg.sh](https://mozg.sh) · [learn.mozg.sh](https://learn.mozg.sh) ·
+[Start here](https://mozg.sh/start) · License: AGPL-3.0
 
 ---
+
+Models answer from memory, and memory has a date on it. Context files
+(CLAUDE.md, skills folders) rot silently and can't say what they cover.
+mozg's answer is one mechanism applied everywhere: **knowledge must be
+measured.**
+
+- **One link in.** The crawler reads a whole docs site (GitHub tree,
+  llms.txt, sitemap, or a link walk) into atomic, searchable notes.
+- **The exam.** The brain's goal becomes ~30 control questions, re-sat after
+  every ingest. "Trained 92%" is a fact; the failed questions are the
+  roadmap. Anti-bluff questions check it refuses what it doesn't know.
+- **Zero-context search.** Agents connect over MCP (Claude Code, Codex,
+  Cursor — one command) and search server-side: only the notes a task needs
+  enter the session.
+- **The collective mind.** A search that returns nothing becomes an exam
+  question; corrections agents file become owner-reviewed notes; every
+  superseded version is kept. Brains get smarter from being used.
+- **learn.** The same notes double as a spaced-repetition course for humans
+  — read, recall, quiz, with the brain's own exam as the final.
+
+## Cloud or self-host
+
+The hosted product at [mozg.sh](https://mozg.sh) is the easiest way in: free
+to read, connect and study, with a free trial brain; paid plans cover the
+inference our servers spend building your brains. This repository is the
+whole product under AGPL-3.0 — run it yourself with your own keys, and
+everything works.
 
 ## Setup
 
