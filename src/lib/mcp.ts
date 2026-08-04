@@ -396,11 +396,39 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     [owner.userId],
   );
 
+  // The public catalogue, so an agent that lacks a subject knows it can be
+  // had by handle — headless sessions proved that without this an agent
+  // concludes "no stake-engine brain exists" while one sits public.
+  const shelf = new Set(rows.map((r) => r.handle));
+  const catalogue = await query<{ handle: string; title: string; score: number | null; price_cents: number }>(
+    `select u.handle || '/' || b.slug as handle, b.title, b.score, b.price_cents
+       from brains b join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and u.handle is not null and b.parent_id is null
+        and b.note_count > 0
+      order by b.score desc nulls last limit 12`,
+  ).then((rs) => rs.filter((r) => !shelf.has(r.handle)));
+
+  const catalogueBlock = catalogue.length
+    ? "\n\nPublic catalogue — any of these work by handle right now " +
+      "(e.g. brain_search {\"brain\": \"" + catalogue[0].handle + "\", ...}); " +
+      "paid ones answer a few queries free:\n" +
+      catalogue
+        .map(
+          (c) =>
+            `- ${c.handle} — ${c.title}` +
+            (c.score != null ? ` (trained ${c.score}%` : " (") +
+            `${c.score != null && c.price_cents ? ", " : ""}${c.price_cents ? "paid" : c.score != null ? "" : "free"})`,
+        )
+        .join("\n") +
+      "\nFull list: https://mozg.sh/explore"
+    : "";
+
   if (!rows.length) {
     return {
       text:
-        "No brains yet. Create one with brain_create, feed it with " +
-        "brain_add_source, then call brain_list again.",
+        "No brains on your shelf yet. Create one with brain_create and feed " +
+        "it with brain_add_source — or use a public brain below directly." +
+        catalogueBlock,
     };
   }
 
@@ -433,7 +461,9 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     }
   }
 
-  return { text: `${rows.length} brain(s) available:\n\n${lines.join("\n")}` };
+  return {
+    text: `${rows.length} brain(s) available:\n\n${lines.join("\n")}${catalogueBlock}`,
+  };
 }
 
 async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcome> {
