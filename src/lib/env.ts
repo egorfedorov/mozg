@@ -59,6 +59,9 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
+  // Google Search Console's HTML-tag verification. Paste the content= value
+  // from the console; unset means no tag is rendered.
+  GOOGLE_SITE_VERIFICATION: z.string().optional(),
 
   // Set once an email provider is wired up. Until then the product cannot send
   // a verification link or a password reset, so signing up with a password

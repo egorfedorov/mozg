@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   title: "mozg — one brain, every agent",
   description:
     "Build a knowledge brain from screenshots and files, then connect it to Claude Code, Codex and Cursor over MCP.",
+  ...(env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
   openGraph: {
     siteName: "mozg",
     type: "website",
