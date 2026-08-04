@@ -1,4 +1,5 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, scheduleDigest, enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { runDigest } from "@/worker/digest";
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
@@ -177,6 +178,12 @@ async function main() {
   );
 
   await scheduleConsolidation();
+
+  await boss.work(QUEUES.digest, { batchSize: 1, pollingIntervalSeconds: 60 }, async () => {
+    const sent = await runDigest();
+    console.log(`[digest] sent ${sent} weekly letter(s)`);
+  });
+  await scheduleDigest();
 
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +

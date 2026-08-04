@@ -13,6 +13,7 @@ export const QUEUES = {
   exam: "exam",
   maintenance: "maintenance",
   consolidate: "consolidate",
+  digest: "digest",
 } as const;
 
 /**
@@ -54,9 +55,19 @@ export async function getBoss(): Promise<PgBoss> {
   return starting;
 }
 
-export async function enqueueIngest(sourceId: string): Promise<void> {
+/**
+ * Queue priorities. A person watching their brain learn is not the same as a
+ * nightly refresh nobody is waiting on — when both are queued, the person
+ * wins. Crawl-expanded pages sit in the middle: bulk, but someone did ask.
+ */
+export const PRIORITY = { interactive: 10, crawl: 0, background: -5 } as const;
+
+export async function enqueueIngest(
+  sourceId: string,
+  priority: number = PRIORITY.interactive,
+): Promise<void> {
   const b = await getBoss();
-  await b.send(QUEUES.ingest, { sourceId }, { singletonKey: sourceId });
+  await b.send(QUEUES.ingest, { sourceId }, { singletonKey: sourceId, priority });
 }
 
 export async function enqueueCrawl(sourceId: string): Promise<void> {
@@ -102,6 +113,13 @@ export async function enqueueConsolidation(): Promise<void> {
   // The pass walks every large brain; a double trigger would pay for the same
   // merges twice.
   await b.send(QUEUES.consolidate, {}, { singletonKey: "consolidation", singletonSeconds: 600 });
+}
+
+/** Monday morning, owner's timezone unknown — 09:00 UTC lands in everyone's
+ *  working day somewhere near the start of the week. */
+export async function scheduleDigest(): Promise<void> {
+  const b = await getBoss();
+  await b.schedule(QUEUES.digest, "0 9 * * 1", {}, { tz: "UTC" });
 }
 
 export async function enqueueExam(brainId: string): Promise<void> {

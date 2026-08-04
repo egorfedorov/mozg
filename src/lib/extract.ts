@@ -276,6 +276,10 @@ export function segments(text: string): string[] {
   return out;
 }
 
+/** Segments extracted at once. Above this, a burst of a 12-segment page
+ *  starts tripping reseller rate limits and the retries eat the win. */
+const SEGMENT_CONCURRENCY = 4;
+
 export async function extractFromText(
   text: string,
   opts: { goal: string | null; categories?: string[]; label?: string },
@@ -286,10 +290,8 @@ export async function extractFromText(
   let usage = { inputTokens: 0, outputTokens: 0, costCents: 0 };
   let failed = 0;
 
-  for (const [i, part] of parts.entries()) {
-    const where =
-      parts.length > 1 ? ` (part ${i + 1} of ${parts.length})` : "";
-
+  const extractPart = async (part: string, i: number): Promise<ExtractResult | null> => {
+    const where = parts.length > 1 ? ` (part ${i + 1} of ${parts.length})` : "";
     try {
       const { data: raw, usage: u } = await structured<unknown>({
         model: env.MODEL_EXTRACT,
@@ -304,23 +306,36 @@ export async function extractFromText(
           },
         ],
       });
+      return finish(raw, u);
+    } catch (err) {
+      // One bad segment should not lose the other eleven. A page that fails
+      // entirely still throws, so the source is marked failed rather than
+      // stored as a partial nobody knows is partial.
+      console.warn(
+        `[extract] ${opts.label ?? "text"}${where} failed: ` +
+          (err instanceof Error ? err.message : String(err)),
+      );
+      return null;
+    }
+  };
 
-      const result = finish(raw, u);
+  // Batches of a few at a time: a 12-segment page used to take 12 sequential
+  // model calls — the single slowest thing a big page did. Results are
+  // collected in segment order so note order stays stable.
+  for (let start = 0; start < parts.length; start += SEGMENT_CONCURRENCY) {
+    const batch = parts.slice(start, start + SEGMENT_CONCURRENCY);
+    const results = await Promise.all(batch.map((p, j) => extractPart(p, start + j)));
+    for (const result of results) {
+      if (!result) {
+        failed++;
+        continue;
+      }
       notes.push(...result.notes);
       usage = {
         inputTokens: usage.inputTokens + result.usage.inputTokens,
         outputTokens: usage.outputTokens + result.usage.outputTokens,
         costCents: usage.costCents + result.usage.costCents,
       };
-    } catch (err) {
-      // One bad segment should not lose the other eleven. A page that fails
-      // entirely still throws, so the source is marked failed rather than
-      // stored as a partial nobody knows is partial.
-      failed++;
-      console.warn(
-        `[extract] ${opts.label ?? "text"}${where} failed: ` +
-          (err instanceof Error ? err.message : String(err)),
-      );
     }
   }
 

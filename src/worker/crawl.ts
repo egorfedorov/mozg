@@ -7,7 +7,7 @@ import { fetchPageText } from "@/lib/page";
 import { structured } from "@/lib/claude";
 import { env } from "@/lib/env";
 import { setGoal } from "@/lib/goal";
-import { enqueueIngest } from "@/worker/queue";
+import { enqueueIngest, PRIORITY } from "@/worker/queue";
 import { SourceBusyError } from "@/worker/ingest";
 
 /**
@@ -95,7 +95,7 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
          values ($1, 'url', $2, $3) returning id`,
         [brain.id, pageUrl, new URL(pageUrl).pathname.slice(1) || new URL(pageUrl).hostname],
       );
-      await enqueueIngest(page.id);
+      await enqueueIngest(page.id, PRIORITY.crawl);
       queued++;
     }
 

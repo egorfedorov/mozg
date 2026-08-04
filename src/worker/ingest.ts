@@ -1,4 +1,5 @@
-import { pool, query, one, tx, toVector } from "@/db";
+import { pool, query, one, maybeOne, tx, toVector } from "@/db";
+import { env } from "@/lib/env";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { limitsFor } from "@/lib/plans";
@@ -293,6 +294,45 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
   }
 }
 
+/**
+ * Extraction with a cross-source cache for text material.
+ *
+ * Same text + same model + same goal ⇒ same notes, so paying twice is pure
+ * waste — re-crawls, the same page added twice, and re-reads after a cleanup
+ * all hit this. The goal is part of the key on purpose: extraction is
+ * goal-aware, and reusing notes made for a different goal would be cheaper
+ * and quietly worse. Images and PDFs skip the cache — they duplicate rarely
+ * and hashing their meaning is a different problem.
+ */
+async function cachedTextExtract(
+  text: string,
+  brain: Brain,
+  categories: string[],
+  label?: string,
+): Promise<ExtractResult> {
+  const key = [contentHash(text), env.MODEL_EXTRACT, contentHash(brain.goal ?? "")];
+
+  const hit = await maybeOne<{ payload: ExtractResult }>(
+    `select payload from extract_cache
+      where content_hash = $1 and model = $2 and goal_hash = $3`,
+    key,
+  );
+  if (hit) {
+    // Free by definition: the money was spent when the cache was written.
+    return { ...hit.payload, usage: { ...hit.payload.usage, costCents: 0 } };
+  }
+
+  const result = await extractFromText(text, { goal: brain.goal, categories, label });
+
+  await query(
+    `insert into extract_cache (content_hash, model, goal_hash, payload, note_count)
+     values ($1, $2, $3, $4, $5)
+     on conflict (content_hash, model, goal_hash) do nothing`,
+    [...key, JSON.stringify(result), result.notes.length],
+  );
+  return result;
+}
+
 async function extract(source: Source, brain: Brain, categories: string[]) {
   if (source.kind === "image") {
     if (!source.storage_key) throw new Error("image source has no storage key");
@@ -322,19 +362,16 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
       [source.id, contentHash(text)],
     );
 
-    return extractFromText(text, {
-      goal: brain.goal,
-      categories,
-      label: source.url,
-    });
+    return cachedTextExtract(text, brain, categories, source.url);
   }
 
   // text | file
   if (!source.storage_key) throw new Error("text source has no storage key");
   const bytes = await storage.get(source.storage_key);
-  return extractFromText(bytes.toString("utf8"), {
-    goal: brain.goal,
+  return cachedTextExtract(
+    bytes.toString("utf8"),
+    brain,
     categories,
-    label: source.original_name ?? undefined,
-  });
+    source.original_name ?? undefined,
+  );
 }

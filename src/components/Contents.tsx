@@ -22,6 +22,7 @@ const PAGES: { href: string; label: string; note: string }[] = [
   { href: "/explore", label: "Catalogue", note: "brains to take" },
   { href: "/pricing", label: "Pricing", note: "what costs money, what never will" },
   { href: "/beta", label: "Beta", note: "help us sand the edges" },
+  { href: "/changelog", label: "Changelog", note: "shipped, dated, felt" },
 ];
 
 export default function Contents({ active }: { active?: string }) {

@@ -6,7 +6,7 @@ import { query } from "@/db";
 import type { Brain } from "@/db/types";
 import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
-import { formatCents } from "@/lib/money-math";
+import { formatCents, PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { TOPICS, topicLabel, isTopic } from "@/lib/topics";
 import { Chip } from "@/components/ui";
 
@@ -65,12 +65,18 @@ export default async function ExplorePage({
   // Families are one entry, not eight. A parent already covers its children
   // when searched, so listing each child beside it fills the catalogue with
   // rows that are the same purchase and the same connection.
-  const brains = await query<PublicBrain>(
+  const brains = await query<PublicBrain & { calls_week: number }>(
     `select b.*, u.handle as owner_handle, u.name as owner_name,
             (select count(*)::int from brains c
               where c.parent_id = b.id and c.visibility = 'public') as children,
             (select coalesce(sum(c.note_count), 0)::int from brains c
-              where c.parent_id = b.id and c.visibility = 'public') as child_notes
+              where c.parent_id = b.id and c.visibility = 'public') as child_notes,
+            -- Social proof from the metering table, family-wide: agents ask
+            -- the parent, so a child-only count would undercount every family.
+            (select count(*)::int from calls k
+              where k.created_at > now() - interval '7 days'
+                and (k.brain_id = b.id or k.brain_id in
+                     (select id from brains c2 where c2.parent_id = b.id))) as calls_week
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and u.handle is not null
         and b.parent_id is null ${where}
@@ -258,6 +264,7 @@ export default async function ExplorePage({
                     {(brain.note_count + brain.child_notes).toLocaleString()} notes
                     {brain.children > 0 && ` · ${brain.children} inside`}
                     {brain.sales_count > 0 && ` · ${brain.sales_count} sold`}
+                    {brain.calls_week > 0 && ` · ${brain.calls_week} asks/wk`}
                   </span>
                   {brain.score !== null && (
                     <span className="card-score">
@@ -280,8 +287,16 @@ export default async function ExplorePage({
               Sell what you already know.
             </h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              Publish a brain, set a price, keep 70% of every sale. Buyers get read
-              access through their agent — the licence forbids reselling it.
+              Publish a brain, set a price, keep {100 - PLATFORM_FEE_PERCENT}% of
+              every sale. Buyers get read access through their agent — the licence
+              forbids reselling it. And if the brain you need is missing:{" "}
+              <a
+                href="mailto:hi@mozg.sh?subject=Brain%20request"
+                style={{ textDecoration: "underline" }}
+              >
+                name it
+              </a>{" "}
+              — good requests get built within days.
             </p>
           </div>
           <Link className="btn" href="/guide">

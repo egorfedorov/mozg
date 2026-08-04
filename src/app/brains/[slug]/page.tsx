@@ -56,7 +56,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags, freshNotes] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -127,6 +127,13 @@ export default async function BrainPage({
          from note_flags f join notes n on n.id = f.note_id
         where f.brain_id = $1 and n.status = 'active'
         order by f.created_at desc limit 20`,
+      [brain.id],
+    ),
+    // The live ticker while learning: watching real notes land, title by
+    // title, is the proof this is not a spinner over nothing.
+    query<{ title: string }>(
+      `select title from notes where brain_id = $1 and status = 'active'
+        order by created_at desc limit 3`,
       [brain.id],
     ),
   ]);
@@ -211,6 +218,17 @@ export default async function BrainPage({
                 ? " — the exam re-runs by itself when this finishes"
                 : " — a goal is being drafted from the material"}
             </p>
+            {freshNotes.length > 0 && (
+              <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".35rem 0 0" }}>
+                just learned: {freshNotes.map((n) => n.title).join(" · ")}
+              </p>
+            )}
+            {brain.note_count > 0 && (
+              <p style={{ fontSize: ".875rem", margin: ".6rem 0 0" }}>
+                Search already answers from what is read — connect an agent and
+                ask; the rest arrives underneath the conversation.
+              </p>
+            )}
           </div>
         )}
 

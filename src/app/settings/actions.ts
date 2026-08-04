@@ -13,9 +13,9 @@ import { createInvoice } from "@/lib/payments";
 const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
 const RESERVED = new Set([
-  "admin", "api", "b", "beta", "brains", "connect", "explore", "guide", "make",
-  "mcp", "pricing", "settings", "sign-in", "sign-up", "vs", "why", "www",
-  "support", "help",
+  "admin", "api", "b", "beta", "brains", "changelog", "connect", "explore",
+  "gift", "guide", "make", "mcp", "pricing", "settings", "sign-in", "sign-up",
+  "vs", "why", "www", "support", "help",
 ]);
 
 export async function updateProfile(_prev: unknown, formData: FormData) {

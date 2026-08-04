@@ -1,6 +1,6 @@
 import { query } from "@/db";
 import { fetchPageText, contentHash } from "@/lib/page";
-import { enqueueIngest, enqueueExam, enqueueCrawl } from "@/worker/queue";
+import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
 
 /**
  * Keeping brains honest without being asked.
@@ -134,7 +134,7 @@ export async function refreshUrlSources(limit = REFRESH_BATCH): Promise<RefreshR
       source.brain_id,
     ]);
 
-    await enqueueIngest(source.id);
+    await enqueueIngest(source.id, PRIORITY.background);
   }
 
   return report;
@@ -206,7 +206,7 @@ export async function requeueBudgetPaused(limit = 50): Promise<number> {
       returning id`,
     [limit],
   );
-  for (const s of due) await enqueueIngest(s.id);
+  for (const s of due) await enqueueIngest(s.id, PRIORITY.background);
   return due.length;
 }
 
