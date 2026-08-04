@@ -23,5 +23,18 @@ export default async function StarBanner() {
     // No count, still an ask.
   }
 
-  return <StarBannerClient stars={stars} repo={REPO} />;
+  return (
+    <>
+      <StarBannerClient stars={stars} repo={REPO} />
+      {/* Runs before paint, immediately after the bar's markup: a returning
+          visitor who dismissed it never sees it, and a first-timer gets no
+          layout shift. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{if(localStorage.getItem('star-banner-dismissed')){var e=document.getElementById('star-banner');if(e)e.remove()}}catch(e){}",
+        }}
+      />
+    </>
+  );
 }

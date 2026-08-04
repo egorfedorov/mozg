@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /**
  * Dismissable, and it stays dismissed — a banner that returns on every page
- * is an ad, not an ask. Rendered hidden until the check runs, so a returning
- * visitor never sees it flash.
+ * is an ad, not an ask.
+ *
+ * Rendered on the server and hidden before paint by the inline script in
+ * StarBanner: deciding in an effect instead would either flash the bar at
+ * people who dismissed it, or shift the whole page down once hydration
+ * lands. The markup ships; the script only ever removes it.
  */
 export default function StarBannerClient({ stars, repo }: { stars: number | null; repo: string }) {
-  const [state, setState] = useState<"checking" | "show" | "hide">("checking");
-
-  useEffect(() => {
-    setState(localStorage.getItem("star-banner-dismissed") ? "hide" : "show");
-  }, []);
-
-  if (state !== "show") return null;
+  const [shown, setShown] = useState(true);
+  if (!shown) return null;
 
   return (
     <div
+      id="star-banner"
       style={{
         background: "var(--ink)",
         color: "var(--paper)",
@@ -63,8 +63,12 @@ export default function StarBannerClient({ stars, repo }: { stars: number | null
         </a>
         <button
           onClick={() => {
-            localStorage.setItem("star-banner-dismissed", "1");
-            setState("hide");
+            try {
+              localStorage.setItem("star-banner-dismissed", "1");
+            } catch {
+              // Private mode: dismiss for this page load only.
+            }
+            setShown(false);
           }}
           aria-label="Dismiss"
           style={{
