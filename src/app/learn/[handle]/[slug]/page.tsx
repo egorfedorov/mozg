@@ -3,18 +3,16 @@ import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { currentUser } from "@/lib/session";
-import Session, { type Card } from "./Session";
 
 export const dynamic = "force-dynamic";
 
-const SESSION_SIZE = 20;
-
 /**
- * One sitting on one brain: due reviews first (the schedule knows best),
- * then new lesson cards, then new exam questions. The same notes the agent
- * searches and the same checks the exam sits — nothing is authored twice.
+ * The course page. A brain's categories are its syllabus: each module is
+ * read (the notes, as a lesson), then practised (cards + exam questions),
+ * then kept alive by spaced review. This page shows where you are in that
+ * loop — per module and overall — the way a course does, not a search box.
  */
-export default async function LearnSessionPage({
+export default async function CoursePage({
   params,
 }: {
   params: Promise<{ handle: string; slug: string }>;
@@ -27,76 +25,146 @@ export default async function LearnSessionPage({
   if (!found?.brain || !found.access) notFound();
   const brain = found.brain;
 
-  const due = await query<Card & { kind: "note" | "check" }>(
-    `select p.kind, p.item_id as id,
-            coalesce(n.title, c.question) as front,
-            coalesce(n.body, c.expect) as back,
-            coalesce(n.category, c.category) as category,
-            false as "isNew"
-       from learn_progress p
-       left join notes n on p.kind = 'note' and n.id = p.item_id and n.status = 'active'
-       left join checks c on p.kind = 'check' and c.id = p.item_id and c.enabled
-      where p.user_id = $1 and p.brain_id = $2 and p.due_at <= now()
-        and coalesce(n.id, c.id) is not null
-      order by p.due_at
-      limit $3`,
-    [user.id, brain.id, SESSION_SIZE],
-  );
+  const [noteMods, checkMods, progress, due] = await Promise.all([
+    query<{ cat: string; total: number }>(
+      `select coalesce(category, 'general') as cat, count(*)::int as total
+         from notes where brain_id = $1 and status = 'active'
+        group by 1 order by 1`,
+      [brain.id],
+    ),
+    query<{ cat: string; total: number }>(
+      `select coalesce(category, 'general') as cat, count(*)::int as total
+         from checks where brain_id = $1 and enabled group by 1`,
+      [brain.id],
+    ),
+    query<{ cat: string; learned: number }>(
+      `select coalesce(coalesce(n.category, c.category), 'general') as cat,
+              count(*)::int as learned
+         from learn_progress p
+         left join notes n on p.kind = 'note' and n.id = p.item_id
+         left join checks c on p.kind = 'check' and c.id = p.item_id
+        where p.user_id = $1 and p.brain_id = $2 and p.reps > 0
+        group by 1`,
+      [user.id, brain.id],
+    ),
+    query<{ n: number }>(
+      `select count(*)::int as n from learn_progress
+        where user_id = $1 and brain_id = $2 and due_at <= now()`,
+      [user.id, brain.id],
+    ).then((r) => r[0].n),
+  ]);
 
-  const room = SESSION_SIZE - due.length;
-  const newNotes = room > 0
-    ? await query<Card>(
-        `select 'note' as kind, n.id, n.title as front, n.body as back,
-                n.category, true as "isNew"
-           from notes n
-          where n.brain_id = $1 and n.status = 'active'
-            and not exists (select 1 from learn_progress p
-                             where p.user_id = $2 and p.kind = 'note' and p.item_id = n.id)
-          order by n.category nulls last, n.created_at
-          limit $3`,
-        [brain.id, user.id, room],
-      )
-    : [];
-
-  const room2 = room - newNotes.length;
-  const newChecks = room2 > 0
-    ? await query<Card>(
-        `select 'check' as kind, c.id, c.question as front, c.expect as back,
-                c.category, true as "isNew"
-           from checks c
-          where c.brain_id = $1 and c.enabled
-            and not exists (select 1 from learn_progress p
-                             where p.user_id = $2 and p.kind = 'check' and p.item_id = c.id)
-          order by c.weight desc
-          limit $3`,
-        [brain.id, user.id, room2],
-      )
-    : [];
-
-  const cards = [...due, ...newNotes, ...newChecks];
+  const learnedBy = new Map(progress.map((p) => [p.cat, p.learned]));
+  const checksBy = new Map(checkMods.map((c) => [c.cat, c.total]));
+  const modules = noteMods.map((m) => {
+    const total = m.total + (checksBy.get(m.cat) ?? 0);
+    return {
+      cat: m.cat,
+      notes: m.total,
+      checks: checksBy.get(m.cat) ?? 0,
+      total,
+      learned: Math.min(learnedBy.get(m.cat) ?? 0, total),
+    };
+  });
+  const totalCards = modules.reduce((n, m) => n + m.total, 0);
+  const totalLearned = modules.reduce((n, m) => n + m.learned, 0);
+  const pct = totalCards ? Math.round((totalLearned / totalCards) * 100) : 0;
 
   return (
-    <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 780 }}>
+    <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
       <p className="eyebrow">
-        <Link href="/learn">learn</Link> / {brain.title}
-        {brain.score != null && (
-          <span className="mono" style={{ marginLeft: ".75rem", color: "var(--ink-3)" }}>
-            the agent scores {brain.score}% — beat it
-          </span>
-        )}
+        <Link href="/learn">learn</Link> / course
       </p>
+      <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
+        {brain.title}
+      </h1>
+      {brain.goal && (
+        <p className="lede" style={{ maxWidth: "62ch", marginTop: 0 }}>
+          {brain.goal.split("\n")[0]}
+        </p>
+      )}
 
-      {cards.length === 0 ? (
-        <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem" }}>
-          <p className="h2" style={{ margin: 0 }}>Nothing due.</p>
-          <p style={{ color: "var(--ink-2)", marginBottom: 0 }}>
-            Every card is scheduled for later — that is the system working.
-            Come back when something is due, or pick another brain.
+      {/* The scoreboard: you against your agent. */}
+      <div
+        style={{
+          display: "flex",
+          gap: "2rem",
+          flexWrap: "wrap",
+          border: "1.5px solid var(--ink)",
+          background: "var(--paper-2)",
+          padding: "1rem 1.25rem",
+          margin: "1.5rem 0",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>YOU</p>
+          <p className="h2" style={{ margin: 0 }}>{pct}%</p>
+        </div>
+        {brain.score != null && (
+          <div>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>YOUR AGENT</p>
+            <p className="h2" style={{ margin: 0, color: "var(--ink-2)" }}>{brain.score}%</p>
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div style={{ height: 10, border: "1.5px solid var(--ink)", background: "var(--paper)" }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: "var(--color-riso-green)" }} />
+          </div>
+          <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".3rem 0 0" }}>
+            {totalLearned} of {totalCards} cards learned
           </p>
         </div>
-      ) : (
-        <Session brainId={brain.id} cards={cards} backHref={`/learn`} />
-      )}
+        {due > 0 && (
+          <Link className="btn" href={`/learn/${handle}/${slug}/review`}>
+            Review {due} due
+          </Link>
+        )}
+      </div>
+
+      <h2 className="h2" style={{ margin: "2rem 0 1rem" }}>Syllabus</h2>
+      <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)" }}>
+        {modules.map((m, i) => {
+          const mpct = m.total ? Math.round((m.learned / m.total) * 100) : 0;
+          return (
+            <div
+              key={m.cat}
+              style={{
+                background: "var(--paper-2)",
+                padding: "1rem 1.25rem",
+                display: "flex",
+                gap: "1rem",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", width: "2ch" }}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <p style={{ margin: 0, fontWeight: 650 }}>{m.cat}</p>
+                <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".15rem 0 0" }}>
+                  {m.notes} notes · {m.checks} exam questions
+                  {m.learned > 0 && ` · ${mpct}% learned`}
+                </p>
+              </div>
+              <div style={{ width: 90, height: 8, border: "1px solid var(--ink)", background: "var(--paper)" }}>
+                <div style={{ height: "100%", width: `${mpct}%`, background: mpct === 100 ? "var(--color-riso-green)" : "var(--color-riso-red)" }} />
+              </div>
+              <Link className="btn btn-ghost" style={{ padding: ".4rem .8rem" }} href={`/learn/${handle}/${slug}/study/${encodeURIComponent(m.cat)}`}>
+                {m.learned > 0 ? "Continue" : "Study"}
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1.5rem" }}>
+        Each module is the same material your agent searches — read it as a
+        lesson, then a short quiz seals it, and spaced review brings each card
+        back just before you would forget. Cards you miss return within
+        minutes; cards you know retreat for days.
+      </p>
     </main>
   );
 }

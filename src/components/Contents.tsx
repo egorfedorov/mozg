@@ -22,6 +22,7 @@ const PAGES: { href: string; label: string; note: string }[] = [
   { href: "/guide", label: "The long guide", note: "every detail" },
   { href: "/connect", label: "Connect", note: "your client, one command" },
   { href: "/explore", label: "Catalogue", note: "brains to take" },
+  { href: "/learn", label: "Learn", note: "the same brain, for you" },
   { href: "/pricing", label: "Pricing", note: "what costs money, what never will" },
   { href: "/beta", label: "Beta", note: "help us sand the edges" },
   { href: "/changelog", label: "Changelog", note: "shipped, dated, felt" },

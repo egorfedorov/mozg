@@ -60,6 +60,21 @@ export default async function LearnHome() {
     user ? [user.id] : [],
   );
 
+  // The free shelf shows for everyone — a signed-in person with an empty
+  // library is exactly the visitor who needs somewhere to start.
+  const free = await query<(typeof brains)[number]>(
+    `select u.handle, b.slug, b.title, b.goal, b.score,
+            (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
+            + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
+            0 as due, 0 as seen
+       from brains b join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and b.price_cents = 0 and u.handle is not null
+        and b.note_count > 0
+        and not (u.handle || '/' || b.slug = any($1::text[]))
+      order by b.score desc nulls last limit 24`,
+    [brains.map((b) => `${b.handle}/${b.slug}`)],
+  );
+
   return (
     <>
       <header style={{ borderBottom: "1.5px solid var(--ink)", background: "var(--paper)" }}>
@@ -128,10 +143,39 @@ export default async function LearnHome() {
 
         {user && brains.length === 0 && (
           <p style={{ color: "var(--ink-2)" }}>
-            Your shelf is empty — add a brain from the{" "}
+            Your shelf is empty — start with a free brain below, or add one
+            from the{" "}
             <Link href="/explore" style={{ textDecoration: "underline" }}>catalogue</Link>{" "}
             and it appears here as a course.
           </p>
+        )}
+
+        {free.length > 0 && (
+          <>
+            <h2 className="h2" style={{ margin: "2.5rem 0 1rem" }}>
+              {user ? "Free brains to add" : "More free brains"}
+            </h2>
+            <div className="grid-brains">
+              {free.map((b) => (
+                <Link
+                  key={`${b.handle}/${b.slug}`}
+                  href={`/learn/${b.handle}/${b.slug}`}
+                  style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.1rem", display: "block" }}
+                >
+                  <h3 className="h3" style={{ margin: "0 0 .35rem" }}>{b.title}</h3>
+                  {b.goal && (
+                    <p style={{ color: "var(--ink-2)", fontSize: ".875rem", margin: "0 0 .6rem" }}>
+                      {b.goal.split("\n")[0].slice(0, 120)}
+                    </p>
+                  )}
+                  <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: 0 }}>
+                    {b.cards} cards
+                    {b.score != null ? ` · agent ${b.score}%` : ""}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </>
