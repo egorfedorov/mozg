@@ -6,6 +6,7 @@ import { z } from "zod";
 import { maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
+import { isAdmin } from "@/lib/admin";
 import { scanSecrets, scanPII } from "@/lib/scan";
 import { TOPIC_KEYS } from "@/lib/topics";
 
@@ -89,13 +90,23 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
     }
   }
 
+  // The public catalogue is curated: a user asking for public files a
+  // request and the brain stays as it is until an operator approves.
+  // Admins publish directly; link-sharing needs no approval — it reaches
+  // only people the owner gave the URL to.
+  const wantsModeration =
+    parsed.data.visibility === "public" &&
+    brain.visibility !== "public" &&
+    !isAdmin(user);
+  const effectiveVisibility = wantsModeration ? brain.visibility : parsed.data.visibility;
+
   await query(
     `update brains set visibility = $2, license = $3, review_required = $4,
             price_cents = $5, topic = $6, updated_at = now()
       where id = $1`,
     [
       brain.id,
-      parsed.data.visibility,
+      effectiveVisibility,
       parsed.data.license,
       parsed.data.review_required,
       priceCents,
@@ -103,8 +114,16 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
     ],
   );
 
+  if (wantsModeration) {
+    await query(
+      `insert into publish_requests (brain_id, requested_by)
+       values ($1, $2) on conflict do nothing`,
+      [brain.id, user.id],
+    );
+  }
+
   revalidatePath(`/brains/${slug}/share`);
-  return { ok: true as const };
+  return { ok: true as const, moderation: wantsModeration };
 }
 
 export async function inviteByEmail(_prev: unknown, formData: FormData) {

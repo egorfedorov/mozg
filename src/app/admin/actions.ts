@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { query } from "@/db";
+import { query, maybeOne } from "@/db";
 import { adjustBalance as moveBalance, settlePayout } from "@/lib/money";
 import { resolvePlanRequest } from "@/lib/upgrade";
 import { requireAdmin } from "@/lib/admin";
@@ -133,6 +133,31 @@ export async function revokeTokens(formData: FormData) {
 }
 
 /** Where a brain sits in the catalogue: its field and who can see it. */
+/** Settle a publication request: approve flips the brain public, reject
+    leaves it as it is. Either way the queue row closes. */
+export async function settlePublish(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({ id: z.string().uuid(), approve: z.coerce.boolean() })
+    .safeParse({ id: formData.get("id"), approve: formData.get("approve") === "yes" });
+  if (!parsed.success) return;
+
+  const req = await maybeOne<{ brain_id: string }>(
+    `update publish_requests
+        set status = $2, resolved_at = now(), resolved_by = $3
+      where id = $1 and status = 'pending'
+      returning brain_id`,
+    [parsed.data.id, parsed.data.approve ? "approved" : "rejected", admin.email],
+  );
+  if (req && parsed.data.approve) {
+    await query(`update brains set visibility = 'public', updated_at = now() where id = $1`, [
+      req.brain_id,
+    ]);
+  }
+  revalidatePath("/admin/brains");
+}
+
 export async function setListing(formData: FormData) {
   const admin = await requireAdmin();
 

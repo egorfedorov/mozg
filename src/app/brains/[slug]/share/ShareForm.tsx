@@ -189,7 +189,9 @@ export default function ShareForm({
         )}
         {settings?.ok && (
           <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem", margin: 0 }}>
-            Saved
+            {settings.moderation
+              ? "Saved — publication sent for review. The brain stays as it is until an operator approves; everything else applied."
+              : "Saved"}
           </p>
         )}
 

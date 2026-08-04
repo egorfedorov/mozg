@@ -1030,10 +1030,22 @@ async function brainCreate(
       goal,
       topic,
       parentId,
-      priceCents > 0 ? "public" : "private",
+      // The catalogue is curated: everyone's brains are born private, and a
+      // price files a publication request instead of self-publishing. The
+      // operator's own account skips its own queue.
+      priceCents > 0 && owner.plan === "admin" ? "public" : "private",
       priceCents,
     ],
   );
+
+  const underReview = priceCents > 0 && owner.plan !== "admin";
+  if (underReview) {
+    await query(
+      `insert into publish_requests (brain_id, requested_by)
+       values ($1, $2) on conflict do nothing`,
+      [brain.id, owner.userId],
+    );
+  }
 
   // Same activation event as the web form — the first brain, by any door.
   if (count === 0) {
@@ -1045,7 +1057,11 @@ async function brainCreate(
       `Created "${brain.title}" with the handle ${brain.slug}` +
       (parentHandle ? `, grouped under ${parentHandle}` : "") +
       (priceCents > 0
-        ? ` — public in the catalogue at $${(priceCents / 100).toFixed(2)}`
+        ? underReview
+          ? ` — priced at $${(priceCents / 100).toFixed(2)}; publication to the ` +
+            "catalogue is under review, the brain stays private and usable by " +
+            "its owner meanwhile"
+          : ` — public in the catalogue at $${(priceCents / 100).toFixed(2)}`
         : "") +
       ".\n\n" +
       `Goal: ${goal}\n\n` +

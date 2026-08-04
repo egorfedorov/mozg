@@ -2,7 +2,8 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { requireAdmin, adminBrains } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
-import { setListing, deleteBrain } from "../actions";
+import { setListing, deleteBrain, settlePublish } from "../actions";
+import { query } from "@/db";
 import { TOPICS } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +14,56 @@ export default async function AdminBrainsPage() {
   await requireAdmin();
   const brains = await adminBrains();
 
+  const pendingPublish = await query<{
+    id: string;
+    title: string;
+    slug: string;
+    email: string;
+    note_count: number;
+    score: number | null;
+    price_cents: number;
+    asked: string;
+  }>(
+    `select r.id, b.title, b.slug, u.email, b.note_count, b.score, b.price_cents,
+            to_char(r.created_at at time zone 'UTC', 'MM-DD HH24:MI') as asked
+       from publish_requests r
+       join brains b on b.id = r.brain_id
+       join "user" u on u.id = r.requested_by
+      where r.status = 'pending'
+      order by r.created_at`,
+  );
+
   return (
     <AppShell active="/admin/brains" eyebrow="Operator" title="Brains">
+      {pendingPublish.length > 0 && (
+        <div style={{ border: "1.5px solid var(--color-riso-red)", background: "var(--paper-2)", padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)", margin: "0 0 .6rem" }}>
+            Waiting to go public — read before approving
+          </p>
+          {pendingPublish.map((r) => (
+            <div key={r.id} style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap", padding: ".4rem 0", borderTop: "1px solid var(--rule)" }}>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <strong>{r.title}</strong>
+                <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                  {r.email} · {r.note_count} notes · {r.score === null ? "not examined" : `${r.score}%`}
+                  {r.price_cents > 0 && ` · wants ${formatCents(r.price_cents)}`} · asked {r.asked}
+                </span>
+              </div>
+              <form action={settlePublish}>
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="approve" value="yes" />
+                <button className="btn" style={{ padding: ".35rem .7rem" }}>Publish</button>
+              </form>
+              <form action={settlePublish}>
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="approve" value="no" />
+                <button className="btn btn-ghost" style={{ padding: ".35rem .7rem" }}>Reject</button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
+
       <p className="lede">
           {brains.length} brain{brains.length === 1 ? "" : "s"}. Changing
           visibility away from public also clears the price — a listing nobody
