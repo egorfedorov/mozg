@@ -343,6 +343,26 @@ export default async function MarketingPage() {
       <Block title="The collective-mind post" hint="X / LinkedIn / blog intro" text={collectivePost} />
       <Block title="Cold DM" hint="personalise the brackets" text={dm} />
 
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Post art</h2>
+      <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
+        Generated in the house riso style, no baked text — captions belong to
+        the platform, not the pixels. Cover for Dev.to, square for
+        Reddit/X, green one for anything learn.
+      </p>
+      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginBottom: "1.5rem" }}>
+        {[
+          { src: "/brand/devto-cover.jpg", label: "devto-cover.jpg — article cover, 16:9" },
+          { src: "/brand/social-exam.jpg", label: "social-exam.jpg — the exam, 1:1" },
+          { src: "/brand/learn-social.jpg", label: "learn-social.jpg — learn posts, 16:9" },
+        ].map((img) => (
+          <a key={img.src} href={img.src} download style={{ display: "block" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img.src} alt={img.label} style={{ width: "100%", border: "1.5px solid var(--ink)", display: "block" }} />
+            <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>{img.label}</span>
+          </a>
+        ))}
+      </div>
+
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Brand</h2>
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-start" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

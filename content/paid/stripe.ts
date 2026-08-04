@@ -228,4 +228,59 @@ export const NOTES: {
     category: "Disputes and fraud",
     kind: "pitfall",
   },
+  // ─── Added: production incident runbooks ───
+  {
+    title: "Metered invoice exploded to $100k — how do I debug what happened?",
+    body: "Work backwards from the invoice. Pull its line items, then inspect usage: for the legacy usage-records API, list usage record summaries for the subscription item; for meters, query the meter event summaries and the events behind them. Check usage record timestamps — records must land inside the billing period and use Unix seconds; a wrong-window or millisecond timestamp piles usage into one period. Check your side for duplicates: retries of usage-report calls without idempotency, queue consumers redelivering after a late ack, and reporters firing twice per request are the usual double-count sources. Verify the subscription's billing_cycle_anchor hasn't shifted the period. Then add guardrails: alert on invoice amount deltas versus the customer's trailing average, and use billing thresholds so runaway usage invoices incrementally.",
+    category: "Billing edge cases",
+    kind: "pitfall",
+  },
+  {
+    title: "PaymentIntent stuck in requires_action — cancel it or keep waiting?",
+    body: "requires_action means the customer never finished authentication, usually 3DS. Exact abandonment timeouts vary by payment method and flow — there is no single documented number to rely on — so treat 'stuck' as an operational state, not a clock you can trust. Run a periodic job that lists Intents sitting in requires_action or requires_confirmation older than your business window (e.g. a checkout session's lifetime), email the customer a link that resumes confirmation on the SAME Intent, and cancel the Intent once your window closes so it can't complete unexpectedly weeks later. Alert on the stale-Intent rate — a spike usually means your 3DS return_url or redirect flow is broken. Never create a second Intent for the same order; reuse and resume the existing one.",
+    category: "Checkout and Payment Intents",
+    kind: "rule",
+  },
+  {
+    title: "Checkout Sessions or the Payment Intents API — which do I build on?",
+    body: "Checkout is Stripe-hosted: you create a Checkout Session, redirect (or embed), and Stripe renders the payment page, handles SCA/3DS redirects and payment-method localization — least code, least PCI/SCA surface, least UX control. Key events: checkout.session.completed, plus async_payment_succeeded/async_payment_failed for delayed methods, and the underlying invoice.paid or payment_intent.succeeded. The Payment Intents API is fully custom: you render your own form with Stripe.js/Elements or the Payment Element, confirm client-side, and own the UX — but you must handle requires_action, redirects, errors, and retries yourself; SCA still applies automatically when required. Rule of thumb: default to Checkout (or Payment Links) for standard SaaS; drop to Payment Intents when you need native in-app UX or payments embedded in a larger custom flow.",
+    category: "Checkout and Payment Intents",
+    kind: "fact",
+  },
+  {
+    title: "Renewal fails — what does Stripe do automatically, and what's on me?",
+    body: "Stripe's automatic side: it generates the renewal invoice, attempts the charge, transitions the subscription to past_due on failure, and runs dunning per your Billing settings — Smart Retries (the default) uses ML to pick retry times rather than fixed intervals, and a custom schedule is available; check your Dashboard for the exact days rather than hardcoding any pattern. When retries are exhausted, Stripe applies your configured final action: mark the subscription unpaid, cancel it, or leave it past_due. Your three duties: (1) notify — emails and in-app warnings on invoice.payment_failed with a self-serve card-update link; (2) access policy — define the grace window during past_due and enforce revocation on unpaid/canceled; (3) watch — handle customer.subscription.updated and reconcile, because Stripe keeps retrying whether you notice or not.",
+    category: "Dunning and failed payments",
+    kind: "rule",
+  },
+  {
+    title: "Crash mid-charge — do I reuse the same idempotency key on retry?",
+    body: "Yes — that is exactly what it's for. Send the Idempotency-Key HTTP header (or the idempotencyKey option in the SDKs) on POST requests like creating a PaymentIntent, Charge, Customer, or Subscription. If your process crashes or times out after Stripe received the request, retrying with the SAME key returns the original cached response without executing the mutation again — no duplicate charge. Stripe retains keys for about 24 hours; within that window the replay is guaranteed, after it the key acts as new. Generate one key per logical operation (an order or checkout UUID), store it with the order, and reuse it across all retries of that operation. Never reuse a key for a different operation or customer. Client-side double-clicks are covered by the same server-issued key.",
+    category: "Webhooks and idempotency",
+    kind: "rule",
+  },
+  {
+    title: "Can I run a trial without collecting a card upfront?",
+    body: "Yes. Create the subscription with trial_end (or trial_period_days) and no payment method; with payment_behavior: 'default_incomplete' (the default) it starts in trialing while the trial runs. Control the no-card-at-trial-end case explicitly with trial_settings.end_behavior.missing_payment_method: 'cancel' cancels the subscription when the trial ends without a card — otherwise Stripe creates an invoice and the subscription slides into past_due dunning for a customer who never agreed to pay. Listen for customer.subscription.trial_will_end (about 3 days before) to prompt card collection via a SetupIntent or a setup-mode Checkout Session. Tradeoff: cardless trials convert better but invite abuse — disposable emails farming trials. Mitigate with email verification, CAPTCHA, and per-card-fingerprint repeat-trial blocking once you do collect cards.",
+    category: "Subscriptions and lifecycle",
+    kind: "example",
+  },
+  {
+    title: "Upgrade $10 to $50 mid-cycle — why is the invoice $30, not $40?",
+    body: "Proration math: Stripe credits the unused portion of the old plan and charges the remaining portion of the new one, roughly (days_remaining / days_in_cycle) × price_difference per line item, at second precision. Upgrade with 75% of the cycle left: 0.75 × $50 = $37.50 debit on the new price, 0.75 × $10 = $7.50 credit on the old, net $30 — the customer pays only the upgrade delta for the remaining time, not a full new period. Preview before committing: after staging the price change, fetch the upcoming invoice (invoice preview / preview-lines APIs) to show the user the exact prorated amount and line items. Downgrades work the same in reverse and can leave a customer credit balance that offsets future invoices.",
+    category: "Subscriptions and lifecycle",
+    kind: "example",
+  },
+  {
+    title: "Is 'inactive' a real Stripe subscription status?",
+    body: "No. As of early 2026 the complete status set is exactly seven: trialing, active, incomplete, incomplete_expired, past_due, unpaid, canceled. If a doc, library, or model mentions 'inactive', it is wrong — don't map it. Dangerous transitions to handle deliberately: incomplete → incomplete_expired (about 23 hours without the first payment — the subscription never really started); active/trialing → past_due on failed renewal (dunning running, access decision needed); past_due → unpaid or canceled per your retry settings (revoke access here); anything → canceled is terminal (no un-cancel, you must create a new subscription). Also note paused subscriptions (pause_collection) still report status active — check that field separately. Never blindly overwrite local state on customer.subscription.updated; diff or re-fetch.",
+    category: "Subscriptions and lifecycle",
+    kind: "fact",
+  },
+  {
+    title: "Duplicate webhook processing double-billed a customer — what's the recovery runbook?",
+    body: "Make the customer whole first, then fix the pipe. (1) Refund immediately: refund the duplicate charge with reason: 'duplicate' so it's categorized correctly and doesn't read as a dispute; email the customer proactively before they see the statement. (2) Root-cause: duplicates come from at-least-once webhook delivery hitting a non-idempotent handler, from Dashboard event resends, or from your own retry loops. Check whether your handler itself created the second charge (missing idempotency key) or merely double-provisioned access. (3) Permanent fix: a unique constraint in your database on the Stripe event id (evt_...) so concurrent deliveries can't both process, idempotent handler semantics, and Idempotency-Key headers on any charge-creation calls keyed by order id. (4) Audit: search for other duplicate charges in the same window and refund them too — one visible case usually means more.",
+    category: "Webhooks and idempotency",
+    kind: "pitfall",
+  },
 ];

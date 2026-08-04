@@ -240,4 +240,106 @@ export const NOTES: {
     category: "Tooling and audit workflow",
     kind: "fact",
   },
+  // ------------------------------------------------- Account model attacks
+  {
+    title: "What happens when one account fills two roles in the same instruction?",
+    body: "Account aliasing beyond simple duplicates: in a liquidation-style instruction, an attacker passes the SAME account as both `collateral_account` and `debt_account`. The program burns tokens from \"debt\" and mints/transfers to \"collateral\" — but both roles are one account, so the net effect depends on instruction order and cached state: burn-then-mint can leave the attacker with freshly minted tokens and no real debt reduction, or the debit and credit are both computed from the same pre-state and both applied, creating value from nothing. Rule: any instruction where two mutable accounts play different trust roles (collateral vs debt, source vs destination, vault vs fee) must assert inequality — Anchor: `constraint = collateral.key() != debt.key()`. When iterating liquidatable positions via `remaining_accounts`, enforce the same uniqueness discipline per entry, since Anchor applies zero checks to tail accounts.",
+    category: "Account model attacks",
+    kind: "pitfall",
+  },
+  {
+    title: "Is reading lamports from remaining_accounts dangerous by itself?",
+    body: "No — and confusing read vs write here produces both false positives and missed criticals. READING `account.lamports()` or data from an unvalidated `remaining_accounts` entry cannot move value; the risk is decision corruption: fee logic, caps, or eligibility computed from an attacker's fake balances — an input-validation finding, not a drain. Actual DRAIN requires write authority: only an account's OWNER program can debit its lamports or mutate its data, so your program can only lose lamports from accounts it owns (PDAs, vaults) via `**lamports.borrow_mut()`, a system-transfer CPI it signs, or a close path. The critical pattern: a writable protocol-owned account in the tail, closed or transferred to a caller-supplied recipient without checking that recipient against stored state. Audit split: reads → validate provenance of anything influencing logic; writes/closes → validate recipient and authority, every time.",
+    category: "Account model attacks",
+    kind: "fact",
+  },
+  {
+    title: "Why is a hardcoded rent-exempt threshold a bug?",
+    body: "Rent-exemption amounts are not constants: they depend on account data length AND the cluster's rent parameters (`lamports_per_byte_year`, exemption threshold), which governance can change. A program hardcoding e.g. `const RENT_MIN: u64 = 890_880` (the classic 165-byte token-account figure) embeds two failure modes: if cluster rent parameters change, the hardcoded floor is wrong — accounts the program considers \"safe\" fall below the real exemption minimum and become fee-vulnerable or purgeable, and any protection logic gating on the stale constant silently breaks; and if account sizes migrate (Token-2022 extension accounts are larger), the constant was wrong from day one. Rule: always compute at runtime — `Rent::get()?.minimum_balance(data_len)` or Anchor's rent sysvar — using the CURRENT account length. Audit signal: any lamport literal compared against a balance, or a `minimum_balance` result cached in state without a refresh path.",
+    category: "Account model attacks",
+    kind: "rule",
+  },
+  {
+    title: "What's wrong with closing an account by zeroing its lamports?",
+    body: "Raw-program close recipes fail in two directions. Setting `**account.lamports.borrow_mut() = 0` WITHOUT transferring the lamports to a recipient burns them — value is destroyed (deducted from total lamport supply), not stolen, so it's loss-of-funds for the protocol rather than theft. Meanwhile, transferring lamports but NOT zeroing data or reassigning the owner leaves a zombie account: zero balance but intact data and discriminator, which `init_if_needed`-style flows and discriminator-only checks may treat as still initialized — the classic reinit springboard. The correct manual close is three steps: transfer the FULL lamport balance to a validated recipient, `realloc(0)` / zero the data, and `assign` the account back to the system program. Anchor's `close = recipient` does all three plus writes the CLOSED discriminator (defense against resurrection within the same tx). Audit: any lamport-zeroing or close emulation missing a step is a finding; the recipient must come from stored state, not caller input.",
+    category: "Account model attacks",
+    kind: "rule",
+  },
+  // ------------------------------------------------ Signer and authority checks
+  {
+    title: "What does `#[account(signer)]` / Signer<'info> actually prove?",
+    body: "Exactly one thing: the transaction was signed by the private key for that account's public key. It says NOTHING about the account's owner, data, mutability, or relationship to your program — a `Signer` can be a zero-data system-program account, an account owned by a hostile program, or a program account itself. So `signer` alone never substitutes for an owner check (whose data are you reading?), a key match against stored state (`has_one = authority`), or a PDA derivation. The classic failure shape: `authority: Signer<'info>` with no binding to stored state — anyone signs and becomes \"authority\". Conversely, note what a signer can't be: PDAs have no private key and can never satisfy a runtime signer check outside `invoke_signed`. Match the check to the threat: a signature proves key control, not permission, data integrity, or ownership.",
+    category: "Signer and owner checks",
+    kind: "fact",
+  },
+  {
+    title: "Can a PDA ever pass an is_signer check?",
+    body: "No — PDAs have no private key, so the runtime can never mark a PDA account `is_signer` from an external transaction. Two consequences auditors must hold simultaneously. First, the bricking bug: an authority-update or admin instruction requiring `authority.is_signer` where the stored authority IS (or may be rotated to) a PDA will always fail — the protocol locks itself out; a liveness finding, common when \"multisig-safe\" signer requirements meet PDA-governed configs. Second, the inverse rule: a program must never RELY on a PDA's signature as an authentication factor for its own instructions — PDA \"signatures\" exist only inside `invoke_signed`, authorized by the signing program's own logic. So instructions gated on PDA authority must authenticate via SEED VERIFICATION (`seeds` + `bump` re-derivation against stored state), not signer checks; if a design demands `is_signer` from an authority that could be a PDA, the design — not the check — is wrong.",
+    category: "Signer and owner checks",
+    kind: "pitfall",
+  },
+  {
+    title: "Does `require!(account.owner == &my_program)` prove permission?",
+    body: "No — owner and signer checks answer different questions, and swapping them is a top-ten Solana finding. `owner == program_id` proves the account's DATA is controlled by your program, so deserializing it as your state type is meaningful: it validates the DATA SOURCE. It says nothing about WHO is calling. Permission requires a signer check bound to stored state: `authority.key() == state.authority && authority.is_signer` (Anchor: `Signer<'info>` + `has_one`). The failure shape: an admin instruction checks the config account's owner, reads `config.admin`, compares it to a passed `admin` account's key — but never requires `admin` to sign; anyone passes the real admin's pubkey (pubkeys are public!) and executes admin actions. Mirror-image mistake: checking the caller's signature but never the state account's owner, letting attacker-crafted fake state drive privileged logic. Every privileged instruction needs BOTH.",
+    category: "Signer and owner checks",
+    kind: "rule",
+  },
+  // ------------------------------------------------------------ PDAs and bumps
+  {
+    title: "Can two PDAs collide when seeds aren't domain-separated?",
+    body: "A PDA is just `hash(seeds || program_id || bump)` — pure math with no registry. If a program derives conceptually different accounts from overlapping or attacker-controlled seeds, collisions and hijacks follow. Failure shapes: two roles derived from the same seed set (`find_program_address(&[b\"authority\"])` for both a config authority and a vault authority → one address, confused privileges); seeds built from user-supplied strings/keys with no domain prefix, so an attacker crafts inputs that land on a victim's expected address; and code that never re-validates derivation inputs, trusting a passed account because \"it's a PDA of ours\". Rule: every PDA role gets a unique hardcoded seed prefix (`b\"vault\"`, `b\"config\"`, `b\"stake\"`); all variable seeds come from validated accounts, never raw instruction bytes; and the program re-derives and compares the address (Anchor `seeds` + `bump`) on every use.",
+    category: "PDAs and bumps",
+    kind: "rule",
+  },
+  {
+    title: "Is a treasury PDA that never signs still safe receiving lamports?",
+    body: "Often yes — receiving value is inherently safer than spending it, and the audit bar differs per direction. A treasury/vault PDA that only RECEIVES lamports or tokens needs no signer check (it can't sign anyway); what it needs is ADDRESS VALIDATION: the recipient must be re-derived from its seeds (Anchor `seeds` + `bump`) or pinned to a hardcoded/stored address, so deposits can't be redirected to an attacker's lookalike. Hijack requires spoofing the derivation: if any seed comes from caller input without validation, the attacker derives a \"treasury\" whose spending path they control. The spending direction is where full rigor applies: debiting the PDA's lamports (only your program, as owner, can) or moving its tokens via `invoke_signed` demands authority checks, recipient validation, and usually governance gating. Audit rule: receive-only PDA → verify derivation integrity (medium if missing); spend path → verify authority + destination (critical if missing).",
+    category: "PDAs and bumps",
+    kind: "fact",
+  },
+  // ------------------------------------------------ CPI and program confusion
+  {
+    title: "How should arbitrary CPI targets be constrained?",
+    body: "When an instruction must CPI into a caller-supplied program, the ONLY safe pattern is an explicit whitelist: compare the passed program id against a fixed, compiled-in set of allowed program addresses (constants, or a program-owned config account governed by admins) and reject anything else. Heuristics fail: checking that the program is executable, that it's \"well-known\", that its return data deserializes, or that it reports success all pass for a malicious mimic implementing the same interface and lying. With `invoke_signed` the stakes double — a whitelist is the difference between your PDA signing a token transfer and signing whatever an attacker encodes. Rule: `require!(ALLOWED_PROGRAMS.contains(program_info.key))` before every dynamic `invoke`; keep the list minimal, version-pinned, and upgrade-governed; and still validate every account passed to the whitelisted call — a legitimate program with hostile accounts drains just as well.",
+    category: "CPI and program confusion",
+    kind: "rule",
+  },
+  {
+    title: "Can a Token-2022 mint impersonate a classic SPL mint?",
+    body: "Yes, if detection logic is naive — and version confusion cuts both ways. A program wanting ONLY classic SPL Token mints but checking nothing beyond \"deserializes as a Mint\" will accept a Token-2022 mint: both layouts share the base 82-byte mint prefix, so bare `Mint::unpack` succeeds, and a Token-2022 mint with NO extensions behaves identically in transfers — until someone later enables transfer fees, a hook, or a permanent delegate and the protocol's accounting breaks. Robust exclusion requires BOTH: pin `token_program.key() == spl_token::ID` (not `Interface<'info, TokenInterface>` — that type intentionally accepts both), AND verify the mint account's `owner == spl_token::ID` directly, since CPI-program pinning alone doesn't prove which program owns the passed mint. Conversely, programs intending Token-2022 support must branch on the mint's owner and parse the extension TLV data rather than assuming fixed account size. Audit signal: mint owner never compared to the token program id.",
+    category: "CPI and program confusion",
+    kind: "pitfall",
+  },
+  {
+    title: "Does a CPI transfer automatically run a Token-2022 transfer hook?",
+    body: "Yes. When a Token-2022 mint has the transfer-hook extension initialized, the Token-2022 program CPIs into the designated hook program on EVERY transfer of that mint — including transfers your program initiates via `transfer`/`transfer_checked`. Your code doesn't call the hook; the token program does, mid-transfer, with source, destination, mint, and amount. Security consequences: the hook is arbitrary program logic executing inside your transfer's call stack — a reentrancy-shaped surface (a hostile or buggy hook can observe or interfere with your state mid-instruction), and hooks can fail the whole transfer, a liveness/griefing vector for withdrawals and liquidations. If YOUR program is the hook program, you must validate everything: the caller is genuinely Token-2022, the mint is yours, and the extra-account metas match expectations. Audit rule: any program integrating Token-2022 mints must enumerate extensions (TLV parse), treat hook-bearing mints as untrusted callbacks, and prefer allowlists of known-extension mints.",
+    category: "CPI and program confusion",
+    kind: "fact",
+  },
+  // -------------------------------------------------------- Anchor constraints
+  {
+    title: "What does `#[account(mut)]` actually guarantee?",
+    body: "`mut` is a WRITABILITY DECLARATION, not a write guarantee. It tells Anchor to require the account be passed as writable in the transaction (so the runtime acquires a write lock on it) and to serialize the — possibly unchanged — data back at the end. It enforces NOTHING about modification: a `mut` account may pass through the instruction completely untouched, and no rent, initialization, or content check is implied. Audit consequences: (a) unused-`mut` is a smell — it widens the tx's write-lock set (enabling duplicate-mutable-account aliasing and blocking parallelization) and often signals the author meant to add a check they forgot; (b) never infer \"this account was updated\" from `mut` alone — verify the actual write path; (c) conversely, any account written by the program OR mutated via CPI must be declared `mut` or the runtime rejects the write.",
+    category: "Anchor constraints",
+    kind: "fact",
+  },
+  {
+    title: "What does realloc leave behind in the new bytes?",
+    body: "Resizing an account does NOT reliably zero the grown region unless you ask: Anchor's `realloc` takes `realloc::zero = true/false`, and raw `AccountInfo::realloc(new_len, zero_init)` makes it an explicit parameter. If new space isn't zeroed, it contains stale bytes left in the account's memory region — an attacker who influences what previously occupied that space (or who controlled the account before realloc) can smuggle crafted data into fields the program later reads as legitimate state: fake owners, fake authorities, inflated counters. The second gap: `realloc` with no initialized/discriminator check can resurrect or reshape an account that was never properly initialized, letting an attacker define its contents wholesale. Rule: default to `realloc::zero = true` unless profiling proves the cost matters AND every new field is overwritten before any read; gate realloc behind the same owner + discriminator + authority validation as init; treat grow-and-interpret as an initialization path, not a resize.",
+    category: "Anchor constraints",
+    kind: "pitfall",
+  },
+  {
+    title: "When does init_if_needed still reopen reinitialization?",
+    body: "`init_if_needed` initializes only if the account appears uninitialized — and \"appears\" is the whole game. Since Anchor 0.25 it checks the account discriminator: an account with a valid discriminator is treated as initialized and init is skipped, closing the classic reinit-to-reset-authority exploit for Anchor-managed accounts. Residual risks remain: an account existing with the RIGHT discriminator but attacker-controlled contents (created via a separate weakly-validated instruction) sails through; a CLOSED account (lamports drained, discriminator zeroed) can be re-initialized through `init_if_needed` with fresh attacker-chosen fields — any close path combined with init_if_needed is a compound vector; and raw-program or pre-0.25 code checking only `lamports > 0` or a manual `is_initialized` flag is fully exploitable when the account exists under a different owner. Rule: after `init_if_needed`, re-verify stored authority/ownership fields against seeds — the discriminator alone is not a trust decision.",
+    category: "Anchor constraints",
+    kind: "pitfall",
+  },
+  // --------------------------------------------- Arithmetic and token math
+  {
+    title: "How should flash-loan-adjacent logic handle same-slot oracle prices?",
+    body: "Solana's atomic multi-instruction transactions make the flash-loan-then-act sequence free of execution risk, so any price-sensitive instruction must refuse prices updated in the CURRENT slot. Concretely: check the oracle's publish slot (Pyth's `curr_slot`/`valid_slot` vs `Clock::get()?.slot`); if the price was written this slot, it may reflect manipulation staged earlier in the SAME transaction — funded by a flash loan taken in a prior instruction and repaid in a later one. Requiring the price to be at least one slot old (updated in a PRIOR slot) forces manipulation to persist across a slot boundary, where arbitrageurs and liquidators can attack it. Combine with standard Pyth hygiene: confidence-interval gating (`conf/price` bounded), a staleness ceiling, and feed-address pinning. Audit signal: liquidation, mint/redeem, or borrow instructions reading an oracle with no slot-age check — especially in programs that also offer flash loans or accept uncollateralized same-tx composition.",
+    category: "Arithmetic and token math",
+    kind: "rule",
+  },
 ];

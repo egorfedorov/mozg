@@ -237,4 +237,55 @@ export const NOTES: {
     category: "Loading and asset lifecycle",
     kind: "fact",
   },
+
+  // ── Follow-ups: perf budgets, batching internals, and lifecycle clarifiers ──
+
+  {
+    title: "Why do draw-call budget answers range from 15 to 100 — which number is right?",
+    body: "Both can be right; they measure different scopes. A fully-atlased bare reel board — one atlas, one blend mode, a scissor mask — can genuinely render in 8–15 draw calls. A real production frame adds the background, reel frame, HUD text, win FX, and modal layers on top, which is why production budgets run 20–60 for the board and roughly 100 for the whole frame on mid-tier mobile. When someone quotes a number, ask what it includes and how it was measured. v8 ships no convenient public draw-call counter, so count batches with Spector.js (Chrome extension) or a WebGL frame capture in browser DevTools — and trace during a cascade with a cluster win, since that worst case is what reviewers profile, not the idle board.",
+    category: "Batching and draw calls",
+    kind: "fact",
+  },
+  {
+    title: "Do masks, filters, and render groups flush the batch in Pixi 8?",
+    body: "Yes — beyond the classic breakers (object type, texture source, blend mode), anything that switches GPU pipeline state ends the current batch: entering or leaving a mask (stencil/scissor state change), a filtered container (renders to an offscreen texture, then composites), and render groups (`isRenderGroup: true` processes the subtree as its own unit). What does NOT break batching, despite common belief: changing `tint`, `alpha`, `position`, or `scale` between sprites — those ride along as per-vertex data in the same batch for free. So pulsing a win glow's alpha or tinting symbols costs zero extra draw calls, while wrapping each reel cell in its own masked or filtered container adds real pipeline switches. Budget state changes deliberately, per layer — not per cell.",
+    category: "Batching and draw calls",
+    kind: "fact",
+  },
+  {
+    title: "How many coins should a big-win shower spawn on a mid-tier phone?",
+    body: "Concrete starting budgets for a 60fps target: roughly 50–150 simultaneous particles on mid-range iPhones, 100–200 on mid-range Android — all inside one `ParticleContainer`, all from one atlas. Scale the count with win tier, not linearly with win amount; a MEGA win reads as denser through spawn rate and staggered burst waves, not 5x the live count. Pool and recycle `Particle` objects — never allocate per burst. Add a live governor: sample recent FPS, and if it drops under about 50, halve emission and shorten particle lifetimes for the rest of the sequence. And honor `prefers-reduced-motion` by swapping the shower for a static banner — required for review.",
+    category: "Mobile performance budgets",
+    kind: "rule",
+  },
+  {
+    title: "How do I scale resolution adaptively when the frame rate sags?",
+    body: "Do not hard-code a fixed pixel-ratio plan — 'render at 540p with 2x ratio' is just 1080p with extra steps and pays full GPU cost. The honest approach: ship `resolution: 1` with `autoDensity: true` (the GPU renders fewer pixels and CSS upscales the canvas), and only raise toward `Math.min(devicePixelRatio, 2)` after profiling proves headroom. For a live governor, sample FPS over a rolling window in a ticker; if it sits below ~55 during real gameplay, step the renderer down at a safe boundary — end of a spin, never mid-cascade — via `renderer.resize(w, h, lowerResolution)`. Resolution changes are applied on resize, so re-measure after changing them. Pair with `@0.5x` atlases for soft art so the lower-resolution frame still looks intentional.",
+    category: "Mobile performance budgets",
+    kind: "example",
+  },
+  {
+    title: "What frame-time budget does a slot actually have on mid-range Android?",
+    body: "60fps means 16.6ms per frame total, but browser compositing and event handling eat several milliseconds — plan on roughly 10–12ms of usable JS-plus-render work per frame. The reliable budget-eaters, in the order to check them: full-screen or stacked filters, canvas `Text` re-rendered per frame (win count-ups — use `BitmapText`), lazy texture uploads (fix with `prepare.upload` during loading), stencil masks and filter bounds re-measurement, and per-frame Graphics geometry rebuilds. If you cannot hold 60, a locked 30fps fallback (33ms, via `ticker.maxFPS = 30`) beats unstable 40–50 — consistent frame pacing reads smoother than oscillation. Measure with DevTools Performance on a real mid-tier device during a cascade, not on the idle board.",
+    category: "Mobile performance budgets",
+    kind: "fact",
+  },
+  {
+    title: "How do I keep a Spine mascot from eating the frame budget on mobile?",
+    body: "The real levers: limit simultaneous skeletons — one mascot plus at most one effect skeleton on mobile, since each skeleton is per-frame CPU work updating bones and meshes; ship the binary `.skel` format (faster parse, smaller) with premultiplied-alpha atlases; avoid animations that swap attachments or deform heavy meshes every frame; and warm up with `prepare.upload` so the first appearance does not hitch. On playback rate: throttling the skeleton *update* (in spine-pixi-v8, `spine.autoUpdate = false` and call `update()` yourself at half rate) cuts CPU cost, but the object still renders every frame — 'animate at 24fps' saves bone math, not GPU draw cost. Measure per-skeleton cost on a mid-tier device; a complex rig can run 5–10% of frame time each.",
+    category: "Spine and animation",
+    kind: "rule",
+  },
+  {
+    title: "Automatic GC, destroy(), or Assets.unload() — which one actually frees GPU memory?",
+    body: "Three mechanisms, three use cases — and yes, v8 DOES garbage-collect textures automatically. The TextureGCSystem (on by default; tune via the `gcActive`, `gcMaxUnusedTime`, `gcFrequency` init options) collects GPU resources nothing has referenced for a while — your safety net, not your primary tool. `texture.source.unload()` (or `sprite.destroy({ texture: true, textureSource: true })`) frees a specific texture's GPU memory immediately — use it for one-off art you know is finished, like an exited bonus background. `Assets.unload(alias)` does that plus evicting the parsed asset from the Assets cache — required for anything loaded through the manifest, or the cache keeps a copy that silently re-uploads later. Relying on GC alone leaks-by-delay: release eagerly at feature boundaries.",
+    category: "Texture and memory management",
+    kind: "fact",
+  },
+  {
+    title: "Where do GIFs, DOM overlays, and HTML textures live in Pixi 8?",
+    body: "Each is an explicit side-effect import, not part of the default bundle: `import 'pixi.js/gif'` adds animated GIF support — `Assets.load('anim.gif')` returns a `GifSource` you wrap in a `GifSprite` with play/stop/loop control; `import 'pixi.js/dom'` registers `DOMContainer`, overlaying real HTML elements on the canvas with scene-graph-driven CSS transforms; `import 'pixi.js/html-source'` (experimental) snapshots or live-renders DOM into a texture. Two corrections to stale migration lists: there is no `Loader` class or import in v8 — `Assets` replaced it entirely — and the v7 `CanvasRenderer` was removed at v8.0 (an experimental canvas fallback returned in 8.16.0 for WebGL-less environments, but it is not the production path for a slot game).",
+    category: "Loading and asset lifecycle",
+    kind: "fact",
+  },
 ];
