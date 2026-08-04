@@ -27,7 +27,12 @@ request is signed by the private key matching the public key served at
 That route is the whole proof. It must be deployed to production **before** a
 publish, or the registry has nothing to check the signature against and login
 fails. The private half never enters the repo; it lives in the
-`MCP_PRIVATE_KEY` GitHub secret (64-char hex, Ed25519).
+`MCP_PRIVATE_KEY` GitHub secret (64-char hex, Ed25519), with the maintainer's
+copy in the macOS login keychain:
+
+```bash
+security find-generic-password -s mozg-mcp-registry -w
+```
 
 ## Publishing
 
