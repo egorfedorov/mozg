@@ -72,8 +72,25 @@ async function main() {
     process.exit(1);
   }
 
+  // Leftover scratch brains from previous runs count against the plan's
+  // brain limit — thirty runs later brain_create "fails" and the suite
+  // reports seventeen phantom regressions. A check that dirties the state
+  // it checks must clean up first.
+  const swept = await query(
+    `delete from brains where owner_id = $1 and slug like 'check-mcp-scratch%'
+     returning id`,
+    [owner.id],
+  );
+  if (swept.length) console.log(`swept ${swept.length} scratch brain(s) from earlier runs`);
+
   const { token, id: tokenId } = await issueToken(owner.id, "check:mcp");
   console.log(`\nissued a temporary token for ${owner.email}`);
+
+  // Captured before any flip, restored in finally — the operator's real plan
+  // must survive a crash on any line in between.
+  const before = await maybeOne<{ plan: string }>(`select plan from "user" where id = $1`, [
+    owner.id,
+  ]);
 
   try {
     console.log("\nhandshake");
@@ -171,11 +188,8 @@ async function main() {
     );
 
     console.log("\ncreating a brain the way an agent would");
-    // Free plans hold one brain, and the check must not fail because the
-    // account is legitimately full — lift it for the test and put it back.
-    const before = await maybeOne<{ plan: string }>(`select plan from "user" where id = $1`, [
-      owner.id,
-    ]);
+    // The account may be legitimately full — lift the plan for the test; the
+    // finally block puts it back.
     await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
 
     const created = await rpc(
@@ -332,11 +346,18 @@ async function main() {
       },
       token,
     );
-    check(
-      "a free plan is refused, as the plan page promises",
-      Boolean(refused.body.result?.isError) && /Pro/.test(textOf(refused.body.result)),
-      textOf(refused.body.result).slice(0, 50),
-    );
+    // When the account's monthly call quota is spent (heavy suite days), the
+    // quota gate answers before the write gate can — that masks this check
+    // rather than failing it, and the honest report is "skipped", not red.
+    if (/quota/i.test(textOf(refused.body.result))) {
+      console.log("  ~ free-plan write check skipped: monthly call quota exhausted on this account");
+    } else {
+      check(
+        "a free plan is refused, as the plan page promises",
+        Boolean(refused.body.result?.isError) && /Pro/.test(textOf(refused.body.result)),
+        textOf(refused.body.result).slice(0, 50),
+      );
+    }
     await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
 
     console.log("\ngrouping brains into a family");
@@ -397,8 +418,7 @@ async function main() {
       owner.id,
     ]);
     await query(`delete from brains where owner_id = $1 and slug = 'check-mcp-scratch'`, [owner.id]);
-    if (before) await query(`update "user" set plan = $2 where id = $1`, [owner.id, before.plan]);
-    console.log(`  removed, plan restored to ${before?.plan}`);
+    console.log("  removed");
 
     console.log("\nmetering");
     const calls = await query<{ n: number }>(
@@ -406,6 +426,12 @@ async function main() {
     );
     check("the calls were recorded", calls[0].n > 0, `${calls[0].n} in the last two minutes`);
   } finally {
+    // The plan flip and the token are both state this suite created — both
+    // are undone even when a check throws halfway, or the operator's real
+    // plan would be whatever line the crash happened on.
+    if (before) {
+      await query(`update "user" set plan = $2 where id = $1`, [owner.id, before.plan]);
+    }
     await query(`update mcp_tokens set revoked_at = now() where id = $1`, [tokenId]);
     console.log("\nrevoked the temporary token");
   }

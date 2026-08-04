@@ -49,7 +49,7 @@ export default async function AdminChatPage() {
   }
 
   return (
-    <AppShell active="/admin" eyebrow="Operator" title="chatmozg">
+    <AppShell active="/admin/chat" eyebrow="Operator" title="chatmozg">
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
         {threads.length} thread{threads.length === 1 ? "" : "s"} ·{" "}
         {threads.reduce((n, t) => n + t.unread, 0)} unread. The people who write
