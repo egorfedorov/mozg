@@ -167,3 +167,12 @@ def rerank(req: RerankRequest) -> RerankResponse:
 def warm() -> None:
     # Load at boot so the first ingest is not the one paying for it.
     model()
+    # The reranker must load here too, and not only for latency: lazy loading
+    # happens inside FastAPI's worker thread, where torch initialises modules
+    # on the meta device and then dies with "Cannot copy out of meta tensor"
+    # — the same weights load fine from the main thread. Failure stays
+    # non-fatal: /rerank keeps answering 503 and search falls back to RRF.
+    try:
+        reranker()
+    except Exception as exc:  # noqa: BLE001 — degraded service beats no service
+        print(f"[embed] reranker unavailable at boot: {exc}")
