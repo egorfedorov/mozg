@@ -15,7 +15,7 @@ with a measured score and a public list of what it does *not* know.
 [![MCP](https://img.shields.io/badge/protocol-MCP-14161a)](https://mozg.sh/connect)
 
 [Start here](https://mozg.sh/start) · [Catalogue](https://mozg.sh/explore) ·
-[Why not a context file](https://mozg.sh/vs) · [Self-host (RU)](docs/SELFHOST.ru.md)
+[Why not a context file](https://mozg.sh/vs) · [Self-host guide](docs/SELFHOST.md)
 
 </div>
 
@@ -78,7 +78,7 @@ flowchart LR
 | Official catalogue | free, curated, kept current | seed it yourself (`scripts/catalogue.ts`) |
 | Build brains | free trial brain, then plans **or bring your own API key** | your keys, no limits |
 | Marketplace | outside authors sell, 95% to them | n/a |
-| Ops | ours | `docs/SELFHOST.ru.md` |
+| Ops | ours | [`docs/SELFHOST.md`](docs/SELFHOST.md) |
 
 The deal is honest: building brains spends model tokens. On the cloud you
 either pay a plan (we spend), set your own API key in settings (you spend),

@@ -129,6 +129,13 @@ export default async function Home() {
               free · no card · the guided path
             </span>
           )}
+          <a
+            className="mono"
+            href="https://github.com/egorfedorov/mozg"
+            style={{ fontSize: ".75rem", color: "var(--ink-2)", textDecoration: "underline" }}
+          >
+            open source · AGPL · star it on GitHub
+          </a>
         </div>
 
         <div className="term" aria-label="Example session">
@@ -511,8 +518,8 @@ export default async function Home() {
           </section>
         )}
 
-        {/* Money, in one strip: the question every visitor has and most
-            landing pages hide. The details live on /pricing. */}
+        {/* Open source, in one strip: the three facts that make trying it
+            a no-brainer. Money details live on /pricing for those who ask. */}
         <section
           style={{
             marginTop: "clamp(3rem, 8vw, 4.5rem)",
@@ -524,9 +531,9 @@ export default async function Home() {
           }}
         >
           {[
-            ["Using brains", "free, always", "searching spends no tokens and no credits — money is spent once, when a brain is built"],
-            ["Building your own", "$25/mo", "twenty brains, a thousand sources each, agents write lessons back"],
-            ["Catalogue brains", "$0–49, once", "you see the exam score and the questions it passes before paying; 95% goes to the author"],
+            ["Open source", "AGPL-3.0", "the whole product on GitHub — run it yourself with your own keys, everything works"],
+            ["The catalogue", "free, all of it", "every official brain costs nothing: Next.js, Expo, Svelte 5, Stake Engine, the MCP spec"],
+            ["Your own brains", "your key or ours", "train on your own API key for free, or let our cloud spend so you don't think about it"],
           ].map(([t, price, d]) => (
             <div key={t} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
               <p className="eyebrow" style={{ margin: 0 }}>
@@ -538,8 +545,8 @@ export default async function Home() {
               <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".875rem" }}>{d}</p>
             </div>
           ))}
-          <Link
-            href="/pricing"
+          <a
+            href="https://github.com/egorfedorov/mozg"
             style={{
               background: "var(--paper-2)",
               padding: "1.25rem",
@@ -547,11 +554,11 @@ export default async function Home() {
               alignContent: "center",
             }}
           >
-            <span className="h3">The whole story →</span>
+            <span className="h3">Star it on GitHub →</span>
             <span style={{ color: "var(--ink-2)", fontSize: ".875rem", marginTop: ".35rem" }}>
-              plans, purchases, balance, refunds
+              AGPL · self-host · contribute a catalogue pack
             </span>
-          </Link>
+          </a>
         </section>
 
         {/* One clear way out of the page. */}

@@ -55,19 +55,23 @@ export default async function MarketingPage() {
   ).then((r) => r[0]);
 
   const oneLiner =
-    "mozg.sh — paste one docs link, get an exam-scored brain your coding agent queries over MCP.";
+    "mozg — open-source (AGPL) exam-scored brains for AI agents: paste a docs link, " +
+    "get a searchable brain over MCP with a measured score. Free catalogue, free code.";
 
   const boilerplate =
-    "mozg turns documentation into a brain for AI coding agents. Paste one link — " +
+    "mozg is an open-source (AGPL-3.0) platform that turns documentation into " +
+    "brains for AI coding agents. Paste one link — " +
     "every page is found and read, the material becomes searchable notes, and the " +
     "brain sits an exam against its own goal, so its score is measured, not claimed. " +
     "Agents connect from Claude Code, Codex or Cursor with one command and pull only " +
     "the notes a task needs. Brains learn from use: questions they fail to answer " +
     "become exam questions, corrections from agents become owner-reviewed notes, and " +
-    "every version is kept. Free catalogue plus a marketplace where authors keep 95%.";
+    "every version is kept. The whole official catalogue is free; self-host from " +
+    "github.com/egorfedorov/mozg (AGPL), or use the cloud where plans cover the " +
+    "inference — or bring your own API key and build for free.";
 
   const showHn =
-    "Title: Show HN: Mozg – give your coding agents a brain that sits an exam\n" +
+    "Title: Show HN: Mozg – open-source, exam-scored knowledge brains for coding agents\n" +
     "URL: https://mozg.sh\n\n" +
     "First comment (post right after submitting):\n\n" +
     "Hi HN. My coding agents kept confidently answering from stale training data — " +
@@ -84,6 +88,11 @@ export default async function MarketingPage() {
     "brain and gets nothing, that query becomes an exam question, and the next " +
     "re-read of the sources chases it. Nobody files a ticket — hitting the gap is " +
     "the report.\n\n" +
+    "It's open source (AGPL): https://github.com/egorfedorov/mozg — the whole " +
+    "product, self-hostable with your own keys. The entire official catalogue " +
+    "(Next.js App Router, Expo, Svelte 5, Tailwind v4, the MCP spec) is free. The " +
+    "cloud makes money one honest way: paid plans cover the inference our servers " +
+    "spend building YOUR brains — or you set your own API key and pay nobody.\n\n" +
     "Details people usually ask about:\n" +
     "- Searching a brain costs zero tokens of context — retrieval is server-side.\n" +
     "- Agents can flag a note as wrong when reality disagrees; the owner reviews.\n" +
@@ -100,9 +109,10 @@ export default async function MarketingPage() {
     "2/ The exam is the trick: your goal becomes ~30 control questions, re-sat " +
     "after every upload. \"Trained 92%\" is measured, not claimed. The failing 8% " +
     "tells you exactly what to feed it next.\n\n" +
-    "3/ And it learns from being used: any question a brain can't answer becomes an " +
-    "exam question automatically. The tenth user gets a better brain than the " +
-    `first. ${s.brains} public brains so far — mozg.sh/explore`;
+    "3/ Open source under AGPL, the whole catalogue free, and it learns from " +
+    "use — any question a brain can't answer becomes an exam question " +
+    "automatically. github.com/egorfedorov/mozg · " +
+    `${s.brains} public brains — mozg.sh/explore`;
 
   const collectivePost =
     "Every knowledge file you write starts dying the day you write it.\n\n" +
@@ -122,16 +132,18 @@ export default async function MarketingPage() {
     "Paste a docs link, it becomes a searchable brain over MCP, and the brain sits " +
     "~30 exam questions generated from what you said it's for. The score and gaps " +
     "are public on the brain's page; questions real agents ask and miss get added " +
-    "to the exam automatically. Free to connect (Claude Code one-liner in " +
-    "mozg.sh/connect). Would love hard feedback — it's in beta.";
+    "to the exam automatically. As of this week it's open source (AGPL): " +
+    "github.com/egorfedorov/mozg — run it yourself, or use the cloud where the " +
+    "whole catalogue is free and connecting is a Claude Code one-liner " +
+    "(mozg.sh/connect). Would love hard feedback — it's in beta.";
 
   const discordStake =
     "Построил игру на Stake Engine с агентами? Я собрал все их доки в подключаемый " +
     "«мозг» для Claude Code/Cursor — агент отвечает по спеке RGS дословно, а не по " +
-    "памяти модели. Бесплатно: https://mozg.sh/explore (раздел gamedev). Отдельно " +
-    "есть платная семья Slot Studio — механики+математика, чеклист аппрува, " +
-    "фронтенд, комплаенс. Первые 5 запросов к платным — бесплатно, прямо из агента. " +
-    "Фидбек крайне welcome — я сам с этих доков шипплю.";
+    "памяти модели. Теперь это опенсорс (AGPL, github.com/egorfedorov/mozg) и ВСЁ " +
+    "бесплатно — включая семью Slot Studio: механики+математика, чеклист аппрува " +
+    "(за что реально реджектят), фронтенд, комплаенс. https://mozg.sh/explore, " +
+    "раздел gamedev. Фидбек крайне welcome — я сам с этих доков шипплю.";
 
   const dm =
     "Hey — saw you're building with [Claude Code/Cursor]. I made a thing that might " +
@@ -188,6 +200,12 @@ export default async function MarketingPage() {
             when: "Day 1",
             what: "awesome-mcp-servers (GitHub PR)",
             how: "github.com/punkpeye/awesome-mcp-servers → edit README → section «Knowledge & Memory» → add the PR line from the block below, alphabetical order. PR title: Add mozg.",
+            art: "—",
+          },
+          {
+            when: "Day 1",
+            what: "awesome-selfhosted + r/selfhosted",
+            how: "github.com/awesome-selfhosted/awesome-selfhosted → PR (section: Knowledge Management, AGPL badge). Then a r/selfhosted post: story-first, self-host instructions up top — that crowd converts on 'docker compose up'.",
             art: "—",
           },
           {
@@ -283,12 +301,12 @@ export default async function MarketingPage() {
           "Math SDK one 81% — and the failed questions are listed publicly, " +
           "so you know exactly what it does and doesn't cover before " +
           "trusting it.\n\n" +
-          "The Stake Engine family is free: https://mozg.sh/explore (gamedev " +
-          "section), one command to connect. There's also a paid Slot Studio " +
-          "family — mechanics + math patterns, the approval checklist (what " +
-          "actually gets submissions rejected), frontend, compliance — and " +
-          "any paid brain answers 5 real queries free straight from your " +
-          "agent, so you can grill it before paying.\n\n" +
+          "It's all free now — and open source (AGPL, " +
+          "github.com/egorfedorov/mozg): the Stake Engine family AND the Slot " +
+          "Studio family — mechanics + math patterns, the approval checklist " +
+          "(what actually gets submissions rejected), frontend, compliance. " +
+          "https://mozg.sh/explore, gamedev section, one command to " +
+          "connect.\n\n" +
           "I ship my own games with these docs daily — feedback and \"your " +
           "brain got this wrong\" reports are exactly what I want."
         }
@@ -311,11 +329,10 @@ export default async function MarketingPage() {
           "публично. То есть видно, чему агент реально научился, а где " +
           "будет врать. Плюс мозг умнеет от использования: вопрос, на " +
           "который он не ответил, сам становится вопросом экзамена.\n\n" +
-          "Для геймдева уже есть бесплатные мозги (Stake Engine целиком — " +
-          "RGS API, математика, аппрув) и платные поглубже (Slot Studio: " +
-          "механики, чеклист аппрува — за что реально реджектят, " +
-          "комплаенс). Любой платный отвечает на 5 запросов бесплатно " +
-          "прямо из агента — можно прожарить до покупки.\n\n" +
+          "Проект теперь опенсорс (AGPL, github.com/egorfedorov/mozg) и " +
+          "весь каталог бесплатен — включая геймдев целиком: Stake Engine " +
+          "(RGS API, математика, аппрув) и Slot Studio (механики, чеклист " +
+          "аппрува — за что реально реджектят, комплаенс).\n\n" +
           "И бонус: любой мозг открывается как курс для человека на " +
           "learn.mozg.sh — карточки, интервальные повторения, и тот же " +
           "экзамен в конце. Можно попробовать обогнать своего агента по " +
@@ -391,10 +408,12 @@ export default async function MarketingPage() {
           "2. The exam doubles as a human course. learn.mozg.sh turns the same " +
           "notes into spaced-repetition lessons, with the brain's own exam as " +
           "the final. You can try to beat your agent's score.\n\n" +
-          "Free brains to test with (MCP spec, Next.js App Router, Expo, " +
-          "Svelte 5, Tailwind v4): https://mozg.sh/explore — one command to " +
-          "connect from Claude Code/Codex/Cursor. Feedback very welcome, " +
-          "especially where the exam grading feels wrong."
+          "It's open source (AGPL): https://github.com/egorfedorov/mozg — " +
+          "self-host with your own keys, everything works. The whole catalogue " +
+          "(MCP spec, Next.js App Router, Expo, Svelte 5, Tailwind v4) is " +
+          "free: https://mozg.sh/explore — one command to connect from Claude " +
+          "Code/Codex/Cursor. Feedback very welcome, especially where the " +
+          "exam grading feels wrong."
         }
       />
       <Block
@@ -411,10 +430,12 @@ export default async function MarketingPage() {
           "for. The score and the gaps are public on the brain's page; " +
           "questions real agents ask and miss get added to the exam " +
           "automatically, so the brain gets smarter the more it's used.\n\n" +
-          "Connecting from Claude Code is one command (mozg.sh/connect), " +
-          "free brains need no card, and everything exports back to CLAUDE.md " +
-          "if you leave. It's in beta — I answer every bug report personally " +
-          "(there's a chat inside the product). Would love hard feedback."
+          "Connecting from Claude Code is one command (mozg.sh/connect), the " +
+          "whole catalogue is free, and everything exports back to CLAUDE.md " +
+          "if you leave. As of this week it's open source under AGPL — " +
+          "github.com/egorfedorov/mozg — so you can also just run it " +
+          "yourself. I answer every bug report personally (there's a chat " +
+          "inside the product). Would love hard feedback."
         }
       />
 
@@ -486,6 +507,13 @@ export default async function MarketingPage() {
           "- For stable, well-known knowledge (Python stdlib), a brain adds " +
           "nothing — models know it. Brains earn their keep where docs move " +
           "faster than training cutoffs.\n\n" +
+          "## And now it's open source\n\n" +
+          "The whole product is on GitHub under AGPL: " +
+          "https://github.com/egorfedorov/mozg — self-host it with your own " +
+          "keys and everything works. The entire official catalogue is free. " +
+          "The cloud earns one honest way: plans cover the inference our " +
+          "servers spend building your brains — or you bring your own API " +
+          "key and pay nobody.\n\n" +
           "## Try it\n\n" +
           "The catalogue has free, no-card brains for exactly those fast-" +
           "moving stacks: Next.js App Router, Expo/React Native, Svelte 5, " +

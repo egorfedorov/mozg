@@ -104,8 +104,8 @@ v4 (`--only tailwind`, 197 страниц, не запускалась).
 из документации, которую модель помнит наизусть, — это трата токенов.
 
 ```bash
-npm run catalogue -- --owner egorfdrv@gmail.com --dry            # план
-npm run catalogue -- --owner egorfdrv@gmail.com --only tailwind  # один пакет
+npm run catalogue -- --owner studio@mozg.sh --dry            # план
+npm run catalogue -- --owner studio@mozg.sh --only tailwind  # один пакет
 ```
 
 Стоимость: примерно 4 цента за страницу.

@@ -26,7 +26,7 @@ fi
 # Who gets the alert: OPERATOR_EMAIL from the environment, then from the env
 # file, then the legacy MOZG_ALERT_TO, then the built-in operator address.
 ALERT_TO="${OPERATOR_EMAIL:-$(sed -n 's/^OPERATOR_EMAIL=//p' "$ENV_FILE" | tr -d '"')}"
-ALERT_TO="${ALERT_TO:-${MOZG_ALERT_TO:-egorfdrv@gmail.com}}"
+ALERT_TO="${ALERT_TO:-${MOZG_ALERT_TO:-}}"
 
 body=$(curl -s --max-time 20 "$URL")
 code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$URL")
@@ -59,7 +59,7 @@ if [ "$now" = "down" ] && [ "$count" = "1" ]; then
   echo "$(date -Is)  down once (HTTP $code) — waiting for a second strike"
 elif [ "$now" = "down" ] && [ "$count" = "2" ]; then
   send "mozg.sh is DOWN" \
-    "health check failed twice in a row (HTTP $code), first seen ~5 minutes ago.\\n\\nResponse: $(printf '%s' "$body" | head -c 300 | tr '"' "'")\\n\\nLook: ssh Mirca 'cd /opt/mozg && docker compose -f docker-compose.prod.yml logs --tail 50 app worker'"
+    "health check failed twice in a row (HTTP $code), first seen ~5 minutes ago.\\n\\nResponse: $(printf '%s' "$body" | head -c 300 | tr '"' "'")\\n\\nLook: ssh <your-server> 'cd /opt/mozg && docker compose -f docker-compose.prod.yml logs --tail 50 app worker'"
   echo "$(date -Is)  DOWN (HTTP $code) — alert sent"
 elif [ "$now" = "down" ] && [ $((count % 12)) -eq 0 ]; then
   send "mozg.sh is still down (~$((count * 5)) min)" \

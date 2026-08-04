@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Pricing — mozg",
   description:
-    "What is free, what costs money, and where the money goes: plans for building brains, one-time purchases from the catalogue, and a balance topped up with crypto.",
+    "mozg is open source and the official catalogue is free. Money buys one thing: our servers doing the training — or bring your own API key and pay nobody.",
 };
 
 /**
@@ -28,8 +28,8 @@ const PLAN_PRICES: Record<string, string> = {
 };
 
 const PLAN_PITCH: Record<string, string> = {
-  free: "Read the catalogue, buy brains, connect your agents — plus one trial brain: up to 30 pages and one exam sitting, so you see the whole loop before paying.",
-  pro: "For one person who builds brains and works with agents daily.",
+  free: "The whole catalogue, connecting agents, learning — free. Plus one trial brain on our inference, or unlimited building on your own API key (settings → train on your own key).",
+  pro: "We pay the inference: brains build, examine and re-read on our keys, no babysitting.",
   team: "For a team feeding shared brains and many agents.",
 };
 
@@ -49,16 +49,19 @@ export default async function PricingPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">Pricing</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
-          Three things cost money.
+          One thing costs money.
           <br />
-          Everything else doesn&apos;t.
+          Everything else is free.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Reading brains with your agents is free and stays free — searching a
-          brain spends no tokens and no credits. You pay for a <strong>plan</strong>{" "}
-          when you build brains of your own, for a <strong>brain from the
-          catalogue</strong> once if it saves you building one, and you top up a{" "}
-          <strong>balance</strong> to do the buying.
+          The code is open source (AGPL), the whole official catalogue is
+          free, reading and connecting agents is free, learning is free.
+          Building your own brains spends model tokens — so you either take a{" "}
+          <strong>plan</strong> and our servers spend, or set{" "}
+          <strong>your own API key</strong> in settings and build without
+          limits on your spend. Marketplace brains by outside authors, when
+          priced, are bought once from a <strong>balance</strong> — 95% goes
+          to the author.
         </p>
 
         {spots > 0 && (
@@ -141,8 +144,8 @@ export default async function PricingPage() {
         {/* ── catalogue ─────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
-            <h2 className="h2">Brains from the catalogue — pay once</h2>
-            <span className="eyebrow">free ones stay free</span>
+            <h2 className="h2">The catalogue — free; the marketplace — authors&apos; call</h2>
+            <span className="eyebrow">official brains cost nothing</span>
           </div>
 
           <div
@@ -153,10 +156,10 @@ export default async function PricingPage() {
             }}
           >
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "48ch" }}>
-              A paid brain is bought once, from your balance, and keeps working
-              as its author updates it — you are buying the upkeep, not a
-              snapshot. Before paying you see its exam score, the questions it
-              passes, and every note title. {100 - PLATFORM_FEE_PERCENT}% of the
+              Every official brain is free — the catalogue is the commons.
+              Outside authors publishing their own expertise may charge; a
+              paid brain is bought once, from your balance, and keeps working
+              as its author updates it. {100 - PLATFORM_FEE_PERCENT}% of the
               price goes to the author; {PLATFORM_FEE_PERCENT}% keeps this
               running.
             </p>

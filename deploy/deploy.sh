@@ -8,7 +8,7 @@
 # failure is safe.
 set -euo pipefail
 
-HOST="${MOZG_HOST:-Mirca}"
+HOST="${MOZG_HOST:-mozg-server}"
 DIR="${MOZG_DIR:-/opt/mozg}"
 URL="${MOZG_URL:-https://mozg.sh}"
 
