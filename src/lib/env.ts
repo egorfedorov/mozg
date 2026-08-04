@@ -31,6 +31,10 @@ const schema = z.object({
   // (filled in after parse). Set it only if /rerank is served elsewhere.
   RERANK_URL: z.string().url().optional(),
 
+  // Headless renderer for JS-shell docs sites (services/render). Unset, those
+  // sites fall back to their GitHub repository or an honest refusal.
+  RENDER_URL: z.string().url().optional(),
+
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./.storage"),
   S3_BUCKET: z.string().optional(),

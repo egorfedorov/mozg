@@ -1,3 +1,6 @@
+// crawl -> page -> env, and env validates at import. Must be the first
+// import — see the note inside.
+import "./test-env";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {

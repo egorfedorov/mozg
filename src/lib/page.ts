@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { checkFetchableUrl } from "@/lib/url-guard";
+import { env } from "@/lib/env";
 
 /**
  * Fetching a page, in one place.
@@ -42,7 +43,32 @@ export async function fetchPageText(url: string): Promise<string> {
   // worse than useless in a brain about an SDK.
   const type = (res.headers.get("content-type") ?? "").toLowerCase();
   const looksLikeMarkup = type.includes("html") || type.includes("xml");
-  return looksLikeMarkup ? stripHtml(body) : body.trim();
+  const text = looksLikeMarkup ? stripHtml(body) : body.trim();
+
+  // A JS shell serves markup with no words in it. When a renderer is wired
+  // up, let the scripts run and read what they produce — same fallback the
+  // crawler uses, so a rendered page hashes and refreshes consistently.
+  if (looksLikeMarkup && text.length < 300 && env.RENDER_URL) {
+    const rendered = await renderPage(url).catch(() => null);
+    if (rendered && rendered.length > text.length) return rendered;
+  }
+  return text;
+}
+
+/** Ask the headless renderer for the post-JavaScript text of a page. The
+ *  caller has already passed the URL guard; the renderer re-blocks private
+ *  address literals on its side as defence in depth. */
+export async function renderPage(url: string): Promise<string> {
+  const res = await fetch(`${env.RENDER_URL}/render`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!res.ok) throw new Error(`renderer answered ${res.status}`);
+  const { html } = (await res.json()) as { html?: string };
+  if (!html) throw new Error("renderer returned no html");
+  return stripHtml(html);
 }
 
 /**

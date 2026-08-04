@@ -67,6 +67,7 @@ services:
       args:
         GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
+    networks: [default, rendernet]
     # Localhost only. Exposing 3300 publicly would bypass nginx and serve the
     # app without TLS.
     ports:
@@ -78,6 +79,7 @@ services:
       # letters, digits, - and _ when rotating.
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
       EMBED_URL: http://embed:8099
+      RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
       - storage:/data/storage
@@ -104,11 +106,13 @@ services:
       args:
         GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
+    networks: [default, rendernet]
     command: ["npm", "run", "worker:prod"]
     env_file: .env
     environment:
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
       EMBED_URL: http://embed:8099
+      RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
       - storage:/data/storage
@@ -131,7 +135,25 @@ services:
         max-size: 50m
         max-file: "3"
 
+  # Headless Chromium for JS-shell docs sites. Its own network on purpose:
+  # a hostile page rendered in here must not be able to reach the database —
+  # rendernet holds only this service and the two that call it.
+  render:
+    build: ./services/render
+    restart: unless-stopped
+    networks: [rendernet]
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "2"
+
+
 volumes:
   pgdata:
   models:
   storage:
+
+networks:
+  default: {}
+  rendernet: {}

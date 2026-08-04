@@ -1,5 +1,6 @@
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { stripHtml } from "@/lib/page";
+import { env } from "@/lib/env";
 
 /**
  * One link -> every documentation page behind it.
@@ -184,6 +185,28 @@ const MAX_PAGE_BYTES = 5 * 1024 * 1024;
 
 /** Injectable so the walk logic is testable without a network. */
 export type Fetcher = (url: string) => Promise<Fetched>;
+
+/** Fetch through the headless renderer: scripts run, then the HTML is read.
+ *  Slow (seconds a page) — the walk's last resort, never its first. */
+async function fetchRendered(url: string): Promise<Fetched> {
+  const guard = await checkFetchableUrl(url);
+  if (!guard.ok) throw new Error(`refusing to render ${url}: ${guard.reason}`);
+
+  const res = await fetch(`${env.RENDER_URL}/render`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!res.ok) throw new Error(`renderer answered ${res.status} for ${url}`);
+  const { html, status } = (await res.json()) as { html?: string; status?: number };
+  return {
+    status: status && status >= 400 ? status : 200,
+    text: html ?? "",
+    contentType: "text/html",
+    location: null,
+  };
+}
 
 async function fetchGuarded(url: string): Promise<Fetched> {
   // Checked per fetch, like lib/page.ts: DNS can change mid-crawl on purpose.
@@ -576,9 +599,30 @@ export async function discoverPages(
   }
 
   const start = await resolveStart(startUrl, fetcher);
-  return (
+  const listed =
     (await llmsTxtPages(start, cap, fetcher)) ??
-    (await sitemapPages(start, cap, fetcher)) ??
-    walkPages(start, cap, fetcher)
-  );
+    (await sitemapPages(start, cap, fetcher));
+  if (listed) return listed;
+
+  try {
+    return await walkPages(start, cap, fetcher);
+  } catch (err) {
+    // The site is a JS shell with no repository to fall back to. With a
+    // renderer wired up, walk it again letting the scripts run — capped
+    // tighter, because every page now costs a real browser a few seconds.
+    if (env.RENDER_URL && fetcher === fetchGuarded) {
+      const rendered = await walkPages(start, Math.min(cap, 80), fetchRendered).catch(
+        () => null,
+      );
+      if (rendered) {
+        return {
+          ...rendered,
+          note: ["read with a headless browser — the site only exists after JavaScript runs", rendered.note]
+            .filter(Boolean)
+            .join("; "),
+        };
+      }
+    }
+    throw err;
+  }
 }
