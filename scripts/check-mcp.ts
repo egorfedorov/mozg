@@ -188,9 +188,9 @@ async function main() {
     );
 
     console.log("\ncreating a brain the way an agent would");
-    // The account may be legitimately full — lift the plan for the test; the
-    // finally block puts it back.
-    await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
+    // The account may be legitimately full — 'admin' has room whatever the
+    // real brain count is; the finally block puts the true plan back.
+    await query(`update "user" set plan = 'admin' where id = $1`, [owner.id]);
 
     const created = await rpc(
       "tools/call",
@@ -358,7 +358,7 @@ async function main() {
         textOf(refused.body.result).slice(0, 50),
       );
     }
-    await query(`update "user" set plan = 'pro' where id = $1`, [owner.id]);
+    await query(`update "user" set plan = 'admin' where id = $1`, [owner.id]);
 
     console.log("\ngrouping brains into a family");
     const kid = await rpc(
