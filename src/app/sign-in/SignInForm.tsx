@@ -74,10 +74,22 @@ export default function SignInForm({
       <h1 className="h1" style={{ margin: "1.5rem 0 .5rem" }}>
         {mode === "in" ? "Sign in" : "Create an account"}
       </h1>
-      <p style={{ color: "var(--ink-2)", marginTop: 0, marginBottom: "1.75rem" }}>
+      <p style={{ color: "var(--ink-2)", marginTop: 0, marginBottom: ".75rem" }}>
         {mode === "in"
           ? "Your brains and the agents connected to them."
           : "One brain free, no card. Upgrade when you hit the limit."}
+      </p>
+
+      {/* Says plainly whose account this is. Written for humans, and it
+          happens to be what an anti-phishing classifier looks for: a new
+          domain with a password field and no stated identity is the exact
+          shape of a credential-harvesting page. */}
+      <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: 0, marginBottom: "1.5rem" }}>
+        This is a mozg.sh account — open source, AGPL:{" "}
+        <a href="https://github.com/egorfedorov/mozg" style={{ textDecoration: "underline" }}>
+          github.com/egorfedorov/mozg
+        </a>
+        . We never ask for another service&apos;s password.
       </p>
 
       {(githubEnabled || googleEnabled) && (
