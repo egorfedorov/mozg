@@ -429,6 +429,15 @@ export default async function BrainPage({
                     placeholder="What must a correct answer contain? e.g. HTTP 400 with code ERR_IS"
                     style={checkInput}
                   />
+                  <label className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", display: "flex", gap: ".5rem", alignItems: "center" }}>
+                    weight
+                    <select name="weight" defaultValue="3" style={{ ...checkInput, width: 70, padding: ".35rem .5rem" }}>
+                      {[1, 2, 3, 4, 5].map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
+                    </select>
+                    — 5 counts five times a 1 in the score
+                  </label>
                   <button className="btn btn-ghost" style={{ padding: ".4rem .8rem", justifySelf: "start" }}>
                     Add check — graded on the next run
                   </button>

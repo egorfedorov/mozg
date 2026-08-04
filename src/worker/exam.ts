@@ -323,6 +323,26 @@ async function topUpFromSites(brain: Brain, failedTexts: string[]): Promise<void
       order by created_at limit 2`,
     [brain.id],
   );
+
+  // Catalogue-seeded brains have url sources but no crawl root. Their pages
+  // still name the repository they came from — the most common one IS the
+  // root, reconstructed rather than asked for.
+  if (!sites.length) {
+    const repos = await query<{ repo: string; n: number }>(
+      `select split_part(regexp_replace(url, 'https://raw.githubusercontent.com/', ''), '/', 1)
+              || '/' ||
+              split_part(regexp_replace(url, 'https://raw.githubusercontent.com/', ''), '/', 2)
+              as repo,
+              count(*)::int as n
+         from sources
+        where brain_id = $1 and url like 'https://raw.githubusercontent.com/%'
+        group by 1 order by 2 desc limit 1`,
+      [brain.id],
+    );
+    if (repos.length && repos[0].n >= 3) {
+      sites.push({ id: "derived", url: `https://github.com/${repos[0].repo}` });
+    }
+  }
   if (!sites.length) return;
 
   const existing = new Set(

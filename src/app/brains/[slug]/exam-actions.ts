@@ -50,10 +50,14 @@ export async function addCheck(formData: FormData) {
   const expect = String(formData.get("expect") ?? "").trim().slice(0, 500);
   if (!question || !expect) return;
 
+  // The owner says how much this matters — that is the whole point of a
+  // manual check. Clamped to the schema's 1-5.
+  const weight = Math.min(5, Math.max(1, Number(formData.get("weight") ?? 3) || 3));
+
   await query(
     `insert into checks (brain_id, category, question, expect, weight, origin)
-     values ($1, 'Owner checks', $2, $3, 3, 'manual')`,
-    [brain.id, question, expect],
+     values ($1, 'Owner checks', $2, $3, $4, 'manual')`,
+    [brain.id, question, expect, weight],
   );
 
   revalidatePath(`/brains/${slug}`);
