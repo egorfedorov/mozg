@@ -3,7 +3,7 @@
 export type Plan = "free" | "pro" | "team";
 export type Visibility = "private" | "link" | "public";
 export type License = "nc" | "mit" | "proprietary";
-export type SourceKind = "image" | "text" | "url" | "file";
+export type SourceKind = "image" | "text" | "url" | "file" | "site";
 export type SourceStatus = "queued" | "processing" | "ready" | "failed" | "rejected";
 export type NoteKind = "fact" | "rule" | "layout" | "example" | "pitfall";
 export type NoteStatus = "active" | "pending" | "superseded" | "rejected";
@@ -86,6 +86,8 @@ export interface Source {
   status: SourceStatus;
   reject_reason: string | null;
   findings: Finding[] | null;
+  /** Owner said the scan hits are documentation examples — let them through. */
+  scan_waived: boolean;
   error: string | null;
   note_count: number;
   cost_cents: number | null;

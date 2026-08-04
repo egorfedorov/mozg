@@ -9,6 +9,7 @@ import { addUrls } from "@/app/brains/[slug]/source-actions";
  */
 export default function AddUrls({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
+  const [crawl, setCrawl] = useState(false);
   const [state, action, pending] = useActionState(addUrls, null);
 
   if (!open) {
@@ -29,16 +30,34 @@ export default function AddUrls({ slug }: { slug: string }) {
       <label style={{ display: "grid", gap: ".35rem" }}>
         <span style={{ fontWeight: 600 }}>Add pages by URL</span>
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-          One per line, up to 25. Each page is fetched and read like any other
-          source.
+          {crawl
+            ? "One link — the root of the docs. Every page in that section is found and read: sitemap, GitHub repository, or by following links."
+            : "One per line, up to 25. Each page is fetched and read like any other source."}
         </span>
+      </label>
+
+      <label
+        className="mono"
+        style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".8125rem" }}
+      >
+        <input
+          type="checkbox"
+          name="crawl"
+          checked={crawl}
+          onChange={(e) => setCrawl(e.target.checked)}
+        />
+        Learn the whole site from one link
       </label>
 
       <textarea
         name="urls"
-        rows={4}
+        rows={crawl ? 1 : 4}
         autoFocus
-        placeholder={"https://example.com/docs/spacing\nhttps://example.com/docs/colour"}
+        placeholder={
+          crawl
+            ? "https://example.com/docs  (or github.com/owner/repo)"
+            : "https://example.com/docs/spacing\nhttps://example.com/docs/colour"
+        }
         style={{
           width: "100%",
           padding: ".7rem .85rem",
@@ -57,7 +76,9 @@ export default function AddUrls({ slug }: { slug: string }) {
 
       {typeof state?.added === "number" && (
         <p className="mono" style={{ fontSize: ".8125rem", margin: 0, color: "var(--color-riso-green)" }}>
-          Queued {state.added} page{state.added === 1 ? "" : "s"}
+          {state.site
+            ? "Reading the whole site — pages appear in the source list as they are found."
+            : `Queued ${state.added} page${state.added === 1 ? "" : "s"}`}
         </p>
       )}
 

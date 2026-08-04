@@ -95,6 +95,13 @@ function systemPrompt(goal: string | null, categories: string[]): string {
     "exact wording, ordering, counts, state names. 'The balance sits 24px from",
     "the left edge' is useful; 'the balance is on the left' is not.",
     "",
+    "When the source specifies an interface — an API endpoint, a parameter or",
+    "field table, a config reference, an error list — keep it lossless: every",
+    "field with its exact name, type, whether it is required, and its default,",
+    "row by row in the body. Never summarise a table into prose; 'takes several",
+    "options' loses exactly the row a reader will come looking for. A long note",
+    "that preserves the table beats three short notes that describe it.",
+    "",
     categories.length
       ? `Categories already used in this brain, reuse where they fit:\n${categories.map((c) => `- ${c}`).join("\n")}`
       : "",

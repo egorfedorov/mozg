@@ -10,8 +10,8 @@ import GoalEditor from "@/components/GoalEditor";
 import CallLog from "@/components/CallLog";
 import AutoRefresh from "@/components/AutoRefresh";
 import { approveNote, rejectNote } from "./review-actions";
-import { runExamNow } from "./exam-actions";
-import { retrySource, deleteSource } from "./source-actions";
+import { runExamNow, addCheck, removeCheck } from "./exam-actions";
+import { retrySource, deleteSource, waiveScan } from "./source-actions";
 import { maybeOne, query } from "@/db";
 import type { Brain, Note, Source } from "@/db/types";
 import { currentUser } from "@/lib/session";
@@ -56,7 +56,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -93,12 +93,30 @@ export default async function BrainPage({
          from calls where brain_id = $1 order by id desc limit 12`,
       [brain.id],
     ).then((r) => r.reverse()),
+    query<{ score: number }>(
+      `select score from (
+         select score, started_at from check_runs
+          where brain_id = $1 and status = 'done' and score is not null
+          order by started_at desc limit 16
+       ) t order by started_at`,
+      [brain.id],
+    ),
+    query<{ id: string; question: string; expect: string }>(
+      `select id, question, expect from checks
+        where brain_id = $1 and origin = 'manual' and enabled
+        order by created_at`,
+      [brain.id],
+    ),
   ]);
 
   const totalChecks = categories.reduce((n, c) => n + c.total, 0);
   const inFlight = sources.filter(
     (s) => s.status === "queued" || s.status === "processing",
   ).length;
+  const readSources = sources.filter((s) => s.status === "ready").length;
+  const discovering = sources.some(
+    (s) => s.kind === "site" && (s.status === "queued" || s.status === "processing"),
+  );
 
   return (
     <AppShell active="/brains">
@@ -145,6 +163,35 @@ export default async function BrainPage({
           </div>
         </div>
 
+        {/* The show while a crawl or upload is being read. Sources further
+            down auto-refresh the page, so these numbers move on their own. */}
+        {inFlight > 0 && (
+          <div className="panel" style={{ marginBottom: "1.5rem" }}>
+            <p className="eyebrow" style={{ marginBottom: ".4rem" }}>
+              {discovering ? "Discovering and reading pages…" : "Learning…"}
+            </p>
+            <div
+              aria-hidden
+              style={{ height: 8, border: "1.5px solid var(--ink)", background: "var(--paper)" }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.round((readSources / Math.max(1, readSources + inFlight)) * 100)}%`,
+                  background: `var(--color-riso-${tintFor(brain)})`,
+                  transition: "width .6s",
+                }}
+              />
+            </div>
+            <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".5rem 0 0" }}>
+              {readSources} read · {inFlight} to go · {brain.note_count} notes so far
+              {brain.goal
+                ? " — the exam re-runs by itself when this finishes"
+                : " — a goal is being drafted from the material"}
+            </p>
+          </div>
+        )}
+
         <div
           style={{
             display: "grid",
@@ -168,9 +215,12 @@ export default async function BrainPage({
                 </span>
               </div>
               {brain.score !== null && (
-                <div className="score-big">
-                  {brain.score}
-                  <sup>%</sup>
+                <div style={{ display: "flex", alignItems: "center", gap: ".75rem" }}>
+                  <ScoreSpark history={history.map((h) => h.score)} />
+                  <div className="score-big">
+                    {brain.score}
+                    <sup>%</sup>
+                  </div>
                 </div>
               )}
             </div>
@@ -249,6 +299,58 @@ export default async function BrainPage({
                   </span>
                 )}
               </div>
+            )}
+
+            {brain.goal && (
+              <details style={{ borderTop: "1.5px solid var(--ink)", padding: "1rem 1.25rem" }}>
+                <summary className="mono" style={{ fontSize: ".8125rem", cursor: "pointer" }}>
+                  Your own checks ({manualChecks.length}) — things this brain must know
+                </summary>
+
+                {manualChecks.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{ display: "flex", gap: ".75rem", alignItems: "baseline", margin: ".75rem 0 0" }}
+                  >
+                    <span style={{ flex: 1, fontSize: ".875rem" }}>
+                      {c.question}
+                      <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                        expects: {c.expect}
+                      </span>
+                    </span>
+                    <form action={removeCheck}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="slug" value={brain.slug} />
+                      <button className="mono" style={linkButton}>
+                        remove
+                      </button>
+                    </form>
+                  </div>
+                ))}
+
+                {/* Survives goal rewrites, unlike generated checks — this is
+                    the owner saying what matters in their own words. */}
+                <form action={addCheck} style={{ display: "grid", gap: ".5rem", marginTop: "1rem" }}>
+                  <input type="hidden" name="slug" value={brain.slug} />
+                  <input
+                    name="question"
+                    required
+                    maxLength={500}
+                    placeholder="What would you ask it? e.g. What does the play endpoint return on insufficient balance?"
+                    style={checkInput}
+                  />
+                  <input
+                    name="expect"
+                    required
+                    maxLength={500}
+                    placeholder="What must a correct answer contain? e.g. HTTP 400 with code ERR_IS"
+                    style={checkInput}
+                  />
+                  <button className="btn btn-ghost" style={{ padding: ".4rem .8rem", justifySelf: "start" }}>
+                    Add check — graded on the next run
+                  </button>
+                </form>
+              </details>
             )}
           </section>
         </div>
@@ -366,7 +468,13 @@ export default async function BrainPage({
                     {s.original_name ?? s.url ?? s.id.slice(0, 8)}
                     {s.status === "rejected" && (
                       <span className="score-gap" style={{ color: "var(--color-riso-red)" }}>
-                        rejected · {s.findings?.length ?? 0} secret(s) found
+                        rejected · looks like{" "}
+                        {(s.findings ?? []).map((f) => f.label).join(", ") || "a secret"}
+                        {s.findings?.[0]?.sample ? (
+                          <span className="mono" style={{ display: "block", fontSize: ".6875rem" }}>
+                            {s.findings.slice(0, 3).map((f) => f.sample).join(" · ")}
+                          </span>
+                        ) : null}
                       </span>
                     )}
                     {s.status === "failed" && (
@@ -387,6 +495,22 @@ export default async function BrainPage({
                           retry
                         </button>
                       </form>
+                    )}
+                    {s.status === "rejected" && (
+                      <ConfirmForm
+                        action={waiveScan}
+                        message={
+                          "Let this source through the secret scanner? Do this only " +
+                          "if the findings above are documentation examples, not real " +
+                          "credentials — the notes will become searchable."
+                        }
+                      >
+                        <input type="hidden" name="id" value={s.id} />
+                        <input type="hidden" name="slug" value={brain.slug} />
+                        <button className="mono" style={linkButton}>
+                          it&apos;s an example — allow
+                        </button>
+                      </ConfirmForm>
                     )}
                     <ConfirmForm
                       action={deleteSource}
@@ -411,6 +535,52 @@ export default async function BrainPage({
       </AppShell>
   );
 }
+
+/**
+ * The score's shape over the last runs — a climb, a plateau, a regression.
+ * Server-rendered SVG; sixteen points do not need a chart library.
+ */
+function ScoreSpark({ history }: { history: number[] }) {
+  if (history.length < 2) return null;
+  const w = 96;
+  const h = 28;
+  const step = w / (history.length - 1);
+  const points = history
+    .map((s, i) => `${(i * step).toFixed(1)},${(h - 2 - (s / 100) * (h - 4)).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ overflow: "visible" }}
+      aria-label={`Score over the last ${history.length} runs`}
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--ink-2)"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={w}
+        cy={h - 2 - (history[history.length - 1] / 100) * (h - 4)}
+        r="2.5"
+        fill="var(--ink)"
+      />
+    </svg>
+  );
+}
+
+const checkInput: React.CSSProperties = {
+  width: "100%",
+  padding: ".55rem .7rem",
+  border: "1.5px solid var(--ink)",
+  background: "var(--paper)",
+  font: "inherit",
+  fontSize: ".875rem",
+};
 
 const linkButton: React.CSSProperties = {
   background: "none",

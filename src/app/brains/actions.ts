@@ -9,10 +9,13 @@ import { currentUser } from "@/lib/session";
 import { slugify } from "@/lib/brains";
 import { TOPIC_KEYS } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
+import { checkFetchableUrl } from "@/lib/url-guard";
+import { enqueueCrawl } from "@/worker/queue";
 
 const createSchema = z.object({
   title: z.string().trim().min(1, "Give the brain a name").max(80),
   goal: z.string().trim().max(4000).optional(),
+  docs: z.string().trim().max(2000).optional(),
   // An unknown topic is a stale form, not something worth an error message.
   topic: z.string().catch("other").transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
   parent: z.string().trim().optional(),
@@ -25,11 +28,23 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   const parsed = createSchema.safeParse({
     title: formData.get("title"),
     goal: formData.get("goal") || undefined,
+    docs: String(formData.get("docs") ?? "") || undefined,
     topic: formData.get("topic") ?? "other",
     parent: String(formData.get("parent") ?? "") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
+  }
+
+  // Checked before the brain exists — a bad link should be a red line under
+  // the field, not a brain created with a source that failed off-screen.
+  let docsUrl: string | null = null;
+  if (parsed.data.docs) {
+    const check = await checkFetchableUrl(parsed.data.docs);
+    if (!check.ok || !check.url) {
+      return { error: `That docs link was refused — ${check.reason}.` };
+    }
+    docsUrl = check.url;
   }
 
   const { count } = await one<{ count: number }>(
@@ -78,6 +93,77 @@ export async function createBrain(_prev: unknown, formData: FormData) {
      values ($1, $2, $3, $4, $5, $6) returning *`,
     [user.id, slug, parsed.data.title, parsed.data.goal ?? null, parsed.data.topic, parentId],
   );
+
+  // One link at creation is the whole point of the field: the crawl worker
+  // expands it into a source per page and the exam runs as material lands.
+  if (docsUrl) {
+    const site = await one<{ id: string }>(
+      `insert into sources (brain_id, kind, url, original_name)
+       values ($1, 'site', $2, $3) returning id`,
+      [brain.id, docsUrl, `${new URL(docsUrl).hostname} (whole site)`],
+    );
+    await enqueueCrawl(site.id);
+  }
+
+  revalidatePath("/brains");
+  redirect(`/brains/${brain.slug}`);
+}
+
+/**
+ * The whole product in one field: paste a link, get a brain. Title comes from
+ * the link, the goal is drafted from the material by the crawl worker, the
+ * exam follows on its own. Everything is editable afterwards.
+ */
+export async function quickStart(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const raw = String(formData.get("url") ?? "").trim();
+  if (!raw) return { error: "Paste a link to the documentation." };
+
+  const check = await checkFetchableUrl(raw.includes("://") ? raw : `https://${raw}`);
+  if (!check.ok || !check.url) {
+    return { error: `That link was refused — ${check.reason}.` };
+  }
+
+  const { count } = await one<{ count: number }>(
+    `select count(*)::int as count from brains where owner_id = $1`,
+    [user.id],
+  );
+  if (count >= limitsFor(user.plan).brains) {
+    return { error: "The plan's brain limit is reached — upgrade in settings." };
+  }
+
+  // A github link names its repo; anything else, the host. "docs.foo.com" and
+  // "github.com/foo/bar" both read naturally as titles.
+  const url = new URL(check.url);
+  const title =
+    url.hostname === "github.com"
+      ? url.pathname.split("/").filter(Boolean).slice(0, 2).join("/") || url.hostname
+      : url.hostname.replace(/^www\./, "");
+
+  const base = slugify(title);
+  let slug = base;
+  for (let i = 2; i < 50; i++) {
+    const taken = await maybeOne(
+      `select 1 from brains where owner_id = $1 and slug = $2`,
+      [user.id, slug],
+    );
+    if (!taken) break;
+    slug = `${base}-${i}`.slice(0, 39);
+  }
+
+  const brain = await one<Brain>(
+    `insert into brains (owner_id, slug, title, topic) values ($1, $2, $3, 'other')
+     returning *`,
+    [user.id, slug, title.slice(0, 80)],
+  );
+  const site = await one<{ id: string }>(
+    `insert into sources (brain_id, kind, url, original_name)
+     values ($1, 'site', $2, $3) returning id`,
+    [brain.id, check.url, `${url.hostname} (whole site)`],
+  );
+  await enqueueCrawl(site.id);
 
   revalidatePath("/brains");
   redirect(`/brains/${brain.slug}`);

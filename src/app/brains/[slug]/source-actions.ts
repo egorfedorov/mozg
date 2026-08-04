@@ -8,7 +8,7 @@ import { currentUser } from "@/lib/session";
 import { storage } from "@/lib/storage";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { rateLimited } from "@/lib/rate-limit";
-import { enqueueIngest } from "@/worker/queue";
+import { enqueueIngest, enqueueCrawl } from "@/worker/queue";
 
 async function ownedSource(sourceId: string, userId: string): Promise<Source | null> {
   return maybeOne<Source>(
@@ -44,7 +44,10 @@ export async function retrySource(formData: FormData) {
     [source.id],
   );
 
-  await enqueueIngest(source.id);
+  // A site source retries its discovery, not an ingest — the crawl skips
+  // pages that are already sources, so re-running it is safe and picks up
+  // whatever the site added since.
+  await (source.kind === "site" ? enqueueCrawl(source.id) : enqueueIngest(source.id));
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
 
@@ -72,6 +75,26 @@ export async function addUrls(_prev: unknown, formData: FormData) {
 
   if (!lines.length) return { error: "Paste at least one URL." };
 
+  // "Learn the whole site": the single URL becomes a crawl root the worker
+  // expands into a source per discovered page. Same path the MCP tool takes.
+  if (formData.get("crawl") === "on") {
+    if (lines.length > 1) {
+      return { error: "Whole-site mode takes one URL — the root of the docs." };
+    }
+    const check = await checkFetchableUrl(lines[0]);
+    if (!check.ok || !check.url) {
+      return { error: `${lines[0].slice(0, 60)} — ${check.reason}` };
+    }
+    const site = await one<Source>(
+      `insert into sources (brain_id, kind, url, original_name)
+       values ($1, 'site', $2, $3) returning *`,
+      [brain.id, check.url, `${new URL(check.url).hostname} (whole site)`],
+    );
+    await enqueueCrawl(site.id);
+    revalidatePath(`/brains/${slug}`);
+    return { added: 1, refused: [], site: check.url };
+  }
+
   const added: string[] = [];
   const refused: string[] = [];
 
@@ -93,6 +116,27 @@ export async function addUrls(_prev: unknown, formData: FormData) {
 
   revalidatePath(`/brains/${slug}`);
   return { added: added.length, refused };
+}
+
+/**
+ * "These are documentation examples — let this source through the secret
+ * scanner." A per-source, owner-only decision (see 0017): the findings stay
+ * stored for audit, and the waiver never widens beyond this one source.
+ */
+export async function waiveScan(formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const source = await ownedSource(String(formData.get("id")), user.id);
+  if (!source || source.status !== "rejected") return;
+
+  await query(
+    `update sources set scan_waived = true, status = 'queued', reject_reason = null
+      where id = $1`,
+    [source.id],
+  );
+  await enqueueIngest(source.id);
+  revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
 
 export async function deleteSource(formData: FormData) {

@@ -71,6 +71,18 @@ export default function NewBrainForm({
           <textarea name="goal" rows={4} placeholder={EXAMPLES[0]} style={inputStyle} />
         </Field>
 
+        <Field
+          label="Documentation link (optional)"
+          hint="One link is enough — every page of that documentation is found and read. For docs sites that are JavaScript apps, paste the GitHub repository instead."
+        >
+          <input
+            name="docs"
+            type="url"
+            placeholder="https://example.com/docs — or github.com/owner/repo"
+            style={inputStyle}
+          />
+        </Field>
+
         <div>
           <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
             Examples

@@ -1,6 +1,6 @@
 import { query } from "@/db";
 import { fetchPageText, contentHash } from "@/lib/page";
-import { enqueueIngest, enqueueExam } from "@/worker/queue";
+import { enqueueIngest, enqueueExam, enqueueCrawl } from "@/worker/queue";
 
 /**
  * Keeping brains honest without being asked.
@@ -160,13 +160,67 @@ export async function examStaleBrains(limit = EXAM_BATCH): Promise<string[]> {
   return stale.map((b) => b.id);
 }
 
+/** How long a crawled site may go without checking for new pages. */
+const RECRAWL_AFTER = "7 days";
+const RECRAWL_BATCH = 10;
+
+/**
+ * Re-run old site crawls so a docs site that grew a chapter grows the brain
+ * with it. Cheap by construction: the crawl skips every page that is already
+ * a source, so an unchanged site costs one discovery pass and zero
+ * extractions. Page *content* changes are refreshUrlSources' job — this one
+ * only finds pages that did not exist before.
+ */
+export async function recrawlSites(limit = RECRAWL_BATCH): Promise<number> {
+  const due = await query<{ id: string }>(
+    `update sources set status = 'queued', error = null
+      where id in (
+        select id from sources
+         where kind = 'site' and status = 'ready'
+           and processed_at < now() - interval '${RECRAWL_AFTER}'
+         order by processed_at
+         limit $1
+      )
+      returning id`,
+    [limit],
+  );
+  for (const s of due) await enqueueCrawl(s.id);
+  return due.length;
+}
+
+/**
+ * Sources paused by the extraction budget resume themselves. The budget is a
+ * rolling 24h window, so by the next maintenance pass there is usually room
+ * again; if not, the re-run costs one SQL check and fails with the same
+ * message — no model is paid until the window actually has space.
+ */
+export async function requeueBudgetPaused(limit = 50): Promise<number> {
+  const due = await query<{ id: string }>(
+    `update sources set status = 'queued', error = null
+      where id in (
+        select id from sources
+         where status = 'failed' and error like 'daily budget:%'
+         order by processed_at
+         limit $1
+      )
+      returning id`,
+    [limit],
+  );
+  for (const s of due) await enqueueIngest(s.id);
+  return due.length;
+}
+
 export async function runMaintenance(): Promise<{
   refresh: RefreshReport;
   examined: number;
+  recrawled: number;
+  resumed: number;
 }> {
+  const resumed = await requeueBudgetPaused();
+  const recrawled = await recrawlSites();
   const refresh = await refreshUrlSources();
   // After the refresh, so a page that changed a minute ago is re-examined in
   // the same pass rather than waiting a full day for the next one.
   const examined = await examStaleBrains();
-  return { refresh, examined: examined.length };
+  return { refresh, examined: examined.length, recrawled, resumed };
 }

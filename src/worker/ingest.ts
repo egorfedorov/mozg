@@ -1,6 +1,7 @@
 import { pool, query, one, tx, toVector } from "@/db";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
+import { limitsFor } from "@/lib/plans";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
@@ -117,6 +118,30 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     // it. Maintenance clears it when a page's text actually changes.
     let extracted = source.extract_payload as ExtractResult | null;
     if (!extracted) {
+      // The paid step gets a budget. Without one, a loop creating brains and
+      // crawling large sites spends the platform's Anthropic bill at the
+      // speed of the queue. Rolling 24h, per owner, sized by plan; a source
+      // over the line fails with the reason in its error and the maintenance
+      // pass requeues it once the window has rolled.
+      const owner = await one<{ plan: string }>(
+        `select u.plan from "user" u where u.id = $1`,
+        [brain.owner_id],
+      );
+      const budget = limitsFor(owner.plan as never).dailyExtractCents;
+      const { spent } = await one<{ spent: number }>(
+        `select coalesce(sum(s.cost_cents), 0)::int as spent
+           from sources s join brains b on b.id = s.brain_id
+          where b.owner_id = $1 and s.processed_at > now() - interval '24 hours'`,
+        [brain.owner_id],
+      );
+      if (spent >= budget) {
+        throw new Error(
+          `daily budget: extraction paused — ${(spent / 100).toFixed(2)} of ` +
+            `${(budget / 100).toFixed(2)} USD used in the last 24h on the ` +
+            `${owner.plan} plan. Resumes automatically as the window rolls.`,
+        );
+      }
+
       extracted = await extract(source, brain, categories);
       await query(`update sources set extract_payload = $2 where id = $1`, [
         sourceId,
@@ -127,7 +152,16 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     // ── secret gate ────────────────────────────────────────────────────────
     const combined = extracted.notes.map((n) => `${n.title}\n${n.body}`).join("\n\n");
     const findings = scanSecrets(combined);
-    if (findings.length) {
+    // A waiver is the owner's recorded decision that these hits are
+    // documentation examples (see 0017). The findings are still stored on the
+    // source so the decision stays auditable next to what it let through.
+    if (findings.length && source.scan_waived) {
+      await query(`update sources set findings = $2 where id = $1`, [
+        sourceId,
+        JSON.stringify(findings),
+      ]);
+    }
+    if (findings.length && !source.scan_waived) {
       await query(
         `update sources
             set status = 'rejected', reject_reason = 'secrets_detected',
@@ -233,8 +267,19 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     // since its last exam from one that has simply not been touched.
     await query(`update brains set content_changed_at = now() where id = $1`, [brain.id]);
 
-    // A brain with a goal re-sits its exam whenever it learns something.
-    if (brain.goal) await enqueueExam(brain.id);
+    // A brain with a goal re-sits its exam whenever it learns something —
+    // but not after every page of a hundred-page crawl. Wait until nothing
+    // else is queued for this brain; if a page slips in right after this
+    // check, the maintenance pass catches the gap (content_changed_at >
+    // score_at) within six hours.
+    if (brain.goal) {
+      const { pending } = await one<{ pending: number }>(
+        `select count(*)::int as pending from sources
+          where brain_id = $1 and status in ('queued', 'processing')`,
+        [brain.id],
+      );
+      if (pending === 0) await enqueueExam(brain.id);
+    }
 
     return { status: "ready", notes: inserted, costCents: extracted.usage.costCents };
   } catch (err) {

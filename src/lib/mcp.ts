@@ -15,7 +15,7 @@ import { limitsFor } from "@/lib/plans";
 import { gateFor, hasPaid } from "@/lib/paywall";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { storage, storageKey } from "@/lib/storage";
-import { enqueueIngest } from "@/worker/queue";
+import { enqueueIngest, enqueueCrawl } from "@/worker/queue";
 import type { TokenOwner } from "@/lib/tokens";
 
 /**
@@ -166,7 +166,11 @@ export const TOOLS: ToolDef[] = [
       "Feed raw material into a brain: documentation pages by URL, or a block of " +
       "text. The material is read and turned into searchable notes in the " +
       "background — this returns as soon as the work is queued, so tell the user " +
-      "it is processing rather than waiting for notes to appear. Prefer this over " +
+      "it is processing rather than waiting for notes to appear. When the user " +
+      "gives ONE link and means the whole documentation behind it (\"learn " +
+      "https://example.com/docs\"), pass that single URL with crawl: true — " +
+      "every page in that section is discovered and read, via the site's " +
+      "sitemap, its GitHub repository, or by following links. Prefer this over " +
       "brain_write when you have primary material: brain_write saves one fact you " +
       "already know, this extracts many from a source. Never pass a URL behind a " +
       "login, and never paste text containing credentials.",
@@ -178,6 +182,14 @@ export const TOOLS: ToolDef[] = [
           type: "array",
           items: { type: "string" },
           description: "Pages to read. Up to 25 per call.",
+        },
+        crawl: {
+          type: "boolean",
+          description:
+            "With a single URL: discover and read the whole documentation " +
+            "section behind it, not just that page. A GitHub repository URL " +
+            "reads the doc files of the repository — for docs sites that are " +
+            "JavaScript apps, the repository link is the one that works.",
         },
         text: { type: "string", description: "A block of material to read." },
         name: { type: "string", description: "What the text is, for the source list." },
@@ -817,6 +829,50 @@ async function brainAddSource(
   const rawUrls = Array.isArray(args.urls)
     ? args.urls.map((u) => String(u).trim()).filter(Boolean).slice(0, 25)
     : [];
+
+  // One link, the whole site behind it. The site row is a crawl root the
+  // worker expands into ordinary url sources; the plan's source cap is
+  // enforced there, where the page count is actually known.
+  if (args.crawl === true) {
+    if (rawUrls.length !== 1) {
+      return {
+        text:
+          "crawl: true takes exactly one URL — the root of the documentation " +
+          "to learn. Pass several URLs without crawl to read specific pages.",
+        isError: true,
+      };
+    }
+    const check = await checkFetchableUrl(rawUrls[0]);
+    if (!check.ok || !check.url) {
+      return { text: `Refused ${rawUrls[0].slice(0, 60)} — ${check.reason}`, isError: true };
+    }
+    const limits = limitsFor(owner.plan);
+    if (brain.source_count + 1 > limits.sources) {
+      return {
+        text:
+          `That would exceed ${limits.sources} sources on the ${owner.plan} plan ` +
+          `(${brain.source_count} used). Tell the user to upgrade at mozg.sh/settings.`,
+        isError: true,
+      };
+    }
+    const site = await one<{ id: string }>(
+      `insert into sources (brain_id, kind, url, original_name)
+       values ($1, 'site', $2, $3) returning id`,
+      [brain.id, check.url, `${new URL(check.url).hostname} (whole site)`],
+    );
+    await enqueueCrawl(site.id);
+    return {
+      text:
+        `Queued a crawl of ${check.url} for ${handle}. Pages are discovered ` +
+        "and read in the background — the source list on " +
+        `mozg.sh/brains/${brain.slug} shows each page as it is found, and the ` +
+        "exam re-runs by itself as material lands. This takes minutes, not " +
+        "seconds; tell the user it is learning rather than polling for notes.",
+      brainId: brain.id,
+      ownerId: brain.owner_id,
+      results: 1,
+    };
+  }
   // ~100 KB of pasted material: the web upload path caps files at 20 MB, but
   // a text block goes through extraction as one job, so a smaller cap keeps a
   // paste from turning into a very expensive single ingest.

@@ -8,8 +8,6 @@ import { MIN_PAYOUT_CENTS } from "@/lib/money";
 import AppShell from "@/components/AppShell";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import PayoutForm from "../PayoutForm";
-import TopUpForm from "../TopUpForm";
-import { paymentsReady } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +66,16 @@ export default async function BalancePage() {
         </Stats>
 
         <div className="stack-tight">
-          <TopUpForm ready={paymentsReady} email={user.email} />
+          <div className="panel">
+            <p className="eyebrow">Topping up</p>
+            <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
+              Crypto — USDT, USDC, BTC and more. Card and other methods are on
+              the way.
+            </p>
+            <Link className="btn" href="/settings/topup">
+              Top up balance
+            </Link>
+          </div>
 
           <PayoutForm balanceCents={balance} minCents={MIN_PAYOUT_CENTS} open={openPayout} />
         </div>

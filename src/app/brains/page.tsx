@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import BrainCard from "@/components/BrainCard";
+import QuickStart from "@/components/QuickStart";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import { currentUser } from "@/lib/session";
 import { listBrains } from "@/lib/brains";
@@ -191,17 +192,22 @@ function FirstRun() {
     <AppShell
       active="/brains"
       eyebrow="Nothing here yet"
-      title="Start with one folder of screenshots."
+      title="Give your agents a brain."
       narrow
     >
       <p className="lede">
-        Pick something you explain to an agent over and over — a UI you keep
-        rebuilding, an API you keep re-reading, a convention nobody wrote down.
-        Name what it&apos;s for, drop the material in, and connect it to your editor.
+        Pick something your agents keep getting wrong — an API you keep
+        re-reading, docs newer than the model, a convention nobody wrote down —
+        and feed it in. One link is enough to start.
       </p>
-      <div style={{ display: "flex", gap: ".75rem", marginTop: "1.75rem", flexWrap: "wrap" }}>
-        <Link className="btn" href="/brains/new">
-          Build the first one
+
+      <div style={{ marginTop: "1.75rem" }}>
+        <QuickStart />
+      </div>
+
+      <div style={{ display: "flex", gap: ".75rem", marginTop: "1rem", flexWrap: "wrap" }}>
+        <Link className="btn btn-ghost" href="/brains/new">
+          Or build one by hand
         </Link>
         <Link className="btn btn-ghost" href="/guide">
           How to build a good one

@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 // Next.js resolver and does not honour tsconfig path aliases.
 import { pool } from "../db";
 import { env, emailReady } from "./env";
+import { sendMail } from "./mail";
 
 /**
  * Identity. better-auth owns the "user"/"session"/"account"/"verification"
@@ -30,8 +31,38 @@ export const auth = betterAuth({
   // account is a dead end: its address is never verified, so brains shared
   // with it by email silently grant nothing, and a forgotten password can
   // never be reset. GitHub OAuth verifies the address as a side effect, which
-  // is why it stays open.
-  emailAndPassword: { enabled: true, disableSignUp: !emailReady },
+  // is why it stays open. Adding RESEND_API_KEY + EMAIL_FROM to .env turns
+  // sign-up and both mails on with no code change.
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: !emailReady,
+    sendResetPassword: async ({ user, url }) => {
+      await sendMail({
+        to: user.email,
+        subject: "Reset your mozg password",
+        text:
+          `Someone — hopefully you — asked to reset the password for ${user.email}.\n\n` +
+          `Reset it here:\n${url}\n\n` +
+          "If this was not you, ignore this mail; the link expires on its own.",
+      });
+    },
+  },
+
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendMail({
+        to: user.email,
+        subject: "Confirm your mozg address",
+        text:
+          "One click and your account is live — brains shared with this " +
+          "address start working the moment it is confirmed:\n\n" +
+          `${url}\n\n` +
+          "If you did not sign up at mozg.sh, ignore this mail.",
+      });
+    },
+  },
 
   user: {
     additionalFields: {

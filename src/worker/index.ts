@@ -1,6 +1,7 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, enqueueIngest } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, enqueueIngest, enqueueCrawl } from "@/worker/queue";
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
+import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { runMaintenance } from "@/worker/maintenance";
 import { runConsolidation } from "@/worker/consolidate";
@@ -32,11 +33,15 @@ async function main() {
   // still hold a source this sweep requeues, and that is now safe — the
   // requeued job bounces off the advisory lock in ingestSource and pg-boss
   // retries it once the real run has finished.
-  const orphans = await query<{ id: string; name: string | null }>(
+  const orphans = await query<{ id: string; kind: string; name: string | null }>(
     `update sources set status = 'queued', processing_at = null
-      where status = 'processing' returning id, coalesce(original_name, url) as name`,
+      where status = 'processing' returning id, kind, coalesce(original_name, url) as name`,
   );
-  for (const o of orphans) await enqueueIngest(o.id);
+  for (const o of orphans) {
+    // A site source belongs to the crawl queue — requeueing it as an ingest
+    // would fail it with "unknown kind" instead of resuming the discovery.
+    await (o.kind === "site" ? enqueueCrawl(o.id) : enqueueIngest(o.id));
+  }
   if (orphans.length) {
     console.log(
       `[worker] requeued ${orphans.length} source(s) interrupted by the last stop:`,
@@ -75,6 +80,32 @@ async function main() {
   );
 
   await boss.work(
+    QUEUES.crawl,
+    { batchSize: 1, pollingIntervalSeconds: 2 },
+    async ([job]) => {
+      const { sourceId } = job.data as { sourceId: string };
+      const started = Date.now();
+      try {
+        const result = await crawlSite(sourceId);
+        console.log(
+          `[crawl] ${sourceId} queued=${result.queued} skipped=${result.skipped} ` +
+            `via=${result.via} ${Date.now() - started}ms`,
+        );
+      } catch (err) {
+        if (err instanceof SourceBusyError) {
+          console.log(`[crawl] ${sourceId} ${err.message}`);
+        } else {
+          console.error(
+            `[crawl] ${sourceId} FAILED after ${Date.now() - started}ms:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+        throw err;
+      }
+    },
+  );
+
+  await boss.work(
     QUEUES.exam,
     { batchSize: 1, pollingIntervalSeconds: 5 },
     async ([job]) => {
@@ -104,11 +135,11 @@ async function main() {
     async () => {
       const started = Date.now();
       try {
-        const { refresh, examined } = await runMaintenance();
+        const { refresh, examined, recrawled, resumed } = await runMaintenance();
         console.log(
           `[maintenance] checked=${refresh.checked} unchanged=${refresh.unchanged} ` +
             `changed=${refresh.changed} failed=${refresh.failed} reexam=${examined} ` +
-            `${Date.now() - started}ms`,
+            `recrawl=${recrawled} resumed=${resumed} ${Date.now() - started}ms`,
         );
       } catch (err) {
         console.error(

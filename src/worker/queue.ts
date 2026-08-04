@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 
 export const QUEUES = {
   ingest: "ingest",
+  crawl: "crawl",
   exam: "exam",
   maintenance: "maintenance",
   consolidate: "consolidate",
@@ -56,6 +57,11 @@ export async function getBoss(): Promise<PgBoss> {
 export async function enqueueIngest(sourceId: string): Promise<void> {
   const b = await getBoss();
   await b.send(QUEUES.ingest, { sourceId }, { singletonKey: sourceId });
+}
+
+export async function enqueueCrawl(sourceId: string): Promise<void> {
+  const b = await getBoss();
+  await b.send(QUEUES.crawl, { sourceId }, { singletonKey: sourceId });
 }
 
 /**

@@ -218,15 +218,30 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
 
     for (let i = 0; i < contexts.length; i += JUDGE_BATCH) {
       const batch = contexts.slice(i, i + JUDGE_BATCH);
-      const { verdicts: batchVerdicts, costCents: batchCost } = await judge(batch);
-      cost += batchCost;
+
+      // Several independent votes per check, majority wins. One judge run
+      // moves the same brain ±10 points between re-sits — with votes, two
+      // runs on unchanged material give the same score, which is what makes
+      // a small score change readable as a real one. See JUDGE_VOTES in env.
+      const votes = await Promise.all(
+        Array.from({ length: env.JUDGE_VOTES }, () => judge(batch)),
+      );
+      cost += votes.reduce((n, v) => n + v.costCents, 0);
 
       for (const entry of batch) {
-        const verdict = batchVerdicts.find((v) => v.id === entry.check.id);
+        const verdicts = votes
+          .map((v) => v.verdicts.find((x) => x.id === entry.check.id))
+          .filter((v) => v !== undefined);
+        // A missing verdict is an abstention, not a pass: the majority is of
+        // the votes that actually came back.
+        const passVotes = verdicts.filter((v) => v.passed).length;
+        const passed = verdicts.length > 0 && passVotes * 2 > verdicts.length;
         results.push({
           check: entry.check,
-          passed: verdict?.passed ?? false,
-          reason: verdict?.reason ?? "judge returned no verdict",
+          passed,
+          reason:
+            verdicts.find((v) => v.passed === passed)?.reason ??
+            "judge returned no verdict",
           retrievalHits: entry.retrievalHits,
           retrievalTopScore: entry.retrievalTopScore,
         });
