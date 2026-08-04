@@ -268,6 +268,62 @@ export default async function MarketingPage() {
       <Block title="X thread" hint="3 tweets" text={xThread} />
       <Block title="Reddit r/ClaudeAI" text={redditClaude} />
       <Block title="Stake Engine Discord" hint="RU" text={discordStake} />
+      <Block
+        title="Stake Engine Discord — EN"
+        hint="showcase/community channel, post as yourself"
+        text={
+          "Building on Stake Engine with coding agents? I got tired of mine " +
+          "answering RGS questions from year-old memory, so I turned the " +
+          "entire Stake Engine docs into a connectable \"brain\" for Claude " +
+          "Code / Codex / Cursor — the agent pulls the actual spec over MCP " +
+          "(authenticate, /wallet/play amounts in minor units, event shapes) " +
+          "instead of guessing.\n\n" +
+          "The part I built because I needed it: every brain sits an exam " +
+          "against its own docs. The RGS API brain currently scores 88%, the " +
+          "Math SDK one 81% — and the failed questions are listed publicly, " +
+          "so you know exactly what it does and doesn't cover before " +
+          "trusting it.\n\n" +
+          "The Stake Engine family is free: https://mozg.sh/explore (gamedev " +
+          "section), one command to connect. There's also a paid Slot Studio " +
+          "family — mechanics + math patterns, the approval checklist (what " +
+          "actually gets submissions rejected), frontend, compliance — and " +
+          "any paid brain answers 5 real queries free straight from your " +
+          "agent, so you can grill it before paying.\n\n" +
+          "I ship my own games with these docs daily — feedback and \"your " +
+          "brain got this wrong\" reports are exactly what I want."
+        }
+      />
+      <Block
+        title="Русский геймдев-канал"
+        hint="чат/канал разработчиков игр, тон — свой, история"
+        text={
+          "Расскажу про инструмент, который сделал для себя, а получился " +
+          "продукт.\n\n" +
+          "Я делаю слоты, и мои ИИ-агенты (Claude Code / Cursor) постоянно " +
+          "уверенно отвечали по устаревшим докам платформы — модель же " +
+          "училась год назад. Надоело. Собрал mozg.sh: вставляешь одну " +
+          "ссылку на документацию → краулер вычитывает всё (GitHub-репо, " +
+          "llms.txt, sitemap) → получается «мозг», который агент дергает по " +
+          "MCP и отвечает по спеке дословно, а не по памяти.\n\n" +
+          "Главная фишка — экзамен. Цель мозга превращается в ~30 " +
+          "контрольных вопросов, и после каждой загрузки он их пересдаёт: " +
+          "«обучен на 88%» — это измерено, и провальные вопросы висят " +
+          "публично. То есть видно, чему агент реально научился, а где " +
+          "будет врать. Плюс мозг умнеет от использования: вопрос, на " +
+          "который он не ответил, сам становится вопросом экзамена.\n\n" +
+          "Для геймдева уже есть бесплатные мозги (Stake Engine целиком — " +
+          "RGS API, математика, аппрув) и платные поглубже (Slot Studio: " +
+          "механики, чеклист аппрува — за что реально реджектят, " +
+          "комплаенс). Любой платный отвечает на 5 запросов бесплатно " +
+          "прямо из агента — можно прожарить до покупки.\n\n" +
+          "И бонус: любой мозг открывается как курс для человека на " +
+          "learn.mozg.sh — карточки, интервальные повторения, и тот же " +
+          "экзамен в конце. Можно попробовать обогнать своего агента по " +
+          "баллам :)\n\n" +
+          "Сам этим шипплю каждый день. Баги и «мозг тут наврал» — " +
+          "кидайте, чиню быстро: https://mozg.sh"
+        }
+      />
 
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Week 1 — MCP ecosystem</h2>
       <Block
