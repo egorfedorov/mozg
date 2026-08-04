@@ -22,13 +22,23 @@ const JUDGE_BATCH = 5;
 
 // ─── generating the checks ───────────────────────────────────────────────────
 
+// Tolerant on purpose: the model writing the exam is the cheap one, and a
+// weight of 3.5 or an 90-char category label is a repairable answer, not a
+// reason to fail the whole sitting. Repair what can be repaired, drop what
+// cannot, and only give up when nothing survives.
 const generated = z.object({
   checks: z.array(
     z.object({
-      category: z.string().min(1).max(80),
+      category: z
+        .string()
+        .min(1)
+        .transform((s) => s.slice(0, 80)),
       question: z.string().min(1),
       expect: z.string().min(1),
-      weight: z.number().int().min(1).max(5),
+      weight: z.coerce
+        .number()
+        .catch(1)
+        .transform((w) => Math.min(5, Math.max(1, Math.round(w)))),
     }),
   ),
 });
@@ -102,9 +112,28 @@ export async function generateChecks(brain: Brain): Promise<number> {
   });
 
   const parsed = generated.safeParse(raw);
-  if (!parsed.success) throw new Error("check generation schema mismatch");
-
-  const checks = parsed.data.checks.slice(0, MAX_CHECKS);
+  let checks: z.infer<typeof generated>["checks"];
+  if (parsed.success) {
+    checks = parsed.data.checks;
+  } else {
+    // Salvage per item before giving up on the batch.
+    const items = Array.isArray((raw as { checks?: unknown[] })?.checks)
+      ? (raw as { checks: unknown[] }).checks
+      : [];
+    checks = items.flatMap((i) => {
+      const p = generated.shape.checks.element.safeParse(i);
+      return p.success ? [p.data] : [];
+    });
+    if (!checks.length) {
+      throw new Error(
+        `check generation schema mismatch: ${parsed.error.issues
+          .slice(0, 3)
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ")}`,
+      );
+    }
+  }
+  checks = checks.slice(0, MAX_CHECKS);
 
   // One transaction: as separate statements a crash between the delete and
   // the inserts left the brain with zero generated checks, and the next exam
@@ -170,9 +199,50 @@ export interface ExamResult {
   carried: number;
 }
 
+/**
+ * Searches that returned nothing are gap reports filed by real callers — the
+ * one signal about what the brain is missing that nobody had to write. The
+ * top recent misses become exam checks, so the whole improvement machinery
+ * (focused rereads, site top-up, the board's red slots) aims at what people
+ * actually asked instead of only what the goal implied.
+ *
+ * Owner-disabled usage checks stay dead: dedup is by question text across
+ * all origins, enabled or not.
+ */
+export async function syncUsageChecks(brain: Brain, scope: string[]): Promise<number> {
+  const misses = await query<{ query: string }>(
+    `select query from calls
+      where brain_id = any($1::uuid[]) and tool = 'brain_search'
+        and ok and results = 0 and length(trim(query)) >= 12
+        and created_at > now() - interval '30 days'
+      group by query
+      order by count(*) desc, max(created_at) desc limit 10`,
+    [scope],
+  );
+
+  let added = 0;
+  for (const m of misses) {
+    const r = await query(
+      `insert into checks (brain_id, category, question, expect, origin)
+       select $1, 'asked in real use', $2,
+              'Material that actually answers this — it was asked and the brain had nothing.',
+              'usage'
+        where not exists (
+          select 1 from checks
+           where brain_id = $1 and lower(trim(question)) = lower(trim($2)))
+       returning id`,
+      [brain.id, m.query.trim()],
+    );
+    added += r.length;
+  }
+  return added;
+}
+
 export async function runExam(brainId: string): Promise<ExamResult | null> {
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain.goal) return null;
+
+  await syncUsageChecks(brain, await familyIds(brain));
 
   let checks = await query<Check>(
     `select * from checks where brain_id = $1 and enabled`,
