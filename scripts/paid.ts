@@ -18,6 +18,10 @@ import { one, maybeOne, query, toVector } from "@/db";
 import type { Brain } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages, embedHealthy } from "@/lib/embed";
+import { NOTES as complianceNotes } from "../content/paid/compliance";
+import { NOTES as auditorNotes } from "../content/paid/auditor";
+import { NOTES as appstoreNotes } from "../content/paid/appstore";
+import { NOTES as quantNotes } from "../content/paid/quant";
 
 export interface PaidNote {
   title: string;
@@ -49,7 +53,7 @@ const PAID: PaidPack[] = [
       "messaging that gets a submission or a page rejected.",
     topic: "gamedev",
     priceCents: 1900,
-    load: async () => (await import("../content/paid/compliance")).NOTES,
+    load: async () => complianceNotes,
   },
   {
     key: "auditor",
@@ -64,7 +68,7 @@ const PAID: PaidPack[] = [
       "items, not general advice.",
     topic: "security",
     priceCents: 4900,
-    load: async () => (await import("../content/paid/auditor")).NOTES,
+    load: async () => auditorNotes,
   },
   {
     key: "appstore",
@@ -78,7 +82,7 @@ const PAID: PaidPack[] = [
       "the workarounds that pass versus the ones that get accounts banned.",
     topic: "mobile",
     priceCents: 1900,
-    load: async () => (await import("../content/paid/appstore")).NOTES,
+    load: async () => appstoreNotes,
   },
   {
     key: "quant",
@@ -93,7 +97,7 @@ const PAID: PaidPack[] = [
       "the production pitfalls that lose money.",
     topic: "trading",
     priceCents: 2900,
-    load: async () => (await import("../content/paid/quant")).NOTES,
+    load: async () => quantNotes,
   },
 ];
 

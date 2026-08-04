@@ -268,4 +268,52 @@ export const NOTES: {
     category: "Store and platform submissions",
     kind: "rule",
   },
+  {
+    title: "What age gate does a social casino need, and is 18+ always sufficient?",
+    body: "18+ is the standard sweepstakes-casino gate, but not universally sufficient: Nebraska's age of majority is 19, and Alabama has its own quirks — platforms serving those states gate at 19+ there (as of early 2026; age-of-majority rules drift, verify per jurisdiction). The mechanics matter as much as the number: the gate must be enforced at signup BEFORE any game access — a birthday field after the lobby loads fails — must verify legal adult age before presenting any casino-mode screen, and must be combined with self-attestation plus geo signals, not just an honor checkbox. Reviewers test by entering an under-age birthdate and checking they can still reach a game. Keep the per-state age table in configuration, because a hardcoded 18 breaks the first time counsel updates the list.",
+    category: "Jurisdiction gating",
+    kind: "rule",
+  },
+  {
+    title: "Which US states must a sweepstakes casino block, and is geo-IP alone enough?",
+    body: "The commonly excluded set as of early 2026: Washington and Idaho (sweepstakes-hostile statutes), Nevada and Michigan (regulator pressure), Kentucky, New York, Vermont — and increasingly Louisiana, Mississippi, and Missouri, which moved against sweepstakes casinos in 2025. Treat this list as configuration owned by counsel, re-verified every release — it changes quarterly. Enforcement: geo-IP is necessary but NOT sufficient alone. The required stack is geo-IP lookup at signup and purchase, plus user self-attestation of state of residence, plus age verification — and purchase flows must re-check, because a player who registered in a permitted state and travels must not be able to buy from a blocked one. VPNs are the known bypass; platforms log and act on mismatch signals rather than claiming to defeat VPNs.",
+    category: "Jurisdiction gating",
+    kind: "fact",
+  },
+  {
+    title: "What responsible-gambling messaging must a social casino show users?",
+    body: "The required messaging set: (1) a plain statement that Gold Coins / virtual currency has NO cash value and cannot be redeemed — this is the line that separates social casino from gambling, and its absence is a hard fail; (2) the AMOE disclosure (alternate method of entry — free entry without purchase) wherever sweeps prizes are promoted; (3) links to responsible-gaming resources; (4) a visible self-exclusion path; (5) session warnings — time and loss-limit prompts during long sessions. Placement: the no-cash-value and AMOE statements belong on the promo surfaces and purchase flow themselves, not only in T&Cs. The audit: open the purchase screen and the main lobby — if neither states 'no cash value' and 'no purchase necessary', the submission fails on copy alone.",
+    category: "Responsible gambling",
+    kind: "rule",
+  },
+  {
+    title: "The always-on UI list — every element that must survive turbo and autoplay",
+    body: "Complete list of elements that must remain visible in EVERY mode: current balance, current play amount, last win/prize display, session clock or session-time information, a paused-autoplay indicator whenever autoplay is halted (the player must see WHY spinning stopped — limit hit vs feature trigger), and the responsible-gambling warning banner whenever a session limit triggers it. Plus one-tap access to the settings button for session limits and self-exclusion. Turbo and autoplay may rearrange layout but may not hide, collapse, or auto-dismiss any of these. Reviewers enable turbo+autoplay, trigger a stop condition, and screenshot: if the pause reason or any of the six elements is missing from that frame, the build fails.",
+    category: "Responsible gambling",
+    kind: "rule",
+  },
+  {
+    title: "Turbo speed: the minimum spin duration that gets games rejected",
+    body: "Platforms enforce a minimum play duration per round — commonly around 0.5 seconds per spin as of early 2026 (verify the current value in the platform's frontend requirements; it has tightened over time). Turbo modes that complete a round faster than the minimum are rejected, as is any 'instant result' setting that skips the spin presentation entirely. Related rules that compound with speed: turbo must default OFF (player opts in), there must always be a visible toggle back to standard speed, and turbo must not strip the win presentation — final win display and winning-combination highlight stay on screen for a fixed readable minimum regardless of speed. Stores and platforms treat predatory speed as a dark pattern: the reviewer test is one hand on turbo, one on autoplay, watching whether a human can still register each outcome.",
+    category: "Store and platform submissions",
+    kind: "rule",
+  },
+  {
+    title: "Tile text limits and what tiles must not contain — the complete list",
+    body: "Stake's docs specify composition, not fixed character counts: the constraint is the title height guide, maximum 2 text sizes, and title filling the text-box width — in practice keep the game name under ~20 characters so the builder doesn't truncate on small tiles (verify per current tile spec). The prohibited list: baked-in wording or multipliers; prize/jackpot claims and RTP figures; misleading badges; restricted gambling terms; AND three more reviewers check — nothing appealing to minors (cartoon mascots in toy-like styles, candy-bright palettes aimed at kids), no third-party brand assets or lookalikes (trademark infringement is an instant bounce), and no fake social proof (invented review quotes, player counts). The tile is re-reviewed on every game update, not just first submission — a tile that passed last quarter can fail today under tightened art rules.",
+    category: "Store and platform submissions",
+    kind: "rule",
+  },
+  {
+    title: "Can I use 'payout' in Gold Coins mode — and what are the approved alternatives?",
+    body: "No. 'Payout' implies real-money gambling winnings even in Gold Coins mode — it's on the restricted list in every social-mode context. Approved replacements: 'award' ('awards 500x your play amount'), 'earn' ('earn up to 1,000 coins'), 'accumulate' for progressive language, and currency-specific framing like 'Gold Coin total' or 'coin balance'. Same family of banned money verbs: 'pays out', 'cash prize', 'winnings' (use 'prize' or 'win total'), 'withdraw' (use 'redeem' only for sweeps prizes with the required disclosures). The pattern to teach your copywriter: Gold Coins are won and lost, never paid — the moment a sentence describes money moving TO the player, it's gambling copy.",
+    category: "Prohibited terminology",
+    kind: "example",
+  },
+  {
+    title: "Where must the 'no purchase necessary' disclosure appear?",
+    body: "Three mandatory placements, all of them prominent: (1) at game start or on the first promo surface the player sees — the disclosure must precede the first sweeps-prize claim, not follow it; (2) inside the rules/terms modal, adjacent to the prize rules themselves; (3) immediately before any payment option — the purchase screen must show it at the point of decision. A footer-only disclosure fails: buried-in-footer is the canonical sweepstakes-law violation pattern, and reviewers specifically check that the statement appears in the purchase flow, not just the page chrome. Pair it with the AMOE (free entry method) disclosure in the same spots — 'no purchase necessary' without a stated free entry path is considered empty. Font must be legible at normal reading distance; 6px grey-on-grey disclosure text counts as absent.",
+    category: "Sweepstakes model rules",
+    kind: "rule",
+  },
 ];

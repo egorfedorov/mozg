@@ -252,4 +252,22 @@ export const NOTES: {
     category: "Audit workflow and tooling",
     kind: "pitfall",
   },
+  {
+    title: "Where does integer division rounding actually lose money — the precise mechanic?",
+    body: "Solidity division always truncates toward zero — a / b drops the remainder every time. Concrete loss pattern: a fee of 3% computed as amount * 3 / 100 is fine (multiply first), but amount / 100 * 3 or fee = amount * rate / BPS where amount * rate < BPS yields 0 — a 10-wei liquidation payout at (10 * 3) / 40 = 0 wei means the liquidator works for free and stops calling, or a small depositor's fee rounds to zero and they trade fee-free while large depositors pay. The mirror image: vault share calculations that round DOWN on mint and UP on redeem let an attacker drain via repeated small deposit/redeem cycles — the basis of the ERC-4626 inflation attack. Rules: always multiply before dividing; round in the protocol's favor (against the user-facing value being paid out); add a minimum-amount guard so truncated-to-zero operations revert instead of silently succeeding.",
+    category: "Arithmetic and rounding",
+    kind: "example",
+  },
+  {
+    title: "The concrete reentrancy audit checklist — what do I look for in code?",
+    body: "Work it mechanically: (1) enumerate every external call — .call(), .delegatecall(), .transfer()/.send(), ERC-20 transfer/transferFrom/safeTransfer, and any call into an address the user can influence. (2) For each, list state written AFTER the call — balance zeroed after .call{value:} is the classic bug. (3) Check what the callee can re-enter: same function (classic), a different function sharing the same state (cross-function), a different contract reading your mid-transaction state (read-only reentrancy in LP pricing). (4) Look for hooks that hand control to the receiver: ERC-777 tokensReceived, ERC-721/1155 onReceived, ETH fallback/receive. (5) Verify the fix pattern: checks-effects-interactions ordering, or ReentrancyGuard on every entry point touching the same state. (6) Test it: write the attacker contract whose fallback re-enters, and run it as a foundry fork test — a finding without a PoC is a guess.",
+    category: "Reentrancy Detection & Mechanics",
+    kind: "rule",
+  },
+  {
+    title: "I see withdraw() calling token.transfer() to the caller — is it reentrant?",
+    body: "Distinguish three cases. ETH via .transfer()/.send() forwards a 2300-gas stipend, which historically blocked reentry callbacks — but gas costs shift between hard forks (Istanbul broke many assumptions), so stipend-as-protection is deprecated: treat it as no protection. ETH via .call{value:}(\"\") forwards all gas — fully reentrant. ERC-20 token.transfer() has NO stipend concept at all: plain ERC-20s (USDC-style) cannot call back, but ERC-777 hooks, ERC-1363, and any token with transfer callbacks hand control to the receiver, and a malicious custom token always can. So the answer: against known vanilla ERC-20s it's not exploitable; against ETH .call, callback tokens, or unknown tokens it is. Audit rule: never rely on the callee being benign — apply CEI or a guard regardless of which transfer flavor you see.",
+    category: "Reentrancy Detection & Mechanics",
+    kind: "fact",
+  },
 ];

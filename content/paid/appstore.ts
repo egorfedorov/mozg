@@ -309,4 +309,58 @@ export const NOTES: {
     category: "Special categories",
     kind: "rule",
   },
+  {
+    title: "How do Google Play strikes and enforcement escalation work?",
+    body: "Play's ladder: policy warning (app stays live, fix-by deadline) → suspension (app removed from the store; this is the strike that counts) → termination (developer account closed) after repeated suspensions — Google does not publish a fixed strike count, and the pattern that matters is repeated violations of the SAME policy or systematic evasion, not a magic number. Strikes are visible in Play Console's policy status section per app, with the violation and the appeal path. Appeal windows: each enforcement email and the Console notice carry the appeal link; appeals for suspensions are reviewed by a human team, and a successful appeal removes the strike from the account record. Key mechanics to know: a rejected UPDATE is not a strike (the live version stays), but a suspended app is; and fixing-and-resubmitting without addressing the cited policy counts as evasion when repeated. Track your own suspension history — Play does.",
+    category: "Account safety and bans",
+    kind: "fact",
+  },
+  {
+    title: "Rejected under 2.3.1 — what will reviewers test in my resubmission?",
+    body: "After a 2.3.1 (hidden features) rejection, resubmission gets MORE scrutiny, not a fresh look: reviewers diff the new binary against the rejected one (static analysis flags added/removed symbols and capability strings), re-run the review-conditions-vs-normal-conditions comparison, and specifically probe anything toggleable — remote config endpoints, feature-flag SDKs, server-driven content switches. What counts as 'hidden': functionality reachable only via undocumented gestures, flags, accounts, or server states; code paths present but not exercised in the review build; behavior that changes by date, region, or user cohort after approval. How to pass: strip dead code and unused flags, declare every remotely-toggleable behavior in review notes with instructions to reach it, and if a feature was the problem, remove it entirely rather than gating it deeper. A cover letter listing what was removed and how to verify converts these rejections; silence gets a faster second rejection.",
+    category: "High-severity guideline clauses",
+    kind: "rule",
+  },
+  {
+    title: "What are the top rejection clauses across App Store and Google Play?",
+    body: "By practical frequency for indie/mobile teams: (1) Apple 2.1 App Completeness — crashes, placeholder content, missing demo account; the single most common first-submission rejection. (2) Apple 5.1.1 / Play User Data — privacy label or Data safety form mismatched to actual collection, forced registration, purpose strings. (3) Apple 3.1.1 / Play Payments — digital goods sold outside IAP/Play billing, unauthorized external purchase links. (4) Apple 4.2/4.3 — minimum functionality and spam/duplicate/template apps; hits web-wrappers and white-label fleets hardest. (5) Apple 2.3 / Play Store Listing — metadata: screenshots not matching the build, keyword stuffing, misleading claims. Severity ranking differs from frequency: 2.3.1 hidden features and Deceptive Behavior are rarer but account-threatening, while 2.1 is constant but cheap to fix. Prepare for the top five and you clear ~90% of first-pass rejections.",
+    category: "High-severity guideline clauses",
+    kind: "fact",
+  },
+  {
+    title: "Are there hard rules for the 'What's New' text in App Store updates?",
+    body: "Yes. App Store Connect gives 'What's New' a 4,000-character field (same ceiling as the description), but the effective limit is attention — reviewers and users read the first two lines. It IS reviewed with each version: misleading changelog content (describing features not in the build), marketing or sales language ('50% off this week!'), external links or contact solicitations, and references to other platforms are all rejection triggers under 2.3 metadata rules. The pattern that passes: terse, factual, user-facing changes ('Fixes a crash when exporting large files; adds dark mode to the settings screen'). The pattern that fails: 'Bug fixes and improvements' copy-pasted for 20 versions while the app visibly changes — reviewers read that as concealing changes, which feeds 2.3.1 suspicion. Google Play's release notes follow the same practical rules under the Store Listing policy.",
+    category: "Metadata and screenshots",
+    kind: "rule",
+  },
+  {
+    title: "The 5.1.1(v) account deletion requirement — implementation rules and exceptions",
+    body: "If your app supports account creation, deletion must be available IN-APP since 2022: a findable path (settings-level, not hidden in a web form), that initiates full deletion — not deactivation, not logout. Implementation rules reviewers test: deletion must complete without forcing the user to re-authenticate through extra barriers (a confirmation is fine; 'email support from your registered address' is not); the action must be real — test accounts they create during review must actually disappear, and a 'we'll delete within 30 days' holding pattern fails unless regulation requires retention. Exceptions are narrow: apps in highly regulated industries (banking, health records) may route deletion through a verified process, and accounts with legal retention duties (transaction records) may delete the profile while retaining mandated data — but this must be explained in the deletion UI. A web-link to a deletion page is acceptable only if it deletes, not if it opens a support ticket.",
+    category: "Privacy and permissions",
+    kind: "rule",
+  },
+  {
+    title: "What can Apple reviewers actually see and test — and what's invisible to them?",
+    body: "They test on real current devices with a 5–15 minute session: fresh install, every visible button, account creation with their own test emails, IAP purchase flows in the sandbox environment, permission prompts, and airplane-mode behavior. They see the client completely — UI, network calls from the device (including your analytics beacons), crash logs on their device. They do NOT see: your backend, your logs, your database, other users' data, or anything behind your server — which is why a backend that's down during review becomes a 2.1 rejection they cannot distinguish from a broken app. Practical consequences: your review-notes demo account must work from THEIR network (no IP allowlists); server-side flags they can't see must be declared; analytics must match the privacy label because the traffic is visible; and if a feature needs specific hardware, location, or a second user, put a video or demo mode in review notes — they cannot and will not arrange it.",
+    category: "Reviewer testing behaviour",
+    kind: "fact",
+  },
+  {
+    title: "What do gambling apps need beyond licenses to pass both stores?",
+    body: "Past the license paperwork, both platforms check four things. Age-gating: a real age gate at first launch (17+/18+ per market, date-of-birth entry — not a checkbox), enforced before any gambling screen renders. Responsible gambling: visible self-exclusion access, deposit/loss limit controls, links to problem-gambling resources (e.g. national helplines per market), and no 'guaranteed win' or risk-free framing anywhere. Geo-blocking that works: reviewers test from unlicensed-region accounts and expect hard blocks — IP-only gating with a working signup from a blocked territory fails; Apple's 5.3 and Play's RMG policy both require restriction to licensed territories by technical means, not disclaimers. Platform-specific: Apple requires the app to be FREE on the store for real-money gambling; Play requires enrollment in its RMG program per country. No simulated-gambling apps may target kids categories at all — 17+ rating minimum on Apple for any gambling mechanics.",
+    category: "Special categories",
+    kind: "rule",
+  },
+  {
+    title: "The complete documentation pack reviewers want from fintech and crypto apps",
+    body: "Assemble before submission — the default response to an undocumented finance app is rejection: (1) regulatory licenses/registrations for every operating region (money-transmitter, EMI, broker-dealer, VASP registrations as applicable); (2) KYC/AML policy summary and the name of your compliance contact or officer; (3) terms of service and privacy policy covering financial data specifically; (4) for lending: APR disclosure methodology and, on Play, the country-specific personal-loan declarations; (5) for crypto: proof the exchange/custody entity is licensed, and that the app is submitted under THAT entity's developer account; (6) custody/insurance arrangements where client funds are held (custodian name, insurance coverage summary); (7) category-specific: gambling licenses for anything with wagering mechanics. Upload as review-notes attachments, not on request — every round-trip costs a week, and 'available upon request' reads as 'doesn't exist'.",
+    category: "Special categories",
+    kind: "rule",
+  },
+  {
+    title: "UGC apps: CSAM detection, age-gating, and what reviewers test under 1.2",
+    body: "Beyond the five core 1.2 elements (filtering, reporting, blocking, contact, 24-hour action), reviewers and both platforms expect: CSAM handling — automated detection for image/video uploads (PhotoDNA-class hashing services or a vendor like Thorn; Apple requires reporting to NCMEC for US services and has rejected apps with no detection story), and a written policy you can produce; age-gating — UGC apps with mature content need 17+ ratings and age gates, and UGC accessible to minors needs stricter default filtering plus no adult-content discovery paths; prohibited-content rules published in-app (the acceptable-use policy must exist inside the app, not just on your website). What reviewers actually test: they create accounts, post text content, look for the report button on content AND on user profiles, attempt to find unmoderated public feeds, and check whether blocked users' content truly disappears. The standard rejection cites 'insufficient moderation' — the fix is demonstrating the queue exists and someone answers it.",
+    category: "Special categories",
+    kind: "rule",
+  },
 ];

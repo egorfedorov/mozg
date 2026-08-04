@@ -232,4 +232,28 @@ export const NOTES: {
     category: "Production pitfalls",
     kind: "pitfall",
   },
+  {
+    title: "How do stop orders work on Binance SPOT, and which trigger price applies?",
+    body: "Spot stop orders use dedicated order types: STOP_LOSS (triggers a MARKET sell when the last trade price falls to stopPrice), STOP_LOSS_LIMIT (triggers a LIMIT sell at your price), and TAKE_PROFIT / TAKE_PROFIT_LIMIT mirrored upward. Key facts that differ from futures: spot has NO mark price — the trigger is always the last traded price, there is no workingType parameter; STOP_LOSS (market) gives no guaranteed execution price — in a fast dump the fill can be far below stopPrice, while the _LIMIT variant can fail to fill at all and leave you holding through the drop. For combined take-profit + stop-loss on one position use an OCO order (orderList/oco): a limit-maker leg plus a stop-limit leg, where filling one cancels the other. Place stops via the same order endpoints with stopPrice in the request; verify the order is resting as a working conditional order, not executed immediately (stopPrice on the wrong side of the market triggers instantly).",
+    category: "Orders and fills",
+    kind: "fact",
+  },
+  {
+    title: "How do I read remaining rate-limit quota on Bybit v5 and OKX?",
+    body: "Bybit v5 returns quota in response headers: X-Bapi-Limit (the per-endpoint cap), X-Bapi-Limit-Status (remaining in the current window), X-Bapi-Limit-Reset-Timestamp (window reset, unix ms). Limits are per-endpoint per-UID and vary by account tier, so read the headers live instead of hardcoding numbers — log them when you approach the cap. OKX documents limits per endpoint as 'N requests per 2 seconds' (order endpoints are typically 60/2s for placement as of early 2026, but verify per endpoint and tier in the docs) and returns error code 50011 when breached; OKX does not give a uniform X-RateLimit-* header family across REST endpoints, so track client-side: a token bucket per endpoint group keyed to the documented window. On both exchanges, back off on the first breach — repeated hammering after 50011/10006 escalates from throttling to temporary bans.",
+    category: "Rate limits and bans",
+    kind: "rule",
+  },
+  {
+    title: "My market order didn't fill immediately — is that normal?",
+    body: "Usually yes, and the causes are diagnosable. Partial fill: book depth at the top levels is smaller than your size — the remainder of a spot MARKET order either fills walking the book or expires (Binance spot market orders fill what liquidity allows; check executedQty vs origQty, and the fills array for per-trade prices). Rejected outright: notional below the pair's minNotional/MIN_NOTIONAL filter — a $3 order on a $5-minimum pair never reaches the book, and this is the most common 'nothing happened' cause; also price/quantity precision filters. Delayed: during volatility spikes the matching engine and API gateway queue — REST ack can lag seconds while the order is actually live, which is why you must never blind-retry: query the order by clientOrderId first. Slippage: a large market order walks multiple levels — read avgPrice from fills, not the ticker price you saw when sending.",
+    category: "Orders and fills",
+    kind: "pitfall",
+  },
+  {
+    title: "Do WebSocket connections have rate limits, or are they unlimited?",
+    body: "They have limits, on two layers. Connection layer: Binance caps new WS connections per IP (5 per minute historically — verify current), and streams drop after 24 hours by design, so reconnect logic is mandatory; invalid frames or too many subscription messages per connection get the socket closed. Order layer: the Binance WebSocket API (placing orders over WS) carries its own order rate limit — 10 orders per second per connection, plus the same per-account order limits as REST; exceeding returns an error frame, and abuse closes the connection. Bybit v5 WS enforces per-endpoint and per-connection message limits with its own retCodes; OKX applies account-level limits to WS order channels too. Design rule: one WS connection multiplexed for streams, REST for burst order flow, and never assume a socket that accepted your message executed it — confirm via the execution report or a REST order query.",
+    category: "Rate limits and bans",
+    kind: "fact",
+  },
 ];
