@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "sh.mozg/mozg",
+  "title": "mozg",
+  "description": "Exam-scored knowledge brains your agent searches over MCP, plus a public list of their gaps.",
+  "version": "0.1.0",
+  "websiteUrl": "https://mozg.sh",
+  "repository": {
+    "url": "https://github.com/egorfedorov/mozg",
+    "source": "github",
+    "id": "1321067515"
+  },
+  "icons": [
+    {
+      "src": "https://mozg.sh/brand/mozg-icon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mozg.sh/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token from https://mozg.sh/settings/tokens — e.g. \"Bearer mzg_...\". Clients that speak MCP OAuth can leave this empty and sign in instead.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

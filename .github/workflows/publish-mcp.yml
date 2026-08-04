@@ -1,0 +1,29 @@
+name: Publish to MCP Registry
+
+# mozg is a hosted remote server, so nothing is built or uploaded here — only
+# the server.json metadata that points clients at https://mozg.sh/mcp. The
+# registry refuses to re-publish a version it already has, so bump the
+# "version" field in server.json before running this.
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      # Domain auth: the registry fetches the public key from
+      # https://mozg.sh/.well-known/mcp-registry-auth and, on a matching
+      # signature, grants the sh.mozg/* namespace. See docs/REGISTRY.md.
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login http --domain mozg.sh --private-key "${{ secrets.MCP_PRIVATE_KEY }}"
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish

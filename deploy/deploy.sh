@@ -63,7 +63,9 @@ ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app np
 
 say "5/5  smoke test"
 fail=0
-for path in / /explore /mcp /robots.txt; do
+# /.well-known/mcp-registry-auth is our domain proof for the MCP Registry: if it
+# stops serving, the next publish cannot authenticate (see docs/REGISTRY.md).
+for path in / /explore /mcp /robots.txt /.well-known/mcp-registry-auth; do
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "$URL$path")
   printf '  %-14s %s\n' "$path" "$code"
   [ "$code" = 200 ] || fail=1
