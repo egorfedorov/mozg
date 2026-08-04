@@ -41,3 +41,22 @@ test("past the cap fails loudly instead of dropping the tail", async () => {
   const { segments } = await load();
   assert.throws(() => segments("x".repeat(800_000)), /Split it into smaller sources/);
 });
+
+test("a model's bad label costs the field, not the page", async () => {
+  const { responseSchema } = await import("./extract");
+  const parsed = responseSchema.parse({
+    notes: [
+      {
+        title: "x".repeat(300),
+        body: "The play endpoint returns 400 with code ERR_IS.",
+        kind: "api-detail", // invented enum value — the observed haiku slip
+        category: "y".repeat(120),
+        confidence: 1.4,
+      },
+    ],
+  });
+  assert.equal(parsed.notes[0].kind, "fact");
+  assert.equal(parsed.notes[0].title.length, 200);
+  assert.equal(parsed.notes[0].category.length, 80);
+  assert.equal(parsed.notes[0].confidence, 1);
+});

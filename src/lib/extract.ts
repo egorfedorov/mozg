@@ -27,14 +27,18 @@ export interface ExtractResult {
   usage: { inputTokens: number; outputTokens: number; costCents: number };
 }
 
-const responseSchema = z.object({
+// Lenient where a model's slip is repairable: a made-up kind, an over-long
+// title or a confidence of 1.2 must cost that field its polish, not the whole
+// page its extraction — smaller models invent enum values now and then, and
+// one bad label was failing a segment that held ten good notes.
+export const responseSchema = z.object({
   notes: z.array(
     z.object({
-      title: z.string().min(1).max(200),
+      title: z.string().min(1).transform((s) => s.slice(0, 200)),
       body: z.string().min(1),
-      kind: z.enum(NOTE_KINDS),
-      category: z.string().min(1).max(80),
-      confidence: z.number().min(0).max(1),
+      kind: z.enum(NOTE_KINDS).catch("fact"),
+      category: z.string().min(1).transform((s) => s.slice(0, 80)),
+      confidence: z.number().catch(0.7).transform((n) => Math.min(1, Math.max(0, n))),
     }),
   ),
 });
