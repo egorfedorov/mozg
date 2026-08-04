@@ -132,16 +132,13 @@ export default function MindMap({ brains }: { brains: MindBrain[] }) {
                 </details>
               )}
               {b.gaps.length > 0 && (
-                <details>
-                  <summary className="mono" style={{ fontSize: ".75rem", cursor: "pointer", color: "var(--color-riso-red)" }}>
-                    ✕ don&apos;t trust it on…
-                  </summary>
-                  <ul style={{ margin: ".4rem 0 0", paddingLeft: "1rem", fontSize: ".8125rem", color: "var(--ink-2)", display: "grid", gap: ".3rem" }}>
-                    {b.gaps.map((g, i) => (
-                      <li key={i}>{g}</li>
-                    ))}
-                  </ul>
-                </details>
+                <p
+                  className="mono"
+                  style={{ margin: ".5rem 0 0", fontSize: ".6875rem", color: "var(--ink-3)" }}
+                  title="Categories where the latest exam still fails — the brain keeps feeding itself here"
+                >
+                  still learning: {b.gaps.join(" · ")}
+                </p>
               )}
             </div>
 
