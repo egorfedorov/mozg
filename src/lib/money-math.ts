@@ -7,7 +7,7 @@
  */
 
 /** The platform's share of a sale, in percent. */
-export const PLATFORM_FEE_PERCENT = 30;
+export const PLATFORM_FEE_PERCENT = 5;
 
 export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;

@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query } from "@/db";
 import type { Plan } from "@/db/types";
+import { limitsFor } from "@/lib/plans";
 
 /**
  * MCP access tokens.
@@ -78,16 +79,15 @@ export async function revokeToken(userId: string, tokenId: string): Promise<void
   );
 }
 
-/** Monthly call quota, checked against `calls` — the same table billing reads. */
-const MONTHLY_CALLS: Record<Plan, number> = { free: 300, pro: 10_000, team: 50_000 };
-
 export async function quotaRemaining(userId: string, plan: Plan): Promise<number> {
   const row = await maybeOne<{ used: number }>(
     `select count(*)::int as used from calls
       where caller_id = $1 and created_at >= date_trunc('month', now())`,
     [userId],
   );
-  return Math.max(0, MONTHLY_CALLS[plan] - (row?.used ?? 0));
+  // lib/plans.ts is the one table for limits — a local copy here is how the
+  // settings page and the enforcement drift apart.
+  return Math.max(0, limitsFor(plan).calls - (row?.used ?? 0));
 }
 
 /**

@@ -12,16 +12,16 @@ test("the split never loses or invents a cent", () => {
 });
 
 test("rounding goes to the author, not to us", () => {
-  // $0.01 at a 30% fee is 0.3 cents of fee — it cannot be charged, so the
-  // author keeps the whole cent rather than us keeping it.
+  // At a 5% fee, a fee under one whole cent cannot be charged — the author
+  // keeps the whole amount rather than us keeping the fraction.
   assert.equal(sellerShare(1), 1);
-  assert.equal(sellerShare(10), 7);
+  assert.equal(sellerShare(10), 10);
   assert.equal(sellerShare(999), 999 - Math.floor(999 * PLATFORM_FEE_PERCENT / 100));
 });
 
 test("a round price splits the obvious way", () => {
-  assert.equal(sellerShare(1000), 700); // $10 → $7
-  assert.equal(sellerShare(500), 350); // $5 → $3.50
+  assert.equal(sellerShare(1000), 950); // $10 → $9.50
+  assert.equal(sellerShare(500), 475); // $5 → $4.75
 });
 
 test("formatting is always two decimals", () => {
