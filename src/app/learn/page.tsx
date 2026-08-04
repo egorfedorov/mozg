@@ -3,6 +3,7 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import LearnShell from "./LearnShell";
 import { tintFor } from "@/lib/brains";
+import { topicLabel } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function LearnHome() {
   const brains = await query<{
     id: string;
     color: string;
+    topic: string | null;
     handle: string;
     slug: string;
     title: string;
@@ -37,25 +39,25 @@ export default async function LearnHome() {
   }>(
     user
       ? `with mine as (
-           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from brains b
+           select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score from brains b
              join "user" u on u.id = b.owner_id
             where b.owner_id = $1
            union
-           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from library l
+           select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score from library l
              join brains b on b.id = l.brain_id join "user" u on u.id = b.owner_id
             where l.user_id = $1
            union
-           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+           select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
              join brains b on b.id = pu.brain_id join "user" u on u.id = b.owner_id
             where pu.buyer_id = $1
            union
            -- A bundle purchase is a course bundle too: the parent's children
            -- belong on the buyer's shelf.
-           select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+           select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
              join brains b on b.parent_id = pu.brain_id join "user" u on u.id = b.owner_id
             where pu.buyer_id = $1
          )
-         select m.id, m.color, m.handle, m.slug, m.title, m.goal, m.score,
+         select m.id, m.color, m.topic, m.handle, m.slug, m.title, m.goal, m.score,
                 (select count(*) from notes n where n.brain_id = m.id and n.status = 'active')::int
                 + (select count(*) from checks c where c.brain_id = m.id and c.enabled)::int as cards,
                 (select count(*) from learn_progress p
@@ -63,21 +65,21 @@ export default async function LearnHome() {
                 (select count(*) from learn_progress p
                   where p.user_id = $1 and p.brain_id = m.id)::int as seen
            from mine m order by due desc, cards desc limit 40`
-      : `select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score,
+      : `select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score,
                 (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
                 + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
                 0 as due, 0 as seen
            from brains b join "user" u on u.id = b.owner_id
           where b.visibility = 'public' and b.price_cents = 0 and u.handle is not null
             and b.note_count > 0
-          order by b.score desc nulls last limit 24`,
+          order by b.topic, b.score desc nulls last limit 24`,
     user ? [user.id] : [],
   );
 
   // The free shelf shows for everyone — a signed-in person with an empty
   // library is exactly the visitor who needs somewhere to start.
   const free = await query<(typeof brains)[number]>(
-    `select b.id, b.color, u.handle, b.slug, b.title, b.goal, b.score,
+    `select b.id, b.color, b.topic, u.handle, b.slug, b.title, b.goal, b.score,
             (select count(*) from notes n where n.brain_id = b.id and n.status = 'active')::int
             + (select count(*) from checks c where c.brain_id = b.id and c.enabled)::int as cards,
             0 as due, 0 as seen
@@ -85,7 +87,7 @@ export default async function LearnHome() {
       where b.visibility = 'public' and b.price_cents = 0 and u.handle is not null
         and b.note_count > 0
         and not (u.handle || '/' || b.slug = any($1::text[]))
-      order by b.score desc nulls last limit 24`,
+      order by b.topic, b.score desc nulls last limit 24`,
     [brains.map((b) => `${b.handle}/${b.slug}`)],
   );
 
@@ -126,7 +128,7 @@ export default async function LearnHome() {
               data-tint={tintFor(b)}
             >
               <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
-                course · {b.handle}
+                {topicLabel(b.topic)} · course
               </span>
               <h3 className="card-title">{b.title}</h3>
               <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
@@ -154,8 +156,11 @@ export default async function LearnHome() {
             <h2 className="h2" style={{ margin: "2.5rem 0 1rem" }}>
               {user ? "Free brains to add" : "More free brains"}
             </h2>
+            {[...new Map(free.map((b) => [topicLabel(b.topic), true])).keys()].map((label) => (
+              <section key={label} style={{ marginBottom: "1.75rem" }}>
+                <p className="eyebrow" style={{ margin: "0 0 .6rem" }}>{label}</p>
             <div className="grid-brains">
-              {free.map((b) => (
+              {free.filter((b) => topicLabel(b.topic) === label).map((b) => (
                 <Link
                   key={`${b.handle}/${b.slug}`}
                   href={`/learn/${b.handle}/${b.slug}`}
@@ -163,7 +168,7 @@ export default async function LearnHome() {
                   data-tint={tintFor(b)}
                 >
                   <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
-                    free course · {b.handle}
+                    free {topicLabel(b.topic)} · course
                   </span>
                   <h3 className="card-title">{b.title}</h3>
                   <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
@@ -174,6 +179,8 @@ export default async function LearnHome() {
                 </Link>
               ))}
             </div>
+              </section>
+            ))}
           </>
         )}
       </main>
