@@ -194,7 +194,7 @@ export default async function PricingPage() {
               Top up balance
             </Link>
             <Link className="btn btn-ghost" href="/explore?price=paid">
-              See paid brains
+              Browse the catalogue
             </Link>
           </div>
         </section>

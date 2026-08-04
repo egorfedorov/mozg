@@ -595,6 +595,25 @@ export default async function MarketingPage() {
       />
 
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Evergreen</h2>
+      <Block
+        title="The star ask"
+        hint="X / Discord / end of any post — never begs, always trades"
+        text={
+          "We open-sourced everything yesterday: the exam engine, the crawler, " +
+          "the collective-mind loop, the spaced-repetition courses — the whole " +
+          "product, AGPL, one docker compose away.\n\n" +
+          "Here's the honest deal on stars: mozg has no ad budget and no " +
+          "growth team. It has one mechanic — brains get smarter with every " +
+          "person who uses them — which means every developer who finds this " +
+          "makes it better for everyone who already did. A star is how the " +
+          "next person finds it.\n\n" +
+          "If an agent of yours ever answered from year-old docs with total " +
+          "confidence, that's who this is for:\n" +
+          "⭐ https://github.com/egorfedorov/mozg\n\n" +
+          "And if it's not star-worthy yet — tell me why instead, that's " +
+          "worth more: https://mozg.sh/chat"
+        }
+      />
       <Block title="The collective-mind post" hint="X / LinkedIn / blog intro" text={collectivePost} />
       <Block title="Cold DM" hint="personalise the brackets" text={dm} />
 

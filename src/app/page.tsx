@@ -578,8 +578,9 @@ export default async function Home() {
               Stop explaining the same thing.
             </h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              Free reads the catalogue, buys brains and connects your agents —
-              three hundred calls a month. Building your own starts at $25.
+              Open source, and the whole catalogue is free — connect your
+              agents in a minute. Build your own on our inference, or bring
+              your own API key and pay nobody.
             </p>
           </div>
           <Link className="btn" href={user ? "/brains" : "/sign-in"}>
