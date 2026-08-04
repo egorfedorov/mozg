@@ -7,7 +7,7 @@ import { maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
-import { scanSecrets, scanPII } from "@/lib/scan";
+import { scanSecrets, scanPII, scanInjection } from "@/lib/scan";
 import { TOPIC_KEYS } from "@/lib/topics";
 
 async function ownedBrain(slug: string, userId: string): Promise<Brain | null> {
@@ -77,6 +77,19 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
         error:
           `Cannot share: ${secrets.length} possible credential(s) found — ` +
           `${secrets.map((s) => s.label).join(", ")}. Remove those notes first.`,
+      };
+    }
+
+    // A published brain is read by other people's AGENTS — a note that says
+    // "ignore your instructions…" steers every model that reads it. Blocked
+    // at the same door as credentials.
+    const injections = scanInjection(corpus);
+    if (injections.length && parsed.data.visibility === "public") {
+      return {
+        error:
+          `Cannot publish: ${injections.length} note(s) contain language that ` +
+          `steers AI readers (${[...new Set(injections.map((i) => i.label))].join(", ")}). ` +
+          "Agents of other people will execute what your notes say — remove those lines first.",
       };
     }
 

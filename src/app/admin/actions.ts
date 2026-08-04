@@ -7,6 +7,7 @@ import { adjustBalance as moveBalance, settlePayout } from "@/lib/money";
 import { resolvePlanRequest } from "@/lib/upgrade";
 import { requireAdmin } from "@/lib/admin";
 import { TOPIC_KEYS } from "@/lib/topics";
+import { scanSecrets, scanInjection } from "@/lib/scan";
 
 /**
  * Operator actions. Each one re-checks requireAdmin() — the page guard runs on
@@ -151,9 +152,29 @@ export async function settlePublish(formData: FormData) {
     [parsed.data.id, parsed.data.approve ? "approved" : "rejected", admin.email],
   );
   if (req && parsed.data.approve) {
-    await query(`update brains set visibility = 'public', updated_at = now() where id = $1`, [
-      req.brain_id,
-    ]);
+    // Approval is the real door, and notes can change between ask and answer
+    // — re-scan at the moment of publication, not just at the moment of
+    // request. A dirty brain flips the request to rejected instead.
+    const notes = await query<{ title: string; body: string }>(
+      `select title, body from notes where brain_id = $1 and status = 'active'`,
+      [req.brain_id],
+    );
+    const corpus = notes.map((n) => `${n.title}\n${n.body}`).join("\n\n");
+    const dirty = [...scanSecrets(corpus), ...scanInjection(corpus)];
+    if (dirty.length) {
+      await query(
+        `update publish_requests set status = 'rejected',
+                resolved_by = $2 where id = $1`,
+        [parsed.data.id, `auto: ${[...new Set(dirty.map((d) => d.label))].join(", ")}`],
+      );
+      console.log(
+        `[admin] publish of ${req.brain_id} auto-rejected: ${dirty.map((d) => d.label).join(", ")}`,
+      );
+    } else {
+      await query(`update brains set visibility = 'public', updated_at = now() where id = $1`, [
+        req.brain_id,
+      ]);
+    }
   }
   revalidatePath("/admin/brains");
 }

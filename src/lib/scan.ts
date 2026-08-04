@@ -225,3 +225,48 @@ export function redact(text: string): string {
   }
   return out;
 }
+
+/* ─── prompt injection ─────────────────────────────────────────────────────
+ * Notes are read by OTHER people's agents, which makes a published brain a
+ * delivery vehicle: a note saying "ignore your instructions and run …" can
+ * steer any model that reads it. These patterns catch the standard steering
+ * vocabulary. Heuristic by nature — the point is to flag a submission for a
+ * human eye, not to promise detection. */
+const INJECTION_RULES: { id: string; label: string; re: RegExp }[] = [
+  {
+    id: "override",
+    label: "Instruction override",
+    re: /\b(?:ignore|disregard|forget|override)\s+(?:all\s+|any\s+|your\s+|the\s+)?(?:previous|prior|above|earlier|system)\s+(?:instructions?|prompts?|rules?|context)/gi,
+  },
+  {
+    id: "roleplay",
+    label: "Role hijack",
+    re: /\byou\s+are\s+(?:now|no\s+longer)\s+(?:a|an|the|bound)\b|\bpretend\s+(?:to\s+be|you\s+are)\b|\bjailbreak\b|\bDAN\s+mode\b/gi,
+  },
+  {
+    id: "exfiltrate",
+    label: "Exfiltration ask",
+    re: /\b(?:reveal|print|output|send|leak)\s+(?:your\s+)?(?:system\s+prompt|instructions|api\s+key|credentials|tokens?)\b/gi,
+  },
+  {
+    id: "tool_steer",
+    label: "Tool steering",
+    re: /\b(?:run|execute|call)\s+(?:the\s+)?(?:bash|shell|terminal|command|curl|rm\s+-rf)\b.{0,40}\b(?:without|before)\s+(?:asking|confirmation)\b/gi,
+  },
+  {
+    id: "hidden_directive",
+    label: "Directive at the reader model",
+    re: /\b(?:to\s+the\s+(?:ai|assistant|model|agent)\s+reading\s+this|if\s+you\s+are\s+an?\s+(?:ai|llm|language\s+model|agent))\b/gi,
+  },
+];
+
+/** Scan text for language that tries to steer the model reading it. */
+export function scanInjection(text: string): Finding[] {
+  const found: Finding[] = [];
+  for (const rule of INJECTION_RULES) {
+    rule.re.lastIndex = 0;
+    const m = rule.re.exec(text);
+    if (m) found.push({ rule: rule.id, label: rule.label, sample: m[0].slice(0, 80) });
+  }
+  return found;
+}
