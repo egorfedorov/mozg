@@ -8,6 +8,7 @@ import BuyBrain from "@/components/BuyBrain";
 import AddBrain from "@/components/AddBrain";
 import ReviewBox from "./ReviewBox";
 import { query } from "@/db";
+import { env } from "@/lib/env";
 import { accessForSlug } from "@/lib/access";
 import { categoryScores, tintFor } from "@/lib/brains";
 import { currentUser } from "@/lib/session";
@@ -156,8 +157,35 @@ export default async function PublicBrainPage({
 
   const licence = LICENSE[brain.license];
 
+  // Structured data for search engines and AI assistants: a brain is a
+  // product with a real price and a real description. Only public facts —
+  // no note bodies, no exam internals.
+  const jsonLd =
+    brain.visibility === "public"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: brain.title,
+          description: brain.goal ?? undefined,
+          url: `${env.NEXT_PUBLIC_APP_URL}/b/${handle}/${slug}`,
+          brand: { "@type": "Brand", name: "mozg" },
+          offers: {
+            "@type": "Offer",
+            price: ((brain.price_cents ?? 0) / 100).toFixed(2),
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : null;
+
   return (
     <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <TopBar />
       <Contents active="/explore" />
 

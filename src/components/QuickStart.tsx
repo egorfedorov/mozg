@@ -27,7 +27,7 @@ export default function QuickStart() {
           name="url"
           type="text"
           autoFocus
-          placeholder="https://stake-engine.com/docs — or github.com/owner/repo"
+          placeholder="https://docs.example.com — or github.com/owner/repo"
           style={{
             flex: 1,
             minWidth: 260,

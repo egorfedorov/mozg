@@ -62,6 +62,23 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: "mozg",
+            url: "https://mozg.sh",
+            applicationCategory: "DeveloperApplication",
+            description:
+              "Turn documentation into an exam-scored knowledge base AI coding " +
+              "agents query over MCP. Brains learn from use: unanswered " +
+              "questions become exam questions, corrections become reviewed notes.",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          }),
+        }}
+      />
       <SketchDefs />
       <TopBar />
       <Contents />
@@ -321,6 +338,26 @@ export default async function Home() {
             to know.{" "}
             <Link href="/vs" style={{ textDecoration: "underline" }}>
               The honest comparison, including when a file wins
+            </Link>
+            .
+          </p>
+        </section>
+
+        <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
+          <p className="eyebrow">The collective mind</p>
+          <h2 className="h1" style={{ margin: ".5rem 0 1rem" }}>
+            Every question anyone asks
+            <br />
+            makes it smarter.
+          </h2>
+          <p className="lede" style={{ maxWidth: "58ch" }}>
+            When any agent asks a brain something it can&apos;t answer, that
+            question joins the brain&apos;s exam — and the next re-read chases
+            it. Corrections arrive as reviewed, attributed notes. Every version
+            is kept, with a score. The tenth user gets a better brain than the
+            first.{" "}
+            <Link href="/collective" style={{ textDecoration: "underline" }}>
+              How the loop works
             </Link>
             .
           </p>

@@ -17,6 +17,7 @@ const PAGES: { href: string; label: string; note: string }[] = [
   { href: "/why", label: "Why", note: "the problem this solves" },
   { href: "/vs", label: "Brain or file", note: "and when a file wins" },
   { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
+  { href: "/collective", label: "The collective mind", note: "every user makes it smarter" },
   { href: "/make", label: "Make one", note: "six panels" },
   { href: "/guide", label: "The long guide", note: "every detail" },
   { href: "/connect", label: "Connect", note: "your client, one command" },

@@ -45,7 +45,7 @@ const DIFFERENCES: {
     q: "How big can it get?",
     file: "As big as the context you are willing to spend on it, every call.",
     brain:
-      "Nearly seven hundred notes in the Stake Engine one. The agent searches and takes the five it needs.",
+      "Our largest brain holds nearly seven hundred notes. The agent searches and takes the five it needs.",
     tint: "var(--color-riso-violet)",
   },
   {

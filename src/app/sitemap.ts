@@ -25,6 +25,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/connect`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/guide`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/explore`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${base}/vs`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/vs-skills`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/collective`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/make`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/pricing`, changeFrequency: "monthly", priority: 0.7 },
     ...brains.map((b) => ({
       url: `${base}/b/${b.handle}/${b.slug}`,
       lastModified: b.updated_at,
