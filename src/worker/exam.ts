@@ -122,12 +122,14 @@ export async function generateChecks(brain: Brain): Promise<number> {
 
 // ─── running the exam ────────────────────────────────────────────────────────
 
+// A verbose judge is a style problem, not a verdict problem — clip the
+// reason rather than fail thirty verdicts over one long sentence.
 const verdicts = z.object({
   verdicts: z.array(
     z.object({
       id: z.string(),
       passed: z.boolean(),
-      reason: z.string().max(400),
+      reason: z.string().transform((s) => s.slice(0, 400)),
     }),
   ),
 });

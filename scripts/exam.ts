@@ -62,7 +62,16 @@ async function main() {
   }
 
   console.log(`\nexamining ${brains.length} brain(s)\n`);
-  for (const b of brains) await sit(b.id, b.slug);
+  // One brain's bad day must not cost the other twenty-six their sitting.
+  for (const b of brains) {
+    try {
+      await sit(b.id, b.slug);
+    } catch (err) {
+      console.error(
+        `  ${b.slug.padEnd(26)} FAILED: ${err instanceof Error ? err.message.slice(0, 120) : err}`,
+      );
+    }
+  }
   console.log("");
   process.exit(0);
 }
