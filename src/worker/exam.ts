@@ -452,26 +452,37 @@ export async function runExam(
 
     const fresh = checks.filter((c) => !carried.has(c.id));
 
-    const contexts = await Promise.all(
-      fresh.map(async (check) => {
-        const { hits, reranked } = await searchBrain(scope, check.question, { limit: 5 });
-        return {
-          check,
-          context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
-          // Whether the cross-encoder actually ran. A sitting graded on plain
-          // RRF order measures a degraded system and records the number as if
-          // it were the brain's — see the check below.
-          reranked: reranked || hits.length <= 1,
-          // Kept alongside the verdict so a fail can be told apart later:
-          // zero hits means the brain has nothing to answer from, hits with a
-          // fail mean the material is there and search or phrasing lost it.
-          // topScore is the fused RRF score of whatever ranked first (the
-          // reranker reorders but does not rescale it).
-          retrievalHits: hits.length,
-          retrievalTopScore: hits[0]?.score ?? null,
-        };
-      }),
-    );
+    // One at a time, not Promise.all. The reranker is a single torch process:
+    // firing thirty retrievals at once means each waits behind the other
+    // twenty-nine, every one of them trips search's 8s interactive timeout, and
+    // the whole sitting is graded on unranked candidates. It also starves the
+    // callers the lane exists for. A sitting is a background job — thirty
+    // retrievals at two seconds is a minute, and nobody is watching.
+    const contexts: {
+      check: Check;
+      context: string;
+      reranked: boolean;
+      retrievalHits: number;
+      retrievalTopScore: number | null;
+    }[] = [];
+    for (const check of fresh) {
+      const { hits, reranked } = await searchBrain(scope, check.question, { limit: 5 });
+      contexts.push({
+        check,
+        context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
+        // Whether the cross-encoder actually ran. A sitting graded on plain RRF
+        // order measures a degraded system and records the number as if it were
+        // the brain's — see the check below.
+        reranked: reranked || hits.length <= 1,
+        // Kept alongside the verdict so a fail can be told apart later: zero
+        // hits means the brain has nothing to answer from, hits with a fail mean
+        // the material is there and search or phrasing lost it. topScore is the
+        // fused RRF score of whatever ranked first (the reranker reorders but
+        // does not rescale it).
+        retrievalHits: hits.length,
+        retrievalTopScore: hits[0]?.score ?? null,
+      });
+    }
 
     // A score is the product's one factual claim, so it must not be published
     // from a retrieval the caller would not have got. When the reranker is down
