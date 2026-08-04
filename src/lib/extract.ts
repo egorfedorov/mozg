@@ -359,12 +359,13 @@ export async function extractFromText(
     }
   }
 
-  if (!notes.length) {
-    throw new Error(
-      failed
-        ? `every segment failed (${failed} of ${parts.length})`
-        : "the model returned no notes",
-    );
+  // Zero notes with zero failures is the model doing what the prompt says:
+  // "an empty list is a correct answer" — index pages and stub pages hold
+  // nothing worth keeping, and failing them taught the queue to retry pages
+  // that were never going to yield anything. Only an all-segments failure is
+  // an actual failure.
+  if (!notes.length && failed) {
+    throw new Error(`every segment failed (${failed} of ${parts.length})`);
   }
 
   if (failed) {
