@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { currentUser } from "@/lib/session";
+import LearnShell from "../../LearnShell";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ export default async function CoursePage({
   const pct = totalCards ? Math.round((totalLearned / totalCards) * 100) : 0;
 
   return (
+    <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
       <p className="eyebrow">
         <Link href="/learn">learn</Link> / course
@@ -166,5 +168,6 @@ export default async function CoursePage({
         minutes; cards you know retreat for days.
       </p>
     </main>
+    </LearnShell>
   );
 }

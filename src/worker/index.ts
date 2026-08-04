@@ -1,6 +1,7 @@
 import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl } from "@/worker/queue";
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
+import { compileLesson } from "@/worker/lesson";
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
@@ -186,6 +187,12 @@ async function main() {
     console.log(`[digest] sent ${sent} weekly letter(s)`);
   });
   await scheduleDigest();
+
+  await boss.work(QUEUES.lesson, { batchSize: 1, pollingIntervalSeconds: 5 }, async ([job]) => {
+    const { brainId, category } = job.data as { brainId: string; category: string };
+    const outcome = await compileLesson(brainId, category);
+    console.log(`[lesson] ${brainId} "${category}" ${outcome}`);
+  });
 
   await boss.work(QUEUES.mozgpay, { batchSize: 1, pollingIntervalSeconds: 15 }, async () => {
     const r = await runMozgpayWatch();

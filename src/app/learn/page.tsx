@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
+import LearnShell from "./LearnShell";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,16 @@ export default async function LearnHome() {
            select b.id, u.handle, b.slug, b.title, b.goal, b.score from library l
              join brains b on b.id = l.brain_id join "user" u on u.id = b.owner_id
             where l.user_id = $1
+           union
+           select b.id, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+             join brains b on b.id = pu.brain_id join "user" u on u.id = b.owner_id
+            where pu.buyer_id = $1
+           union
+           -- A bundle purchase is a course bundle too: the parent's children
+           -- belong on the buyer's shelf.
+           select b.id, u.handle, b.slug, b.title, b.goal, b.score from purchases pu
+             join brains b on b.parent_id = pu.brain_id join "user" u on u.id = b.owner_id
+            where pu.buyer_id = $1
          )
          select m.handle, m.slug, m.title, m.goal, m.score,
                 (select count(*) from notes n where n.brain_id = m.id and n.status = 'active')::int
@@ -76,20 +87,7 @@ export default async function LearnHome() {
   );
 
   return (
-    <>
-      <header style={{ borderBottom: "1.5px solid var(--ink)", background: "var(--paper)" }}>
-        <div className="shell" style={{ display: "flex", alignItems: "baseline", gap: "1rem", paddingBlock: ".9rem" }}>
-          <span style={{ fontWeight: 800, fontSize: "1.25rem", letterSpacing: "-0.02em" }}>
-            learn<span style={{ color: "var(--color-riso-green)" }}>.</span>
-          </span>
-          <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-            a mozg service
-          </span>
-          <Link className="mono" href="/" style={{ marginLeft: "auto", fontSize: ".8125rem" }}>
-            mozg.sh →
-          </Link>
-        </div>
-      </header>
+    <LearnShell>
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">For humans</p>
@@ -178,6 +176,6 @@ export default async function LearnHome() {
           </>
         )}
       </main>
-    </>
+    </LearnShell>
   );
 }

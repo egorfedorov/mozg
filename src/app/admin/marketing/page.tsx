@@ -49,7 +49,7 @@ export default async function MarketingPage() {
 
   const s = await query<{ brains: number; avg: number; paid: number }>(
     `select count(*)::int as brains,
-            coalesce(round(avg(score)) filter (where score is not null), 0)::int as avg,
+            coalesce(round(avg(score)), 0)::int as avg,
             count(*) filter (where price_cents > 0)::int as paid
        from brains where visibility = 'public'`,
   ).then((r) => r[0]);

@@ -15,6 +15,7 @@ export const QUEUES = {
   consolidate: "consolidate",
   digest: "digest",
   mozgpay: "mozgpay",
+  lesson: "lesson",
 } as const;
 
 /**
@@ -62,6 +63,17 @@ export async function getBoss(): Promise<PgBoss> {
  * wins. Crawl-expanded pages sit in the middle: bulk, but someone did ask.
  */
 export const PRIORITY = { interactive: 10, crawl: 0, background: -5 } as const;
+
+/** One editor pass per module; singleton key stops a class of students
+    triggering the same compile in parallel. */
+export async function enqueueLesson(brainId: string, category: string): Promise<void> {
+  const b = await getBoss();
+  await b.send(
+    QUEUES.lesson,
+    { brainId, category },
+    { singletonKey: `${brainId}:${category}`, singletonSeconds: 600 },
+  );
+}
 
 export async function enqueueIngest(
   sourceId: string,

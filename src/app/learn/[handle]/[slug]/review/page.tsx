@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { currentUser } from "@/lib/session";
+import LearnShell from "../../../LearnShell";
 import Session, { type Card } from "../Session";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,7 @@ export default async function ReviewPage({
   const backHref = `/learn/${handle}/${slug}`;
 
   return (
+    <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 820 }}>
       <p className="eyebrow">
         <Link href="/learn">learn</Link> /{" "}
@@ -106,5 +108,6 @@ export default async function ReviewPage({
         <Session brainId={brain.id} cards={cards} backHref={backHref} />
       )}
     </main>
+    </LearnShell>
   );
 }

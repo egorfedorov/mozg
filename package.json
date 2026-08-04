@@ -30,7 +30,8 @@
     "catalogue": "tsx --env-file-if-exists=.env scripts/catalogue.ts",
     "check:payments": "NOWPAYMENTS_API_KEY=test-key NOWPAYMENTS_IPN_SECRET=test-secret tsx --env-file-if-exists=.env scripts/check-payments.ts",
     "requeue": "tsx --env-file-if-exists=.env scripts/requeue.ts",
-    "check:usage": "tsx --env-file-if-exists=.env scripts/check-usage.ts"
+    "check:usage": "tsx --env-file-if-exists=.env scripts/check-usage.ts",
+    "lesson": "tsx --env-file-if-exists=.env scripts/lesson.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
