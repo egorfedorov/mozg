@@ -1,7 +1,7 @@
 {
   "name": "mozg",
   "description": "Connect your knowledge brains to this agent over MCP: search them before answering, and save what you work out back into them.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": { "name": "mozg", "url": "https://mozg.sh" },
   "homepage": "https://mozg.sh",
   "keywords": ["mcp", "knowledge", "memory", "context"]
