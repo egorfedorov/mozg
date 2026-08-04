@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { buyBrain } from "@/app/b/[handle]/[slug]/buy-action";
+import { buyBrain, buyWithCrypto } from "@/app/b/[handle]/[slug]/buy-action";
 // money-math, not money: this is a client component and @/lib/money drags in pg.
 import { formatCents } from "@/lib/money-math";
 
@@ -13,6 +13,7 @@ export default function BuyBrain({
   partOf,
   balanceCents,
   signedIn,
+  cryptoReady = false,
 }: {
   handle: string;
   slug: string;
@@ -21,8 +22,11 @@ export default function BuyBrain({
   partOf?: string | null;
   balanceCents: number | null;
   signedIn: boolean;
+  /** True once the crypto gateway is configured — shows one-click checkout. */
+  cryptoReady?: boolean;
 }) {
   const [state, action, pending] = useActionState(buyBrain, null);
+  const [crypto, cryptoAction, cryptoPending] = useActionState(buyWithCrypto, null);
   const path = `/b/${handle}/${slug}`;
   const short = balanceCents !== null && balanceCents < priceCents;
 
@@ -82,6 +86,27 @@ export default function BuyBrain({
               <Link href="/settings/balance" style={{ textDecoration: "underline" }}>
                 top up
               </Link>
+            </p>
+          )}
+
+          {cryptoReady &&
+            (crypto?.payUrl ? (
+              <a className="btn" href={crypto.payUrl} target="_blank" rel="noreferrer noopener">
+                Open the payment page
+              </a>
+            ) : (
+              <button
+                formAction={cryptoAction}
+                className="btn btn-ghost"
+                disabled={cryptoPending}
+                style={{ justifySelf: "start" }}
+              >
+                {cryptoPending ? "Making an invoice…" : "Or pay with crypto — unlocks on confirmation"}
+              </button>
+            ))}
+          {crypto?.error && (
+            <p className="mono" style={{ fontSize: ".8125rem", margin: 0, color: "var(--color-riso-red)" }}>
+              {crypto.error}
             </p>
           )}
 

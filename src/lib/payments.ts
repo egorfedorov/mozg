@@ -36,6 +36,9 @@ export interface Invoice {
 export async function createInvoice(opts: {
   userId: string;
   amountCents: number;
+  /** "buy" invoices auto-purchase buyBrainId once the money lands. */
+  purpose?: "topup" | "buy";
+  buyBrainId?: string;
 }): Promise<{ ok: true; invoice: Invoice } | { ok: false; reason: string }> {
   if (!paymentsReady) return { ok: false, reason: "unconfigured" };
   if (opts.amountCents < MIN_TOPUP_CENTS || opts.amountCents > MAX_TOPUP_CENTS) {
@@ -48,9 +51,15 @@ export async function createInvoice(opts: {
   // with a pending row and no invoice, which is inert; the opposite order
   // could leave a paid invoice with nothing to credit.
   await query(
-    `insert into topups (user_id, amount_cents, provider, reference)
-     values ($1, $2, 'nowpayments', $3)`,
-    [opts.userId, opts.amountCents, reference],
+    `insert into topups (user_id, amount_cents, provider, reference, purpose, buy_brain_id)
+     values ($1, $2, 'nowpayments', $3, $4, $5)`,
+    [
+      opts.userId,
+      opts.amountCents,
+      reference,
+      opts.purpose ?? "topup",
+      opts.purpose === "buy" ? (opts.buyBrainId ?? null) : null,
+    ],
   );
 
   const res = await fetch(`${API}/invoice`, {
@@ -119,7 +128,14 @@ export function validSignature(rawBody: string, header: string | null): boolean 
 }
 
 export type WebhookOutcome =
-  | { credited: true; amountCents: number }
+  | {
+      credited: true;
+      amountCents: number;
+      /** Set when the invoice was a direct purchase — the caller completes it
+       *  AFTER this transaction commits (the credit locks the balance row,
+       *  and the purchase takes its own lock on it). */
+      followUp?: { userId: string; buyBrainId: string };
+    }
   | { credited: false; reason: "unknown" | "not-final" | "already" | "failed" };
 
 /** Statuses that mean the money arrived and will not be reversed. */
@@ -145,8 +161,11 @@ export async function applyWebhook(payload: {
       user_id: string;
       amount_cents: number;
       status: string;
+      purpose: string;
+      buy_brain_id: string | null;
     }>(
-      `select id, user_id, amount_cents, status from topups where reference = $1
+      `select id, user_id, amount_cents, status, purpose, buy_brain_id
+         from topups where reference = $1
         for update`,
       [reference],
     );
@@ -181,7 +200,13 @@ export async function applyWebhook(payload: {
       note: "crypto top-up",
     });
 
-    return { credited: true as const, amountCents: row.amount_cents };
+    return {
+      credited: true as const,
+      amountCents: row.amount_cents,
+      ...(row.purpose === "buy" && row.buy_brain_id
+        ? { followUp: { userId: row.user_id, buyBrainId: row.buy_brain_id } }
+        : {}),
+    };
   });
 }
 

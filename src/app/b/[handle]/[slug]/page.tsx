@@ -6,6 +6,7 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import BuyBrain from "@/components/BuyBrain";
 import AddBrain from "@/components/AddBrain";
+import ReviewBox from "./ReviewBox";
 import { query } from "@/db";
 import { accessForSlug } from "@/lib/access";
 import { categoryScores, tintFor } from "@/lib/brains";
@@ -14,6 +15,7 @@ import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
 import { accessibleChildren, parentOf } from "@/lib/families";
 import { gateFor } from "@/lib/paywall";
+import { paymentsReady } from "@/lib/payments";
 import { isoDate } from "@/lib/dates";
 
 /**
@@ -122,6 +124,28 @@ export default async function PublicBrainPage({
   // would be offering something that does not exist.
   const gate = await gateFor(brain);
 
+  const [rating, latestReviews, myReview] = await Promise.all([
+    query<{ avg: string | null; n: number }>(
+      `select round(avg(rating), 1)::text as avg, count(*)::int as n
+         from reviews where brain_id = $1`,
+      [brain.id],
+    ).then((r) => r[0]),
+    query<{ rating: number; body: string; handle: string | null; at: string }>(
+      `select r.rating, r.body, u.handle,
+              to_char(r.created_at at time zone 'UTC', 'YYYY-MM-DD') as at
+         from reviews r join "user" u on u.id = r.buyer_id
+        where r.brain_id = $1 and r.body <> ''
+        order by r.created_at desc limit 3`,
+      [brain.id],
+    ),
+    user
+      ? query<{ rating: number; body: string }>(
+          `select rating, body from reviews where brain_id = $1 and buyer_id = $2`,
+          [brain.id, user.id],
+        ).then((r) => r[0] ?? null)
+      : Promise.resolve(null),
+  ]);
+
   // Exactly three states, so the page never shows two calls to action or none.
   //   locked  — paid and not bought yet
   //   have    — already in this reader's set, or their own
@@ -182,9 +206,37 @@ export default async function PublicBrainPage({
             >
               {brain.note_count} notes · updated {isoDate(brain.updated_at)} ·{" "}
               {brain.score === null ? "not examined" : `trained ${brain.score}%`}
+              {rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`}
             </p>
           </div>
         </div>
+
+        {(latestReviews.length > 0 || (state === "have" && !owns) || myReview) && (
+          <section style={{ margin: "0 0 2.5rem" }}>
+            {latestReviews.length > 0 && (
+              <>
+                <div className="section-head">
+                  <h2 className="h2">From buyers</h2>
+                  <span className="eyebrow">★ {rating.avg} · {rating.n} rating{rating.n === 1 ? "" : "s"}</span>
+                </div>
+                <div className="rows" style={{ marginBottom: "1rem" }}>
+                  {latestReviews.map((r, i) => (
+                    <div key={i} className="row">
+                      <span style={{ minWidth: 0 }}>
+                        <strong>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</strong>
+                        <span className="row-sub">{r.body}</span>
+                        <span className="row-meta">{r.handle ?? "buyer"} · {r.at}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {(state === "have" && !owns) && (
+              <ReviewBox handle={handle} slug={brain.slug} existing={myReview} />
+            )}
+          </section>
+        )}
 
         {passedChecks.length > 0 && (
           <section style={{ margin: "0 0 2.5rem" }}>
@@ -249,6 +301,7 @@ export default async function PublicBrainPage({
               partOf={gate && gate.brainId !== brain.id ? (parent?.title ?? null) : null}
               balanceCents={balance}
               signedIn={Boolean(user)}
+              cryptoReady={paymentsReady}
             />
           ) : (
           <section className="term">
