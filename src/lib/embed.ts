@@ -47,12 +47,20 @@ export async function embedQuery(text: string): Promise<number[]> {
 }
 
 export async function embedHealthy(): Promise<boolean> {
-  try {
-    const res = await fetch(`${env.EMBED_URL}/health`, {
-      signal: AbortSignal.timeout(3000),
-    });
-    return res.ok;
-  } catch {
-    return false;
+  // Generous on purpose: the embedder is a single torch process, and a big
+  // re-read wave queues enough batches that /health itself waits in line.
+  // Saturated-but-alive must read as healthy — flapping the site to 503
+  // because ingest is busy pages the operator for a non-event. 15s of
+  // silence, tried twice, is what "actually down" looks like.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${env.EMBED_URL}/health`, {
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (res.ok) return true;
+    } catch {
+      // fall through to the second attempt
+    }
   }
+  return false;
 }
