@@ -168,6 +168,177 @@ export default async function MarketingPage() {
       <Block title="Reddit r/ClaudeAI" text={redditClaude} />
       <Block title="Stake Engine Discord" hint="RU" text={discordStake} />
 
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Week 1 — MCP ecosystem</h2>
+      <Block
+        title="MCP directory listing"
+        hint="glama.ai · smithery.ai · mcp.so · pulsemcp.com · mcpservers.org"
+        text={
+          "Name: mozg\n" +
+          "Category: Knowledge & Memory\n" +
+          "Endpoint: https://mozg.sh/mcp (Streamable HTTP, Bearer token)\n" +
+          "Homepage: https://mozg.sh\n\n" +
+          "Short description (~160 chars):\n" +
+          "Exam-scored knowledge brains for coding agents. Paste a docs URL → " +
+          "searchable brain over MCP, with a measured score and known gaps.\n\n" +
+          "Long description:\n" +
+          "mozg turns documentation into knowledge brains your agent queries " +
+          "over MCP instead of loading whole files into context. What makes it " +
+          "different: every brain sits an exam. Its goal becomes ~30 control " +
+          "questions, re-sat after every ingest — so 'trained 92%' is measured, " +
+          "not claimed, and the failing questions are listed publicly. Brains " +
+          "learn from use: searches that return nothing become exam questions, " +
+          "corrections agents file become owner-reviewed notes. Searching costs " +
+          "zero context tokens — retrieval is server-side, the agent reads only " +
+          "the notes it asked for. Free catalogue (Next.js App Router, Expo, " +
+          "Svelte 5, Tailwind v4, MCP spec itself), one-command connect for " +
+          "Claude Code, Codex, Cursor and friends.\n\n" +
+          "Tools: brain_list, brain_brief, brain_search, brain_read, " +
+          "brain_write, brain_feedback, brain_create, brain_add_source"
+        }
+      />
+      <Block
+        title="awesome-mcp-servers — PR line"
+        hint="section: Knowledge & Memory; PR title: Add mozg"
+        text={
+          "- [mozg](https://mozg.sh) — Exam-scored knowledge brains: paste a docs " +
+          "URL, get a searchable brain with a measured score and known gaps; " +
+          "misses become exam questions automatically.\n\n" +
+          "PR description:\n" +
+          "Adds mozg (https://mozg.sh) to Knowledge & Memory. Streamable HTTP " +
+          "MCP server; free brains without a card; the distinctive part is that " +
+          "every knowledge base is scored by an auto-generated exam and " +
+          "publishes what it does NOT know, so agents can be told the gaps " +
+          "before they search."
+        }
+      />
+      <Block
+        title="r/mcp post"
+        hint="flair: Show & Tell, no link shorteners"
+        text={
+          "Title: I built an MCP server where every knowledge base has to pass " +
+          "an exam\n\n" +
+          "The problem I kept hitting: I'd give my agent docs as context files " +
+          "or memory servers, and I had no idea what it actually absorbed. It " +
+          "answered everything confidently either way.\n\n" +
+          "So mozg does one unusual thing: when you build a brain (paste one " +
+          "docs URL — crawler handles GitHub trees, llms.txt, sitemaps), the " +
+          "goal you wrote becomes ~30 control questions, and the brain re-sits " +
+          "them after every ingest. You get 'trained 87%' as a measured fact, " +
+          "plus the exact list of questions it failed. The exam deliberately " +
+          "asks about material the brain does NOT have yet — failures are the " +
+          "roadmap.\n\n" +
+          "Two things fell out of that design that I didn't expect:\n\n" +
+          "1. Brains learn from being used. Any search that returns zero " +
+          "results gets recorded and becomes an exam question — the next " +
+          "re-read of the sources chases what real callers actually asked.\n" +
+          "2. The exam doubles as a human course. learn.mozg.sh turns the same " +
+          "notes into spaced-repetition lessons, with the brain's own exam as " +
+          "the final. You can try to beat your agent's score.\n\n" +
+          "Free brains to test with (MCP spec, Next.js App Router, Expo, " +
+          "Svelte 5, Tailwind v4): https://mozg.sh/explore — one command to " +
+          "connect from Claude Code/Codex/Cursor. Feedback very welcome, " +
+          "especially where the exam grading feels wrong."
+        }
+      />
+      <Block
+        title="r/ClaudeAI post"
+        hint="conversational, story first"
+        text={
+          "Title: I got tired of my agent's confident wrong answers, so my " +
+          "docs now sit an exam\n\n" +
+          "CLAUDE.md files rot silently — you find out when the agent ships " +
+          "something wrong. I built mozg.sh around one idea: knowledge must be " +
+          "measured.\n\n" +
+          "Paste a docs link, it becomes a searchable brain over MCP, and the " +
+          "brain sits ~30 exam questions generated from what you said it's " +
+          "for. The score and the gaps are public on the brain's page; " +
+          "questions real agents ask and miss get added to the exam " +
+          "automatically, so the brain gets smarter the more it's used.\n\n" +
+          "Connecting from Claude Code is one command (mozg.sh/connect), " +
+          "free brains need no card, and everything exports back to CLAUDE.md " +
+          "if you leave. It's in beta — I answer every bug report personally " +
+          "(there's a chat inside the product). Would love hard feedback."
+        }
+      />
+
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Week 3 — Dev.to article</h2>
+      <Block
+        title="Dev.to — full article (markdown)"
+        hint="tags: ai, productivity, claudecode, mcp · canonical: none"
+        text={
+          "---\n" +
+          "title: I measured how much my coding agent actually knows about my stack. It was 40%.\n" +
+          "tags: ai, mcp, claudecode, productivity\n" +
+          "---\n\n" +
+          "My coding agent answers every question about my stack with total " +
+          "confidence. Last month I finally asked the question that should " +
+          "have been first: *how much of that is true?*\n\n" +
+          "## The experiment\n\n" +
+          "I took the platform docs my agents rely on daily — a games " +
+          "platform's RGS API, its math SDK, the approval checklist — wrote " +
+          "down what an agent *should* be able to answer, generated ~30 " +
+          "control questions from that, and graded the agent's answers " +
+          "against the actual docs.\n\n" +
+          "It scored around 40%. The worst part wasn't the score — it was " +
+          "that every wrong answer *sounded exactly like every right one*. " +
+          "Same confidence, same fluency, same code blocks. The model's " +
+          "training data was simply older than the docs, and nothing in the " +
+          "conversation could tell me which answers were from 2024.\n\n" +
+          "## Context files don't fix this\n\n" +
+          "The standard fix is a CLAUDE.md / skills folder / a memory MCP " +
+          "server. I had all three. Three problems survived:\n\n" +
+          "1. **You pay for every word, every session** — the whole file " +
+          "rides along whether the task needs it or not.\n" +
+          "2. **They rot silently.** A file written in March is confidently " +
+          "wrong by June, and nothing tells you.\n" +
+          "3. **You can't measure them.** Nobody knows what a folder of " +
+          "markdown actually covers until the agent fails in production.\n\n" +
+          "## So I made the knowledge sit an exam\n\n" +
+          "I built [mozg](https://mozg.sh) around one mechanism: every " +
+          "knowledge base ('brain') is scored against its own purpose.\n\n" +
+          "- Paste one docs URL. The crawler finds every page (GitHub tree, " +
+          "llms.txt, sitemap, or a link walk) and extracts it into atomic, " +
+          "searchable notes.\n" +
+          "- The goal you wrote becomes ~30 exam questions. The brain sits " +
+          "them after every ingest. 'Trained 87%' is a measured number, and " +
+          "the failed questions are listed right on the brain's page.\n" +
+          "- The exam deliberately asks about things the brain does NOT " +
+          "cover yet. The failures are the point — they tell you exactly " +
+          "what to feed it next.\n\n" +
+          "Agents connect over MCP (one command in Claude Code / Codex / " +
+          "Cursor) and search server-side — the context cost of an answer is " +
+          "the three notes it actually needed, not the 700 the brain holds.\n\n" +
+          "## The part I didn't plan: it learns from being used\n\n" +
+          "Once real agents were querying brains, the logs contained " +
+          "something better than any test I could write: **the questions the " +
+          "brain failed to answer.** Now every search that returns nothing " +
+          "becomes an exam question automatically, and the next re-read of " +
+          "the sources goes hunting for it. Corrections agents file become " +
+          "owner-reviewed notes. The tenth user gets a measurably better " +
+          "brain than the first.\n\n" +
+          "That same exam turned out to be a curriculum: " +
+          "[learn.mozg.sh](https://learn.mozg.sh) serves any brain as a " +
+          "spaced-repetition course — read, recall, quiz — with the brain's " +
+          "exam as the final. The scoreboard shows your percentage next to " +
+          "your agent's. Beating your own agent is weirdly motivating.\n\n" +
+          "## Honest limitations\n\n" +
+          "- The judge is a model, so scores wobble ±3-4 points (majority " +
+          "voting tames most of it).\n" +
+          "- A brain is only as good as its sources — the exam tells you " +
+          "*that* material is missing, not where to find it.\n" +
+          "- For stable, well-known knowledge (Python stdlib), a brain adds " +
+          "nothing — models know it. Brains earn their keep where docs move " +
+          "faster than training cutoffs.\n\n" +
+          "## Try it\n\n" +
+          "The catalogue has free, no-card brains for exactly those fast-" +
+          "moving stacks: Next.js App Router, Expo/React Native, Svelte 5, " +
+          "Tailwind v4, the MCP spec itself. Connect one to your agent in a " +
+          "minute: https://mozg.sh — or study one yourself at " +
+          "https://learn.mozg.sh. It's in beta; the chat button inside goes " +
+          "straight to me."
+        }
+      />
+
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Evergreen</h2>
       <Block title="The collective-mind post" hint="X / LinkedIn / blog intro" text={collectivePost} />
       <Block title="Cold DM" hint="personalise the brackets" text={dm} />
