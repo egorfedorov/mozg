@@ -32,6 +32,8 @@ export default async function SettingsPage() {
     balance_cents: number;
     ai_key_hint: string | null;
     ai_base_url: string | null;
+    ai_provider: "anthropic" | "openai";
+    ai_model: string | null;
   }>(
     `select
        (select count(*)::int from brains where owner_id = $1) as brains,
@@ -41,7 +43,9 @@ export default async function SettingsPage() {
          where caller_id = $1 and created_at >= date_trunc('month', now())) as calls,
        (select balance_cents from "user" where id = $1) as balance_cents,
        (select ai_key_hint from "user" where id = $1) as ai_key_hint,
-       (select ai_base_url from "user" where id = $1) as ai_base_url`,
+       (select ai_base_url from "user" where id = $1) as ai_base_url,
+       (select ai_provider from "user" where id = $1) as ai_provider,
+       (select ai_model from "user" where id = $1) as ai_model`,
     [user.id],
   );
 
@@ -104,7 +108,7 @@ export default async function SettingsPage() {
           targets={targets}
         />
 
-        <AiKeyPanel hint={counts.ai_key_hint} baseUrl={counts.ai_base_url} />
+        <AiKeyPanel hint={counts.ai_key_hint} baseUrl={counts.ai_base_url} provider={counts.ai_provider} model={counts.ai_model} />
       </section>
 
       <section style={{ marginTop: "2.5rem" }}>

@@ -524,6 +524,76 @@ export default async function MarketingPage() {
         }
       />
 
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Community posts — per ecosystem</h2>
+      <Block
+        title="Claude Discord — #built-with-claude"
+        hint="tags: MCP Server, Open Source · attach social-exam.jpg"
+        text={
+          "mozg — open-source, exam-scored knowledge brains for Claude Code (and " +
+          "any MCP client)\n\n" +
+          "Built almost entirely WITH Claude Code, over a very intense week. The " +
+          "problem: my agents kept confidently answering from stale training data " +
+          "— the docs they needed were newer than the model.\n\n" +
+          "What it does: paste one docs URL → the crawler reads the whole site " +
+          "(GitHub tree, llms.txt, sitemap) into searchable notes → your agent " +
+          "queries them over MCP with zero context cost. The unusual part: every " +
+          "brain sits an exam generated from its own goal. \"Trained 88%\" is " +
+          "measured, and the failed questions are public — agents are told the " +
+          "gaps before they search. Questions real agents ask and miss become " +
+          "exam questions automatically, so brains get smarter from use.\n\n" +
+          "There's also a Claude Code plugin (session-start hook suggests brains " +
+          "matching your repo, /mozg:train teaches through your subscription — " +
+          "no API key needed), and learn.mozg.sh turns any brain into a " +
+          "spaced-repetition course where you try to beat your agent's score.\n\n" +
+          "Open source (AGPL): https://github.com/egorfedorov/mozg\n" +
+          "Try it: https://mozg.sh — whole catalogue free (Next.js App Router, " +
+          "Expo, Svelte 5, Tailwind v4, the MCP spec itself). Feedback and PRs " +
+          "very welcome!"
+        }
+      />
+      <Block
+        title="Codex / OpenAI community post"
+        hint="OpenAI dev forum / r/OpenAI — Codex angle"
+        text={
+          "I built an open-source MCP server that makes Codex answer from " +
+          "current docs — with a measured score\n\n" +
+          "Codex (like every model) answers from training data, and docs move " +
+          "faster than cutoffs. mozg turns any docs site into a \"brain\": paste " +
+          "one URL, it becomes searchable notes your agent queries over MCP — " +
+          "only the notes a task needs enter context.\n\n" +
+          "The twist: every brain sits an exam generated from what you said it's " +
+          "for. The score is measured, the failing questions are public, and " +
+          "queries that return nothing become new exam questions automatically.\n\n" +
+          "Works with Codex out of the box (one command, mozg.sh/connect), and " +
+          "if you build your own brains you can bring your own OpenAI key — " +
+          "training runs on your spend, no plan needed.\n\n" +
+          "AGPL, self-hostable: https://github.com/egorfedorov/mozg · free " +
+          "catalogue: https://mozg.sh/explore"
+        }
+      />
+      <Block
+        title="Kimi / CN-ecosystem community post"
+        hint="Kimi Discord / r/LocalLLaMA angle — BYOK first"
+        text={
+          "Open-source knowledge brains for coding agents — works with Kimi, " +
+          "DeepSeek, Qwen keys out of the box\n\n" +
+          "mozg turns documentation into exam-scored knowledge bases that any " +
+          "MCP-speaking agent (Claude Code, Codex, Cursor, Kimi CLI, Qwen Code) " +
+          "queries server-side — zero context cost per answer.\n\n" +
+          "Two things this crowd will care about:\n" +
+          "1. BYOK: set a Kimi / DeepSeek / Qwen / GLM key in settings and your " +
+          "brains train, examine and compile lessons on YOUR key via the " +
+          "OpenAI-compatible protocol — presets for each provider built in, no " +
+          "plan required.\n" +
+          "2. It's AGPL and self-hostable: Postgres + pgvector + a local bge-m3 " +
+          "embedder, queue inside Postgres, docker compose up and it's yours: " +
+          "https://github.com/egorfedorov/mozg\n\n" +
+          "Every brain publishes its exam score AND its failed questions — you " +
+          "know what it can't answer before trusting it. Free catalogue: " +
+          "https://mozg.sh/explore"
+        }
+      />
+
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Evergreen</h2>
       <Block title="The collective-mind post" hint="X / LinkedIn / blog intro" text={collectivePost} />
       <Block title="Cold DM" hint="personalise the brackets" text={dm} />

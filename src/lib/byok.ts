@@ -13,19 +13,34 @@ import { open } from "@/lib/secretbox";
 export interface ByokContext {
   apiKey: string;
   baseURL?: string;
+  /** 'anthropic' (messages API) or 'openai' (chat.completions — OpenAI,
+      Kimi, DeepSeek, Qwen, GLM and most resellers). */
+  provider: "anthropic" | "openai";
+  /** For the openai protocol: the user's model id for every role. */
+  model?: string;
 }
 
 export const byokStorage = new AsyncLocalStorage<ByokContext | undefined>();
 
 export async function ownerKey(ownerId: string): Promise<ByokContext | null> {
-  const row = await maybeOne<{ ai_key_enc: string | null; ai_base_url: string | null }>(
-    `select ai_key_enc, ai_base_url from "user" where id = $1`,
+  const row = await maybeOne<{
+    ai_key_enc: string | null;
+    ai_base_url: string | null;
+    ai_provider: "anthropic" | "openai";
+    ai_model: string | null;
+  }>(
+    `select ai_key_enc, ai_base_url, ai_provider, ai_model from "user" where id = $1`,
     [ownerId],
   );
   if (!row?.ai_key_enc) return null;
   const apiKey = open(row.ai_key_enc);
   if (!apiKey) return null;
-  return { apiKey, baseURL: row.ai_base_url ?? undefined };
+  return {
+    apiKey,
+    baseURL: row.ai_base_url ?? undefined,
+    provider: row.ai_provider,
+    model: row.ai_model ?? undefined,
+  };
 }
 
 /** Run fn with the owner's key in context when they have one. */

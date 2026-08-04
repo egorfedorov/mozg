@@ -142,10 +142,13 @@ export async function saveAiKey(_prev: unknown, formData: FormData) {
 
   const raw = String(formData.get("key") ?? "").trim();
   const baseUrl = String(formData.get("base_url") ?? "").trim();
+  const provider = formData.get("provider") === "openai" ? "openai" : "anthropic";
+  const model = String(formData.get("model") ?? "").trim().slice(0, 80);
 
   if (formData.get("remove") === "yes" || raw === "") {
     await query(
       `update "user" set ai_key_enc = null, ai_key_hint = null, ai_base_url = null,
+              ai_provider = 'anthropic', ai_model = null,
               "updatedAt" = now() where id = $1`,
       [user.id],
     );
@@ -158,12 +161,16 @@ export async function saveAiKey(_prev: unknown, formData: FormData) {
   if (baseUrl && !/^https:\/\/[^\s]+$/.test(baseUrl)) {
     return { error: "The base URL must be https://…" };
   }
+  if (provider === "openai" && !model) {
+    return { error: "Name the model for this provider (e.g. gpt-4o-mini, kimi-k2, deepseek-chat)." };
+  }
 
   const { seal } = await import("@/lib/secretbox");
   await query(
     `update "user" set ai_key_enc = $2, ai_key_hint = $3, ai_base_url = $4,
+            ai_provider = $5, ai_model = $6,
             "updatedAt" = now() where id = $1`,
-    [user.id, seal(raw), raw.slice(-4), baseUrl || null],
+    [user.id, seal(raw), raw.slice(-4), baseUrl || null, provider, model || null],
   );
   return { ok: true as const, hint: raw.slice(-4) };
 }

@@ -79,6 +79,25 @@ export async function structured<T>(opts: {
   schema: Record<string, unknown>;
   maxTokens?: number;
 }): Promise<{ data: T; usage: Usage }> {
+  // A BYOK owner on the OpenAI protocol takes the chat.completions path —
+  // same contract out (data + usage), different wire. Their chosen model
+  // replaces ours for every role: we cannot know a stranger's catalogue.
+  const byok = byokStorage.getStore();
+  if (byok?.provider === "openai") {
+    const { structuredOpenAi } = await import("@/lib/openai-compat");
+    return structuredOpenAi<T>({
+      apiKey: byok.apiKey,
+      baseURL: byok.baseURL ?? "https://api.openai.com/v1",
+      model: byok.model ?? "gpt-4o-mini",
+      system: opts.system,
+      content: opts.content,
+      toolName: opts.toolName,
+      toolDescription: opts.toolDescription,
+      schema: opts.schema,
+      maxTokens: opts.maxTokens,
+    });
+  }
+
   const response = await claude().messages.create({
     model: opts.model,
     max_tokens: opts.maxTokens ?? 16000,
