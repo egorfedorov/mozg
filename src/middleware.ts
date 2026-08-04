@@ -11,9 +11,18 @@ export function middleware(req: NextRequest) {
   if (!host.startsWith("learn.")) return NextResponse.next();
 
   const { pathname } = req.nextUrl;
+
+  // Internal links inside learn pages point at /learn/... (they must work on
+  // mozg.sh too). On the subdomain that would render as learn.mozg.sh/learn/…
+  // — redirect to the clean form instead of serving a duplicate URL.
+  if (pathname.startsWith("/learn")) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.slice("/learn".length) || "/";
+    return NextResponse.redirect(url, 308);
+  }
+
   // Assets, API and auth stay where they are; only pages move under /learn.
   if (
-    pathname.startsWith("/learn") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/sign-in") ||

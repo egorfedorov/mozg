@@ -11,7 +11,7 @@ export default function LearnShell({ children }: { children: React.ReactNode }) 
     <>
       <header style={{ borderBottom: "1.5px solid var(--ink)", background: "var(--paper)" }}>
         <div className="shell" style={{ display: "flex", alignItems: "baseline", gap: "1rem", paddingBlock: ".9rem" }}>
-          <Link href="/learn" className="wordmark" style={{ marginRight: 0, color: "var(--ink)" }}>
+          <Link href="https://learn.mozg.sh" className="wordmark" style={{ marginRight: 0, color: "var(--ink)" }}>
             learn<span style={{ color: "var(--color-riso-green)" }}>.</span>
           </Link>
           <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>

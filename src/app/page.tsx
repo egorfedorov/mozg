@@ -391,7 +391,7 @@ export default async function Home() {
               while you study it.
             </p>
           </div>
-          <Link className="btn" href="/learn/mozg/prompt-engineering">
+          <Link className="btn" href="https://learn.mozg.sh/mozg/prompt-engineering">
             Start the course
           </Link>
         </section>
