@@ -10,6 +10,14 @@ export function claude(): Anthropic {
   client ??= new Anthropic({
     apiKey: env.ANTHROPIC_API_KEY,
     ...(env.ANTHROPIC_BASE_URL ? { baseURL: env.ANTHROPIC_BASE_URL } : {}),
+    // The SDK's defaults are 10 minutes and 2 retries — one request a flaky
+    // reseller leaves hanging can hold a job for half an hour, and the ingest
+    // queue works one job at a time, so that one request stalls every brain
+    // on the instance. Four minutes covers the largest extraction segment we
+    // send; pg-boss retries the whole job (with the extraction cached) if a
+    // page genuinely needs another go.
+    timeout: 240_000,
+    maxRetries: 1,
   });
   return client;
 }
