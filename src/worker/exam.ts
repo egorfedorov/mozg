@@ -7,6 +7,7 @@ import { findRegressions } from "@/lib/regressions";
 import { searchBrain } from "@/lib/search";
 import { familyIds } from "@/lib/families";
 import { effectivePlan, limitsFor } from "@/lib/plans";
+import { byokStorage } from "@/lib/byok";
 import { discoverPages, pickTopUpPages } from "@/lib/crawl";
 import { enqueueIngest, PRIORITY } from "@/worker/queue";
 
@@ -310,7 +311,7 @@ export async function runExam(
       `select plan, paid_until from "user" where id = $1`,
       [brain.owner_id],
     );
-    const allowed = limitsFor(owner.plan, owner.paid_until).examSittings;
+    const allowed = byokStorage.getStore() ? Infinity : limitsFor(owner.plan, owner.paid_until).examSittings;
     if (Number.isFinite(allowed)) {
       const sat = await one<{ n: number }>(
         `select count(*)::int as n from check_runs

@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { limitsFor } from "@/lib/plans";
+import { byokStorage } from "@/lib/byok";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSION, type ExtractResult } from "@/lib/extract";
 import { scanSecrets } from "@/lib/scan";
@@ -132,11 +133,14 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
       // speed of the queue. Rolling 24h, per owner, sized by plan; a source
       // over the line fails with the reason in its error and the maintenance
       // pass requeues it once the window has rolled.
+      // On a bring-your-own-key owner the budget guards nothing — the spend
+      // is theirs, on their key — so it steps aside entirely.
+      const byok = Boolean(byokStorage.getStore());
       const owner = await one<{ plan: string; paid_until: Date | null }>(
         `select u.plan, u.paid_until from "user" u where u.id = $1`,
         [brain.owner_id],
       );
-      const budget = limitsFor(owner.plan as never, owner.paid_until).dailyExtractCents;
+      const budget = byok ? Infinity : limitsFor(owner.plan as never, owner.paid_until).dailyExtractCents;
       const { spent } = await one<{ spent: number }>(
         `select coalesce(sum(s.cost_cents), 0)::int as spent
            from sources s join brains b on b.id = s.brain_id

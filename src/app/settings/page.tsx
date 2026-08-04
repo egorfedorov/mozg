@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/session";
 import AppShell from "@/components/AppShell";
 import ProfileForm from "./ProfileForm";
 import PlanPanel from "./PlanPanel";
+import AiKeyPanel from "./AiKeyPanel";
 import { limitsFor, type PaidPlan } from "@/lib/plans";
 import { pendingPlanRequest } from "@/lib/upgrade";
 
@@ -29,6 +30,8 @@ export default async function SettingsPage() {
     sources: number;
     calls: number;
     balance_cents: number;
+    ai_key_hint: string | null;
+    ai_base_url: string | null;
   }>(
     `select
        (select count(*)::int from brains where owner_id = $1) as brains,
@@ -36,7 +39,9 @@ export default async function SettingsPage() {
          where b.owner_id = $1) as sources,
        (select count(*)::int from calls
          where caller_id = $1 and created_at >= date_trunc('month', now())) as calls,
-       (select balance_cents from "user" where id = $1) as balance_cents`,
+       (select balance_cents from "user" where id = $1) as balance_cents,
+       (select ai_key_hint from "user" where id = $1) as ai_key_hint,
+       (select ai_base_url from "user" where id = $1) as ai_base_url`,
     [user.id],
   );
 
@@ -98,6 +103,8 @@ export default async function SettingsPage() {
           }
           targets={targets}
         />
+
+        <AiKeyPanel hint={counts.ai_key_hint} baseUrl={counts.ai_base_url} />
       </section>
 
       <section style={{ marginTop: "2.5rem" }}>

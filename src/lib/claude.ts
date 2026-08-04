@@ -1,9 +1,32 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "@/lib/env";
+import { byokStorage } from "@/lib/byok";
 
 let client: Anthropic | null = null;
+// One client per distinct user key. Keys are few (one per BYOK user, reused
+// across jobs), so an unbounded map is a leak in theory, a rounding error in
+// practice — revisit if BYOK users pass the thousands.
+const byokClients = new Map<string, Anthropic>();
 
 export function claude(): Anthropic {
+  // A job wrapped in withOwnerKey() spends the owner's key; everything else
+  // spends the platform's. Decided here so no call site needs to know.
+  const byok = byokStorage.getStore();
+  if (byok) {
+    const cacheKey = `${byok.apiKey}|${byok.baseURL ?? ""}`;
+    let c = byokClients.get(cacheKey);
+    if (!c) {
+      c = new Anthropic({
+        apiKey: byok.apiKey,
+        ...(byok.baseURL ? { baseURL: byok.baseURL } : {}),
+        timeout: 240_000,
+        maxRetries: 1,
+      });
+      byokClients.set(cacheKey, c);
+    }
+    return c;
+  }
+
   if (!env.ANTHROPIC_API_KEY) {
     throw new Error("ANTHROPIC_API_KEY is not set — ingest and exams need it");
   }

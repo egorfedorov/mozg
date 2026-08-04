@@ -128,6 +128,46 @@ export async function startTopUp(
   return { payUrl: res.invoice.payUrl, amountCents: res.invoice.amountCents };
 }
 
+/* ─── bring your own key ─────────────────────────────────────────────────── */
+
+/**
+ * Store (or clear) the user's own AI API key. With one set, their brains
+ * train and examine on THEIR spend — the platform's daily budget and exam
+ * caps step aside. Stored encrypted; only the last four characters ever
+ * come back out.
+ */
+export async function saveAiKey(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const raw = String(formData.get("key") ?? "").trim();
+  const baseUrl = String(formData.get("base_url") ?? "").trim();
+
+  if (formData.get("remove") === "yes" || raw === "") {
+    await query(
+      `update "user" set ai_key_enc = null, ai_key_hint = null, ai_base_url = null,
+              "updatedAt" = now() where id = $1`,
+      [user.id],
+    );
+    return { ok: true as const, removed: true as const };
+  }
+
+  if (raw.length < 20 || /\s/.test(raw)) {
+    return { error: "That does not look like an API key." };
+  }
+  if (baseUrl && !/^https:\/\/[^\s]+$/.test(baseUrl)) {
+    return { error: "The base URL must be https://…" };
+  }
+
+  const { seal } = await import("@/lib/secretbox");
+  await query(
+    `update "user" set ai_key_enc = $2, ai_key_hint = $3, ai_base_url = $4,
+            "updatedAt" = now() where id = $1`,
+    [user.id, seal(raw), raw.slice(-4), baseUrl || null],
+  );
+  return { ok: true as const, hint: raw.slice(-4) };
+}
+
 /* ─── plan upgrades ──────────────────────────────────────────────────────── */
 
 /** Ask for a plan — an operator switches the account by hand. */

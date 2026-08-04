@@ -2,6 +2,25 @@ import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRO
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
 import { compileLesson } from "@/worker/lesson";
+import { withOwnerKey } from "@/lib/byok";
+import { maybeOne } from "@/db";
+
+/** BYOK: run a per-brain job on its owner's key when they set one. */
+async function withBrainOwner<T>(brainId: string, fn: () => Promise<T>): Promise<T> {
+  const row = await maybeOne<{ owner_id: string }>(
+    `select owner_id from brains where id = $1`, [brainId],
+  );
+  return row ? withOwnerKey(row.owner_id, fn) : fn();
+}
+
+async function withSourceOwner<T>(sourceId: string, fn: () => Promise<T>): Promise<T> {
+  const row = await maybeOne<{ owner_id: string }>(
+    `select b.owner_id from sources s join brains b on b.id = s.brain_id where s.id = $1`,
+    [sourceId],
+  );
+  return row ? withOwnerKey(row.owner_id, fn) : fn();
+}
+
 import { query } from "@/db";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
@@ -60,7 +79,7 @@ async function main() {
       const { sourceId } = job.data as { sourceId: string };
       const started = Date.now();
       try {
-        const result = await ingestSource(sourceId);
+        const result = await withSourceOwner(sourceId, () => ingestSource(sourceId));
         console.log(
           `[ingest] ${sourceId} ${result.status} notes=${result.notes} ` +
             `${Date.now() - started}ms` +
@@ -116,7 +135,7 @@ async function main() {
       const { brainId, mini } = job.data as { brainId: string; mini?: boolean };
       const started = Date.now();
       try {
-        const result = await runExam(brainId, { mini });
+        const result = await withBrainOwner(brainId, () => runExam(brainId, { mini }));
         console.log(
           result
             ? `[exam] ${brainId} ${result.score}% (${result.passed}/${result.total}` +
@@ -192,7 +211,7 @@ async function main() {
 
   await boss.work(QUEUES.lesson, { batchSize: 1, pollingIntervalSeconds: 5 }, async ([job]) => {
     const { brainId, category } = job.data as { brainId: string; category: string };
-    const outcome = await compileLesson(brainId, category);
+    const outcome = await withBrainOwner(brainId, () => compileLesson(brainId, category));
     console.log(`[lesson] ${brainId} "${category}" ${outcome}`);
   });
 
@@ -200,7 +219,7 @@ async function main() {
     const { brainId } = job.data as { brainId: string };
     const started = Date.now();
     try {
-      const r = await compileSummaries(brainId);
+      const r = await withBrainOwner(brainId, () => compileSummaries(brainId));
       console.log(
         `[summary] ${brainId} compiled=${r.compiled} current=${r.current} ` +
           `pruned=${r.pruned} ${r.costCents.toFixed(1)}¢ ${Date.now() - started}ms`,
