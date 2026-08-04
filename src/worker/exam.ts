@@ -158,6 +158,9 @@ export interface ExamResult {
   passed: number;
   total: number;
   costCents: number;
+  /** Verdicts carried from the previous run because their category's
+   *  material had not moved — the incremental re-sit's savings, visible. */
+  carried: number;
 }
 
 export async function runExam(brainId: string): Promise<ExamResult | null> {
@@ -192,8 +195,61 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
     // less than that would make the number a lie in the owner's favour.
     const scope = await familyIds(brain);
 
+    // Incremental re-sits: a pass in a category whose material has not moved
+    // since the last run is carried forward, not re-bought — re-judging
+    // unchanged material can only add noise, which the voting exists to
+    // remove. Failures are ALWAYS re-judged (recovery must stay possible),
+    // and any check without a previous verdict is fresh by definition.
+    const prev = await query<{ id: string; started_at: Date }>(
+      `select id, started_at from check_runs
+        where brain_id = $1 and status = 'done'
+        order by started_at desc limit 1`,
+      [brainId],
+    ).then((r) => r[0] ?? null);
+
+    const touched = prev
+      ? new Set(
+          (
+            await query<{ category: string }>(
+              `select distinct category from notes
+                where brain_id = any($1::uuid[]) and category is not null
+                  and (created_at > $2
+                       or (superseded_at is not null and superseded_at > $2))`,
+              [scope, prev.started_at],
+            )
+          ).map((r) => r.category),
+        )
+      : new Set<string>();
+
+    const carried = new Map<
+      string,
+      { passed: boolean; reason: string; hits: number; top: number | null }
+    >();
+    if (prev) {
+      const prevResults = await query<{
+        check_id: string;
+        passed: boolean;
+        reason: string | null;
+        retrieval_hits: number | null;
+        retrieval_top_score: number | null;
+      }>(`select * from check_results where run_id = $1`, [prev.id]);
+      for (const r of prevResults) {
+        const check = checks.find((c) => c.id === r.check_id);
+        if (check && r.passed && !touched.has(check.category)) {
+          carried.set(check.id, {
+            passed: true,
+            reason: r.reason ?? "carried from the previous run (material unchanged)",
+            hits: r.retrieval_hits ?? 0,
+            top: r.retrieval_top_score,
+          });
+        }
+      }
+    }
+
+    const fresh = checks.filter((c) => !carried.has(c.id));
+
     const contexts = await Promise.all(
-      checks.map(async (check) => {
+      fresh.map(async (check) => {
         const { hits } = await searchBrain(scope, check.question, { limit: 5 });
         return {
           check,
@@ -250,6 +306,20 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       }
     }
 
+    // Carried passes join the run's results as first-class rows — the run is
+    // complete on its own, and the next diagnosis never needs to know which
+    // verdicts were fresh.
+    for (const [checkId, c] of carried) {
+      const check = checks.find((x) => x.id === checkId)!;
+      results.push({
+        check,
+        passed: c.passed,
+        reason: c.reason,
+        retrievalHits: c.hits,
+        retrievalTopScore: c.top,
+      });
+    }
+
     for (const r of results) {
       await query(
         `insert into check_results
@@ -299,6 +369,7 @@ export async function runExam(brainId: string): Promise<ExamResult | null> {
       passed: results.filter((r) => r.passed).length,
       total: results.length,
       costCents: cost,
+      carried: carried.size,
     };
   } catch (err) {
     await query(

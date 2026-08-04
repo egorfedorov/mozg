@@ -116,7 +116,8 @@ async function main() {
         const result = await runExam(brainId);
         console.log(
           result
-            ? `[exam] ${brainId} ${result.score}% (${result.passed}/${result.total}) ` +
+            ? `[exam] ${brainId} ${result.score}% (${result.passed}/${result.total}` +
+                `${result.carried ? `, ${result.carried} carried` : ""}) ` +
                 `${result.costCents.toFixed(1)}¢ ${Date.now() - started}ms`
             : `[exam] ${brainId} skipped — brain has no goal`,
         );
