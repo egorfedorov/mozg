@@ -27,18 +27,9 @@ actually cover. mozg is built on one mechanism applied everywhere:
 
 > **Knowledge must be measured.**
 
-```text
-$ claude mcp add --transport http mozg https://mozg.sh/mcp
-✓ connected · 4 brains available
-
-> what does /wallet/play expect for the amount field?
-
-  brain_search(brain: "mozg/stake-engine", query: "play amount units")
-  → 3 notes · 96 ms
-
-  Amounts are integers in RGS minor units — $1.00 is 1_000_000 at
-  6-decimal scale, and the same scale applies to every wallet endpoint.
-```
+<p align="center">
+  <img src="public/brand/demo.svg" alt="Terminal: connecting mozg to Claude Code, then an agent answering an Expo question from the brain with a cited source and exam score" width="820" />
+</p>
 
 ## The loop
 
@@ -69,6 +60,22 @@ flowchart LR
 - **Injection-hardened.** Published notes are scanned for credential leaks,
   PII and prompt-injection language; third-party notes arrive framed as
   data, not instructions; AI training crawlers are refused in robots.txt.
+
+## Run your own, in one command
+
+```bash
+git clone https://github.com/egorfedorov/mozg.git && cd mozg
+cp .env.selfhost.example .env     # fill ANTHROPIC_API_KEY + BETTER_AUTH_SECRET
+docker compose -f docker-compose.selfhost.yml up
+```
+
+Postgres with pgvector, the embedder, the app and the worker come up
+together; the schema migrates itself before the app starts. Open
+**http://localhost:3300**, create an account, paste a docs URL.
+
+First boot downloads ~2.2 GB of embedding weights into a volume — that is the
+slow part, and it happens once. Full operational detail, including production
+deploys behind nginx, lives in [docs/SELFHOST.md](docs/SELFHOST.md).
 
 ## Cloud, or your own metal
 

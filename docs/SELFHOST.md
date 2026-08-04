@@ -3,7 +3,21 @@
 The complete operations manual: setup, the pipeline, deploys, scripts, and
 the traps we already stepped in so you don't have to.
 
-## Setup
+## The one-command path
+
+```bash
+cp .env.selfhost.example .env     # ANTHROPIC_API_KEY + BETTER_AUTH_SECRET
+docker compose -f docker-compose.selfhost.yml up
+```
+
+Everything runs in containers and the schema migrates itself. Open
+http://localhost:3300. Set `MOZG_PORT` in `.env` to use another port. That is
+the whole story for trying it, and it is enough for a personal instance.
+
+The rest of this document is the manual path — useful when you develop on the
+code itself, or run it in production behind nginx.
+
+## Setup (developing on the code)
 
 You need Node 20+, Postgres 14+ and Python 3.11+.
 

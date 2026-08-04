@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="366" viewBox="0 0 860 366" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13.5">
+  <rect width="860" height="366" rx="10" fill="#14161a" />
+  <rect width="860" height="34" rx="10" fill="#1d2027" />
+  <rect y="24" width="860" height="10" fill="#1d2027" />
+  <circle cx="20" cy="17" r="5" fill="#f15060" />
+  <circle cx="38" cy="17" r="5" fill="#f5c04e" />
+  <circle cx="56" cy="17" r="5" fill="#3ec300" />
+  <text x="76" y="22" fill="#8b8f98" font-size="12">claude code — mozg</text>
+  <text x="22" y="58" fill="#f15060" opacity="0">$ claude mcp add --transport http mozg https://mozg.sh/mcp
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.0000;0.0200;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="80" fill="#3ec300" opacity="0">✓ connected · 5 brains available
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.0947;0.1147;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="102" fill="#e9eaec" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.1684;0.1884;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="124" fill="#e9eaec" opacity="0">&gt; does EAS Update need a new build when I change a channel?
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.1895;0.2095;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="146" fill="#e9eaec" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.3053;0.3253;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="168" fill="#7aa2f7" opacity="0">  brain_search(brain: "mozg/expo", query: "eas update channel branch")
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.3263;0.3463;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="190" fill="#8b8f98" opacity="0">  → 4 notes · 96 ms · zero context tokens
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.4105;0.4305;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="212" fill="#e9eaec" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.4842;0.5042;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="234" fill="#e9eaec" opacity="0">  No. A channel points at a branch, and the build reads whichever
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.5053;0.5253;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="256" fill="#e9eaec" opacity="0">  update matches its channel header and runtime version — relink
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.5474;0.5674;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="278" fill="#e9eaec" opacity="0">  the channel and existing builds follow it.
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.5895;0.6095;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="300" fill="#e9eaec" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.6632;0.6832;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+  <text x="22" y="322" fill="#8b8f98" opacity="0">  source: mozg/expo — exam score 72%, updated today
+    <animate attributeName="opacity" values="0;0;1;1;0"
+      keyTimes="0;0.6842;0.7042;0.94;1"
+      dur="9.5s" repeatCount="indefinite" />
+  </text>
+</svg>
