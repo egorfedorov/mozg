@@ -159,30 +159,6 @@ export default async function Home() {
           </Link>
         </div>
 
-        {/* The mark, thinking. Muted, looping, decorative — the page must
-            read identically with the video ignored, so it gets no copy of its
-            own beyond a caption. */}
-        <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
-          <video
-            src="/promo.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            aria-label="mozg — documents flow into a brain, answers flow out to agents"
-            style={{
-              width: "100%",
-              display: "block",
-              border: "1.5px solid var(--ink)",
-              background: "var(--paper-2)",
-            }}
-          />
-          <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".5rem" }}>
-            material in · answers out · that is the whole product
-          </p>
-        </section>
-
         <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
           <p className="eyebrow">What actually happens</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
