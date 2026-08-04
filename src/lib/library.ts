@@ -34,11 +34,32 @@ export async function addToLibrary(userId: string, brainId: string): Promise<Add
      on conflict do nothing returning brain_id`,
     [userId, brain.id],
   );
+
+  // A parent is a family: adding or buying the umbrella must put the
+  // children on the shelf too, or the buyer opens their library and sees an
+  // empty box ("0 notes"). Children that are separately paid come along only
+  // when the parent purchase (the bundle) or their own purchase covers them.
+  await query(
+    `insert into library (user_id, brain_id)
+     select $1, c.id from brains c
+      where c.parent_id = $2 and c.visibility = 'public'
+        and (c.price_cents = 0
+             or exists (select 1 from purchases where brain_id = $2 and buyer_id = $1)
+             or exists (select 1 from purchases where brain_id = c.id and buyer_id = $1))
+     on conflict do nothing`,
+    [userId, brain.id],
+  );
+
   return { ok: true, already: inserted.length === 0 };
 }
 
 export async function removeFromLibrary(userId: string, brainId: string): Promise<void> {
-  await query(`delete from library where user_id = $1 and brain_id = $2`, [userId, brainId]);
+  // Symmetric with adding: dropping the umbrella drops the family.
+  await query(
+    `delete from library where user_id = $1
+      and brain_id in (select id from brains where id = $2 or parent_id = $2)`,
+    [userId, brainId],
+  );
 }
 
 export async function inLibrary(userId: string, brainId: string): Promise<boolean> {

@@ -329,6 +329,14 @@ export async function purchaseBrain(opts: {
       `insert into library (user_id, brain_id) values ($1, $2) on conflict do nothing`,
       [buyerId, brainId],
     );
+    // Buying a bundle buys the family — the children land on the shelf in
+    // the same transaction, or the buyer opens an umbrella with "0 notes".
+    await client.query(
+      `insert into library (user_id, brain_id)
+       select $1, id from brains where parent_id = $2 and visibility = 'public'
+       on conflict do nothing`,
+      [buyerId, brainId],
+    );
 
     await move({
       client,

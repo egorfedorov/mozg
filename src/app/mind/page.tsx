@@ -30,19 +30,19 @@ export default async function MindPage() {
     owner_handle: string | null;
     slug: string;
   }>(
-    `select b.id, b.slug as handle, b.title, b.goal, b.score, b.note_count,
+    `select b.id, b.slug as handle, b.title, b.goal, b.score, (select coalesce(sum(f.note_count),0) from brains f where f.id = b.id or f.parent_id = b.id)::int as note_count,
             b.color, 'own' as access, u2.handle as owner_handle, b.slug
        from brains b join "user" u2 on u2.id = b.owner_id
       where b.owner_id = $1
      union all
      select b.id, u2.handle || '/' || b.slug, b.title, b.goal, b.score,
-            b.note_count, b.color, 'bought', u2.handle, b.slug
+            (select coalesce(sum(f.note_count),0) from brains f where f.id = b.id or f.parent_id = b.id)::int, b.color, 'bought', u2.handle, b.slug
        from purchases p join brains b on b.id = p.brain_id
        join "user" u2 on u2.id = b.owner_id
       where p.buyer_id = $1
      union all
      select b.id, u2.handle || '/' || b.slug, b.title, b.goal, b.score,
-            b.note_count, b.color, 'added', u2.handle, b.slug
+            (select coalesce(sum(f.note_count),0) from brains f where f.id = b.id or f.parent_id = b.id)::int, b.color, 'added', u2.handle, b.slug
        from library l join brains b on b.id = l.brain_id
        join "user" u2 on u2.id = b.owner_id
       where l.user_id = $1 and b.visibility = 'public'
