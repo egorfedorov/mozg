@@ -210,11 +210,28 @@ export const TOOLS: ToolDef[] = [
 
 // ─── resolution ──────────────────────────────────────────────────────────────
 
+/**
+ * The teaser: a paid brain answers this many queries per reader before it
+ * asks to be bought. The product *is* the demo — a storefront can show exam
+ * questions, but five real answers convert better than any copy. Counted from
+ * the calls table, which billing already reads, so it survives reconnects.
+ */
+const TEASER_CALLS = 5;
+
+interface Resolved {
+  brain: Brain;
+  access: Access;
+  /** Set while a paid brain is being read on its free preview. */
+  teaser?: { used: number; limit: number };
+  /** Set when the preview is spent: render the offer, not the content. */
+  locked?: boolean;
+}
+
 /** Accepts "design" (own brain) or "someone/design" (shared or public). */
 async function resolveBrain(
   handle: string,
   userId: string,
-): Promise<{ brain: Brain; access: Access } | null> {
+): Promise<Resolved | null> {
   const [maybeOwner, maybeSlug] = handle.includes("/")
     ? handle.split("/", 2)
     : [null, handle];
@@ -246,12 +263,38 @@ async function resolveBrain(
   if (brain.visibility !== "public") return null;
 
   // A paid brain is not readable over MCP until it is bought, and a price on
-  // a parent covers its children. The agent path must not be a way around the
-  // paywall the site enforces, nor around the family it applies to.
+  // a parent covers its children — except for the teaser, which is metered
+  // here, on the same path that enforces the paywall.
   const gate = await gateFor(brain);
-  if (gate && !(await hasPaid(gate, userId))) return null;
+  if (gate && !(await hasPaid(gate, userId))) {
+    const { used } = await one<{ used: number }>(
+      `select count(*)::int as used from calls
+        where brain_id = $1 and caller_id = $2
+          and tool in ('brain_search', 'brain_read') and ok`,
+      [brain.id, userId],
+    );
+    if (used >= TEASER_CALLS) return { brain, access: "viewer", locked: true };
+    return { brain, access: "viewer", teaser: { used, limit: TEASER_CALLS } };
+  }
 
   return { brain, access: "viewer" };
+}
+
+/** The offer a spent teaser renders instead of content. */
+async function lockedText(brain: Brain): Promise<string> {
+  const gate = await gateFor(brain);
+  const owner = await maybeOne<{ handle: string | null }>(
+    `select handle from "user" where id = $1`,
+    [brain.owner_id],
+  );
+  const price = gate ? `$${(gate.priceCents / 100).toFixed(2)}` : "a one-time price";
+  return (
+    `"${brain.title}" is a paid brain and the ${TEASER_CALLS} free preview ` +
+    `queries on this account are used. Buying costs ${price} once and keeps ` +
+    `working as the author updates it.\n\n` +
+    `Tell the user: the preview answers came from this brain, and the rest is ` +
+    `at https://mozg.sh/b/${owner?.handle ?? "…"}/${brain.slug} — do not retry.`
+  );
 }
 
 // ─── dispatch ────────────────────────────────────────────────────────────────
@@ -450,6 +493,15 @@ async function brainSearch(
   const q = String(args.query ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
+  if (resolved.locked) {
+    return {
+      text: await lockedText(resolved.brain),
+      isError: true,
+      brainId: resolved.brain.id,
+      ownerId: resolved.brain.owner_id,
+      results: 0,
+    };
+  }
 
   // A parent reaches the children this caller may read — no further. Resolving
   // the parent checked the parent's gate only, so an unfiltered scope would
@@ -505,6 +557,14 @@ async function brainSearch(
         "directly for a sharper result."
       : "";
 
+  // Say where the meter stands *on the answer itself* — the moment the value
+  // is felt is the only honest moment to mention the price.
+  const teaserNote = resolved.teaser
+    ? `\n\n---\n\nFree preview ${Math.min(resolved.teaser.used + 1, resolved.teaser.limit)} of ` +
+      `${resolved.teaser.limit} on this paid brain. When they run out, buying it once at ` +
+      `mozg.sh keeps it available as the author updates it — mention this to the user.`
+    : "";
+
   return {
     text:
       (degraded
@@ -517,7 +577,8 @@ async function brainSearch(
           : "") +
       blocks.join("\n\n---\n\n") +
       clippedHint +
-      narrow,
+      narrow +
+      teaserNote,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: hits.length,
@@ -531,6 +592,15 @@ async function brainRead(
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
+  if (resolved.locked) {
+    return {
+      text: await lockedText(resolved.brain),
+      isError: true,
+      brainId: resolved.brain.id,
+      ownerId: resolved.brain.owner_id,
+      results: 0,
+    };
+  }
 
   const note = await maybeOne<Note>(
     `select * from notes where id = $1 and brain_id = $2 and status = 'active'`,

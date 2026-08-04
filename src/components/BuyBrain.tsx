@@ -46,8 +46,13 @@ export default function BuyBrain({
           </>
         ) : null}
         Buying unlocks the notes for your agents and for you. Paid from your
-        balance. A brain can be copied once it is readable, so there are no
-        refunds after the first read — decide from the preview below.
+        balance; 95% goes to the author. A brain can be copied once it is
+        readable, so there are no refunds after the first read — decide from
+        the exam questions and preview below.{" "}
+        <Link href="/pricing" style={{ textDecoration: "underline" }}>
+          How paying works
+        </Link>
+        .
       </p>
 
       {!signedIn ? (

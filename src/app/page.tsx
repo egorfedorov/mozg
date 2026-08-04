@@ -426,6 +426,49 @@ export default async function Home() {
           </section>
         )}
 
+        {/* Money, in one strip: the question every visitor has and most
+            landing pages hide. The details live on /pricing. */}
+        <section
+          style={{
+            marginTop: "clamp(3rem, 8vw, 4.5rem)",
+            display: "grid",
+            gap: "1px",
+            background: "var(--rule)",
+            border: "1.5px solid var(--ink)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {[
+            ["Using brains", "free, always", "searching spends no tokens and no credits — money is spent once, when a brain is built"],
+            ["Building your own", "free to start", "one brain on the free plan; $15/mo when you need twenty"],
+            ["Catalogue brains", "$0–29, once", "you see the exam score and the questions it passes before paying; 95% goes to the author"],
+          ].map(([t, price, d]) => (
+            <div key={t} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
+              <p className="eyebrow" style={{ margin: 0 }}>
+                {t}
+              </p>
+              <p className="display" style={{ fontSize: "1.4rem", margin: ".3rem 0 .35rem" }}>
+                {price}
+              </p>
+              <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".875rem" }}>{d}</p>
+            </div>
+          ))}
+          <Link
+            href="/pricing"
+            style={{
+              background: "var(--paper-2)",
+              padding: "1.25rem",
+              display: "grid",
+              alignContent: "center",
+            }}
+          >
+            <span className="h3">The whole story →</span>
+            <span style={{ color: "var(--ink-2)", fontSize: ".875rem", marginTop: ".35rem" }}>
+              plans, purchases, balance, refunds
+            </span>
+          </Link>
+        </section>
+
         {/* One clear way out of the page. */}
         <section
           className="panel"

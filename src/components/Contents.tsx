@@ -20,6 +20,7 @@ const PAGES: { href: string; label: string; note: string }[] = [
   { href: "/guide", label: "The long guide", note: "every detail" },
   { href: "/connect", label: "Connect", note: "your client, one command" },
   { href: "/explore", label: "Catalogue", note: "brains to take" },
+  { href: "/pricing", label: "Pricing", note: "what costs money, what never will" },
 ];
 
 export default function Contents({ active }: { active?: string }) {

@@ -82,7 +82,7 @@ export default async function PublicBrainPage({
 
   const { brain, preview } = found;
 
-  const [categories, samples, balance, added, children, parent] = await Promise.all([
+  const [categories, samples, balance, added, children, parent, passedChecks] = await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
     // buying, never the bodies that were paid for.
@@ -101,6 +101,20 @@ export default async function PublicBrainPage({
     user ? inLibrary(user.id, brain.id) : Promise.resolve(false),
     brain.parent_id ? Promise.resolve([]) : accessibleChildren(brain.id, user?.id ?? null),
     parentOf(brain),
+    // Questions the brain passed on its own latest exam. The strongest thing
+    // a storefront can show: not the author's claim, the grader's receipt.
+    // Questions only, never the answers — those are what is being sold.
+    query<{ question: string; category: string }>(
+      `select c.question, c.category
+         from check_results r join checks c on c.id = r.check_id
+        where r.run_id = (
+          select id from check_runs where brain_id = $1 and status = 'done'
+          order by started_at desc limit 1
+        ) and r.passed
+        order by c.weight desc, c.category
+        limit 5`,
+      [brain.id],
+    ),
   ]);
 
   // What actually has to be bought. For a child of a paid family that is the
@@ -171,6 +185,28 @@ export default async function PublicBrainPage({
             </p>
           </div>
         </div>
+
+        {passedChecks.length > 0 && (
+          <section style={{ margin: "0 0 2.5rem" }}>
+            <div className="section-head">
+              <h2 className="h2">Ask it things like</h2>
+              <span className="eyebrow">passed on its latest exam — graded, not claimed</span>
+            </div>
+            <div className="rows">
+              {passedChecks.map((c) => (
+                <div key={c.question} className="row">
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{c.question}</strong>
+                    <span className="row-meta">{c.category}</span>
+                  </span>
+                  <span className="row-side" style={{ color: "var(--color-riso-green)" }}>
+                    ✓
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {children.length > 0 && (
           <section style={{ margin: "0 0 2.5rem" }}>
