@@ -45,6 +45,15 @@ fi
 WATCH_TOKEN="${MOZG_WATCH_TOKEN:-$(sed -n 's/^MOZG_WATCH_TOKEN=//p' "$ENV_FILE" | tr -d '"')}"
 if [ "$now" = "up" ] && [ -n "$WATCH_TOKEN" ]; then
   mcp=$(curl -s --max-time 30 "${URL%/api/health}/mcp"     -H "content-type: application/json" -H "accept: application/json"     -H "authorization: Bearer $WATCH_TOKEN"     -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"brain_search","arguments":{"brain":"mozg/stake-engine","query":"authenticate wallet session"}}}')
+  # Retry once: the probe searches through the embedder, and under a seeding
+  # wave a single slow answer is congestion, not an outage.
+  if ! printf '%s' "$mcp" | grep -q 'note_id'; then
+    sleep 5
+    mcp=$(curl -s --max-time 45 "${URL%/api/health}/mcp" \
+      -H "content-type: application/json" -H "accept: application/json" \
+      -H "authorization: Bearer $WATCH_TOKEN" \
+      -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"brain_search","arguments":{"brain":"mozg/stake-engine","query":"authenticate wallet session"}}}')
+  fi
   if ! printf '%s' "$mcp" | grep -q 'note_id'; then
     now="down"
     body="MCP probe failed: brain_search returned no notes. Raw: $(printf '%s' "$mcp" | head -c 200)"

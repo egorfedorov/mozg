@@ -13,8 +13,11 @@ cd /opt/mozg
 queued=$(docker compose -f docker-compose.prod.yml exec -T db psql -U mozg -t -A \
   -c "select count(*) from sources where status in ('queued','processing')")
 
-if   [ "$queued" -gt 400 ]; then want=4
-elif [ "$queued" -gt 100 ]; then want=3
+# Two is the ceiling on purpose. Every worker extracts through the SAME
+# single embedder process, so a third and fourth do not add throughput —
+# they queue behind it, peg it at >1000% CPU, and make its health check time
+# out. Measured on an evening of seeding: four workers, five false outages.
+if   [ "$queued" -gt 100 ]; then want=2
 elif [ "$queued" -gt 15 ];  then want=2
 else want=1; fi
 

@@ -38,12 +38,18 @@ export async function GET() {
   }
   checks.queue = queue && queue.stuck > 0 ? "down" : "ok";
 
+  // 503 means "stop sending traffic here". Only the database and a stuck
+  // queue earn that: without the embedder, search falls back to full text
+  // and every page still serves — paging the operator because a busy
+  // embedder answered slowly cost us five false alarms in one evening.
+  // Embeddings being down still shows in `checks` and in the status word.
+  const serving = checks.database === "ok" && checks.queue === "ok";
   const healthy = Object.values(checks).every((v) => v === "ok");
 
   return NextResponse.json(
     { status: healthy ? "ok" : "degraded", version: process.env.GIT_SHA ?? "unknown", checks, queue },
     {
-      status: healthy ? 200 : 503,
+      status: serving ? 200 : 503,
       headers: { "cache-control": "no-store" },
     },
   );
