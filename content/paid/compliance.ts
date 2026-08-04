@@ -220,4 +220,52 @@ export const NOTES: {
     category: "Store and platform submissions",
     kind: "fact",
   },
+  {
+    title: "What RTP and math disclosures does Stake Engine require for approval?",
+    body: "The math requirements set the accepted RTP band at 90.0–98.0%, with at most 0.5% RTP variance between modes, and the max win must be genuinely obtainable (at least 1-in-10,000,000 probability in simulation). Disclosure obligations that submissions miss: (1) the RTP shown in the rules must match the certified math model exactly — not a marketing rounding; (2) if the game is configured with multiple RTP variants, ALL configured variants must be disclosed in the rules, not just the one you ship by default; (3) volatility and the max-win statement are separate mandatory disclosures — a volatility descriptor and the maximum win multiplier must appear alongside RTP, each as its own line, not buried in feature text. The examiner checks the rules modal against the math certificate line by line.",
+    category: "Paytable and rules copy",
+    kind: "rule",
+  },
+  {
+    title: "The complete rules/paytable modal checklist — what reviewers tick off",
+    body: "The modal must contain, as separately identifiable items: a full symbol paytable with every symbol's values at the current play level; complete rules for every feature and bonus (trigger conditions, retrigger rules, what carries over); RTP disclosure; a volatility disclosure as its own item — the most commonly missed element; a max-win / prize-cap statement as its own item; the malfunction-voids-plays clause ('malfunction voids all plays and pays' in money mode, sweeps-safe rewording in social mode); and the legal disclaimer block. Reviewers tick these off one by one, and 'the information exists somewhere in the game' does not count — it must be in the rules modal itself. Write the modal from this checklist, not from your game's feature list.",
+    category: "Paytable and rules copy",
+    kind: "rule",
+  },
+  {
+    title: "How do I rewrite 'pays out 500x your bet' for sweeps mode?",
+    body: "Approved rewrite: 'awards 500x your play amount' — or 'prize of 500x your play amount' when the context needs a noun. The transformation removes all three gambling markers (pays out → awards, bet → play amount) while keeping the multiplier factual and verifiable against the math model. The same pattern generalizes: 'pays 100 coins' → 'awards 100 coins'; 'win up to 5,000x your stake' → 'up to 5,000x your play amount in prizes'. What does NOT pass: keeping 'bet' anywhere ('awards 500x your bet'), substituting 'wager' (also restricted), or cash framing ('$500 prize' implies money value). The multiplier itself is fine — reviewers reject the money verbs around it, not the number.",
+    category: "Prohibited terminology",
+    kind: "example",
+  },
+  {
+    title: "Which exact messages get a submission rejected outright?",
+    body: "The hard-fail copy list — any one of these, anywhere in game text, tiles, or store copy, is an instant rejection: 'win real money' or any cash-out framing; 'guaranteed win' / 'guaranteed prize'; 'risk-free'; 'deposit' / 'withdraw' / 'cash out' (money-movement verbs); 'jackpot' in social mode (use 'top prize' / 'grand prize'); odds or RTP claims framed as profit expectation ('96% RTP means you win back $96'); any implication that Gold Coins have cash value or can be redeemed; and the absence of 'no purchase necessary' where sweeps prizes are promoted. The trap: these hide in inherited marketing copy and banner art text, not just the rules modal. Run the phrase list over every string file and every image before submitting.",
+    category: "Prohibited terminology",
+    kind: "pitfall",
+  },
+  {
+    title: "What autoplay and session-control rules apply to slot submissions?",
+    body: "Autoplay must be a bounded, user-controlled session, not an infinite one: (1) the player must choose a finite spin count — open-ended 'spin forever' autoplay is rejected; (2) user-set stop conditions must be offered — a loss limit and a single-win limit at minimum; (3) autoplay must stop on feature/bonus triggers and on balance depletion, not plow through them; (4) it must be cancellable by the player at any time with one tap; (5) it must never be default-on — the first state of the game is manual play. Session controls that must exist alongside: access to self-exclusion and limit-setting from within the game or one click away, and a visible session clock or session info. Reviewers test this by enabling autoplay with default settings and checking it cannot run unbounded.",
+    category: "Responsible gambling",
+    kind: "rule",
+  },
+  {
+    title: "What always-on UI and responsible-gambling elements must stay visible in every mode?",
+    body: "Regardless of turbo, fastplay, or autoplay state, these must remain on screen and legible: the player's current balance, the current play amount, the last win/prize display, and clock or session information. Speed modes that hide or collapse any of these are rejected — this is the specific failure behind most turbo rejections. Separately, the responsible-gambling layer: a play-responsibly link or footer visible from the main game screen, access to self-exclusion and session/limit settings, and a helpline reference for money-mode deployments. The audit pattern: put the game in its fastest mode, let autoplay run, and screenshot — if balance, play amount, win display, or session info is missing, dimmed, or scrolled away, that screen fails.",
+    category: "Responsible gambling",
+    kind: "rule",
+  },
+  {
+    title: "What must a game tile NOT contain, and what are the text constraints?",
+    body: "Prohibited on tiles: baked-in wording, multipliers, or prize claims ('WIN 10,000x!', jackpot badges); RTP figures or win amounts anywhere in the art; misleading badges ('HOT', 'NEW' baked into art when not platform-applied); and any restricted-term vocabulary for social mode. Composition constraints: Stake's builder composites the gradient and title itself — your foreground art must be transparent-background with no text baked in, the title must fit the height guide, fill the text-box width, and use at most 2 text sizes (large game name, smaller subtitle). Keep the actual title short — the builder truncates long titles on small tiles, and a truncated title fails the tile check. Background must be bright enough for overlay text legibility, avoiding saturated yellows/greens/blues behind text.",
+    category: "Store and platform submissions",
+    kind: "rule",
+  },
+  {
+    title: "Turbo/fastplay speed limits and defaults — the settings that get rejected",
+    body: "Three turbo rules beyond legibility: (1) spins must not be shortened below the platform's minimum play duration — an 'instant result' mode that skips the spin entirely fails, because the round presentation is part of the required experience; (2) turbo must not be default-on — the player opts into speed, the game never starts fast; (3) turbo must not auto-chain with autoplay in a way that removes every stop point — the combination still has to respect autoplay's stop conditions (feature triggers, limits) rather than blasting through a hundred instant rounds. Test the worst case: turbo ON + autoplay ON + default settings, and verify balance, play amount, win display, and session info stay visible and every stop condition still fires.",
+    category: "Store and platform submissions",
+    kind: "rule",
+  },
 ];
