@@ -113,13 +113,22 @@ export default async function Home() {
           doesn&apos;t know.
         </p>
 
-        <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginBottom: "3.5rem" }}>
-          <Link className="btn" href={user ? "/brains" : "/sign-in"}>
-            {user ? "Open your brains" : "Build a brain"}
-          </Link>
+        <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", alignItems: "center", marginBottom: "3.5rem" }}>
+          {user ? (
+            <Link className="btn" href="/brains">Open your brains</Link>
+          ) : (
+            <Link className="btn" href="/start">
+              Start here — 10 minutes to a thinking agent
+            </Link>
+          )}
           <Link className="btn btn-ghost" href="/explore">
             Browse public brains
           </Link>
+          {!user && (
+            <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
+              free · no card · the guided path
+            </span>
+          )}
         </div>
 
         <div className="term" aria-label="Example session">
@@ -407,7 +416,7 @@ export default async function Home() {
             className="display"
             style={{ fontSize: "clamp(1.6rem, 4vw, 2.25rem)", margin: ".4rem 0 1.5rem" }}
           >
-            Four pages, then you&apos;re running.
+            One guided path, then you&apos;re running.
           </h2>
 
           <div
@@ -419,6 +428,12 @@ export default async function Home() {
               gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             }}
           >
+            <GuideCard
+              href="/start"
+              step="00"
+              title="Start here"
+              blurb="The whole journey on one page: why this exists, connect an agent, prove it works, build your own — with the screens you'll see."
+            />
             <GuideCard
               href="/vs"
               step="01"
