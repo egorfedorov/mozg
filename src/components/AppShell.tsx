@@ -21,6 +21,7 @@ const GROUPS: {
     title: "Work",
     items: [
       { href: "/brains", label: "Overview" },
+      { href: "/mind", label: "Your mind" },
       { href: "/brains/new", label: "New brain" },
       { href: "/connect", label: "Connect an agent" },
     ],
