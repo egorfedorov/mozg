@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { mcp } from "better-auth/plugins";
 // Relative, not "@/..." — the better-auth CLI loads this file outside the
 // Next.js resolver and does not honour tsconfig path aliases.
 import { pool } from "../db";
@@ -20,6 +21,10 @@ export const auth = betterAuth({
   database: pool,
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
+  // OAuth for MCP: ChatGPT connectors and other OAuth-only clients discover
+  // us via /.well-known, register dynamically, and send users to /sign-in
+  // for consent. Bearer mzg_ tokens keep working alongside.
+  plugins: [mcp({ loginPage: "/sign-in" })],
   trustedOrigins: onMozg ? ["https://mozg.sh", "https://learn.mozg.sh"] : undefined,
   advanced: onMozg
     ? { crossSubDomainCookies: { enabled: true, domain: ".mozg.sh" } }

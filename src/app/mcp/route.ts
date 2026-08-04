@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { query, maybeOne } from "@/db";
 import { TOOLS, callTool } from "@/lib/mcp";
 import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
+import { auth } from "@/lib/auth";
+import type { Plan } from "@/db/types";
 import { captureServer } from "@/lib/analytics";
 
 /**
@@ -36,12 +38,39 @@ const fail = (id: RpcRequest["id"], code: number, message: string, status = 200)
   NextResponse.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
 
 export async function POST(req: Request) {
-  const owner = await verifyToken(req.headers.get("authorization"));
+  let owner = await verifyToken(req.headers.get("authorization"));
+
+  // Second door: OAuth access tokens (ChatGPT connectors and every other
+  // client that speaks MCP auth). Same Owner shape out, so nothing below
+  // knows which door was used; quotas and metering run on userId either way.
   if (!owner) {
-    // 401 + WWW-Authenticate is what MCP clients look for to prompt for auth.
+    try {
+      const oauth = await auth.api.getMcpSession({ headers: req.headers as unknown as Headers });
+      if (oauth?.userId) {
+        const u = await maybeOne<{ plan: Plan }>(
+          `select plan from "user" where id = $1`,
+          [oauth.userId],
+        );
+        if (u) owner = { userId: oauth.userId, tokenId: "oauth", plan: u.plan };
+      }
+    } catch {
+      // An unparseable or expired OAuth token reads as "no session".
+    }
+  }
+
+  if (!owner) {
+    // 401 + WWW-Authenticate is what MCP clients look for to prompt for
+    // auth; resource_metadata points OAuth-capable ones at discovery.
+    const base = new URL(req.url).origin;
     return NextResponse.json(
       { jsonrpc: "2.0", id: null, error: { code: -32001, message: "Unauthorized" } },
-      { status: 401, headers: { "WWW-Authenticate": 'Bearer realm="mozg"' } },
+      {
+        status: 401,
+        headers: {
+          "WWW-Authenticate":
+            `Bearer realm="mozg", resource_metadata="${base}/.well-known/oauth-protected-resource"`,
+        },
+      },
     );
   }
 
