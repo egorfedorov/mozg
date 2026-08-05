@@ -28,6 +28,9 @@ const schema = z.object({
   // is the one already proven to resolve on whatever proxy prod points at;
   // a separate default here is how translate broke while exams worked.
   MODEL_TRANSLATE: z.string().optional(),
+  // Web push (operator notifications). Absent = the feature is quietly off.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
   // The judge is not deterministic: the same brain re-sat the same exam and
   // moved ±10 points (62→51 on one, 49→46 on another). An odd number of votes
   // with majority rule turns that noise into a stable number the owner can

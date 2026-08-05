@@ -144,7 +144,7 @@ test("webhook: a finished payment credits our row's amount, not theirs", async (
     payment_status: "finished",
     payment_id: 42,
   });
-  assert.deepEqual(outcome, { credited: true, amountCents: 2500 });
+  assert.deepEqual(outcome, { credited: true, amountCents: 2500, userId: "u1" });
   assert.equal(db.balance(), 2500);
 });
 
@@ -161,7 +161,7 @@ test("webhook: a replay of the same callback is a no-op", async () => {
 
   const payload = { order_id: "mozg_r2", payment_status: "finished", payment_id: 7 };
   const first = await applyWebhook(payload);
-  assert.deepEqual(first, { credited: true, amountCents: 1000 });
+  assert.deepEqual(first, { credited: true, amountCents: 1000, userId: "u1" });
 
   const replay = await applyWebhook(payload);
   assert.deepEqual(replay, { credited: false, reason: "already" });
@@ -187,7 +187,7 @@ test("webhook: non-final statuses neither credit nor close the invoice", async (
 
   // A later final status on the same invoice still credits.
   const final = await applyWebhook({ order_id: "mozg_r3", payment_status: "confirmed" });
-  assert.deepEqual(final, { credited: true, amountCents: 1000 });
+  assert.deepEqual(final, { credited: true, amountCents: 1000, userId: "u1" });
 });
 
 test("webhook: failed payments close the invoice without crediting", async () => {

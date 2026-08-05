@@ -13,6 +13,7 @@ import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import { settleWithdrawal, resolveUpgrade, requeueBrainSources } from "./actions";
 import WalletsForm from "./WalletsForm";
 import MessageUserForm from "./MessageUserForm";
+import PushToggle from "./PushToggle";
 import { query } from "@/db";
 import { env } from "@/lib/env";
 
@@ -267,6 +268,22 @@ export default async function AdminPage() {
               </div>
             ))}
           </Rows>
+        </Section>
+
+        <Section title="Notifications" aside="Chrome · Safari 16.4+ · Firefox">
+          <p className="lede" style={{ marginBottom: ".75rem" }}>
+            A browser notification the moment someone writes to chatmozg or
+            starts a payment — even with mozg closed. Per browser: enable it
+            on the laptop and the phone separately.
+          </p>
+          {env.VAPID_PUBLIC_KEY ? (
+            <PushToggle vapidPublicKey={env.VAPID_PUBLIC_KEY} />
+          ) : (
+            <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: 0 }}>
+              VAPID keys are not set — generate with `npx web-push
+              generate-vapid-keys` and add to the env.
+            </p>
+          )}
         </Section>
 
         <Section title="mozgpay wallets" aside="where the crypto lands">

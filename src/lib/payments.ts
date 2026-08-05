@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query, tx } from "@/db";
 import { env } from "@/lib/env";
 import { creditTopUp, purchaseBrain } from "@/lib/money";
+import { sendPush } from "@/lib/push";
 import { availableCoins, coinByKey, usdPrice } from "@/lib/mozgpay-chains";
 import { captureServer } from "@/lib/analytics";
 
@@ -74,6 +75,7 @@ export async function createInvoice(opts: {
       opts.purpose === "buy" ? (opts.buyBrainId ?? null) : null,
     ],
   );
+  pushPayment(opts.userId, opts.amountCents, "started");
 
   const res = await fetch(`${API}/invoice`, {
     method: "POST",
@@ -173,6 +175,7 @@ export async function createOwnInvoice(opts: {
           amount,
         ],
       );
+      pushPayment(opts.userId, opts.amountCents, "started");
       return {
         ok: true,
         invoice: { reference, payUrl: `/pay/${reference}`, amountCents: opts.amountCents },
@@ -226,6 +229,7 @@ export async function settleOwnInvoice(
     return {
       credited: true as const,
       amountCents: row.amount_cents,
+      userId: row.user_id,
       ...(row.purpose === "buy" && row.buy_brain_id
         ? { followUp: { userId: row.user_id, buyBrainId: row.buy_brain_id } }
         : {}),
@@ -285,12 +289,32 @@ export type WebhookOutcome =
   | {
       credited: true;
       amountCents: number;
+      /** Who paid — completeFollowUp uses it to tell the operator. */
+      userId: string;
       /** Set when the invoice was a direct purchase — the caller completes it
        *  AFTER this transaction commits (the credit locks the balance row,
        *  and the purchase takes its own lock on it). */
       followUp?: { userId: string; buyBrainId: string };
     }
   | { credited: false; reason: "unknown" | "not-final" | "already" | "failed" };
+
+/**
+ * Tell the operator's browsers. Never awaited into a payment path's fate —
+ * the payment IS recorded; the push is a courtesy on top.
+ */
+function pushPayment(userId: string, amountCents: number, phase: "started" | "paid"): void {
+  void (async () => {
+    const [u] = await query<{ email: string }>(`select email from "user" where id = $1`, [userId]);
+    await sendPush({
+      title:
+        phase === "paid"
+          ? `paid: $${(amountCents / 100).toFixed(2)} · ${u?.email ?? "?"}`
+          : `payment started: $${(amountCents / 100).toFixed(2)} · ${u?.email ?? "?"}`,
+      body: phase === "paid" ? "the money landed" : "invoice opened — watch /admin",
+      url: "/admin",
+    });
+  })().catch(() => {});
+}
 
 /** Statuses that mean the money arrived and will not be reversed. */
 const FINAL_OK = new Set(["finished", "confirmed"]);
@@ -357,6 +381,7 @@ export async function applyWebhook(payload: {
     return {
       credited: true as const,
       amountCents: row.amount_cents,
+      userId: row.user_id,
       ...(row.purpose === "buy" && row.buy_brain_id
         ? { followUp: { userId: row.user_id, buyBrainId: row.buy_brain_id } }
         : {}),
@@ -370,7 +395,11 @@ export async function applyWebhook(payload: {
  * the brain the invoice was for. Failure degrades to money on the balance.
  */
 export async function completeFollowUp(outcome: WebhookOutcome): Promise<void> {
-  if (!outcome.credited || !outcome.followUp) return;
+  if (!outcome.credited) return;
+  // Every settlement path funnels through here after its commit — the one
+  // place "money landed" can notify without touching a transaction.
+  pushPayment(outcome.userId, outcome.amountCents, "paid");
+  if (!outcome.followUp) return;
   const { userId, buyBrainId } = outcome.followUp;
 
   const brain = await maybeOne<{ owner_id: string }>(

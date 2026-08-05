@@ -7,6 +7,7 @@ import { currentUser } from "@/lib/session";
 import { rateLimited } from "@/lib/rate-limit";
 import { emailReady, env } from "@/lib/env";
 import { sendMail } from "@/lib/mail";
+import { sendPush } from "@/lib/push";
 
 /**
  * A user writes to the operator. The length floor is gone — it read as spam
@@ -41,6 +42,14 @@ export async function sendChatMessage(_prev: unknown, formData: FormData) {
     `insert into chat_messages (user_id, author, body) values ($1, 'user', $2)`,
     [user.id, body],
   );
+
+  // The operator's browsers hear about it now, not when a tab happens to be
+  // open. Fire-and-forget like the email below — the message IS stored.
+  sendPush({
+    title: `chatmozg: ${user.email}`,
+    body: body.slice(0, 140),
+    url: "/admin/chat",
+  }).catch(() => {});
 
   // The operator hears about it without watching a dashboard. Fire-and-forget:
   // a mail hiccup must not eat the message that IS safely stored.

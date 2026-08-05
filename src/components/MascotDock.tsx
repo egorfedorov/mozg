@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
+import { isAdmin } from "@/lib/admin";
 import { syncAchievements, unseenAchievements } from "@/lib/achievements";
 import MascotDockClient from "./MascotDockClient";
 
@@ -45,12 +46,28 @@ export default async function MascotDock() {
     ? await syncAchievements(user.id).then(() => unseenAchievements(user.id))
     : [];
 
+  // The operator's brain works overtime: it also counts waiting user messages
+  // and payments started since the drawer was last opened, so news reaches
+  // the corner of whatever page the operator happens to be on.
+  const operator = isAdmin(user)
+    ? await query<{ unread: number; payments: number }>(
+        `select
+           (select count(*)::int from chat_messages
+             where author = 'user' and read_at is null) as unread,
+           (select count(*)::int from topups
+             where created_at > coalesce(
+               (select value::timestamptz from app_settings
+                 where key = 'admin_seen_payments_at'), 'epoch')) as payments`,
+      ).then((r) => r[0] ?? { unread: 0, payments: 0 })
+    : null;
+
   return (
     <MascotDockClient
       signedIn={Boolean(user)}
       messages={messages}
       unread={unread}
       fresh={fresh.map((a) => ({ kind: a.kind, title: a.title, blurb: a.blurb }))}
+      operator={operator}
     />
   );
 }

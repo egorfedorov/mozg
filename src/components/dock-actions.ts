@@ -2,6 +2,7 @@
 
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
+import { isAdmin } from "@/lib/admin";
 import { markAchievementsSeen } from "@/lib/achievements";
 
 /**
@@ -19,4 +20,13 @@ export async function markDockSeen(): Promise<void> {
     [user.id],
   );
   await markAchievementsSeen(user.id);
+
+  // The operator's payments counter resets on open; waiting USER messages do
+  // not — those clear only when actually answered in /admin/chat.
+  if (isAdmin(user)) {
+    await query(
+      `insert into app_settings (key, value) values ('admin_seen_payments_at', now()::text)
+       on conflict (key) do update set value = excluded.value, updated_at = now()`,
+    );
+  }
 }

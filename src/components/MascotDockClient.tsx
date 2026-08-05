@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ChatForm from "@/app/chat/ChatForm";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -38,23 +38,55 @@ export default function MascotDockClient({
   messages,
   unread,
   fresh,
+  operator,
 }: {
   signedIn: boolean;
   messages: Message[];
   unread: number;
   fresh: FreshAchievement[];
+  /** Set only for the operator: the whole product's waiting work. */
+  operator: { unread: number; payments: number } | null;
 }) {
   const [open, setOpen] = useState(false);
   // Opening the drawer is reading it: the server forgets the counters, the
   // client zeroes its own copy, and the two agree without a refetch. The new
   // badges themselves stay visible for the rest of the visit — only the count
   // goes; a notification that vanishes while you reach for it is a bug.
+  // Exception: the operator's waiting USER messages stay counted until they
+  // are actually answered — glancing at a number is not support.
   const [seen, setSeen] = useState(false);
-  const badge = seen ? 0 : unread + fresh.length;
+  const badge =
+    (seen ? 0 : unread + fresh.length + (operator?.payments ?? 0)) + (operator?.unread ?? 0);
+
+  // A short blip when the count grows while the page is open — the corner
+  // moving is easy to miss, a sound is not. WebAudio needs no asset; browsers
+  // that have seen no interaction yet simply stay silent.
+  const prevBadge = useRef(badge);
+  useEffect(() => {
+    if (badge > prevBadge.current) {
+      try {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.frequency.setValueAtTime(1175, ctx.currentTime + 0.12);
+        osc.stop(ctx.currentTime + 0.28);
+        osc.onended = () => void ctx.close();
+      } catch {
+        /* no audio context — fine */
+      }
+    }
+    prevBadge.current = badge;
+  }, [badge]);
 
   const toggle = () => {
     setOpen((o) => !o);
-    if (!seen && unread + fresh.length > 0) {
+    if (!seen && badge > 0) {
       setSeen(true);
       void markDockSeen();
     }
@@ -73,6 +105,10 @@ export default function MascotDockClient({
 
   return (
     <>
+      {/* The operator's dock watches even while closed — a payment or a
+          message should ring the corner within half a minute, not on the next
+          navigation. Everyone else polls only with the drawer open. */}
+      {operator && <AutoRefresh active intervalMs={open ? 15_000 : 30_000} />}
       <button
         type="button"
         aria-label={open ? "Close the chat" : "Ask the developer"}
@@ -125,6 +161,32 @@ export default function MascotDockClient({
               </div>
             ) : (
               <>
+                {operator && (operator.unread > 0 || operator.payments > 0) && (
+                  <div className="dock-ach-list">
+                    {operator.unread > 0 && (
+                      <Link href="/admin/chat" className="dock-ach">
+                        <span>
+                          <strong>chatmozg</strong>
+                          <span className="dock-ach-blurb">
+                            {operator.unread} message{operator.unread === 1 ? "" : "s"} waiting for you
+                          </span>
+                        </span>
+                        <span className="mono dock-ach-new">reply →</span>
+                      </Link>
+                    )}
+                    {operator.payments > 0 && (
+                      <Link href="/admin" className="dock-ach">
+                        <span>
+                          <strong>Payments</strong>
+                          <span className="dock-ach-blurb">
+                            {operator.payments} new invoice{operator.payments === 1 ? "" : "s"} since you last looked
+                          </span>
+                        </span>
+                        <span className="mono dock-ach-new">see →</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
                 {fresh.length > 0 && (
                   <div className="dock-ach-list">
                     {fresh.map((a) => (
@@ -159,8 +221,9 @@ export default function MascotDockClient({
                 )}
                 <ChatForm />
                 {/* While the drawer is open, replies land without a reload —
-                    the server half re-renders on each tick, closed costs zero. */}
-                <AutoRefresh active={open} intervalMs={15_000} />
+                    the server half re-renders on each tick, closed costs zero.
+                    (The operator's always-on poll above already covers them.) */}
+                {!operator && <AutoRefresh active={open} intervalMs={15_000} />}
                 <p className="mono dock-foot">
                   <Link className="linkish" href="/chat">
                     open the full thread →
