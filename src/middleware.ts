@@ -11,25 +11,28 @@ const SESSION_COOKIE = "__Secure-better-auth.session_token";
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   if (!host.startsWith("learn.")) {
-    // Landing on the sign-in page means the current cookies did not carry a
-    // session — clear every scope of the session cookie (the pre-widening
-    // host-only one AND the .mozg.sh one) so the login that follows writes
-    // onto clean ground. Two same-name cookies at different scopes are why
-    // a successful OAuth could still bounce back here: the browser sends
-    // both, the server reads the stale one first.
+    // Two same-name session cookies at different scopes is a real problem: one
+    // left over from before the cookie widened to .mozg.sh, one current, and the
+    // server reads the stale one first — which is how a successful OAuth used to
+    // bounce back to the sign-in form.
+    //
+    // The old cure was worse than the disease. It deleted *both* scopes on any
+    // request to /sign-in, and "any request" includes a browser prefetching the
+    // link on hover and the MCP OAuth flow, whose consent step sends an already
+    // signed-in user to this very page. That is why sessions kept dropping:
+    // people were being signed out by walking past the door.
+    //
+    // So delete only the legacy host-only cookie, and leave the domain-scoped one
+    // — the live session — alone. Browsers key cookies by (name, domain, path), so
+    // a Set-Cookie without a Domain attribute targets exactly the host-only one.
+    // Anyone still holding only that cookie is signed out once, on the form, which
+    // is the migration this always meant to be rather than a recurring surprise.
     if (host.startsWith("mozg.sh") && req.nextUrl.pathname === "/sign-in") {
       const res = NextResponse.next();
-      // Raw headers: cookies.set() keys by name, so a second set() with the
-      // same name would replace the first delete instead of adding one.
       res.headers.append(
         "Set-Cookie",
         `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
       );
-      res.headers.append(
-        "Set-Cookie",
-        `${SESSION_COOKIE}=; Domain=.mozg.sh; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
-      );
-      res.headers.append("Set-Cookie", "ck_domain=; Domain=.mozg.sh; Path=/; Max-Age=0");
       return res;
     }
     return NextResponse.next();
