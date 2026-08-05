@@ -84,7 +84,16 @@ export default function StoriesPage() {
               key={s.id}
               href={`#${s.id}`}
               className="row"
-              style={{ textDecoration: "none", alignItems: "baseline", gap: ".75rem" }}
+              // .row is a two-column grid of `1fr auto`, which is right for a
+              // label-then-value line and wrong here: the number took the wide
+              // column and shoved every title against the right edge. The index
+              // wants the opposite — a narrow number, then the text, left-aligned.
+              style={{
+                textDecoration: "none",
+                alignItems: "baseline",
+                gap: ".75rem",
+                gridTemplateColumns: "2rem minmax(0, 1fr)",
+              }}
             >
               <span className="mono" style={{ color: "var(--ink-3)", fontSize: ".8125rem" }}>
                 {String(i + 1).padStart(2, "0")}
