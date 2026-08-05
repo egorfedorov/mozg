@@ -66,7 +66,7 @@ export default async function PricingPage() {
           teach. <strong>Ours is the plan</strong>: hand over a documentation URL
           and our models crawl it, extract the notes, sit the exam and re-read
           what changed while you are asleep. A plan states how much of that
-          inference it includes — $20 a month on Pro, $90 on Team — because a
+          inference it includes — $20 a month on Pro, $65 on Team — because a
           number you can check beats a promise you cannot.
         </p>
         <p className="lede" style={{ maxWidth: "58ch" }}>

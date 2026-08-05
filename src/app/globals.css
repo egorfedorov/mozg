@@ -906,7 +906,11 @@ a {
 .lede {
   color: var(--ink-2);
   max-width: 62ch;
-  margin: 0;
+  /* Zero top margin so a lede sits tight under its heading, and a bottom one so
+     two ledes in a row do not read as one paragraph — which is what happened on
+     the pricing page. Tailwind's preflight zeroes both, and the old rule kept it
+     that way. */
+  margin: 0 0 1rem;
 }
 
 .section-head {
