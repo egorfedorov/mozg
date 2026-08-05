@@ -95,7 +95,7 @@ export default function Contents({ active }: { active?: string }) {
           </span>
         </Link>
 
-        {GROUPS.map((g) => {
+        {GROUPS.flatMap((g) => {
           const here = g.pages.some((p) => p.href === active);
           const group = (
             // `name` makes the four a radio set: opening one closes the others,
@@ -130,20 +130,24 @@ export default function Contents({ active }: { active?: string }) {
               </div>
             </details>
           );
-          return (
-            <span key={`${g.label}-wrap-${active ?? ""}`} style={{ display: "contents" }}>
-              {group}
-              {/* The catalogue, promoted to the bar itself after Start: it is
-                  the one destination with something to take home, and it was
-                  buried two clicks deep inside "Uses". */}
-              {g.label === "Start" && (
-                <Link href="/explore" className="nav-flat" data-active={"/explore" === active}>
+          // Flat siblings, no wrapper: a wrapping <span> made every group the
+          // :last-child of its own box and the dividers between them vanished.
+          // The catalogue rides in right after Start — the one destination
+          // with something to take home was two clicks deep inside "Uses".
+          return g.label === "Start"
+            ? [
+                group,
+                <Link
+                  key="catalogue-flat"
+                  href="/explore"
+                  className="nav-flat"
+                  data-active={"/explore" === active}
+                >
                   <span className="nav-label">Catalogue</span>
                   <span className="nav-summary-note">ready brains, free to add</span>
-                </Link>
-              )}
-            </span>
-          );
+                </Link>,
+              ]
+            : [group];
         })}
       </div>
     </nav>
