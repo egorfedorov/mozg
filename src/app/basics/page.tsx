@@ -378,7 +378,7 @@ export default function BasicsPage() {
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", fontSize: "1.0625rem", lineHeight: 1.65 }}>
             Fair. Read{" "}
             <Link className="linkish" href="/stories">
-              five ways people actually use it
+              how people actually use it
             </Link>{" "}
             — an artist selling his method, a company teaching the AI its own
             software, a game studio, a maintainer, an agency. One of them is
@@ -392,7 +392,7 @@ export default function BasicsPage() {
               Set it up, step by step
             </Link>
             <Link className="btn btn-ghost" href="/stories">
-              Five ways in
+              How people use it
             </Link>
           </div>
         </section>

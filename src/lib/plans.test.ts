@@ -38,7 +38,7 @@ test("expiry flows through to the limits", () => {
 
 test("the price table matches the marketed prices", () => {
   assert.equal(PLAN_PRICE_CENTS.pro, 2500); // $25/mo
-  assert.equal(PLAN_PRICE_CENTS.team, 9500); // $95/mo
+  assert.equal(PLAN_PRICE_CENTS.team, 7900); // $79/mo
   assert.ok(PLAN_PERIOD_DAYS >= 28, "a month of service must cover February");
 });
 
@@ -56,6 +56,12 @@ test("a plan cannot include more inference than it costs", () => {
     // And the daily runaway guard must not be able to outrun the month either.
     assert.ok(PLANS[plan].dailyExtractCents * 30 > included, `${plan}: daily cap unreachable`);
     assert.ok(PLANS[plan].dailyExtractCents < included, `${plan}: a single day can eat the month`);
+    // And the margin has to be real, not a rounding error: at least 15% of the
+    // price stays with us to cover the embedder, the judge, storage and the box.
+    assert.ok(
+      price - included >= price * 0.15,
+      `${plan}: margin is ${price - included}¢ of ${price}¢ — under 15%`,
+    );
   }
 
   // Free gets a taste of our inference, not an allowance — and the daily cap must

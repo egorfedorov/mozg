@@ -7,13 +7,13 @@ import StoryArt from "./StoryArt";
 import AskedTwice from "@/components/AskedTwice";
 
 export const metadata = {
-  title: "Seven ways in — mozg",
+  title: "How people use it — mozg",
   description:
-    "An artist who sold his method. A company that taught its own software without letting it leave. A studio shipping on a platform whose docs move weekly. Five ways people actually use a knowledge brain.",
+    "An artist who sold his method. A company that taught its own software without letting it leave. A studio shipping on a platform whose docs move weekly. How people actually use a knowledge brain.",
   openGraph: {
-    title: "Five ways in — mozg",
+    title: "How people use it — mozg",
     description:
-      "An artist who sold his method. A company that taught its own software privately. A studio shipping on a moving platform. Five ways people use a knowledge brain.",
+      "An artist who sold his method. A company that taught its own software privately. A studio shipping on a moving platform. How people use a knowledge brain.",
     type: "article",
   },
 };
@@ -36,7 +36,7 @@ export default function StoriesPage() {
       <Contents active="/stories" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Seven ways in</p>
+        <p className="eyebrow">How people use it</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
@@ -57,7 +57,7 @@ export default function StoriesPage() {
         >
           A brain is a small, measured body of knowledge that agents can search
           and people can sell, share or keep private. That sentence means nothing
-          until you see it used, so here are seven people using it — an artist, a
+          until you see it used, so here are the people using it — an artist, a
           company, a game studio, a maintainer, an agency, a first-time founder,
           an engineer with three agents open. Every one starts from something they
           already have.
@@ -259,7 +259,7 @@ export default function StoriesPage() {
             borderTop: "1.5px solid var(--ink)",
           }}
         >
-          <h2 className="h2">The part all five share</h2>
+          <h2 className="h2">The part they all share</h2>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", fontSize: "1.0625rem", lineHeight: 1.65 }}>
             None of them wrote a context file. Each one took knowledge that
             already existed — a method, a manual, a platform&apos;s docs, a

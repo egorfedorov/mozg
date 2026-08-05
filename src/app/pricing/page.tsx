@@ -24,16 +24,16 @@ export const metadata = {
 const PLAN_PRICES: Record<string, string> = {
   free: "$0",
   pro: "$25/mo",
-  team: "$95/mo",
+  team: "$79/mo",
 };
 
 const PLAN_PITCH: Record<string, string> = {
   free:
-    "Full access to everything already built: the whole catalogue, every agent you connect, learning, exports of what you can read. Plus one brain of your own that you may teach without limit — from your CLI on the Claude or Kimi subscription you already pay for, or on your own API key. And one paste-a-URL trial on our AI, so you can see the difference before deciding it is worth $25.",
+    "Full access to everything already built: the whole catalogue, every agent you connect, learning. One brain of your own, taught without limit from your CLI on the subscription you already pay for or on your own API key — with room to actually work: three thousand agent searches a month and two hundred sources. Plus a paste-a-URL taste of our AI, so you can see the difference before deciding it is worth $25.",
   pro:
-    "Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference a month is included; the other $5 is the servers and the exam judge.",
+    "Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference is included every month, which at what a page actually costs us is well over a thousand pages; the other $5 is the servers, the embedder and the exam judge.",
   team:
-    "The same at team scale: $90 of our inference a month, a hundred brains, fifty thousand agent calls. Bring your own key on any plan and the budget stops applying entirely.",
+    "The same at scale: $65 of our inference a month, a hundred brains, and enough agent calls for a room full of them. Higher ceilings rather than seats — shared ownership is still being built, and this card will say so until it exists.",
 };
 
 export default async function PricingPage() {
@@ -138,7 +138,11 @@ export default async function PricingPage() {
                     color: "var(--ink-2)",
                   }}
                 >
-                  <li>{p.brains === 0 ? "— building needs Pro" : `${p.brains} brains`}</li>
+                  <li>
+                    {p.brains === 0
+                      ? "— building needs Pro"
+                      : `${p.brains} brain${p.brains === 1 ? "" : "s"} of your own`}
+                  </li>
                   {/* True on every plan, and stated on every plan: the point is
                       that the free column is not a crippled version. What free
                       limits is how many brains and how much of OUR inference,
@@ -159,7 +163,12 @@ export default async function PricingPage() {
                       ? "catalogue + purchased brains"
                       : `${p.sources.toLocaleString()} sources per brain`}
                   </li>
-                  <li>{p.calls.toLocaleString()} agent calls / month</li>
+                  <li>{p.calls.toLocaleString()} agent searches / month</li>
+                  <li>
+                    {Number.isFinite(p.examSittings)
+                      ? `${p.examSittings} exam sittings, then a key or a plan`
+                      : "✓ exams re-sat as often as the brain changes"}
+                  </li>
                   <li>{p.write ? "✓ agents write lessons back" : "— agents read only"}</li>
                   <li>{p.exports ? "✓ export as CLAUDE.md / Skill" : "— no export"}</li>
                 </ul>

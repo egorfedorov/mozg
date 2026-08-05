@@ -11,6 +11,7 @@ import {
   verifyToken,
 } from "./tokens";
 import { stubDb } from "./test-db";
+import { PLANS } from "./plans";
 
 test("hashToken is sha256, never the plaintext", () => {
   const token = "mzg_abc123";
@@ -83,8 +84,10 @@ test("quotaRemaining is the plan's monthly limit minus this month's calls", asyn
     if (/date_trunc\('month'/.test(text)) return [{ used: 5 }];
     throw new Error(`unexpected query: ${text}`);
   });
-  assert.equal(await quotaRemaining("u1", "free"), 300 - 5);
-  assert.equal(await quotaRemaining("u1", "pro"), 10_000 - 5);
+  // Read from PLANS rather than repeated here: the numbers move when the pricing
+  // moves, and a test that hardcodes them fails for the wrong reason.
+  assert.equal(await quotaRemaining("u1", "free"), PLANS.free.calls - 5);
+  assert.equal(await quotaRemaining("u1", "pro"), PLANS.pro.calls - 5);
 });
 
 test("quotaRemaining never goes negative", async () => {

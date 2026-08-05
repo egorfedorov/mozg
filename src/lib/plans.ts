@@ -47,20 +47,40 @@ export const PLANS: Record<Plan, PlanLimits> = {
   // bge-m3 embed, not Anthropic extraction spend — the API-bill argument for
   // the gate never applied to brain_write, and it is the only path that reads
   // this flag.
-  // Free reads everything and teaches without limit — from its own CLI or its
-  // own API key, where the inference is not ours to pay for. Our models reading
-  // for it is a taste, not an allowance: 50¢ a month, which is one small brain
-  // built once. The old shape was 50¢ a *day*, which is $15 a month of our
-  // tokens per free account and a thing to farm; the same number with a monthly
-  // window is a trial that cannot be repeated, and the landing promise ("paste a
-  // link, get a brain") stays true without a card.
-  free: { brains: 1, sources: 30, calls: 300, dailyExtractCents: 50, monthlyExtractCents: 50, examSittings: 1, write: true, exports: false },
-  // $25/mo buys $20 of our inference. The remaining five cover hosting, the
-  // embedder, storage and the exams' judge — and are the margin. The daily cap
-  // is a fifth of the month, so a runaway crawl loses a day, not the month.
-  pro: { brains: 20, sources: 1000, calls: 10_000, dailyExtractCents: 400, monthlyExtractCents: 2000, examSittings: Infinity, write: true, exports: true },
-  // $95/mo buys $90, same arithmetic at team scale.
-  team: { brains: 100, sources: 5000, calls: 50_000, dailyExtractCents: 1800, monthlyExtractCents: 9000, examSittings: Infinity, write: true, exports: true },
+  // Free reads everything and teaches without limit — from its own CLI or its own
+  // API key, where the inference is not ours to pay for. Our models reading for it
+  // is a taste, not an allowance: 50¢ a month, about a third of a small brain at
+  // the measured 1.46¢ a page. The old shape was 50¢ a *day*, which is $15 a month
+  // of our tokens per free account and a thing to farm.
+  //
+  // The call and source ceilings were the wrong kind of stingy, and the production
+  // numbers say why. A search costs us no tokens at all — it is 2.5s of our own
+  // CPU against our own index — while the heaviest real caller made 537 searches
+  // in a week, which the old 300-a-month ceiling would have stopped on day four.
+  // Sources are the same story on a free account: our AI is capped by the 50¢, and
+  // anything taught through a key or a CLI costs us one self-hosted embedding.
+  // So both go up by an order of magnitude, and the burst limit (60/min) stays as
+  // the actual abuse guard.
+  //
+  // Five exam sittings, not one: agent-written notes now queue a re-sit, each one
+  // ~7.5¢ of judge, and a single sitting meant a free brain's score froze the
+  // first time its owner taught it. Five is enough to watch the loop move.
+  free: { brains: 1, sources: 200, calls: 3000, dailyExtractCents: 50, monthlyExtractCents: 50, examSittings: 5, write: true, exports: false },
+  // $25/mo buys $20 of our inference — about 1,300 pages at the measured average,
+  // or a few hundred pages plus the exams that grade them at 7.5¢ a sitting. The
+  // remaining $5 covers hosting, the embedder, storage and the judge, and is the
+  // margin. The daily cap is a fifth of the month, so a runaway crawl loses a day
+  // rather than the month. Calls are generous for the same reason as on free: they
+  // cost CPU, not tokens, and an agent that hesitates to search is the failure
+  // mode this product exists to prevent.
+  pro: { brains: 20, sources: 1000, calls: 30_000, dailyExtractCents: 400, monthlyExtractCents: 2000, examSittings: Infinity, write: true, exports: true },
+  // $79/mo buys $65 of inference — ~4,400 pages a month across a hundred brains,
+  // and enough calls for a room full of agents. Priced under the round hundred on
+  // purpose: the ceilings that make this tier are mostly our CPU (brains, calls),
+  // not tokens, so the margin can be wider without the number looking greedy. It
+  // is also honest about what it is not — seats and shared ownership are not built
+  // yet, so this is higher ceilings, not a team product.
+  team: { brains: 100, sources: 5000, calls: 150_000, dailyExtractCents: 1300, monthlyExtractCents: 6500, examSittings: Infinity, write: true, exports: true },
   // The operator's own account: the catalogue lives here, so the caps are
   // sized for seeding sessions, not for a customer. Not sold anywhere.
   admin: { brains: 10_000, sources: 100_000, calls: 1_000_000, dailyExtractCents: 100_000, monthlyExtractCents: 1_000_000, examSittings: Infinity, write: true, exports: true },
@@ -81,8 +101,11 @@ export type PaidPlan = "pro" | "team";
  * pay-from-balance upgrade charges, and what the settings page shows.
  */
 export const PLAN_PRICE_CENTS: Record<PaidPlan, number> = {
+  // $25 sits on the same shelf as the agent subscriptions this is used beside —
+  // cheap enough to try on a hunch, expensive enough that the $20 of inference in
+  // it reads as the point rather than as a giveaway.
   pro: 2500,
-  team: 9500,
+  team: 7900,
 };
 
 /** How long one payment keeps a plan alive. Not a subscription — nothing renews. */

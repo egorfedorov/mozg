@@ -199,7 +199,7 @@ export default function VsSkillsPage() {
             this month. The brain was <em>asked</em>, and it can tell you when it
             does not know.{" "}
             <Link href="/stories#shipping-a-game" className="linkish">
-              The full story, and four more
+              The full story, and the others
             </Link>
             .
           </p>
