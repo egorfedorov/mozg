@@ -29,6 +29,9 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     label: "Start",
     summary: "get an agent thinking",
     pages: [
+      // First, because the person who needs it does not know the words the other
+      // pages use — including the word in the group label above it.
+      { href: "/basics", label: "Never heard of MCP?", note: "start from zero, no jargon" },
       { href: "/start", label: "Start here", note: "zero to a thinking agent, ~10 min" },
       { href: "/connect", label: "Connect a client", note: "your CLI, one command" },
       { href: "/make", label: "Make a brain", note: "six panels" },
