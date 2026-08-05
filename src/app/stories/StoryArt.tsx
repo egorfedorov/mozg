@@ -40,7 +40,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
         {[0, 1, 2].map((i) => (
           <g key={i}>
             <path
-              d={`M268 85 L306 ${46 + i * 39}`}
+              d={`M268 85 L306 ${44 + i * 36}`}
               stroke="currentColor"
               strokeWidth="1.5"
               opacity="0.55"
@@ -48,7 +48,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             />
             <rect
               x="312"
-              y={30 + i * 39}
+              y={28 + i * 36}
               width="52"
               height="32"
               fill="none"
@@ -57,13 +57,13 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
               opacity="0.75"
             />
             <path
-              d={`M320 ${56 + i * 39} L332 ${40 + i * 39} L340 ${50 + i * 39} L348 ${43 + i * 39} L356 ${56 + i * 39} Z`}
+              d={`M320 ${54 + i * 36} L332 ${38 + i * 36} L340 ${48 + i * 36} L348 ${41 + i * 36} L356 ${54 + i * 36} Z`}
               fill={accent}
               opacity="0.5"
             />
           </g>
         ))}
-        <text x="338" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
+        <text x="338" y="152" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
           their agents
         </text>
       </>
