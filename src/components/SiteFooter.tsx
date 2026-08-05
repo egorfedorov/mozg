@@ -14,6 +14,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/explore", label: "Catalogue" },
       { href: "/explore?price=free", label: "Free brains (all official)" },
       { href: "/explore?price=paid", label: "Marketplace" },
+      { href: "/roadmap", label: "Roadmap — dated and gated" },
     ],
   },
   {

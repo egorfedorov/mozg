@@ -119,6 +119,44 @@ seat sold today is a personal account with extra quota.
 
 *Gate:* one org with three real seats using shared brains for a fortnight.
 
+## Ideas with a verdict attached
+
+Three asked for repeatedly, kept here rather than in a month because each one
+needs its honest answer written down before it gets a date.
+
+- **The brain reports on itself.** Shipped, in the smallest form: a brain page
+  now opens with the brain speaking in the first person — what it holds, what to
+  ask it, where not to trust it, how many searches it served this week. The rule
+  that keeps it worth reading is that every line comes from the exam and the
+  metering table; nothing is generated and nothing is encouraging for its own
+  sake. What is *not* built: it saying anything as material arrives ("I can now
+  answer questions about approval flows"), which needs the ingest to tell the page
+  something is happening. That is a real feature and a small one.
+  *Done when:* adding a source makes the brain say what it learned, live, without
+  a refresh.
+
+- **Style brains: yes for the knowledge, no for the rendering.** Feeding a brain
+  images of your own work so agents produce work in your style is the artist story
+  on /stories, and the knowledge half is buildable now — the notes hold the
+  decisions (palette rules, lighting, what is never done), and any agent with an
+  image tool follows them. What we should not build is the generator. Becoming an
+  image and video service means holding the model, the queue and the bill for
+  every render, which contradicts the one thing this product promises: it does not
+  sit between you and your model. So the plan is style *specs* that any generator
+  obeys, sold like any other paid brain, and a page showing the same prompt with
+  and without one.
+  *Done when:* a style brain exists in the catalogue, and the same prompt through
+  two different image tools comes back recognisably in that style.
+
+- **"Teach it to make video like Apple does."** The same shape, and worth naming
+  because it sounds like a different feature: what makes that footage recognisable
+  is a set of rules — shot lengths, the easing, when a cut is allowed, how type
+  enters — and rules are what a brain holds. A brain cannot render a frame, and a
+  brain that claimed to would be lying. Motion-direction brains are a catalogue
+  subject, not an engineering project.
+  *Done when:* the motion rules of a house style are a brain an editor's agent can
+  query mid-timeline.
+
 ## November — learn stops being a bonus
 
 Humans are the second audience and the cheaper one to grow: a lesson costs

@@ -1404,3 +1404,58 @@ a.row:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── the roadmap page ──────────────────────────────────────────────────────
+   Rendered from docs/ROADMAP.md by a small subset renderer, so the styling lives
+   here rather than as inline styles the renderer would have to know about. */
+.roadmap .rm-h1 {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  margin: 2.5rem 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.roadmap h2.rm-h2 {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  margin: 2.75rem 0 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1.5px solid var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.roadmap h3.rm-h3 {
+  font-size: 1.0625rem;
+  margin: 1.5rem 0 0.4rem;
+}
+
+.roadmap .rm-p {
+  color: var(--ink-2);
+  margin: 0 0 1rem;
+  line-height: 1.65;
+}
+
+.roadmap .rm-list {
+  margin: 0 0 1.25rem;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.roadmap .rm-list li {
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.roadmap .rm-list li strong {
+  color: var(--ink);
+}
+
+.roadmap code {
+  font-size: 0.9em;
+  background: var(--paper-2);
+  padding: 0.05em 0.3em;
+  border: 1px solid var(--rule);
+}

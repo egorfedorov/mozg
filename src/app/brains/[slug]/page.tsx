@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import AppShell from "@/components/AppShell";
+import BrainMascot from "@/components/BrainMascot";
 import ConfirmForm from "@/components/ConfirmForm";
 import ConnectBox from "@/components/ConnectBox";
 import Dropzone from "@/components/Dropzone";
@@ -58,7 +59,7 @@ export default async function BrainPage({
   );
   if (!brain) notFound();
 
-  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags, freshNotes, gapSuggestions] =
+  const [categories, sources, pending, tokenCount, lastRun, recentCalls, history, manualChecks, failedChecks, flags, freshNotes, gapSuggestions, callsWeek] =
     await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     query<Source>(
@@ -152,6 +153,14 @@ export default async function BrainPage({
         order by created_at limit 20`,
       [brain.id],
     ),
+    // A real seven-day count. The mascot says "I answered N searches this week"
+    // and it has to be that week, not the length of the recent-calls list — a
+    // mascot that rounds in its own favour is worth nothing.
+    query<{ n: number }>(
+      `select count(*)::int as n from calls
+        where brain_id = $1 and created_at > now() - interval '7 days'`,
+      [brain.id],
+    ).then((r) => r[0]?.n ?? 0),
   ]);
 
   const totalChecks = categories.reduce((n, c) => n + c.total, 0);
@@ -265,6 +274,27 @@ export default async function BrainPage({
             alignItems: "start",
           }}
         >
+          {/* The brain, in the first person. Placed before the scorecard on
+              purpose: the numbers below are the evidence for what it says here,
+              and a reader who stops after one card should still know what this
+              brain is for and where it is unreliable. */}
+          <BrainMascot
+            slug={brain.slug}
+            facts={{
+              title: brain.title,
+              score: brain.score,
+              notes: brain.note_count,
+              strong: categories.filter((c) => c.state === "pass").map((c) => c.category),
+              weak: categories.filter((c) => c.state === "fail").map((c) => c.category),
+              sourcesReady: sources.filter((x) => x.status === "ready").length,
+              sourcesPending: sources.filter(
+                (x) => x.status === "queued" || x.status === "processing",
+              ).length,
+              callsWeek,
+              hasGoal: Boolean(brain.goal),
+            }}
+          />
+
           <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
 
           <section className="scorecard">
