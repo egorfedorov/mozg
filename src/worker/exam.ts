@@ -215,6 +215,97 @@ export function countDegraded(checks: { reranked: boolean }[]): number {
 }
 
 /**
+ * Add anti-bluff probes to an exam that has none.
+ *
+ * The catalogue grew a measurement inconsistency: negative probes — plausible
+ * questions just outside a brain's scope, which it is supposed to refuse — were
+ * added to the generator after most brains had already written their exams. 45 of
+ * 67 public brains were being graded without that dimension, and they average
+ * three points higher for it. A score is the one factual claim this product makes,
+ * so it has to be measured the same way everywhere.
+ *
+ * Deliberately additive rather than a regeneration. generateChecks deletes and
+ * rewrites every generated check, which cascades away the results that make the
+ * diff between sittings readable — history worth more than the tidiness. This
+ * writes two or three probes beside what is already there, on the cheap model's
+ * bigger sibling only for the one call, and the next sitting picks them up.
+ */
+export async function generateNegativeProbes(brain: Brain): Promise<number> {
+  if (!brain.goal) return 0;
+
+  const existing = await one<{ n: number }>(
+    `select count(*)::int as n from checks
+      where brain_id = $1 and kind = 'negative' and enabled`,
+    [brain.id],
+  );
+  if (existing.n > 0) return 0;
+
+  const scope = await familyIds(brain);
+  const categories = await query<{ category: string }>(
+    `select distinct category from checks where brain_id = $1 and enabled and category is not null
+      limit 12`,
+    [brain.id],
+  );
+  const titles = await query<{ title: string }>(
+    `select title from notes where brain_id = any($1::uuid[]) and status = 'active'
+      order by created_at desc limit 80`,
+    [scope],
+  );
+
+  const { data: raw } = await structured<unknown>({
+    model: env.MODEL_EXTRACT,
+    toolName: "save_checks",
+    toolDescription: "Save the probes. Call once with all of them.",
+    schema: GEN_SCHEMA,
+    system:
+      "You write anti-bluff probes for a knowledge base that AI coding agents read.\n\n" +
+      "Given a goal, the categories its exam already covers, and a sample of the " +
+      "notes it holds, write exactly 3 checks with kind \"negative\": plausible " +
+      "questions a user might genuinely ask this brain that are OUTSIDE its scope — " +
+      "neighbouring topics, adjacent products, the confusions its subject invites.\n\n" +
+      "They must be believable, not absurd: \"how do I configure Vite\" asked of a " +
+      "React brain, not \"what is the capital of France\". For each, `expect` says " +
+      "that the correct behaviour is to admit the topic is not covered rather than " +
+      "to guess. Weight them 1-2 — they are probes, not the core exam. Use the " +
+      "category \"Out of Scope\".",
+    content: [
+      {
+        type: "text",
+        text:
+          `Goal:\n${brain.goal}\n\n` +
+          `Categories the exam already covers:\n${categories.map((c) => `- ${c.category}`).join("\n")}\n\n` +
+          `A sample of what it holds:\n${titles.map((t) => `- ${t.title}`).join("\n")}`,
+      },
+    ],
+  });
+
+  const parsed = generated.safeParse(raw);
+  const items = parsed.success
+    ? parsed.data.checks
+    : (Array.isArray((raw as { checks?: unknown[] })?.checks)
+        ? (raw as { checks: unknown[] }).checks
+        : []
+      ).flatMap((i) => {
+        const p = generated.shape.checks.element.safeParse(i);
+        return p.success ? [p.data] : [];
+      });
+
+  // Only negatives, and only a handful: a probe that arrives as a positive check
+  // would be graded as coverage the brain is expected to have.
+  const probes = items.filter((c) => c.kind === "negative").slice(0, 3);
+  if (!probes.length) return 0;
+
+  for (const c of probes) {
+    await query(
+      `insert into checks (brain_id, category, question, expect, weight, kind)
+       values ($1, $2, $3, $4, $5, 'negative')`,
+      [brain.id, c.category || "Out of Scope", c.question, c.expect, Math.min(2, c.weight)],
+    );
+  }
+  return probes.length;
+}
+
+/**
  * How deep to look when deciding whether a missing answer is absent or merely
  * ranked below the five the judge sees. Matches diagnose-exam.ts, so the label
  * the exam files and the one the script prints mean the same thing.
