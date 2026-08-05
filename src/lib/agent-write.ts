@@ -5,6 +5,7 @@ import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { findDuplicateNote, type DuplicateMatch } from "@/lib/dedup";
 import { scanSecrets } from "@/lib/scan";
+import { enqueueExam } from "@/worker/queue";
 import { normalizeCategory } from "@/lib/category";
 
 /**
@@ -147,6 +148,22 @@ export async function writeAgentNote(
     });
 
     await query(`update brains set content_changed_at = now() where id = $1`, [brain.id]);
+
+    // And ask for a re-sit. content_changed_at alone only reaches the exam on
+    // the six-hourly maintenance pass, so a teaching session used to end with
+    // the score still describing the brain from before it — which reads as
+    // "nothing happened" to whoever just spent an hour teaching.
+    //
+    // A full sitting, deliberately, not the mini probe: a probe stamps score_at
+    // without moving score, which would make examStaleBrains consider the brain
+    // freshly examined and stop queueing the sitting that actually rescores it.
+    // Cost is bounded twice over — enqueueExam deduplicates per brain for a
+    // minute, so a batch asks once rather than twenty-five times, and runExam
+    // refuses a second full sitting inside its own cooldown window.
+    //
+    // Fire-and-forget: a queue that cannot take the job must not lose a note
+    // that is already written.
+    void enqueueExam(brain.id).catch(() => {});
   }
 
   return { status: "saved", title, pending, lookalike: pending ? duplicate : null };

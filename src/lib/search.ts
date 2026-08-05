@@ -236,6 +236,16 @@ export interface BrainBrief {
   hiddenCategories: number;
   sampleTitles: string[];
   knownGaps: string[];
+  /**
+   * What the brain has already read, newest first. An agent teaching a brain
+   * from local material had no way to know this, so a training session re-read
+   * and re-distilled pages the brain already held — the server deduplicated the
+   * notes, which protected the storage and not the tokens the agent spent
+   * getting there. This list is what makes "skip what is covered" possible.
+   */
+  covers: { label: string; notes: number }[];
+  /** Sources beyond the cap: the list is a sample, not the inventory. */
+  hiddenCovers: number;
 }
 
 /**
@@ -246,6 +256,8 @@ export interface BrainBrief {
  * problem.
  */
 const MAX_CATEGORY_ROWS = 200;
+/** Sources named in a brief. Enough to recognise the corpus, not to inventory it. */
+const MAX_COVERS = 40;
 const MAX_CATEGORY_GROUPS = 12;
 const MAX_CHILDREN_PER_GROUP = 5;
 
@@ -283,7 +295,7 @@ function groupCategories(rows: { name: string; notes: number }[]): {
 }
 
 export async function briefBrain(brainId: string): Promise<BrainBrief> {
-  const [goalRow, summaries, categories, titles, gaps] = await Promise.all([
+  const [goalRow, summaries, categories, titles, gaps, covers] = await Promise.all([
     query<{ goal: string | null; note_count: number }>(
       `select goal, note_count from brains where id = $1`,
       [brainId],
@@ -328,6 +340,23 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
        having count(*) filter (where r.passed) = 0`,
       [brainId],
     ),
+    // Material already read, with how much it yielded. A URL is shown by its
+    // path rather than in full: the agent needs to recognise the page, not to
+    // fetch it, and forty full raw.githubusercontent URLs would cost more than
+    // the orientation they buy.
+    query<{ label: string; notes: number }>(
+      `select coalesce(
+                nullif(regexp_replace(url, '^https?://[^/]+/', ''), ''),
+                original_name,
+                kind
+              ) as label,
+              note_count as notes
+         from sources
+        where brain_id = $1 and status = 'ready' and note_count > 0
+        order by processed_at desc nulls last
+        limit ${MAX_COVERS + 1}`,
+      [brainId],
+    ),
   ]);
 
   const { groups, hidden } = groupCategories(categories);
@@ -338,6 +367,8 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
     summaries,
     categories: groups,
     hiddenCategories: hidden,
+    covers: covers.slice(0, MAX_COVERS),
+    hiddenCovers: Math.max(0, covers.length - MAX_COVERS),
     sampleTitles: titles.map((t) => t.title),
     knownGaps: gaps.map((g) => g.category),
   };

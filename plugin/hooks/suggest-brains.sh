@@ -40,5 +40,36 @@ if [ -f .mozg/brains.md ]; then
     [ "$shelf" -gt 8 ] && echo "  … $((shelf - 8)) more in .mozg/brains.md"
     echo "Run /mozg:sync if that list looks out of date."
   fi
+
+  # Where a locally installed skill covers the same subject as a brain, the two
+  # disagree eventually and nothing tells the agent which to believe. A skill is
+  # a file: it answers instantly, from whenever it was written, and cannot know
+  # it went stale. A brain is dated, re-read when its sources change, scored, and
+  # able to say what it does not cover. So: skills for procedure, brains for
+  # current fact — and on a disagreement about a version, an option or an API,
+  # the brain wins. Said once per session, only when an overlap actually exists.
+  #
+  # Matched on the first path segment of the handle's slug (mozg/stake-engine-rgs
+  # -> "stake"), which is coarse on purpose: the point is to raise the question,
+  # not to be a resolver.
+  skills_dir="$HOME/.claude/skills"
+  if [ -d "$skills_dir" ]; then
+    overlap=""
+    while read -r handle; do
+      slug="${handle##*/}"
+      stem="${slug%%-*}"
+      [ ${#stem} -lt 4 ] && continue
+      for s in "$skills_dir/$stem"*; do
+        [ -e "$s" ] || continue
+        case " $overlap " in *" $stem "*) ;; *) overlap="${overlap:+$overlap }$stem";; esac
+      done
+    done <<EOF
+$(sed -n 's/^- \([^ ]*\) .*/\1/p' .mozg/brains.md)
+EOF
+    if [ -n "$overlap" ]; then
+      echo "mozg: local skills and brains both cover: $overlap."
+      echo "Use skills for how-to procedure and brains for current fact — a skill cannot tell you it went stale. Where they disagree on a version, option or API, search the brain and trust it."
+    fi
+  fi
 fi
 exit 0

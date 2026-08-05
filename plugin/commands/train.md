@@ -17,9 +17,14 @@ This is a study session, not a copy job. Work in five phases:
 ## 1. Orient in the brain
 
 Call `brain_brief` on `$1`. Read the goal, the existing categories, the
-summaries, and the **known gaps**. Everything you write must either close a
-gap or deepen a category the goal cares about — a fact the brain already
-holds, or that the goal doesn't need, is a wasted note.
+summaries, the **known gaps** and the **already-read list**. Everything you write
+must either close a gap or deepen a category the goal cares about — a fact the
+brain already holds, or that the goal doesn't need, is a wasted note.
+
+The already-read list is the one that saves your tokens: those pages are in the
+brain. Reading them again costs a full study pass and produces notes the server
+will reject as duplicates — the deduplication protects the brain, not the hours
+you spent getting there. Cross them off the corpus before phase 2.
 
 ## 2. Survey before you read
 
@@ -30,7 +35,7 @@ phase 1, high-value areas first. Skip generated, vendored, and changelog
 material on sight. For a huge corpus, propose the cut to the user instead of
 silently reading a tenth of it.
 
-## 3. Study deeply
+## 3. Study deeply, in slices
 
 Read each chosen document fully — skimmed notes fail exams. Distil the way
 the brain's own extractor would: one fact per note, a searchable title, the
@@ -38,6 +43,17 @@ body in full sentences that stand alone without the source. Keep parameter
 tables **verbatim, row by row**; keep working code examples whole as
 `example` notes; concrete values beat descriptions. Batch related facts into
 single substantial notes rather than fifty one-liners.
+
+Work in slices of roughly five documents, and finish each slice — reconcile,
+upload, report — before opening the next. Two reasons, both about tokens. A
+session that reads eighty files before writing anything spends its context on
+material it then summarises badly, and if it runs out, everything read so far is
+lost and has to be read again. Uploading as you go also means the next slice can
+see what already landed.
+
+Never re-read a document to check what you wrote about it. If you need to know
+whether a fact is in the brain, `brain_search` — that costs one call against
+notes rather than a second pass over the source.
 
 ## 4. Reconcile with what the brain knows
 
@@ -54,6 +70,11 @@ body, kind, category (reuse the brain's existing categories). One rejected
 note does not lose the rest: read the per-note results and redo only the
 failures. Use `brain_write` for a single stray note. If a note is refused as
 a duplicate, follow the tool's advice instead of retrying the same text.
+
+Stop when the gaps are closed, not when the corpus ends. If the remaining
+material only deepens what the brain already answers well, say so and stop —
+the exam is the judge of enough, and a thousand redundant notes make retrieval
+worse, not better.
 
 Close with an honest report: what was covered, how many notes landed in
 which categories, which known gaps they close, and — just as important —

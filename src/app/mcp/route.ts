@@ -35,6 +35,42 @@ interface RpcRequest {
 const fail = (id: RpcRequest["id"], code: number, message: string, status = 200) =>
   NextResponse.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
 
+/**
+ * Why the call was refused, in words the agent can act on.
+ *
+ * "Unauthorized" is true and useless: the commonest cause by far is a plugin
+ * whose MOZG_TOKEN was never exported, and the shell then sends the header
+ * literally — the agent reads a bare 401, tells its user the brain is
+ * unavailable, and nobody learns that one export line fixes it. Every branch
+ * here names the fix.
+ */
+function unauthorizedReason(req: Request): string {
+  const raw = req.headers.get("authorization");
+  if (!raw) {
+    return (
+      "Unauthorized: no token. Make one at https://mozg.sh/connect and set it as " +
+      "MOZG_TOKEN in your shell profile (the plugin sends it), or sign in through " +
+      "OAuth if your client supports it."
+    );
+  }
+  // An unexpanded shell variable arrives verbatim. Recognising it saves the
+  // user from debugging our server instead of their profile.
+  if (raw.includes("${") || raw.includes("$MOZG_TOKEN")) {
+    return (
+      "Unauthorized: the token placeholder was sent unexpanded — your shell did " +
+      "not have MOZG_TOKEN set when the MCP server started. Export it in your " +
+      "profile (get one at https://mozg.sh/connect) and restart the client."
+    );
+  }
+  if (!/^bearer\s/i.test(raw)) {
+    return 'Unauthorized: the Authorization header must read "Bearer mzg_...".';
+  }
+  return (
+    "Unauthorized: this token is unknown, revoked, or belongs to a deleted " +
+    "account. Check https://mozg.sh/settings/tokens — issuing a new one takes a click."
+  );
+}
+
 export async function POST(req: Request) {
   let owner = await verifyToken(req.headers.get("authorization"));
 
@@ -63,7 +99,7 @@ export async function POST(req: Request) {
     // be the public one.
     const base = env.NEXT_PUBLIC_APP_URL;
     return NextResponse.json(
-      { jsonrpc: "2.0", id: null, error: { code: -32001, message: "Unauthorized" } },
+      { jsonrpc: "2.0", id: null, error: { code: -32001, message: unauthorizedReason(req) } },
       {
         status: 401,
         headers: {

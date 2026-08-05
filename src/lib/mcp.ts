@@ -656,6 +656,21 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
     );
   }
 
+  // What it has already read. This is here for the writing side: a training
+  // session that cannot see the corpus re-reads it, and re-reading is the
+  // expensive half — the server would deduplicate the notes at the end, long
+  // after the tokens were spent getting to them.
+  if (brief.covers.length) {
+    parts.push(
+      "",
+      "Already read — do not spend tokens re-reading these; teach what is missing:",
+      ...brief.covers.map((c) => `  ✓ ${c.label} (${c.notes} notes)`),
+    );
+    if (brief.hiddenCovers > 0) {
+      parts.push(`  … and ${brief.hiddenCovers} more sources, newest shown first.`);
+    }
+  }
+
   return {
     text: parts.join("\n"),
     brainId: resolved.brain.id,

@@ -12,6 +12,23 @@ import { requireUser } from "@/lib/session";
  * snapshot free removes the reason to hesitate before starting.
  */
 
+/**
+ * Which source wins when both exist.
+ *
+ * This is the failure the export creates: a machine ends up holding a snapshot
+ * of a brain *and* a live connection to it, and a Skill loaded from disk answers
+ * without ever asking. The snapshot cannot know it went stale — that is the
+ * whole reason the brain is scored and dated — so the file has to say so itself,
+ * at the top, where an agent reading it will see it before the material.
+ */
+const PRECEDENCE =
+  "> **This is a snapshot.** It was correct on the day it was exported and has " +
+  "no way of noticing that it is not any more. If the mozg MCP server is " +
+  "connected in this session, search the live brain instead and use this file " +
+  "only as a fallback: the brain is re-read when its sources change and re-sat " +
+  "against its own exam, and it can tell you what it does *not* know. Where the " +
+  "two disagree, the brain is newer.\n\n";
+
 const LICENSE_NOTICE: Record<string, string> = {
   nc: "Licensed CC BY-NC-SA 4.0 — share and adapt with credit; commercial resale is not permitted.",
   mit: "Licensed MIT.",
@@ -64,7 +81,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     `\n\n${LICENSE_NOTICE[brain.license]}\n` +
     `Exported from mozg on ${new Date().toISOString().slice(0, 10)}.\n`;
 
-  const { body, filename } = render(format, brain.slug, header, sections);
+  // The trigger sentence a Skill is loaded by. The goal is written for exactly
+  // this job; the fallback used to be `header.split("\n")[2]`, which for a brain
+  // with no goal is the note count — "512 notes · exam score 88%" as a trigger
+  // means the skill loads for nothing and never for the subject.
+  const trigger = brain.goal?.trim()
+    ? brain.goal.trim().replace(/\s+/g, " ")
+    : `Project knowledge about ${brain.title}.`;
+
+  const { body, filename } = render(format, brain.slug, header, sections, trigger);
 
   return new NextResponse(body, {
     headers: {
@@ -74,30 +99,46 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   });
 }
 
-function render(format: string, slug: string, header: string, sections: string) {
+function render(
+  format: string,
+  slug: string,
+  header: string,
+  sections: string,
+  trigger: string,
+) {
   switch (format) {
     case "skill":
       // Claude Skill front matter — the description decides when Claude loads
       // it, so it has to read like a trigger, not a title.
+      //
+      // Named `mozg-<slug>` for two reasons. A skill directory is a flat
+      // namespace, and plenty of machines already carry a skill called
+      // `stake-engine-…` or `pixijs`; an export landing on the same name
+      // silently shadows one of them. And the prefix says where the file came
+      // from, which matters most in the case below.
       return {
-        filename: `${slug}-skill.md`,
+        filename: `mozg-${slug}-skill.md`,
         body:
-          `---\nname: ${slug}\ndescription: >-\n  ${header
-            .split("\n")[2]
-            ?.trim() || slug}. Use when the task depends on these project-specific conventions.\n---\n\n` +
+          `---\nname: mozg-${slug}\ndescription: >-\n  ${trigger} ` +
+          `Use when the task depends on these project-specific conventions. ` +
+          `Superseded by the live brain: if the mozg MCP server is connected, ` +
+          `prefer brain_search on ${slug}.\n---\n\n` +
+          PRECEDENCE +
           `${header}\n${sections}\n`,
       };
 
+    // Same warning on the context-file formats: a CLAUDE.md pasted into a repo
+    // outlives the day it was true by months, and nothing in it would say so.
     case "agents":
       return {
         filename: "AGENTS.md",
-        body: `${header}\n${sections}\n`,
+        body: PRECEDENCE + `${header}\n${sections}\n`,
       };
 
     default:
       return {
         filename: "CLAUDE.md",
-        body: `${header}\n${sections}\n`,
+        body: PRECEDENCE + `${header}\n${sections}\n`,
       };
   }
 }

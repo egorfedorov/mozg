@@ -39,7 +39,31 @@ Rules for the file:
 - Do not copy notes into it. This is a map; the brain is the territory, and a
   copy would be stale the moment a source changes.
 
-## 3. Make the project import it
+## 3. Note where local skills overlap
+
+Look at `~/.claude/skills` (and any project `.claude/skills`). Where a skill
+covers the same subject as a brain on the shelf — `stake-engine-*` skills beside
+a `stake-engine` brain, `pixijs*` skills beside `pixijs-casino` — append a
+section naming the pairs and the rule:
+
+```markdown
+## Where local skills overlap these brains
+
+- skills `stake-engine-*` ↔ brain `mozg/stake-engine`
+- skills `pixijs*` ↔ brain `mozg/pixijs-casino`
+
+Skills carry procedure, brains carry current fact. A skill answers instantly from
+whenever it was written and cannot tell you it went stale; a brain is dated,
+re-read when its sources change, scored, and able to say what it does not cover.
+On a disagreement about a version, an option or an API signature, search the
+brain and trust it.
+```
+
+Write the section even if you think the overlap is harmless: the point is that
+the next session can see the two sources exist. If there is no overlap, leave the
+section out rather than writing "none".
+
+## 4. Make the project import it
 
 If `CLAUDE.md` exists and does not already mention `.mozg/brains.md`, append:
 
@@ -54,7 +78,7 @@ If there is no `CLAUDE.md`, say so and offer to create one with just that
 section — do not create it silently, because that file is the user's voice to
 every agent, not ours.
 
-## 4. Report
+## 5. Report
 
 Say what changed since the last sync: brains added, removed, scores that moved.
 If nothing changed, say that in one line. If the shelf is empty, point at
