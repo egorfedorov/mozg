@@ -267,7 +267,12 @@ export default async function PublicBrainPage({
               className="mono"
               style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}
             >
-              {brain.note_count} notes · updated {isoDate(brain.updated_at)} ·{" "}
+              {/* A parent's own count is 0 by design — its children hold the
+                  notes, and asking the parent searches all of them, so the
+                  storefront states the family's size. */}
+              {(brain.note_count + children.reduce((n, c) => n + c.note_count, 0)).toLocaleString()}{" "}
+              notes{children.length > 0 ? ` across ${children.length + 1} brains` : ""} · updated{" "}
+              {isoDate(brain.updated_at)} ·{" "}
               {brain.score === null ? "not examined" : `trained ${brain.score}%`}
               {rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`}
             </p>

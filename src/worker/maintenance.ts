@@ -1,4 +1,5 @@
 import { query } from "@/db";
+import { env } from "@/lib/env";
 import { notifyGaps } from "@/lib/operator-chat";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
@@ -302,6 +303,12 @@ export async function refreshBrain(brainId: string): Promise<{
  * open gaps before it is worth a ping.
  */
 export async function notifyGapOwners(limit = 20): Promise<number> {
+  // Operator-owned brains are excluded: the operator reads chatmozg from the
+  // other side, and four gap notices addressed to yourself is noise, not
+  // outreach — /admin already carries the same signal.
+  const admins = env.ADMIN_EMAILS.split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
   const rows = await query<{
     brain_id: string;
     slug: string;
@@ -310,13 +317,15 @@ export async function notifyGapOwners(limit = 20): Promise<number> {
     n: number;
   }>(
     `select b.id as brain_id, b.slug, b.title, b.owner_id, count(*)::int as n
-       from gap_suggestions g join brains b on b.id = g.brain_id
-      where g.status = 'pending'
+       from gap_suggestions g
+       join brains b on b.id = g.brain_id
+       join "user" u on u.id = b.owner_id
+      where g.status = 'pending' and lower(u.email) <> all($2::text[])
       group by b.id, b.slug, b.title, b.owner_id
      having count(*) >= 3
       order by count(*) desc
       limit $1`,
-    [limit],
+    [limit, admins],
   );
 
   let sent = 0;
