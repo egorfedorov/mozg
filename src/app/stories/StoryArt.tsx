@@ -75,7 +75,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
     draw: (accent) => (
       <>
         <rect x="96" y="18" width="212" height="122" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="7 5" />
-        <text x="202" y="14" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
+        <text x="202" y="12" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
           your machines, your key
         </text>
 
@@ -142,12 +142,12 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             strokeWidth="1.5"
           />
         ))}
-        <path d="M148 46 L182 46" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
-        <rect x="188" y="26" width="96" height="44" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="236" y="44" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+        <path d="M148 46 L176 46" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
+        <rect x="182" y="24" width="116" height="46" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <text x="240" y="43" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
           platform brain
         </text>
-        <text x="236" y="58" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
+        <text x="240" y="59" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
           re-read on change
         </text>
 
@@ -164,16 +164,16 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             markerEnd="url(#story-arrow)"
           />
         ))}
-        <rect x="188" y="98" width="96" height="44" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="236" y="116" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+        <rect x="182" y="96" width="116" height="46" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <text x="240" y="115" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
           studio brain
         </text>
-        <text x="236" y="130" textAnchor="middle" className="mono" fontSize="9" fill="currentColor" opacity="0.7">
-          written, never crawled
+        <text x="240" y="131" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
+          written by hand
         </text>
 
-        <path d="M290 46 L330 76" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
-        <path d="M290 120 L330 90" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
+        <path d="M302 50 L332 74" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
+        <path d="M302 118 L332 94" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
         <rect x="330" y="62" width="72" height="42" fill="none" stroke="currentColor" strokeWidth="2" />
         <text x="366" y="80" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
           agent
