@@ -2,6 +2,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
+import AskedTwice from "@/components/AskedTwice";
 
 export const metadata = {
   title: "The confident wrong answer — mozg",
@@ -168,6 +169,42 @@ export default function VsSkillsPage() {
         </section>
 
         {/* ── the honest part ───────────────────────────────────────────── */}
+        {/* ── error 6: it cannot propose what you did not ask for ───────── */}
+        <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 6</p>
+          <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
+            A file answers the question you knew how to ask.
+          </h2>
+          <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
+            This is the error nobody notices, because nothing looks wrong. You
+            describe what you want in the words you have; the agent does exactly
+            that and nothing more. The thing a professional would have proposed —
+            the convention with a name you have never heard — never comes up,
+            because neither of you knew it was missing.
+          </p>
+          <AskedTwice
+            ask={"\u201cWhen two scatters land, the spin should feel more exciting. I do not know how these games do that \u2014 make it good.\u201d"}
+            without={
+              "A screen shake and a louder sound after the reels stop. Reasonable, generic, and aimed at the wrong moment: the tension in a slot lives before the outcome, not after it. The one moment the request was about stays empty."
+            }
+            withBrain={
+              "It searches and comes back with the name of the thing: anticipation. \u201cWith two scatters visible, the last reel slows and its anticipation animation plays until it stops \u2014 that is where the tension is. Your studio brain says anticipation fires from the third reel on and never on a guaranteed loss, and the platform wants it emitted as its own event so the frontend can play it mid-spin.\u201d Then it builds that."
+            }
+            accent="var(--color-riso-green)"
+          />
+          <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1rem" }}>
+            The person asking had never heard the word and got what a veteran
+            would have specified. A skill could have carried that convention too —
+            if somebody had thought to write it down, and if it were still true
+            this month. The brain was <em>asked</em>, and it can tell you when it
+            does not know.{" "}
+            <Link href="/stories#shipping-a-game" className="linkish">
+              The full story, and four more
+            </Link>
+            .
+          </p>
+        </section>
+
         <section
           className="panel"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", borderLeft: "4px solid var(--color-riso-orange)" }}

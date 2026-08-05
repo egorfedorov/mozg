@@ -65,7 +65,7 @@ export default async function ExplorePage({
   // Families are one entry, not eight. A parent already covers its children
   // when searched, so listing each child beside it fills the catalogue with
   // rows that are the same purchase and the same connection.
-  const brains = await query<PublicBrain & { calls_week: number }>(
+  const brains = await query<PublicBrain & { calls_week: number; readers_week: number }>(
     `select b.*, u.handle as owner_handle, u.name as owner_name,
             (select count(*)::int from brains c
               where c.parent_id = b.id and c.visibility = 'public') as children,
@@ -76,7 +76,15 @@ export default async function ExplorePage({
             (select count(*)::int from calls k
               where k.created_at > now() - interval '7 days'
                 and (k.brain_id = b.id or k.brain_id in
-                     (select id from brains c2 where c2.parent_id = b.id))) as calls_week
+                     (select id from brains c2 where c2.parent_id = b.id))) as calls_week,
+            -- How many *people*, not how many calls. One agent in a loop can
+            -- make a brain look busy; two readers cannot be faked by one caller,
+            -- and "asked by four people this week" is the sentence that means
+            -- something to somebody deciding whether to connect it.
+            (select count(distinct k.caller_id)::int from calls k
+              where k.created_at > now() - interval '7 days'
+                and (k.brain_id = b.id or k.brain_id in
+                     (select id from brains c3 where c3.parent_id = b.id))) as readers_week
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and u.handle is not null
         and b.parent_id is null ${where}
@@ -263,8 +271,14 @@ export default async function ExplorePage({
                   <span style={{ opacity: 0.8 }}>
                     {(brain.note_count + brain.child_notes).toLocaleString()} notes
                     {brain.children > 0 && ` · ${brain.children} inside`}
-                    {brain.sales_count > 0 && ` · ${brain.sales_count} sold`}
+                    {/* Only a brain that is actually for sale can have been sold.
+                        On a free one the line read as a shop counter at zero. */}
+                    {brain.price_cents > 0 && brain.sales_count > 0 && ` · ${brain.sales_count} sold`}
                     {brain.calls_week > 0 && ` · ${brain.calls_week} asks/wk`}
+                    {/* Two, not one: "asked by 1 person" is the author, and saying
+                        so out loud makes a young brain look abandoned rather than
+                        new. */}
+                    {brain.readers_week > 1 && ` · ${brain.readers_week} people`}
                   </span>
                   {brain.score !== null && (
                     <span className="card-score">

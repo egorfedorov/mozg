@@ -3,45 +3,107 @@ import Link from "next/link";
 /**
  * The contents strip.
  *
- * Six public pages do not fit in one bar, and hiding half of them on a phone
- * left a visitor with "explore" and a sign-in button — no way to reach the
- * pages that explain what the thing is. So the bar keeps the actions and this
- * keeps the reading, the way a zine puts its contents under the masthead
- * rather than squeezing them into it.
+ * Eleven public pages in one flat row was a wall: every label the same weight,
+ * every one carrying a subtitle, and the last two scrolled off the edge where
+ * nobody found them. A reader could not tell "Why" from "Connect" in
+ * importance, so they read none of it.
  *
- * It scrolls sideways on a narrow screen instead of wrapping or vanishing:
- * every item stays reachable at every width.
+ * Four groups instead, each one a question a visitor actually has. The group
+ * labels are all that shows at rest; the pages appear when a group is opened.
+ * Built on <details>, which means it works with no JavaScript, on touch, and
+ * from the keyboard — the three things a hover-only dropdown gets wrong.
+ *
+ * The subtitles stay, but inside the panel where there is room to read them
+ * rather than in a bar that has to stay one line tall.
  */
 
-const PAGES: { href: string; label: string; note: string }[] = [
-  { href: "/start", label: "Start here", note: "zero to a thinking agent" },
-  { href: "/why", label: "Why", note: "the problem this solves" },
-  { href: "/vs", label: "Brain or file", note: "and when a file wins" },
-  { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
-  { href: "/collective", label: "The collective mind", note: "every user makes it smarter" },
-  { href: "/make", label: "Make one", note: "six panels" },
-  { href: "/guide", label: "The long guide", note: "every detail" },
-  { href: "/connect", label: "Connect", note: "your client, one command" },
-  { href: "/explore", label: "Catalogue", note: "brains to take" },
-  { href: "https://learn.mozg.sh", label: "Learn", note: "the same brain, for you" },
-  { href: "/pricing", label: "Pricing", note: "what costs money, what never will" },
+interface Page {
+  href: string;
+  label: string;
+  note: string;
+  external?: boolean;
+}
+
+const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
+  {
+    label: "Start",
+    summary: "get an agent thinking",
+    pages: [
+      { href: "/start", label: "Start here", note: "zero to a thinking agent, ~10 min" },
+      { href: "/connect", label: "Connect a client", note: "your CLI, one command" },
+      { href: "/make", label: "Make a brain", note: "six panels" },
+      { href: "/guide", label: "The long guide", note: "every detail, in order" },
+    ],
+  },
+  {
+    label: "About",
+    summary: "what this is, and why",
+    pages: [
+      { href: "/why", label: "Why it exists", note: "the problem this solves" },
+      { href: "/vs", label: "Brain or file", note: "and when a file wins" },
+      { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
+      { href: "/collective", label: "The collective mind", note: "every user makes it smarter" },
+    ],
+  },
+  {
+    label: "Uses",
+    summary: "what people do with it",
+    pages: [
+      { href: "/stories", label: "Five ways in", note: "an artist, a company, a game" },
+      { href: "/explore", label: "Catalogue", note: "brains to take, free" },
+      { href: "https://learn.mozg.sh", label: "Learn as a human", note: "the same brain, as a course", external: true },
+    ],
+  },
+  {
+    label: "Money",
+    summary: "what costs what",
+    pages: [
+      { href: "/pricing", label: "Pricing", note: "your inference is free, ours is the plan" },
+      { href: "/changelog", label: "News & changelog", note: "what shipped, dated" },
+    ],
+  },
 ];
 
 export default function Contents({ active }: { active?: string }) {
   return (
     <nav className="contents" aria-label="Pages">
       <div className="shell contents-inner">
-        {PAGES.map((p) => (
-          <Link
-            key={p.href}
-            href={p.href}
-            className="contents-item"
-            data-active={p.href === active}
-          >
-            <span className="contents-label">{p.label}</span>
-            <span className="contents-note">{p.note}</span>
-          </Link>
-        ))}
+        {GROUPS.map((g) => {
+          const here = g.pages.some((p) => p.href === active);
+          return (
+            // `name` makes the four a radio set: opening one closes the others,
+            // browser-side, with no state to keep. `key` includes the active page
+            // so a navigation re-mounts the group and it collapses again.
+            <details
+              key={`${g.label}-${active ?? ""}`}
+              name="mozg-nav"
+              className="nav-group"
+              data-here={here}
+            >
+              <summary className="nav-summary">
+                <span className="nav-label">{g.label}</span>
+                <span className="nav-summary-note">{g.summary}</span>
+              </summary>
+              <div className="nav-panel">
+                {g.pages.map((p) => (
+                  <Link
+                    key={p.href}
+                    href={p.href}
+                    className="nav-item"
+                    data-active={p.href === active}
+                    {...(p.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  >
+                    <span className="nav-item-label">
+                      {p.label}
+                      {p.external ? " ↗" : ""}
+                    </span>
+                    <span className="nav-item-note">{p.note}</span>
+                  </Link>
+                ))}
+              </div>
+            </details>
+          );
+        })}
       </div>
     </nav>
   );
