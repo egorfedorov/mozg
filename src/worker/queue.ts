@@ -17,6 +17,7 @@ export const QUEUES = {
   mozgpay: "mozgpay",
   lesson: "lesson",
   summary: "summary",
+  refresh: "refresh",
 } as const;
 
 /**
@@ -106,6 +107,17 @@ export async function enqueueCrawl(sourceId: string): Promise<void> {
  * database, so it survives restarts and only one worker fires it even if
  * several are running.
  */
+/**
+ * "Update this brain, now." Queued rather than done inline: a brain built from a
+ * documentation site has hundreds of pages to fetch, and an MCP call that waits
+ * for that is a call the agent times out on. Deduplicated per brain for ten
+ * minutes — asking twice while it runs is the same request, not two.
+ */
+export async function enqueueRefresh(brainId: string): Promise<void> {
+  const b = await getBoss();
+  await b.send(QUEUES.refresh, { brainId }, { singletonKey: `refresh:${brainId}`, singletonSeconds: 600 });
+}
+
 export async function scheduleMaintenance(): Promise<void> {
   const b = await getBoss();
   await b.schedule(QUEUES.maintenance, MAINTENANCE_CRON, {}, { tz: "UTC" });

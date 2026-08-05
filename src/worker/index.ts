@@ -26,7 +26,7 @@ import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
-import { runMaintenance } from "@/worker/maintenance";
+import { runMaintenance, refreshBrain } from "@/worker/maintenance";
 import { runConsolidation } from "@/worker/consolidate";
 import { embedHealthy } from "@/lib/embed";
 import { env } from "@/lib/env";
@@ -175,6 +175,31 @@ async function main() {
       } catch (err) {
         console.error(
           `[maintenance] FAILED after ${Date.now() - started}ms:`,
+          err instanceof Error ? err.message : err,
+        );
+        throw err;
+      }
+    },
+  );
+
+  // On-demand brain refresh (brain_refresh / "/mozg:update"). Its own queue so
+  // one person updating a five-hundred-page brain does not sit in front of the
+  // scheduled maintenance pass everyone else depends on.
+  await boss.work(
+    QUEUES.refresh,
+    { batchSize: 1, pollingIntervalSeconds: 5 },
+    async ([job]) => {
+      const { brainId } = job.data as { brainId: string };
+      const started = Date.now();
+      try {
+        const r = await refreshBrain(brainId);
+        console.log(
+          `[refresh] ${brainId} checked=${r.checked} changed=${r.changed} ` +
+            `failed=${r.failed} sites=${r.sitesRecrawled} ${Date.now() - started}ms`,
+        );
+      } catch (err) {
+        console.error(
+          `[refresh] ${brainId} FAILED after ${Date.now() - started}ms:`,
           err instanceof Error ? err.message : err,
         );
         throw err;

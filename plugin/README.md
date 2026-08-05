@@ -21,7 +21,7 @@ Claude Code and `/brains` will list what you can read.
 
 ## What the agent gets
 
-Ten tools. The descriptions tell it *when* to reach for each, which is the
+Eleven tools. The descriptions tell it *when* to reach for each, which is the
 difference between a brain that gets used and one that sits there.
 
 | Tool | For |
@@ -34,6 +34,7 @@ difference between a brain that gets used and one that sits there.
 | `brain_write_batch` | Save a whole set of notes from a training session in one call |
 | `brain_create` | Start a new brain without leaving the editor |
 | `brain_add_source` | Feed it documentation pages or a block of text |
+| `brain_refresh` | Re-read a brain you own against its sources; only changed pages cost anything |
 | `library_add` | Put a catalogue brain on your shelf without opening a browser |
 | `library_remove` | Take one off again; the brain itself is untouched |
 
@@ -42,6 +43,7 @@ difference between a brain that gets used and one that sits there.
 - `/mozg:brains` — the map: what you can read and which one fits what you are doing
 - `/mozg:add [subject]` — find a brain in the catalogue and shelve it from here
 - `/mozg:sync` — write the shelf into `.mozg/brains.md` so every session starts knowing it
+- `/mozg:update [handle]` — re-read your brains against their sources, then re-sync the map
 - `/mozg:learn [handle]` — save what this session worked out back into a brain
 - `/mozg:train <handle> <material>` — teach a brain from docs you point at, on your own subscription
 - `/mozg:teach [handle]` — an interview that fills the brain's known gaps

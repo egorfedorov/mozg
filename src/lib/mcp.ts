@@ -1,6 +1,7 @@
 import { query, maybeOne, one } from "@/db";
 import { agentNotice } from "@/lib/announcements";
 import { addToLibrary, removeFromLibrary } from "@/lib/library";
+import { enqueueRefresh } from "@/worker/queue";
 import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
 import {
@@ -162,6 +163,26 @@ export const TOOLS: ToolDef[] = [
         },
       },
       required: ["brain", "notes"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "brain_refresh",
+    description:
+      "Bring a brain you own up to date with its sources: re-read the pages " +
+      "whose text changed since last time, and re-walk any crawled site for " +
+      "pages that did not exist before. Use it when the user says a library " +
+      "released a version, or when an answer from the brain turns out to be one " +
+      "release behind. Cheap by construction — every page is fetched and hashed, " +
+      "but only a page that actually changed is re-read by a model, and the notes " +
+      "from a changed page are superseded rather than deleted. Queued, not " +
+      "instant: it reports what it started, and the exam re-sits itself after.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "A brain you own, by handle." },
+      },
+      required: ["brain"],
       additionalProperties: false,
     },
   },
@@ -442,6 +463,8 @@ export async function callTool(
       return brainCreate(args, owner);
     case "brain_add_source":
       return brainAddSource(args, owner);
+    case "brain_refresh":
+      return brainRefresh(args, owner);
     case "library_add":
       return libraryAdd(args, owner);
     case "library_remove":
@@ -1400,5 +1423,59 @@ async function libraryRemove(
     text:
       `Removed ${handle} from your shelf — it is out of brain_list now. ` +
       `The brain itself is untouched, and library_add puts it back.`,
+  };
+}
+
+/**
+ * Update a brain against its sources, on demand.
+ *
+ * Owner only. A refresh spends the owner's extraction budget on whatever changed,
+ * so a contributor with write access must not be able to start one — write access
+ * is permission to add a note, not to spend somebody's month.
+ */
+async function brainRefresh(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+  if (resolved.access !== "owner") {
+    return {
+      text:
+        `${handle} is not yours, so it is not yours to re-read — its owner keeps ` +
+        `it current, and every refresh spends their budget. Ask them, or build ` +
+        `your own brain from the same sources.`,
+      isError: true,
+    };
+  }
+
+  const sources = await one<{ urls: number; sites: number }>(
+    `select count(*) filter (where kind = 'url')::int as urls,
+            count(*) filter (where kind = 'site')::int as sites
+       from sources where brain_id = $1 and status = 'ready'`,
+    [resolved.brain.id],
+  );
+  if (!sources.urls && !sources.sites) {
+    return {
+      text:
+        `Nothing to refresh in ${handle}: it holds no pages or sites, only what ` +
+        `was written into it directly. Teach it with brain_write, or give it a ` +
+        `documentation URL with brain_add_source.`,
+    };
+  }
+
+  await enqueueRefresh(resolved.brain.id);
+
+  return {
+    text:
+      `Refreshing ${handle}: checking ${sources.urls} page(s)` +
+      (sources.sites ? ` and re-walking ${sources.sites} site(s) for new ones` : "") +
+      `. Each page is fetched and compared by fingerprint, so an unchanged page ` +
+      `costs nothing and a changed one is re-read and its old notes superseded. ` +
+      `The exam re-sits itself once the re-reads land — check the score on ` +
+      `https://mozg.sh/b/${handle} in a few minutes rather than waiting here.`,
+    brainId: resolved.brain.id,
+    ownerId: resolved.brain.owner_id,
   };
 }

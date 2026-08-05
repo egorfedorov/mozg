@@ -21,6 +21,12 @@ const RECHECK_AFTER = "3 days";
 
 /** Pages per pass. A cap, so one enormous account cannot starve the rest. */
 const REFRESH_BATCH = 40;
+/**
+ * The cap when a person asked. Higher than the scheduled batch because a brain
+ * built from a documentation site has hundreds of pages and "update it" that
+ * only touched forty of them would be a lie told with a progress message.
+ */
+const ON_DEMAND_BATCH = 400;
 const EXAM_BATCH = 10;
 
 export interface RefreshReport {
@@ -40,14 +46,26 @@ export interface RefreshReport {
  * superseded *before* the re-ingest rather than after, so a brain is never
  * briefly answering from both versions at once.
  */
-export async function refreshUrlSources(limit = REFRESH_BATCH): Promise<RefreshReport> {
+export async function refreshUrlSources(
+  limit = REFRESH_BATCH,
+  /**
+   * One brain, checked now. The scheduled pass takes whatever is due across
+   * everyone; a person asking "update this brain" is not asking about the
+   * three-day window, they are saying the page changed today — so a named brain
+   * ignores checked_at entirely. Still one fetch and a hash per page, and still
+   * only a changed page costs a re-read.
+   */
+  brainId?: string,
+): Promise<RefreshReport> {
   const due = await query<{ id: string; url: string; brain_id: string; content_hash: string | null }>(
     `select id, url, brain_id, content_hash from sources
       where kind = 'url' and status = 'ready' and url is not null
-        and (checked_at is null or checked_at < now() - interval '${RECHECK_AFTER}')
+        and ($2::uuid is null or brain_id = $2::uuid)
+        and ($2::uuid is not null
+             or checked_at is null or checked_at < now() - interval '${RECHECK_AFTER}')
       order by checked_at nulls first
       limit $1`,
-    [limit],
+    [limit, brainId ?? null],
   );
 
   const report: RefreshReport = {
@@ -203,18 +221,20 @@ const RECRAWL_BATCH = 10;
  * extractions. Page *content* changes are refreshUrlSources' job — this one
  * only finds pages that did not exist before.
  */
-export async function recrawlSites(limit = RECRAWL_BATCH): Promise<number> {
+export async function recrawlSites(limit = RECRAWL_BATCH, brainId?: string): Promise<number> {
   const due = await query<{ id: string }>(
     `update sources set status = 'queued', error = null
       where id in (
         select id from sources
          where kind = 'site' and status = 'ready'
-           and processed_at < now() - interval '${RECRAWL_AFTER}'
+           and ($2::uuid is null or brain_id = $2::uuid)
+           and ($2::uuid is not null
+                or processed_at < now() - interval '${RECRAWL_AFTER}')
          order by processed_at
          limit $1
       )
       returning id`,
-    [limit],
+    [limit, brainId ?? null],
   );
   for (const s of due) await enqueueCrawl(s.id);
   return due.length;
@@ -240,6 +260,32 @@ export async function requeueBudgetPaused(limit = 50): Promise<number> {
   );
   for (const s of due) await enqueueIngest(s.id, PRIORITY.background);
   return due.length;
+}
+
+/**
+ * Everything "update this brain" means, in one call: re-read the pages whose
+ * text moved, and re-walk the sites for pages that did not exist last time.
+ *
+ * On demand rather than on the schedule, because the schedule is a guarantee of
+ * eventual freshness and a person watching a release ship is not asking for
+ * eventual. Cheap by construction — a fetch and a hash per page, and only a page
+ * that actually changed reaches the paid extractor, where the plan budget still
+ * applies.
+ */
+export async function refreshBrain(brainId: string): Promise<{
+  checked: number;
+  changed: number;
+  failed: number;
+  sitesRecrawled: number;
+}> {
+  const sites = await recrawlSites(RECRAWL_BATCH, brainId);
+  const report = await refreshUrlSources(ON_DEMAND_BATCH, brainId);
+  return {
+    checked: report.checked,
+    changed: report.changed,
+    failed: report.failed,
+    sitesRecrawled: sites,
+  };
 }
 
 export async function runMaintenance(): Promise<{
