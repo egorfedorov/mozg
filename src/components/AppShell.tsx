@@ -66,14 +66,19 @@ export default async function AppShell({
   );
   const balance = row?.balance_cents ?? 0;
 
-  // The operator should see a waiting message from anywhere in the app, not
-  // only by opening /admin/chat on a hunch.
-  const adminUnread = isAdmin(user)
-    ? await query<{ n: number }>(
-        `select count(*)::int as n from chat_messages
-          where author = 'user' and read_at is null`,
-      ).then((r) => r[0]?.n ?? 0)
-    : 0;
+  // The operator should see a waiting message — or a fresh failure — from
+  // anywhere in the app, not only by opening the right admin page on a hunch.
+  const [adminUnread, adminErrors] = isAdmin(user)
+    ? await Promise.all([
+        query<{ n: number }>(
+          `select count(*)::int as n from chat_messages
+            where author = 'user' and read_at is null`,
+        ).then((r) => r[0]?.n ?? 0),
+        query<{ n: number }>(
+          `select count(*)::int as n from app_errors where resolved_at is null`,
+        ).then((r) => r[0]?.n ?? 0),
+      ])
+    : [0, 0];
 
   const groups = isAdmin(user)
     ? [
@@ -83,6 +88,7 @@ export default async function AppShell({
           items: [
             { href: "/admin", label: "System" },
             { href: "/admin/chat", label: "Chat", badge: adminUnread },
+            { href: "/admin/errors", label: "Errors", badge: adminErrors },
             { href: "/admin/users", label: "People" },
             { href: "/admin/brains", label: "All brains" },
             { href: "/admin/marketing", label: "Marketing" },

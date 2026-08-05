@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query, maybeOne } from "@/db";
 import { TOOLS, callTool } from "@/lib/mcp";
+import { reportError } from "@/lib/errors";
 import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
@@ -234,9 +235,9 @@ async function handle(rpc: RpcRequest, owner: Owner) {
         outcome = await callTool(name, args, owner);
       } catch (err) {
         // err.message can carry pg details (relation names, constraint text) —
-        // schema information a caller has no business seeing. Log it, answer
-        // with something generic.
-        console.error(`[mcp] ${name} failed for ${owner.userId}:`, err);
+        // schema information a caller has no business seeing. Report it to the
+        // error center (admin-only surface), answer with something generic.
+        reportError("mcp", name, err, { userId: owner.userId });
         outcome = {
           text: "Tool failed with an internal error. The details are logged; do not retry the same call.",
           isError: true,
@@ -249,8 +250,8 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       // before it; a failed insert must still not fail the tool call.
       await query(
         `insert into calls
-           (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok, error)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           outcome.brainId ?? null,
           owner.userId,
@@ -261,6 +262,9 @@ async function handle(rpc: RpcRequest, owner: Owner) {
           outcome.topScore ?? null,
           Date.now() - started,
           !outcome.isError,
+          // The reason rides with the row: 24 failed calls once took latency
+          // forensics to explain because ok=false carried no text.
+          outcome.isError ? outcome.text.slice(0, 300) : null,
         ],
       ).catch(() => {});
 

@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { translate } from "@/lib/translate";
+import { reportError } from "@/lib/errors";
 import { sendPush } from "@/lib/push";
 
 /**
@@ -34,7 +35,10 @@ export async function sendOperatorMessage(
     // A translation hiccup must not eat the reply: send the original and the
     // thread survives — worst case the user gets one message in Russian.
     const t = await translate(body, target).catch((err) => {
-      console.warn(`[translate] reply fell back to original: ${err instanceof Error ? err.message : err}`);
+      // The reply still goes out untranslated — but the error center hears
+      // about it, because this exact silent fallback once shipped Russian to
+      // an English speaker and took a prod-container autopsy to explain.
+      reportError("app", "translate", err, { userId });
       return null;
     });
     if (t && !t.same) {

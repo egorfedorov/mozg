@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MascotDock from "@/components/MascotDock";
+import ClientErrorReporter from "@/components/ClientErrorReporter";
 import Analytics from "@/components/Analytics";
 import "./globals.css";
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Last in the body, fixed in the corner: it must not participate in the
             page's layout, only sit above it. */}
         <MascotDock />
+        <ClientErrorReporter />
         <Analytics />
       </body>
     </html>

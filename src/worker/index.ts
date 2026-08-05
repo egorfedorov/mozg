@@ -22,6 +22,7 @@ async function withSourceOwner<T>(sourceId: string, fn: () => Promise<T>): Promi
 }
 
 import { query } from "@/db";
+import { reportError } from "@/lib/errors";
 import { ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
@@ -92,10 +93,9 @@ async function main() {
         if (err instanceof SourceBusyError) {
           console.log(`[ingest] ${sourceId} ${err.message}`);
         } else {
-          console.error(
-            `[ingest] ${sourceId} FAILED after ${Date.now() - started}ms:`,
-            err instanceof Error ? err.message : err,
-          );
+          reportError("worker", "ingest", err, {
+            detail: `source ${sourceId}, after ${Date.now() - started}ms`,
+          });
         }
         throw err;
       }
@@ -149,10 +149,10 @@ async function main() {
             : `[exam] ${brainId} skipped — brain has no goal`,
         );
       } catch (err) {
-        console.error(
-          `[exam] ${brainId} FAILED after ${Date.now() - started}ms:`,
-          err instanceof Error ? err.message : err,
-        );
+        reportError("worker", "exam", err, {
+          brainId,
+          detail: `after ${Date.now() - started}ms`,
+        });
         throw err;
       }
     },
@@ -285,6 +285,10 @@ async function main() {
   };
   process.on("SIGINT", () => void shutdown("SIGINT"));
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  // The stranger failures — a rejection nobody awaited, a throw outside every
+  // catch — used to exist only in a container log the next deploy erases.
+  process.on("unhandledRejection", (err) => reportError("worker", "unhandled", err));
+  process.on("uncaughtException", (err) => reportError("worker", "unhandled", err));
 }
 
 main().catch((err) => {
