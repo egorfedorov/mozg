@@ -418,7 +418,7 @@ async function resolveBrain(
     ? handle.split("/", 2)
     : [null, handle];
 
-  const brain = maybeOwner
+  let brain = maybeOwner
     ? await maybeOne<Brain>(
         `select b.* from brains b join "user" u on u.id = b.owner_id
           where u.handle = $1 and b.slug = $2`,
@@ -428,6 +428,30 @@ async function resolveBrain(
         userId,
         maybeSlug,
       ]);
+
+  // A bare slug that is not one of the caller's own brains still resolves
+  // when it names EXACTLY ONE brain on their shelf (library, purchases,
+  // grants). "slot-studio" instead of "mozg/slot-studio" was 100% of the
+  // failed MCP calls in a day — agents reach for the name brain_list showed
+  // in a title, and making them re-derive the owner prefix converts a
+  // working question into a retry loop. Ambiguity still errors: guessing
+  // between two same-named brains would answer from the wrong one silently.
+  if (!brain && !maybeOwner) {
+    const shelf = await query<Brain>(
+      `select b.* from brains b
+        where b.slug = $2
+          and (exists (select 1 from library l
+                        where l.brain_id = b.id and l.user_id = $1)
+           or exists (select 1 from purchases p
+                        where p.brain_id = b.id and p.buyer_id = $1)
+           or exists (select 1 from grants g
+                        join "user" u on lower(u.email) = lower(g.email)
+                       where g.brain_id = b.id and u.id = $1 and u."emailVerified"))
+        limit 2`,
+      [userId, maybeSlug],
+    );
+    if (shelf.length === 1) brain = shelf[0];
+  }
 
   if (!brain) return null;
 
