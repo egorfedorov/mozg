@@ -1,4 +1,14 @@
+import { unstable_cache } from "next/cache";
 import { query } from "@/db";
+
+/** A read whose failure is not worth propagating — see liveAnnouncements. */
+async function queryOrNone<T extends object>(sql: string, params?: unknown[]): Promise<T[]> {
+  try {
+    return await query<T>(sql, params);
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Announcements — the one way the product speaks first.
@@ -10,6 +20,9 @@ import { query } from "@/db";
  * cannot reach a brain for twenty minutes should be told why rather than report
  * the brain as broken.
  */
+
+/** Cache tag: posting or retiring an announcement busts it. */
+export const ANNOUNCEMENT_TAG = "announcements";
 
 export type AnnouncementKind = "maintenance" | "news" | "notice";
 
@@ -23,18 +36,36 @@ export interface Announcement {
   to_agents: boolean;
 }
 
-/** Live right now: published and inside its window. Newest first. */
-export async function liveAnnouncements(): Promise<Announcement[]> {
-  return query<Announcement>(
-    `select id, kind, title, body, starts_at, ends_at, to_agents
-       from announcements
-      where published
-        and starts_at <= now()
-        and (ends_at is null or ends_at > now())
-      order by starts_at desc
-      limit 3`,
-  );
-}
+/**
+ * Live right now: published and inside its window. Newest first.
+ *
+ * Fails soft on purpose. This runs in the root layout, which means it also runs
+ * while `next build` prerenders static pages on a machine with no database — and
+ * a banner is not worth failing a build over. At runtime a database that cannot
+ * answer this has bigger problems than a missing bar.
+ */
+export const liveAnnouncements = unstable_cache(
+  async (): Promise<Announcement[]> =>
+    queryOrNone<Announcement>(
+      `select id, kind, title, body, starts_at, ends_at, to_agents
+         from announcements
+        where published
+          and starts_at <= now()
+          and (ends_at is null or ends_at > now())
+        order by starts_at desc
+        limit 3`,
+    ),
+  ["live-announcements"],
+  // Cached because this runs in the root layout and again on every brain_list:
+  // uncached, that is a query per page view and per agent call, to display a bar
+  // that is usually absent. (It does not change what renders statically — TopBar
+  // reads the session, so these pages were already per-request.)
+  //
+  // The window is a minute, but posting or retiring busts the tag — so a
+  // maintenance notice is immediate, and the minute only ever applies to an
+  // entry expiring on its own schedule.
+  { revalidate: 60, tags: [ANNOUNCEMENT_TAG] },
+);
 
 /**
  * What an agent is told. Only entries explicitly marked for agents, and only
@@ -57,7 +88,7 @@ export async function agentNotice(): Promise<string | null> {
 
 /** The news feed: everything published, whether or not its banner window is open. */
 export async function newsArchive(limit = 50): Promise<Announcement[]> {
-  return query<Announcement>(
+  return queryOrNone<Announcement>(
     `select id, kind, title, body, starts_at, ends_at, to_agents
        from announcements
       where published and kind in ('news', 'notice')

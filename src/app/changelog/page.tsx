@@ -3,6 +3,11 @@ import { newsArchive } from "@/lib/announcements";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 
+// Announcements are posted without a deploy, so this page is rendered per
+// request rather than baked at build time — a news page a day behind is worse
+// than no news page.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Changelog — mozg",
   description: "What shipped, dated. A beta whose pace you can see.",

@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
+import { ANNOUNCEMENT_TAG } from "@/lib/announcements";
 
 /**
  * Posting and retiring announcements.
@@ -45,9 +46,14 @@ export async function postAnnouncement(formData: FormData): Promise<void> {
     [kind, title, body, minutes ?? null, toAgents, admin.id],
   );
 
+  // The banner reads through a tagged cache so it does not un-cache the site;
+  // busting the tag is what makes a notice appear now rather than within a
+  // minute — which for "we are restarting the queue" is the whole point.
+  // updateTag rather than revalidateTag: this is a Server Action, and the admin
+  // who just posted should see it on the redirect, not on the next one.
+  updateTag(ANNOUNCEMENT_TAG);
   revalidatePath("/admin/announcements");
   revalidatePath("/changelog");
-  revalidatePath("/");
 }
 
 export async function retireAnnouncement(formData: FormData): Promise<void> {
@@ -56,7 +62,7 @@ export async function retireAnnouncement(formData: FormData): Promise<void> {
   if (!id.success) return;
 
   await query(`update announcements set published = false where id = $1`, [id.data]);
+  updateTag(ANNOUNCEMENT_TAG);
   revalidatePath("/admin/announcements");
   revalidatePath("/changelog");
-  revalidatePath("/");
 }
