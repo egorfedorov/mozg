@@ -257,7 +257,8 @@ export default function BasicsPage() {
             We keep the knowledge, and we measure it.
           </h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
-            A <strong>brain</strong> is a small library about one subject —
+            A <strong>brain</strong>{" "}
+            is a small library about one subject —
             SvelteKit, your company&apos;s billing service, the way your studio
             builds games. Inside it are notes: one fact each, written to stand
             alone. Your agent connects once and then asks the brain whenever a

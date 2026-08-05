@@ -115,7 +115,8 @@ export default function StartPage() {
             mozg does three things differently: knowledge lives in a{" "}
             <strong>brain</strong> the agent searches over MCP (only the notes
             a task needs enter the context), every brain{" "}
-            <strong>sits an exam</strong> so &ldquo;trained 92%&rdquo; is a
+            <strong>sits an exam</strong>{" "}
+            so &ldquo;trained 92%&rdquo; is a
             measured fact with the failures listed, and brains{" "}
             <strong>learn from use</strong> — a question nobody could answer
             becomes an exam question automatically.

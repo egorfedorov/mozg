@@ -70,10 +70,15 @@ export default async function ConnectPage() {
 export MOZG_TOKEN=mzg_...`}
           </pre>
           <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>
-            It brings the MCP connection and two commands: <code className="mono">/brains</code>{" "}
-            to see what you can read, <code className="mono">/learn</code> to save what a
-            session worked out. Make the token below — the button fills it into the
-            command.
+            It brings the MCP connection and seven commands:{" "}
+            <code className="mono">/mozg:brains</code> for the map,{" "}
+            <code className="mono">/mozg:add</code> to shelve a catalogue brain,{" "}
+            <code className="mono">/mozg:sync</code> to write your shelf into the project so
+            every session starts knowing it, <code className="mono">/mozg:update</code> to
+            re-read a brain against its sources, and{" "}
+            <code className="mono">/mozg:train</code>, <code className="mono">/mozg:teach</code>,{" "}
+            <code className="mono">/mozg:learn</code> for teaching. Make the token below — the
+            button fills it into the command.
           </p>
         </section>
 
