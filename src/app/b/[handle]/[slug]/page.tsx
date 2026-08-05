@@ -166,6 +166,15 @@ export default async function PublicBrainPage({
   // claim a storefront can make — attribution from the grader, not copy.
   const taught = await agentsTaught([brain.id, ...children.map((c) => c.id)]);
 
+  // The red team's latest verdicts — measured resistance, dated. Only shown
+  // when a run exists; a storefront must never imply a test that did not run.
+  const redteam = await query<{ attack: string; survived: boolean; detail: string | null; ran: string }>(
+    `select attack, survived, detail,
+            to_char(ran_at at time zone 'UTC', 'YYYY-MM-DD') as ran
+       from redteam_runs where brain_id = $1 order by attack`,
+    [brain.id],
+  );
+
   const [rating, latestReviews, myReview] = await Promise.all([
     query<{ avg: string | null; n: number }>(
       `select round(avg(rating), 1)::text as avg, count(*)::int as n
@@ -290,7 +299,10 @@ export default async function PublicBrainPage({
                 {examDiff.lost > 0 && (
                   <span style={{ color: "var(--color-riso-red)" }}> · −{examDiff.lost} lost</span>
                 )}
-                {" "}— this brain is learning
+                {" "}— this brain is learning ·{" "}
+                <Link href={`/b/${handle}/${brain.slug}/changes`} style={{ textDecoration: "underline" }}>
+                  the verified changelog →
+                </Link>
               </p>
             )}
           </div>
@@ -547,6 +559,33 @@ export default async function PublicBrainPage({
             )}
           </section>
         </div>
+
+        {redteam.length > 0 && (
+          <section style={{ marginTop: "2.5rem" }}>
+            <div className="section-head">
+              <h2 className="h2">Attacks survived</h2>
+              <span className="eyebrow">re-run weekly · {redteam[0].ran}</span>
+            </div>
+            <div className="rows" style={{ maxWidth: "52rem" }}>
+              {redteam.map((r) => (
+                <div key={r.attack} className="row" data-tint={r.survived ? undefined : "red"}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong className="mono" style={{ fontSize: ".875rem" }}>
+                      <span style={{ color: r.survived ? "var(--color-riso-green)" : "var(--color-riso-red)", marginRight: ".5rem" }}>
+                        {r.survived ? "✓" : "✕"}
+                      </span>
+                      {r.attack}
+                    </strong>
+                    <span className="row-sub">{r.detail}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", marginTop: ".5rem" }}>
+              heuristic scans against known attack classes — measured and dated, not a promise of unpoisonability
+            </p>
+          </section>
+        )}
 
         <section style={{ marginTop: "3rem", display: "grid", gap: "2rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <div>

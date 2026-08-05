@@ -22,22 +22,33 @@ export const metadata = {
 export default async function StylesPage() {
   const user = await currentUser();
 
-  // Every public style brain, the flagship first. The gallery IS the pitch:
-  // real brains with real exam scores, not mockups.
+  // The artist directory: every public style brain, grouped under the person
+  // who owns the style. The catalogue IS the pitch — real artists, real exam
+  // scores, not mockups.
   const styleBrains = await query<{
     handle: string;
+    artist: string;
     slug: string;
     title: string;
     goal: string | null;
     score: number | null;
     note_count: number;
     price_cents: number;
+    buyers: number;
   }>(
-    `select u.handle, b.slug, b.title, b.goal, b.score, b.note_count, b.price_cents
+    `select u.handle, coalesce(u.name, u.handle) as artist,
+            b.slug, b.title, b.goal, b.score, b.note_count, b.price_cents,
+            (select count(*)::int from purchases p where p.brain_id = b.id) as buyers
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and b.topic = 'art' and u.handle is not null
-      order by b.created_at asc`,
+      order by b.score desc nulls last, b.created_at asc`,
   );
+  const artists = new Map<string, { artist: string; brains: typeof styleBrains }>();
+  for (const b of styleBrains) {
+    const e = artists.get(b.handle) ?? { artist: b.artist, brains: [] as typeof styleBrains };
+    e.brains.push(b);
+    artists.set(b.handle, e);
+  }
 
   return (
     <>
@@ -99,8 +110,8 @@ export default async function StylesPage() {
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
             {[
-              ["01", "Put the style into a brain", "Palette with exact values, how light behaves, line weight, composition habits — and the hard nevers. Twenty focused notes beat two hundred vague ones. No uploads of your art required: the brain holds rules, not images."],
-              ["02", "It sits an exam", "mozg writes control questions from your rules and grades itself — the score on the card is proof the style is actually learnable from the brain, measured by a judge, not claimed by you."],
+              ["01", "Drop your works in", "Upload 5–15 of your pieces — mozg reads them and writes the rules it sees: palette with values, how your light behaves, line character, the composition habits. Or write the rules yourself, or both. The brain sells rules, never your images."],
+              ["02", "It sits an exam", "mozg writes control questions from your rules and grades itself — the score on the card is proof the style is actually learnable from the brain, measured by a judge, not claimed by you. Catalogue listing passes a human review; verified-artist badges are on the road."],
               ["03", "Price it once, sell it forever", "Set a price; buyers pay once from their balance. 95% lands in yours, withdrawable in crypto. Every buyer's agent — Claude Code, Codex, any MCP client — now follows your rules when it generates or art-directs."],
               ["04", "Stay in control", "You keep updating the brain and every buyer gets the updates. And because access runs through mozg — not through a model fine-tune someone downloaded — it is revocable. A LoRA in the wild is forever; a licence is not."],
             ].map(([n, t, b]) => (
@@ -117,29 +128,55 @@ export default async function StylesPage() {
           </div>
         </section>
 
-        {/* The gallery — real style brains for sale, exam scores included. */}
+        {/* The artist directory — styles live under the people who own them. */}
         <section style={{ marginTop: "3.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Style brains in the catalogue</h2>
-            <span className="eyebrow">exam-scored · bought once · updates included</span>
+            <h2 className="h2">The artists</h2>
+            <span className="eyebrow">exam-scored · bought once · updates included · 95% to the artist</span>
           </div>
-          {styleBrains.length === 0 ? (
-            <p className="lede">The first ones are being written right now.</p>
+          {artists.size === 0 ? (
+            <p className="lede">The first artists are writing their styles right now.</p>
           ) : (
-            <div className="rows" style={{ maxWidth: "56rem" }}>
-              {styleBrains.map((b) => (
-                <Link key={b.slug} className="row" href={`/b/${b.handle}/${b.slug}`}>
-                  <span style={{ minWidth: 0 }}>
-                    <strong>{b.title}</strong>
-                    <span className="row-sub">{b.goal}</span>
-                    <span className="row-meta">
-                      {b.note_count} rules · {b.score === null ? "exam pending" : `trained ${b.score}%`}
+            <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+              {[...artists.entries()].map(([handle, a]) => (
+                <div key={handle} className="panel" style={{ display: "grid", gap: ".75rem", alignContent: "start" }}>
+                  <div style={{ display: "flex", gap: ".7rem", alignItems: "center" }}>
+                    <span
+                      aria-hidden
+                      className="app-avatar"
+                      style={{ width: 40, height: 40, fontSize: "1.1rem", display: "grid", placeItems: "center", border: "1.5px solid var(--ink)", background: "var(--color-riso-yellow)" }}
+                    >
+                      {a.artist[0]?.toUpperCase() ?? "?"}
                     </span>
-                  </span>
-                  <span className="row-side mono">
-                    {b.price_cents > 0 ? `$${(b.price_cents / 100).toFixed(0)}` : "free"}
-                  </span>
-                </Link>
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{a.artist}</strong>
+                      <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                        @{handle} · {a.brains.length} style{a.brains.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </div>
+                  {a.brains.map((b) => (
+                    <Link
+                      key={b.slug}
+                      href={`/b/${handle}/${b.slug}`}
+                      style={{ border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".7rem .85rem", display: "grid", gap: ".2rem" }}
+                    >
+                      <span style={{ display: "flex", justifyContent: "space-between", gap: ".75rem", alignItems: "baseline" }}>
+                        <strong style={{ fontSize: ".9375rem" }}>{b.title}</strong>
+                        <span className="mono" style={{ fontSize: ".8125rem", flexShrink: 0 }}>
+                          {b.price_cents > 0 ? `$${(b.price_cents / 100).toFixed(0)}` : "free"}
+                        </span>
+                      </span>
+                      <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                        {b.note_count} rules
+                        {b.score !== null && (
+                          <> · <span style={{ color: "var(--color-riso-green)" }}>trained {b.score}%</span></>
+                        )}
+                        {b.buyers > 0 && ` · ${b.buyers} using it`}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               ))}
             </div>
           )}
@@ -164,8 +201,8 @@ export default async function StylesPage() {
         </section>
 
         <section style={{ marginTop: "3rem", display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
-          <Link className="btn" href={user ? "/brains/new" : "/sign-in?next=/brains/new"}>
-            Start your style brain — free
+          <Link className="btn" href={user ? "/styles/new" : "/sign-in?next=/styles/new"}>
+            Start your style brain — free, guided
           </Link>
           <Link className="btn btn-ghost" href="/explore?topic=art">
             Browse art brains

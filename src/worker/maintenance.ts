@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { env } from "@/lib/env";
+import { redteamBrain } from "@/lib/redteam";
 import { notifyGaps } from "@/lib/operator-chat";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
@@ -372,6 +373,21 @@ export async function runMaintenance(): Promise<{
   // Expired batons linger 30 days for postmortems, then go — nobody resumes
   // work from a month-old handoff, and the table stays a queue, not a log.
   await query(`delete from handoffs where expires_at < now() - interval '30 days'`);
+
+  // The red team walks the public catalogue on a weekly clock: regex scans
+  // only, so ten brains a pass costs milliseconds, and the "attacks survived"
+  // date on every storefront stays younger than a week.
+  const toRedteam = await query<{ id: string }>(
+    `select b.id from brains b
+      where b.visibility = 'public'
+        and not exists (select 1 from redteam_runs r
+                         where r.brain_id = b.id
+                           and r.ran_at > now() - interval '7 days')
+      limit 10`,
+  );
+  for (const b of toRedteam) {
+    await redteamBrain(b.id).catch(() => {});
+  }
   // Before examStaleBrains: an abandoned run closed here is a brain that gets
   // re-queued in the same pass instead of waiting six hours for the next one.
   const abandoned = await closeAbandonedRuns();
