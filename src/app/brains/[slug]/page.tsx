@@ -13,6 +13,7 @@ import { approveNote, rejectNote, dismissFlag } from "./review-actions";
 import { runExamNow, addCheck, removeCheck } from "./exam-actions";
 import { retrySource, deleteSource, waiveScan } from "./source-actions";
 import GapSuggestions from "@/components/GapSuggestions";
+import type { GapKind } from "@/lib/gap-kind";
 import { maybeOne, query } from "@/db";
 import type { Brain, Note, Source } from "@/db/types";
 import { currentUser } from "@/lib/session";
@@ -143,10 +144,10 @@ export default async function BrainPage({
         order by created_at desc limit 3`,
       [brain.id],
     ),
-    // Open gap suggestions (0043): failed "material missing" checks the
-    // owner can fill with a source, straight from this page.
-    query<{ id: string; question: string }>(
-      `select id, question from gap_suggestions
+    // Open gap suggestions (0043, kinds in 0055): every failed check, with the
+    // kind of gap it is — the owner acts on the kind, not just the question.
+    query<{ id: string; question: string; kind: GapKind }>(
+      `select id, question, kind from gap_suggestions
         where brain_id = $1 and status = 'pending'
         order by created_at limit 20`,
       [brain.id],

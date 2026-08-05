@@ -76,6 +76,16 @@ just becomes an apology.
   freshness affordable rather than aspirational.
   *Done when:* the nightly job runs on batch and the spend ledger shows the
   drop.
+- **Gaps the exam can actually see.** `gap_suggestions` only fires when a check
+  fails with *zero* retrieval hits, which was common while retrieval was
+  degraded and is rare now that it works: the honest failure is "the note was
+  found and did not answer", and that files nothing, so the owner learns
+  nothing. Roughly a third of checks fail this way. The suggestion needs to
+  carry which kind of gap it is — absent material, a note too thin to answer,
+  or an answer that ranked below something adjacent — because the three have
+  different fixes and only one of them is "add a source".
+  *Done when:* every failed check leaves an actionable row, and the brain page
+  says which of the three it is.
 - **The public benchmark.** The exam already measures what a brain knows;
   point it at a stock model and it measures what the model *doesn't*. One
   page per catalogue brain: model from memory vs the same model with the

@@ -5,6 +5,7 @@ import { costCents, structured } from "@/lib/claude";
 import { env } from "@/lib/env";
 import { findRegressions } from "@/lib/regressions";
 import { searchBrain } from "@/lib/search";
+import { classifyFailure, covers, type GapKind } from "@/lib/gap-kind";
 import { familyIds } from "@/lib/families";
 import { effectivePlan, limitsFor } from "@/lib/plans";
 import { byokStorage } from "@/lib/byok";
@@ -173,6 +174,13 @@ export async function generateChecks(brain: Brain): Promise<number> {
 
   return checks.length;
 }
+
+/**
+ * How deep to look when deciding whether a missing answer is absent or merely
+ * ranked below the five the judge sees. Matches diagnose-exam.ts, so the label
+ * the exam files and the one the script prints mean the same thing.
+ */
+const WIDE_LOOK = 25;
 
 // ─── running the exam ────────────────────────────────────────────────────────
 
@@ -626,33 +634,67 @@ export async function runExam(
     // ADDING the out-of-scope material would teach it to bluff for real.
     // Non-fatal by design: a topping-up failure must never fail the exam
     // that triggered it.
-    const missing = results.filter(
-      (r) => !r.passed && r.retrievalHits === 0 && r.check.kind !== "negative",
-    );
     // A probe only reports; closing gaps (suggestions, site top-up) is the
     // full sitting's job.
-    if (!mini && missing.length) {
-      // File each missing-material failure as a suggestion the owner can act
-      // on from the brain page (0043). Nothing is added automatically — the
-      // suggestion remembers what is missing; the owner picks the source. On
-      // conflict means a re-failed check changes nothing, and a dismissed
-      // suggestion stays dismissed.
-      for (const m of missing) {
+    if (!mini) {
+      // Every failure gets classified and filed, not just the zero-hit ones.
+      // Filing only "material absent" meant the common failure — a note the
+      // judge read and that did not answer — left the owner with a lower score
+      // and nothing to act on. The deeper search runs only where it decides
+      // something: when the judge's own passages did not contain the answer,
+      // "absent" and "ranked too low" are otherwise indistinguishable.
+      const failures = results.filter((r) => !r.passed);
+      const filed: { result: (typeof failures)[number]; kind: GapKind }[] = [];
+      for (const f of failures) {
+        const shown = contexts.find((c) => c.check.id === f.check.id)?.context ?? "";
+        let wide: string[] | undefined;
+        if (f.check.kind !== "negative" && shown.trim() && !covers(shown, f.check.expect)) {
+          const deeper = await searchBrain(scope, f.check.question, { limit: WIDE_LOOK });
+          wide = deeper.hits.map((h) => `${h.title} ${h.excerpt}`);
+        }
+        filed.push({
+          result: f,
+          kind: classifyFailure({
+            negative: f.check.kind === "negative",
+            expect: f.check.expect,
+            shown,
+            wide,
+          }),
+        });
+      }
+
+      // The owner acts on these from the brain page (0043). Nothing is added
+      // automatically — the suggestion remembers what is missing and now also
+      // what kind of missing. A re-failed check updates its kind (retrieval can
+      // become thin after a re-read) but a dismissed suggestion stays
+      // dismissed.
+      for (const { result, kind } of filed) {
         await query(
-          `insert into gap_suggestions (brain_id, check_id, question)
-           values ($1, $2, $3) on conflict (brain_id, check_id) do nothing`,
-          [brainId, m.check.id, m.check.question.slice(0, 500)],
+          `insert into gap_suggestions (brain_id, check_id, question, kind)
+           values ($1, $2, $3, $4)
+           on conflict (brain_id, check_id) do update
+              set kind = excluded.kind
+            where gap_suggestions.status = 'pending'`,
+          [brainId, result.check.id, result.check.question.slice(0, 500), kind],
         );
       }
-      await topUpFromSites(
-        brain,
-        missing.map((m) => `${m.check.category}: ${m.check.question}`),
-      ).catch((err) =>
-        console.warn(
-          `[exam] top-up for ${brain.slug} failed: ` +
-            (err instanceof Error ? err.message : String(err)),
-        ),
-      );
+
+      // Only absent material is worth reading more pages for. A thin note needs
+      // deepening and a ranking problem needs better wording, so buying pages
+      // for either spends money on the wrong fix — and a negative probe is the
+      // one case where adding the material teaches the brain to bluff for real.
+      const missing = filed.filter((f) => f.kind === "missing");
+      if (missing.length) {
+        await topUpFromSites(
+          brain,
+          missing.map((m) => `${m.result.check.category}: ${m.result.check.question}`),
+        ).catch((err) =>
+          console.warn(
+            `[exam] top-up for ${brain.slug} failed: ` +
+              (err instanceof Error ? err.message : String(err)),
+          ),
+        );
+      }
     }
 
     const negativeResults = results.filter((r) => r.check.kind === "negative");

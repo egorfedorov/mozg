@@ -3,21 +3,24 @@
 import { useActionState, useState } from "react";
 import { addUrls } from "@/app/brains/[slug]/source-actions";
 import { dismissGapSuggestion } from "@/app/brains/[slug]/exam-actions";
+import { GAP_KIND_LABEL, type GapKind } from "@/lib/gap-kind";
 
 /**
- * Gap suggestions (0043): checks the exam failed because the material is
- * simply absent, offered to the owner as a to-do list. "Add a source" opens
- * the same URL flow as the sources section — prefilled with nothing but the
- * question as a hint, because the owner knows which docs cover it better
- * than any guess would. Nothing is ever added without the owner submitting
- * the form.
+ * Gap suggestions (0043, kinds in 0055): every check the exam failed, with why
+ * it failed. The why matters more than the question: only absent material is
+ * fixed by adding a source, a thin note needs deepening, a ranking problem needs
+ * the question's own words in the note, and a bluffed probe needs the brain to
+ * cover *less*. Offering "add a source" for all four sent owners to buy pages
+ * for problems pages do not fix.
+ *
+ * Nothing is ever added without the owner submitting the form.
  */
 export default function GapSuggestions({
   slug,
   suggestions,
 }: {
   slug: string;
-  suggestions: { id: string; question: string }[];
+  suggestions: { id: string; question: string; kind: GapKind }[];
 }) {
   if (!suggestions.length) return null;
   return (
@@ -37,8 +40,9 @@ export default function GapSuggestions({
       </div>
       <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
         These questions were asked — by the exam or by real agents — and the
-        brain had nothing to answer from. Add a page that covers one and the
-        next exam grades it; dismiss the ones not worth filling.
+        brain got them wrong. Each says which kind of gap it is, because the fix
+        differs: only the missing ones want a new source. Dismiss the ones not
+        worth filling.
       </p>
       <div className="panel" style={{ padding: 0 }}>
         {suggestions.map((s) => (
@@ -54,7 +58,7 @@ function GapRow({
   suggestion,
 }: {
   slug: string;
-  suggestion: { id: string; question: string };
+  suggestion: { id: string; question: string; kind: GapKind };
 }) {
   const [open, setOpen] = useState(false);
   const [crawl, setCrawl] = useState(false);
@@ -64,12 +68,27 @@ function GapRow({
   return (
     <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--rule)" }}>
       <div style={{ display: "flex", gap: "1rem", alignItems: "baseline" }}>
-        <span style={{ flex: 1, fontSize: ".9375rem" }}>{suggestion.question}</span>
+        <span style={{ flex: 1, fontSize: ".9375rem" }}>
+          {suggestion.question}
+          <span
+            className="mono"
+            style={{
+              display: "block",
+              fontSize: ".75rem",
+              color: "var(--ink-3)",
+              marginTop: ".25rem",
+            }}
+          >
+            {suggestion.kind}: {GAP_KIND_LABEL[suggestion.kind]}
+          </span>
+        </span>
         {!added && (
           <span style={{ display: "flex", gap: "1rem", flexShrink: 0 }}>
-            <button className="mono" style={linkButton} onClick={() => setOpen((o) => !o)}>
-              {open ? "close" : "add a source →"}
-            </button>
+            {suggestion.kind === "missing" && (
+              <button className="mono" style={linkButton} onClick={() => setOpen((o) => !o)}>
+                {open ? "close" : "add a source →"}
+              </button>
+            )}
             <form action={dismissGapSuggestion}>
               <input type="hidden" name="id" value={suggestion.id} />
               <input type="hidden" name="slug" value={slug} />
