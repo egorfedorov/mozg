@@ -326,7 +326,7 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
         for (let c = 0; c < texts.length; c++) {
           await client.query(
             `insert into chunks (brain_id, note_id, content, token_count, embedding)
-             values ($1, $2, $3, $4, $5::vector)`,
+             values ($1, $2, $3, $4, $5::halfvec)`,
             [
               brain.id,
               noteId,

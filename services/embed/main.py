@@ -25,6 +25,12 @@ RERANK_MODEL = os.environ.get("RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
 # pair, so cost is linear in the list and the caller (search.ts) only needs the
 # top of the RRF fusion rescored anyway.
 RERANK_MAX_DOCS = int(os.environ.get("RERANK_MAX_DOCS", "64"))
+# int8 dynamic quantization for the cross-encoder. Measured motivation: the
+# fp32 reranker on CPU put production search at p50 6.9s / p95 54s — the
+# single worst number in the product. Dynamic quantization of the Linear
+# layers is 2-3x on CPU for this architecture, and the self-test below judges
+# the QUANTIZED model, so a quantization that breaks ranking refuses itself.
+RERANK_QUANTIZE = os.environ.get("RERANK_QUANTIZE", "") == "1"
 
 # Torch defaults to half the host's cores, which is the wrong split when two of
 # these run side by side: one lane serving interactive search, one chewing
@@ -68,6 +74,17 @@ def reranker() -> CrossEncoder:
         # answers 503 — /embed and /health are untouched.
         model = CrossEncoder(RERANK_MODEL, max_length=512)
 
+        if RERANK_QUANTIZE:
+            try:
+                import torch
+
+                model.model = torch.ao.quantization.quantize_dynamic(
+                    model.model, {torch.nn.Linear}, dtype=torch.qint8
+                )
+                print("[rerank] dynamic int8 quantization applied")
+            except Exception as e:  # noqa: BLE001 — fp32 is a fine fallback
+                print(f"[rerank] quantization failed, serving fp32: {e}")
+
         # Refuse to serve a reranker that cannot tell relevant from unrelated.
         #
         # Transformers only *warns* when a checkpoint has no classifier head
@@ -78,12 +95,22 @@ def reranker() -> CrossEncoder:
         # directory, every score ~0.5, the right answer ranked last.
         good, bad = model.predict(_SELF_TEST)
         if not good > bad + 0.05:
-            raise RuntimeError(
-                f"reranker at {RERANK_MODEL} failed its self-test "
-                f"(relevant={good:.4f} vs unrelated={bad:.4f}) — the classifier "
-                "head is probably untrained. Refusing to serve it; search falls "
-                "back to RRF order."
-            )
+            if RERANK_QUANTIZE:
+                # The quantized model failed the judgment test — fp32 is slower
+                # but correct, and correct wins. Reload clean and re-judge.
+                print(
+                    f"[rerank] quantized model failed self-test "
+                    f"(relevant={good:.4f} vs unrelated={bad:.4f}) — reloading fp32"
+                )
+                model = CrossEncoder(RERANK_MODEL, max_length=512)
+                good, bad = model.predict(_SELF_TEST)
+            if not good > bad + 0.05:
+                raise RuntimeError(
+                    f"reranker at {RERANK_MODEL} failed its self-test "
+                    f"(relevant={good:.4f} vs unrelated={bad:.4f}) — the classifier "
+                    "head is probably untrained. Refusing to serve it; search falls "
+                    "back to RRF order."
+                )
 
         _reranker = model
     return _reranker

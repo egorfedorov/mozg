@@ -11,6 +11,23 @@ services:
   db:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
+    # Tuned for the actual host (62 GB RAM), not the container defaults: with
+    # shared_buffers at the stock 128 MB the 400 MB HNSW index could not even
+    # fit in Postgres's own cache and every vector search paged through the
+    # OS. maintenance_work_mem is what HNSW builds eat; work_mem serves the
+    # RRF CTEs in search.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=6GB
+      - -c
+      - effective_cache_size=32GB
+      - -c
+      - maintenance_work_mem=1GB
+      - -c
+      - work_mem=32MB
+      - -c
+      - wal_compression=on
     environment:
       POSTGRES_USER: mozg
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -44,7 +61,10 @@ services:
     volumes:
       - models:/models
     environment:
-      EMBED_THREADS: "6"
+      # Three lanes now (ingest embed / query embed / rerank); the thread
+      # budgets still sum to the 16 cores. Ingest is the one that never minds
+      # waiting, so it gives up cores to the reranker.
+      EMBED_THREADS: "4"
     # First boot downloads 2.2 GB of weights into the volume; give it room
     # before the healthcheck starts calling it dead.
     healthcheck:
@@ -79,7 +99,39 @@ services:
     volumes:
       - models:/models
     environment:
+      # Query embedding only, now that reranking has its own service below:
+      # one short text per search, milliseconds of work — two threads is
+      # plenty and the reranker gets the cores back.
+      EMBED_THREADS: "2"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8099/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 900s
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
+
+  # The reranker's own lane. It shared a process with query embedding, and a
+  # cross-encoder scoring 12 (query, doc) pairs on CPU is seconds of work —
+  # searches queued behind each other into a p50 of 6.9s and a p95 of 54s.
+  # Isolated, int8-quantized, and given the most threads of the three lanes,
+  # because this is the one a person is watching.
+  rerank:
+    build: ./services/embed
+    restart: unless-stopped
+    volumes:
+      - models:/models
+    environment:
       EMBED_THREADS: "10"
+      RERANK_QUANTIZE: "1"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8099/health || exit 1"]
       interval: 15s
@@ -113,9 +165,10 @@ services:
       # percent-encode it: the password must not contain @ : or /. Stick to
       # letters, digits, - and _ when rotating.
       DATABASE_URL: postgres://mozg:${POSTGRES_PASSWORD}@db:5432/mozg
-      # The app is the interactive side: query embedding and reranking both go
-      # to the lane nothing else uses.
+      # The app is the interactive side: query embedding and reranking each
+      # get a lane nothing else uses.
       EMBED_URL: http://embed-query:8099
+      RERANK_URL: http://rerank:8099
       RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:
@@ -152,6 +205,7 @@ services:
       # interactive one, because a score has to describe what a caller gets.
       EMBED_URL: http://embed:8099
       EMBED_QUERY_URL: http://embed-query:8099
+      RERANK_URL: http://rerank:8099
       RENDER_URL: http://render:8100
       STORAGE_LOCAL_DIR: /data/storage
     volumes:

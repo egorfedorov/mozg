@@ -282,7 +282,7 @@ async function mergeCluster(
     for (let i = 0; i < texts.length; i++) {
       await client.query(
         `insert into chunks (brain_id, note_id, content, token_count, embedding)
-         values ($1, $2, $3, $4, $5::vector)`,
+         values ($1, $2, $3, $4, $5::halfvec)`,
         [brainId, noteId, texts[i], estimateTokens(texts[i]), toVector(vectors[i])],
       );
     }

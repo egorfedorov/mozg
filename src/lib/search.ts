@@ -101,7 +101,7 @@ export async function searchBrain(
   }>(
     `
     with params as (
-      select $2::vector as v,
+      select $2::halfvec as v,
              case when $3::text is null then null
                   else to_tsquery('simple', $3) end as tsq,
              $4::text as cat

@@ -45,11 +45,11 @@ export async function findDuplicateNote(
   db: Queryable = pool,
 ): Promise<DuplicateMatch | null> {
   const { rows } = await db.query<{ note_id: string; title: string; distance: number }>(
-    `select c.note_id, n.title, (c.embedding <=> $2::vector) as distance
+    `select c.note_id, n.title, (c.embedding <=> $2::halfvec) as distance
        from chunks c
        join notes n on n.id = c.note_id
       where c.brain_id = $1 and n.status = 'active'
-      order by c.embedding <=> $2::vector
+      order by c.embedding <=> $2::halfvec
       limit 1`,
     [brainId, toVector(leadingVector)],
   );

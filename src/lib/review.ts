@@ -23,7 +23,7 @@ export async function approve(note: Note): Promise<void> {
   for (let i = 0; i < texts.length; i++) {
     await query(
       `insert into chunks (brain_id, note_id, content, token_count, embedding)
-       values ($1, $2, $3, $4, $5::vector)`,
+       values ($1, $2, $3, $4, $5::halfvec)`,
       [note.brain_id, note.id, texts[i], estimateTokens(texts[i]), toVector(vectors[i])],
     );
   }
