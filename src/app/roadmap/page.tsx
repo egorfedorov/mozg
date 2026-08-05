@@ -45,12 +45,20 @@ function inline(text: string): string {
 function render(md: string): string {
   const out: string[] = [];
   let list: string[] | null = null;
+  let para: string[] | null = null;
 
   const flush = () => {
     if (list?.length) {
       out.push(`<ul class="rm-list">${list.map((li) => `<li>${li}</li>`).join("")}</ul>`);
     }
+    // The source is wrapped at eighty columns, so a paragraph arrives as several
+    // lines. Emitting one <p> per line rendered the page as a column of
+    // single-line paragraphs — airy, and wrong about where the sentences end.
+    if (para?.length) {
+      out.push(`<p class="rm-p">${para.join(" ")}</p>`);
+    }
     list = null;
+    para = null;
   };
 
   for (const raw of md.split("\n")) {
@@ -71,17 +79,19 @@ function render(md: string): string {
       continue;
     }
 
-    flush();
-
     const h = line.match(/^(#{1,3})\s+(.*)$/);
     if (h) {
-      const level = h[1].length;
-      const cls = level === 1 ? "rm-h1" : level === 2 ? "rm-h2" : "rm-h3";
-      out.push(`<h${level === 1 ? 1 : level} class="${cls}">${inline(h[2])}</h${level === 1 ? 1 : level}>`);
+      flush();
+      // The file's own title is dropped: this page has a headline of its own, and
+      // two of them one under the other reads as a mistake.
+      if (h[1].length === 1) continue;
+      const cls = h[1].length === 2 ? "rm-h2" : "rm-h3";
+      out.push(`<h${h[1].length} class="${cls}">${inline(h[2])}</h${h[1].length}>`);
       continue;
     }
-    // Italic-only lines are the month gates: "*Gate:* one paid plan bought…"
-    out.push(`<p class="rm-p">${inline(line.trim())}</p>`);
+
+    if (list) flush();
+    (para ??= []).push(inline(line.trim()));
   }
   flush();
   return out.join("\n");
