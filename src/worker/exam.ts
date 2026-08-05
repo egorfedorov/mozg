@@ -122,10 +122,19 @@ export async function generateChecks(brain: Brain): Promise<number> {
           "thing someone actually needs mid-task.\n\n" +
           // The other half of the same failure: an expectation that was true when
           // written and is not any more punishes a brain for being current.
-          "Write `expect` from what the notes in front of you actually say. If " +
-          "your own memory of this subject disagrees with them, the notes are the " +
-          "authority here — they were read from today's documentation and your " +
-          "memory has a date on it.\n\n" +
+          //
+          // Carefully worded, because the first attempt at this said "write expect
+          // from the notes" full stop — which quietly cancels the gap questions
+          // asked for below (a gap has no note to write an expectation from) and
+          // turns the exam into the notes quoted back at themselves. owasp-asvs
+          // went from 29% to 100% on that version, which is as useless a number as
+          // the 29% was.
+          "Never write an expectation that CONTRADICTS the notes you were shown: " +
+          "if your own memory of this subject disagrees with them, they are newer " +
+          "than your memory and they win. For a check on material the brain " +
+          "already holds, `expect` is what those notes say. For a deliberate gap " +
+          "question, `expect` is what the goal implies a good answer must contain — " +
+          "those are meant to fail today.\n\n" +
           "Crucially: include checks for aspects the goal implies but the notes do " +
           "NOT currently cover. Those failures are the point — they tell the user " +
           "what material is missing. An exam that only asks what the brain already " +
