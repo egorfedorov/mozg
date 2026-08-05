@@ -14,6 +14,11 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 set maintenance_work_mem = '2GB';
+-- Serial build: parallel maintenance workers pass tuples through /dev/shm,
+-- which inside a container is whatever shm_size says — the first run of this
+-- migration died exactly there. One backend with 2 GB of local memory builds
+-- 53k HNSW rows in minutes and touches no shared segment.
+set max_parallel_maintenance_workers = 0;
 
 drop index if exists chunks_embedding_idx;
 

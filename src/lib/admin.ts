@@ -109,8 +109,13 @@ export async function adminUsers(limit = 200): Promise<AdminUser[]> {
             (select count(*)::int from brains b where b.owner_id = u.id) as brains,
             (select coalesce(sum(note_count), 0)::int from brains b
               where b.owner_id = u.id) as notes,
+            -- Both doors into MCP: CLI bearer tokens AND the OAuth connector
+            -- (claude.ai). Counting only mcp_tokens showed an active OAuth
+            -- user as "no token" while their 16 calls sat in the next column.
             (select count(*)::int from mcp_tokens t
-              where t.user_id = u.id and t.revoked_at is null) as tokens,
+              where t.user_id = u.id and t.revoked_at is null)
+            + (select count(*)::int from "oauthAccessToken" o
+                where o."userId" = u.id) as tokens,
             (select count(*)::int from calls c
               where c.caller_id = u.id
                 and c.created_at > now() - interval '7 days') as calls_week,

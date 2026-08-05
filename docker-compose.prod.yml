@@ -11,6 +11,11 @@ services:
   db:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
+    # Docker's default /dev/shm is 64 MB; Postgres parallel workers hand data
+    # around through dynamic shared memory there, and the halfvec index build
+    # died at "could not resize shared memory segment". 2 GB matches the
+    # maintenance_work_mem a rebuild is allowed to ask for.
+    shm_size: 2g
     # Tuned for the actual host (62 GB RAM), not the container defaults: with
     # shared_buffers at the stock 128 MB the 400 MB HNSW index could not even
     # fit in Postgres's own cache and every vector search paged through the
