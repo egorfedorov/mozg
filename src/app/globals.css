@@ -32,6 +32,12 @@
   --ink-2: #565c66;
   --ink-3: #646b75;
   --rule: #cfd2ca;
+  /* Pencil grey for the hand-drawn figures (components/Sketch.tsx). It was
+     referenced there and defined nowhere, so every stroke resolved to an invalid
+     colour and vanished — the sketches rendered as their own captions floating in
+     empty space on the home, start, make and vs pages. Slightly warmer and
+     lighter than --ink: a pencil is not a pen. */
+  --graphite: #3f444c;
   --shadow: 0 1px 0 var(--rule);
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
 }
