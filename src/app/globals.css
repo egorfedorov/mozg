@@ -517,15 +517,15 @@ a {
   z-index: 15;
 }
 
+/* No overflow here, deliberately. It used to scroll sideways because eleven items
+   did not fit; four groups do. And overflow could not stay: a container that
+   scrolls on one axis clips on both, so the dropdown panel — which hangs below the
+   strip by definition — was being cut off at the border. The menu opened and
+   nothing appeared. */
 .contents-inner {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.contents-inner::-webkit-scrollbar {
-  display: none;
 }
 
 /* Four groups, each a <details>. The panel is absolutely positioned so opening
@@ -636,11 +636,6 @@ a {
    dropdown pinned to a horizontally-scrolled parent lands off-screen. Let the
    open group push the page instead: the reader asked for it. */
 @media (max-width: 640px) {
-  .contents-inner {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
-
   .nav-group {
     flex: 1 0 auto;
   }

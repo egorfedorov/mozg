@@ -58,8 +58,10 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     ],
   },
   {
-    label: "Money",
-    summary: "what costs what",
+    // Not "Money". Nobody clicks a tab called Money, and the page behind it is
+    // mostly an argument that most of this is free — the label should say that.
+    label: "The deal",
+    summary: "free, paid, and what's new",
     pages: [
       { href: "/pricing", label: "Pricing", note: "your inference is free, ours is the plan" },
       { href: "/changelog", label: "News & changelog", note: "what shipped, dated" },
