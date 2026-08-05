@@ -1782,30 +1782,36 @@ a.row:hover {
   border-bottom: none;
 }
 
-.row-reach summary {
-  padding: 0 1.1rem 0.5rem;
+.reach summary {
   font-size: 0.6875rem;
+  font-family: var(--font-mono), monospace;
   color: var(--ink-3);
   cursor: pointer;
   list-style: none;
 }
 
-.row-reach summary:hover {
+.reach summary:hover {
   color: var(--ink);
 }
 
-.row-reach form {
+.reach form {
   display: grid;
   gap: 0.5rem;
   justify-items: start;
-  padding: 0 1.1rem 0.8rem;
+  padding: 0.5rem 0 0.3rem;
+  min-width: 16rem;
 }
 
-.row-reach textarea {
+.reach textarea {
   width: 100%;
   padding: 0.5rem 0.7rem;
   border: 1.5px solid var(--ink);
   background: var(--paper);
   font: inherit;
   font-size: 0.875rem;
+}
+
+/* Inside a row block (admin payments) the fold aligns with the row's inset. */
+.row-block .reach {
+  padding: 0 1.1rem 0.6rem;
 }

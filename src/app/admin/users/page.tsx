@@ -2,6 +2,7 @@ import AppShell from "@/components/AppShell";
 import { requireAdmin, adminUsers } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { setPlan, adjustBalance, revokeTokens, deleteUser } from "../actions";
+import MessageUserForm from "../MessageUserForm";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,7 @@ export default async function AdminUsersPage() {
                         {u.email}
                         {!u.email_verified && " · unverified"}
                       </span>
+                      <MessageUserForm userId={u.id} label="→" />
                     </td>
 
                     <td>

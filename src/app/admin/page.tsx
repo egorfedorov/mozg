@@ -9,10 +9,10 @@ import {
   openPlanRequests,
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
-import { REPLY_LANGS } from "@/lib/translate";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
-import { settleWithdrawal, resolveUpgrade, messageUser } from "./actions";
+import { settleWithdrawal, resolveUpgrade } from "./actions";
 import WalletsForm from "./WalletsForm";
+import MessageUserForm from "./MessageUserForm";
 import { query } from "@/db";
 import { env } from "@/lib/env";
 
@@ -263,29 +263,7 @@ export default async function AdminPage() {
                 />
                 {/* A failed invoice is a reason to reach out, not to wait for
                     them to find chatmozg. Lands in their thread + mascot badge. */}
-                <details className="row-reach">
-                  <summary className="mono">message {p.email} →</summary>
-                  <form action={messageUser}>
-                    <input type="hidden" name="user_id" value={p.user_id} />
-                    <textarea
-                      name="body"
-                      rows={2}
-                      required
-                      placeholder="Пиши по-русски — уйдёт на языке собеседника"
-                    />
-                    <span style={{ display: "flex", gap: ".6rem", alignItems: "center" }}>
-                      <button className="btn" style={{ padding: ".35rem .8rem" }}>Send</button>
-                      <label className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", display: "flex", gap: ".35rem", alignItems: "center" }}>
-                        send in
-                        <select name="lang" defaultValue="auto" style={{ font: "inherit", border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".2rem .3rem" }}>
-                          {REPLY_LANGS.map((l) => (
-                            <option key={l.code} value={l.code}>{l.label}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </span>
-                  </form>
-                </details>
+                <MessageUserForm userId={p.user_id} label={p.email} />
               </div>
             ))}
           </Rows>

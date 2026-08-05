@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin";
 import { translateThreadsForOperator } from "@/lib/operator-chat";
 import { REPLY_LANGS } from "@/lib/translate";
 import { replyInChat, markThreadRead } from "./actions";
+import { messageUser } from "../actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Chat — mozg admin" };
@@ -20,6 +21,12 @@ export default async function AdminChatPage() {
   // Fill missing Russian translations before reading the thread — each
   // message is translated exactly once, so steady-state this is a no-op.
   await translateThreadsForOperator();
+
+  // Everyone, for the write-first picker. lazy: a <select> holds fine at beta
+  // scale; swap for a search box past a few hundred accounts.
+  const people = await query<{ id: string; email: string; handle: string | null }>(
+    `select id, email, handle from "user" order by "createdAt" desc`,
+  );
 
   const threads = await query<{
     user_id: string;
@@ -71,6 +78,57 @@ export default async function AdminChatPage() {
         {threads.reduce((n, t) => n + t.unread, 0)} unread. The people who write
         here are the beta doing its job — answer like it.
       </p>
+
+      {/* Speak first: pick anyone, not only people who already wrote. The new
+          thread appears below and in their mascot the moment it sends. */}
+      <details
+        style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", marginBottom: "1.5rem" }}
+      >
+        <summary style={{ padding: ".7rem 1rem", cursor: "pointer" }}>
+          <strong>New thread</strong>
+          <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginLeft: ".75rem" }}>
+            write to someone first
+          </span>
+        </summary>
+        <form
+          action={messageUser}
+          style={{ display: "grid", gap: ".5rem", padding: ".8rem 1rem", borderTop: "1px solid var(--rule)" }}
+        >
+          <select
+            name="user_id"
+            required
+            defaultValue=""
+            style={{ font: "inherit", border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".45rem .6rem", maxWidth: "24rem" }}
+          >
+            <option value="" disabled>
+              who…
+            </option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.handle ? `${p.handle} · ${p.email}` : p.email}
+              </option>
+            ))}
+          </select>
+          <textarea
+            name="body"
+            rows={2}
+            required
+            placeholder="Пиши по-русски — уйдёт на языке собеседника"
+            style={{ width: "100%", padding: ".55rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".875rem" }}
+          />
+          <div style={{ display: "flex", gap: ".6rem", alignItems: "center" }}>
+            <button className="btn" style={{ padding: ".4rem .8rem" }}>Send</button>
+            <label className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", display: "flex", gap: ".35rem", alignItems: "center" }}>
+              send in
+              <select name="lang" defaultValue="auto" style={{ font: "inherit", border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".2rem .3rem" }}>
+                {REPLY_LANGS.map((l) => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </form>
+      </details>
 
       {threads.map((t) => (
         <details

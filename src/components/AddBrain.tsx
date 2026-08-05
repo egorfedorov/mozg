@@ -26,7 +26,7 @@ export default function AddBrain({
   if (!signedIn) {
     return (
       <div className="panel">
-        <p className="eyebrow">Use this brain</p>
+        <p className="eyebrow">Or just add it</p>
         <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
           Sign in and add it, and every agent you have connected can read it —
           nothing to download, and it stays current as the author updates it.
@@ -58,7 +58,7 @@ export default function AddBrain({
   return (
     <form action={action} className="panel">
       <input type="hidden" name="brainId" value={brainId} />
-      <p className="eyebrow">Use this brain</p>
+      <p className="eyebrow">Or just add it</p>
       <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
         Adding it puts it in the list your agents read. It is not copied to your
         machine — it stays with its author and keeps improving as they add to it.

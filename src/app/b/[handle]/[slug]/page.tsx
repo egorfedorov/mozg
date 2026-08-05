@@ -6,6 +6,7 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import BuyBrain from "@/components/BuyBrain";
 import AddBrain from "@/components/AddBrain";
+import CopyMcpCommand from "./CopyMcpCommand";
 import ReviewBox from "./ReviewBox";
 import { query } from "@/db";
 import { env } from "@/lib/env";
@@ -284,6 +285,84 @@ export default async function PublicBrainPage({
           </div>
         </div>
 
+        {/* The conversion block, first — Discord feedback was blunt: the way
+            in was squeezed at the bottom while a list of exam questions got
+            the fold. Terminal wide on the left, add-to-brains beside it. */}
+        <div
+          style={{
+            display: "flex",
+            gap: "1.5rem",
+            alignItems: "stretch",
+            flexWrap: "wrap",
+            margin: "0 0 2.5rem",
+          }}
+        >
+          <div style={{ flex: "3 1 340px", minWidth: 0 }}>
+            {preview ? (
+              <BuyBrain
+                handle={handle}
+                slug={gate && gate.brainId !== brain.id && parent ? parent.slug : brain.slug}
+                priceCents={gate?.priceCents ?? brain.price_cents}
+                partOf={gate && gate.brainId !== brain.id ? (parent?.title ?? null) : null}
+                balanceCents={balance}
+                signedIn={Boolean(user)}
+                cryptoReady={anyCryptoReady}
+              />
+            ) : (
+              <section className="term" style={{ fontSize: ".9375rem", height: "100%" }}>
+                <div className="term-bar">
+                  <span className="term-dot" />
+                  <span className="term-dot" />
+                  <span className="term-dot" />
+                  <span style={{ marginLeft: ".5rem" }}>use this brain</span>
+                </div>
+                <div className="c">
+                  {user ? "# your token from /settings/tokens" : "# sign in to get a token"}
+                </div>
+                <div style={{ wordBreak: "break-all" }}>
+                  <span className="c">$</span> claude mcp add --transport http mozg \
+                </div>
+                <div style={{ wordBreak: "break-all", paddingLeft: "1.5rem" }}>
+                  https://mozg.sh/mcp --header &quot;Authorization: Bearer …&quot;
+                </div>
+                <div style={{ marginTop: ".9rem" }}>
+                  <span className="u">&gt;</span> use {handle}/{brain.slug} — …
+                </div>
+                <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
+                  <CopyMcpCommand
+                    command={`claude mcp add --transport http mozg ${env.NEXT_PUBLIC_APP_URL}/mcp --header "Authorization: Bearer YOUR_TOKEN"`}
+                  />
+                  {!user && (
+                    <Link
+                      className="btn"
+                      href="/sign-in"
+                      style={{
+                        marginTop: "1rem",
+                        background: "var(--color-riso-yellow)",
+                        color: "var(--ink)",
+                        borderColor: "var(--color-riso-yellow)",
+                      }}
+                    >
+                      Get a token
+                    </Link>
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {state === "free" || (state === "have" && !owns) ? (
+            <div style={{ flex: "2 1 280px", minWidth: 0 }}>
+              <AddBrain
+                brainId={brain.id}
+                handle={`${handle}/${brain.slug}`}
+                signedIn={Boolean(user)}
+                added={added || familyAdded}
+              />
+            </div>
+          ) : null}
+        </div>
+
         {(latestReviews.length > 0 || (state === "have" && !owns) || myReview) && (
           <section style={{ margin: "0 0 2.5rem" }}>
             {latestReviews.length > 0 && (
@@ -373,62 +452,6 @@ export default async function PublicBrainPage({
             alignItems: "start",
           }}
         >
-          {preview ? (
-            <BuyBrain
-              handle={handle}
-              slug={gate && gate.brainId !== brain.id && parent ? parent.slug : brain.slug}
-              priceCents={gate?.priceCents ?? brain.price_cents}
-              partOf={gate && gate.brainId !== brain.id ? (parent?.title ?? null) : null}
-              balanceCents={balance}
-              signedIn={Boolean(user)}
-              cryptoReady={anyCryptoReady}
-            />
-          ) : (
-          <section className="term">
-            <div className="term-bar">
-              <span className="term-dot" />
-              <span className="term-dot" />
-              <span className="term-dot" />
-              <span style={{ marginLeft: ".5rem" }}>use this brain</span>
-            </div>
-            <div className="c">
-              {user ? "# your token from /settings/tokens" : "# sign in to get a token"}
-            </div>
-            <div style={{ wordBreak: "break-all" }}>
-              <span className="c">$</span> claude mcp add --transport http mozg \
-            </div>
-            <div style={{ wordBreak: "break-all", paddingLeft: "1.5rem" }}>
-              https://mozg.sh/mcp --header &quot;Authorization: Bearer …&quot;
-            </div>
-            <div style={{ marginTop: ".9rem" }}>
-              <span className="u">&gt;</span> use {handle}/{brain.slug} — …
-            </div>
-            {!user && (
-              <Link
-                className="btn"
-                href="/sign-in"
-                style={{
-                  marginTop: "1.1rem",
-                  background: "var(--color-riso-yellow)",
-                  color: "var(--ink)",
-                  borderColor: "var(--color-riso-yellow)",
-                }}
-              >
-                Get a token
-              </Link>
-            )}
-          </section>
-          )}
-
-          {state === "free" || (state === "have" && !owns) ? (
-            <AddBrain
-              brainId={brain.id}
-              handle={`${handle}/${brain.slug}`}
-              signedIn={Boolean(user)}
-              added={added || familyAdded}
-            />
-          ) : null}
-
           <section className="scorecard">
             <div className="score-head">
               <div>
