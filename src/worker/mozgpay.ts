@@ -24,6 +24,7 @@ interface OpenInvoice {
   reference: string;
   pay_amount: string;
   pay_coin: string;
+  pay_address: string;
   created_at: Date;
 }
 
@@ -35,8 +36,7 @@ export interface MozgpayReport {
 
 // ─── chain readers ───────────────────────────────────────────────────────────
 
-async function readTron(coin: Coin): Promise<Transfer[]> {
-  const address = coin.address()!;
+async function readTron(coin: Coin, address: string): Promise<Transfer[]> {
   const headers: Record<string, string> = env.TRONGRID_API_KEY
     ? { "TRON-PRO-API-KEY": env.TRONGRID_API_KEY }
     : {};
@@ -90,8 +90,7 @@ async function readTron(coin: Coin): Promise<Transfer[]> {
 const TRANSFER_TOPIC =
   "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-async function readEvm(coin: Coin): Promise<Transfer[]> {
-  const address = coin.address()!;
+async function readEvm(coin: Coin, address: string): Promise<Transfer[]> {
   const rpc = async (method: string, params: unknown[]) => {
     const res = await fetch(env.MOZGPAY_ETH_RPC, {
       method: "POST",
@@ -133,8 +132,7 @@ async function readEvm(coin: Coin): Promise<Transfer[]> {
   return out;
 }
 
-async function readSol(coin: Coin): Promise<Transfer[]> {
-  const address = coin.address()!;
+async function readSol(coin: Coin, address: string): Promise<Transfer[]> {
   const rpc = async (method: string, params: unknown[]) => {
     const res = await fetch("https://api.mainnet-beta.solana.com", {
       method: "POST",
@@ -188,8 +186,7 @@ async function readSol(coin: Coin): Promise<Transfer[]> {
   return out;
 }
 
-async function readBtc(coin: Coin): Promise<Transfer[]> {
-  const address = coin.address()!;
+async function readBtc(coin: Coin, address: string): Promise<Transfer[]> {
   const [res, tipRes] = await Promise.all([
     fetch(`https://mempool.space/api/address/${address}/txs`, {
       signal: AbortSignal.timeout(20_000),
@@ -229,7 +226,7 @@ async function readBtc(coin: Coin): Promise<Transfer[]> {
     .filter((t) => Number(t.amount) > 0);
 }
 
-const READERS: Record<Coin["chain"], (coin: Coin) => Promise<Transfer[]>> = {
+const READERS: Record<Coin["chain"], (coin: Coin, address: string) => Promise<Transfer[]>> = {
   tron: readTron,
   evm: readEvm,
   sol: readSol,
@@ -248,21 +245,28 @@ export async function runMozgpayWatch(): Promise<MozgpayReport> {
   );
 
   const open = await query<OpenInvoice>(
-    `select reference, pay_amount::text, pay_coin, created_at from topups
+    `select reference, pay_amount::text, pay_coin, pay_address, created_at from topups
       where provider = 'mozgpay' and status = 'pending'`,
   );
   if (!open.length) return { matched: 0, expired: exp.length, seen: 0 };
 
-  const coinsInPlay = COINS.filter(
-    (c) => c.address() && open.some((i) => i.pay_coin === c.key),
-  );
+  // Watch every address an open invoice was issued with — not the current
+  // configured address. The operator may rotate wallets while an invoice is
+  // pending, and the payer is sending to the address printed on their page.
+  const watch = new Map<string, { coin: Coin; address: string }>();
+  for (const i of open) {
+    const coin = COINS.find((c) => c.key === i.pay_coin);
+    if (coin && i.pay_address) {
+      watch.set(`${coin.key}:${i.pay_address}`, { coin, address: i.pay_address });
+    }
+  }
 
   let matched = 0;
   let seen = 0;
-  for (const coin of coinsInPlay) {
+  for (const { coin, address } of watch.values()) {
     let transfers: Transfer[];
     try {
-      transfers = await READERS[coin.chain](coin);
+      transfers = await READERS[coin.chain](coin, address);
     } catch (err) {
       // One explorer's bad minute — log and let the other chains work.
       console.warn(`[mozgpay] ${coin.key} read failed: ${err instanceof Error ? err.message : err}`);
@@ -274,6 +278,7 @@ export async function runMozgpayWatch(): Promise<MozgpayReport> {
       const invoice = open.find(
         (i) =>
           i.pay_coin === coin.key &&
+          i.pay_address === address &&
           // Amounts compare as text at the coin's own precision — the DB
           // column is wider (btc needs 8), so trailing zeros must not differ.
           Number(i.pay_amount).toFixed(coin.decimals) === tx.amount &&

@@ -10,8 +10,9 @@ import {
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
-import { settleWithdrawal, resolveUpgrade } from "./actions";
+import { settleWithdrawal, resolveUpgrade, messageUser, saveWallets } from "./actions";
 import { query } from "@/db";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function AdminPage() {
     openPayouts(),
     openPlanRequests(),
     query<{
+      user_id: string;
       email: string;
       amount_cents: number;
       status: string;
@@ -37,7 +39,7 @@ export default async function AdminPage() {
       brain_title: string | null;
       created_at: string;
     }>(
-      `select u.email, t.amount_cents, t.status, t.provider, t.pay_coin,
+      `select u.id as user_id, u.email, t.amount_cents, t.status, t.provider, t.pay_coin,
               t.purpose, b.title as brain_title,
               to_char(t.created_at at time zone 'UTC', 'MM-DD HH24:MI') as created_at
          from topups t
@@ -76,6 +78,19 @@ export default async function AdminPage() {
 
   const t = totals[0];
   const attention = brains.filter((b) => b.failed_sources > 0).slice(0, 8);
+
+  // Wallet overrides: value shown is the override; the env address (if any)
+  // rides in the placeholder so an empty field reads as "falls back to this".
+  const walletRows = await query<{ key: string; value: string }>(
+    `select key, value from app_settings where key like 'mozgpay_addr_%'`,
+  );
+  const wallet = (k: string) => walletRows.find((r) => r.key === `mozgpay_addr_${k}`)?.value ?? "";
+  const wallets = [
+    { field: "tron", label: "TRON (USDT TRC-20)", envValue: env.MOZGPAY_TRON_ADDRESS },
+    { field: "eth", label: "Ethereum (USDT / USDC ERC-20)", envValue: env.MOZGPAY_ETH_ADDRESS },
+    { field: "sol", label: "Solana (USDC SPL)", envValue: env.MOZGPAY_SOL_ADDRESS },
+    { field: "btc", label: "Bitcoin", envValue: env.MOZGPAY_BTC_ADDRESS },
+  ];
 
   return (
     <AppShell active="/admin" eyebrow="Operator" title="System">
@@ -233,19 +248,61 @@ export default async function AdminPage() {
         <Section title="Payments" aside="who paid, who is waiting">
           <Rows empty="No invoices yet. The first one shows up the moment someone opens a payment page.">
             {payments.map((p, i) => (
-              <Row
-                key={i}
-                title={`${formatCents(p.amount_cents)} · ${p.email}`}
-                sub={
-                  (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
-                  `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
-                }
-                meta={p.created_at}
-                side={p.status}
-                tint={p.status === "paid" ? "green" : p.status === "pending" ? "orange" : "red"}
-              />
+              <div key={i} className="row-block">
+                <Row
+                  title={`${formatCents(p.amount_cents)} · ${p.email}`}
+                  sub={
+                    (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
+                    `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
+                  }
+                  meta={p.created_at}
+                  side={p.status}
+                  tint={p.status === "paid" ? "green" : p.status === "pending" ? "orange" : "red"}
+                />
+                {/* A failed invoice is a reason to reach out, not to wait for
+                    them to find chatmozg. Lands in their thread + mascot badge. */}
+                <details className="row-reach">
+                  <summary className="mono">message {p.email} →</summary>
+                  <form action={messageUser}>
+                    <input type="hidden" name="user_id" value={p.user_id} />
+                    <textarea
+                      name="body"
+                      rows={2}
+                      required
+                      placeholder="Saw your payment is stuck — anything I can help with?"
+                    />
+                    <button className="btn" style={{ padding: ".35rem .8rem" }}>Send</button>
+                  </form>
+                </details>
+              </div>
             ))}
           </Rows>
+        </Section>
+
+        <Section title="mozgpay wallets" aside="where the crypto lands">
+          <p className="lede" style={{ marginBottom: ".75rem" }}>
+            Overrides the env addresses without a deploy. Empty field = fall
+            back to env. Only NEW invoices use a changed address — open ones
+            are watched at the address they were issued with.
+          </p>
+          <form action={saveWallets} style={{ display: "grid", gap: ".7rem", maxWidth: "40rem" }}>
+            {wallets.map((w) => (
+              <label key={w.field} style={{ display: "grid", gap: ".25rem" }}>
+                <span className="eyebrow">{w.label}</span>
+                <input
+                  type="text"
+                  name={w.field}
+                  defaultValue={wallet(w.field)}
+                  placeholder={w.envValue ? `env: ${w.envValue}` : "not set — coin hidden from payers"}
+                  className="mono"
+                  style={{ width: "100%", padding: ".5rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", fontSize: ".8125rem" }}
+                />
+              </label>
+            ))}
+            <div>
+              <button className="btn">Save wallets</button>
+            </div>
+          </form>
         </Section>
 
         <Section title="Money" aside="the ledger, not the balances">

@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
+import { syncAchievements, unseenAchievements } from "@/lib/achievements";
 import MascotDockClient from "./MascotDockClient";
 
 /**
@@ -36,5 +37,20 @@ export default async function MascotDock() {
       ).then((r) => r[0]?.n ?? 0)
     : 0;
 
-  return <MascotDockClient signedIn={Boolean(user)} messages={messages} unread={unread} />;
+  // The dock is also where achievements get noticed: it runs on every page, so
+  // a crossing made anywhere (an MCP call, a sale) pops here within a
+  // navigation. lazy: ~14 indexed scalar counts per page render — cache behind
+  // a short TTL if it ever shows up in traces.
+  const fresh = user
+    ? await syncAchievements(user.id).then(() => unseenAchievements(user.id))
+    : [];
+
+  return (
+    <MascotDockClient
+      signedIn={Boolean(user)}
+      messages={messages}
+      unread={unread}
+      fresh={fresh.map((a) => ({ kind: a.kind, title: a.title, blurb: a.blurb }))}
+    />
+  );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ChatForm from "@/app/chat/ChatForm";
+import { markDockSeen } from "./dock-actions";
 
 /**
  * The dock: a brain that breathes in the corner, and the drawer it opens.
@@ -25,16 +26,38 @@ interface Message {
   at: string;
 }
 
+interface FreshAchievement {
+  kind: string;
+  title: string;
+  blurb: string;
+}
+
 export default function MascotDockClient({
   signedIn,
   messages,
   unread,
+  fresh,
 }: {
   signedIn: boolean;
   messages: Message[];
   unread: number;
+  fresh: FreshAchievement[];
 }) {
   const [open, setOpen] = useState(false);
+  // Opening the drawer is reading it: the server forgets the counters, the
+  // client zeroes its own copy, and the two agree without a refetch. The new
+  // badges themselves stay visible for the rest of the visit — only the count
+  // goes; a notification that vanishes while you reach for it is a bug.
+  const [seen, setSeen] = useState(false);
+  const badge = seen ? 0 : unread + fresh.length;
+
+  const toggle = () => {
+    setOpen((o) => !o);
+    if (!seen && unread + fresh.length > 0) {
+      setSeen(true);
+      void markDockSeen();
+    }
+  };
 
   // Escape closes it, like every other drawer on the internet. Bound only while
   // open so the handler is not sitting on every page doing nothing.
@@ -53,12 +76,12 @@ export default function MascotDockClient({
         type="button"
         aria-label={open ? "Close the chat" : "Ask the developer"}
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="dock-button"
         data-open={open}
       >
         <BrainFace animate={!open} />
-        {unread > 0 && !open && <span className="dock-badge">{unread}</span>}
+        {badge > 0 && !open && <span className="dock-badge">{badge}</span>}
       </button>
 
       {open && (
@@ -101,6 +124,21 @@ export default function MascotDockClient({
               </div>
             ) : (
               <>
+                {fresh.length > 0 && (
+                  <div className="dock-ach-list">
+                    {fresh.map((a) => (
+                      <Link key={a.kind} href="/achievements" className="dock-ach">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/achievements/${a.kind}.webp`} alt="" width={40} height={40} />
+                        <span>
+                          <strong>{a.title}</strong>
+                          <span className="dock-ach-blurb">{a.blurb}</span>
+                        </span>
+                        <span className="mono dock-ach-new">new</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
                 {messages.length === 0 ? (
                   <p style={{ margin: "0 0 1rem", color: "var(--ink-2)", fontSize: ".9375rem", lineHeight: 1.6 }}>
                     Nothing here yet. One full message beats five pings: what

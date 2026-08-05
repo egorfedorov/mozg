@@ -29,7 +29,7 @@ export default async function TopUpPage() {
       <div className="stack">
         <TopUpMethods
           ready={anyCryptoReady}
-          coins={availableCoins().map((c) => ({ key: c.key, label: c.label, note: c.note }))}
+          coins={(await availableCoins()).map((c) => ({ key: c.key, label: c.label, note: c.note }))}
         />
 
         <Section title="Recent top-ups" aside={<Link href="/settings/balance">balance →</Link>}>

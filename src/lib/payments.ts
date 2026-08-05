@@ -133,7 +133,7 @@ export async function createOwnInvoice(opts: {
     return { ok: false, reason: "amount" };
   }
 
-  const coin = coinByKey(opts.coin ?? "usdt-trc20") ?? availableCoins()[0];
+  const coin = (await coinByKey(opts.coin ?? "usdt-trc20")) ?? (await availableCoins())[0];
   if (!coin) return { ok: false, reason: "unconfigured" };
 
   let price = 1;

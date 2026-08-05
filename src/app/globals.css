@@ -1654,3 +1654,158 @@ a.row:hover {
   font-size: 0.75rem;
   color: var(--ink-3);
 }
+
+/* ─── notifications & achievements ──────────────────────────────────────── */
+
+/* Unread count beside a nav item — the operator's "someone wrote" light. */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 0.45rem;
+  padding: 0 4px;
+  background: var(--color-riso-red);
+  color: var(--paper);
+  border: 1.5px solid var(--ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+  vertical-align: 1px;
+}
+
+/* New-achievement entries at the top of the mascot drawer. */
+.dock-ach-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.dock-ach {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  color: inherit;
+}
+
+.dock-ach:hover {
+  background: var(--paper);
+}
+
+.dock-ach img {
+  flex: none;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.dock-ach strong {
+  display: block;
+  font-size: 0.875rem;
+}
+
+.dock-ach-blurb {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+.dock-ach-new {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--color-riso-red);
+}
+
+/* The trophy shelf. Locked badges stay visible in grey — a ladder you can
+   see beats one you have to guess at. */
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+
+.ach-card {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.1rem 0.9rem 0.9rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.ach-card[data-earned="true"] {
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.ach-img {
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.ach-card[data-earned="false"] .ach-img {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.ach-card[data-earned="false"] .ach-title {
+  color: var(--ink-2);
+}
+
+.ach-title {
+  font-size: 0.9375rem;
+}
+
+.ach-blurb {
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.ach-meta {
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+/* A row with a reach-out form folded under it (admin payments). */
+.row-block {
+  border-bottom: 1px solid var(--rule);
+}
+
+.row-block:last-child {
+  border-bottom: none;
+}
+
+.row-block .row {
+  border-bottom: none;
+}
+
+.row-reach summary {
+  padding: 0 1.1rem 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.row-reach summary:hover {
+  color: var(--ink);
+}
+
+.row-reach form {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  padding: 0 1.1rem 0.8rem;
+}
+
+.row-reach textarea {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font: inherit;
+  font-size: 0.875rem;
+}

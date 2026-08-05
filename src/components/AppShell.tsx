@@ -16,7 +16,7 @@ import { formatCents } from "@/lib/money-math";
 
 const GROUPS: {
   title: string;
-  items: { href: string; label: string; hint?: string }[];
+  items: { href: string; label: string; hint?: string; badge?: number }[];
 }[] = [
   {
     title: "Work",
@@ -25,6 +25,7 @@ const GROUPS: {
       { href: "/mind", label: "Your mind" },
       { href: "/brains/new", label: "New brain" },
       { href: "/connect", label: "Connect an agent" },
+      { href: "/achievements", label: "Achievements" },
       { href: "/chat", label: "chatmozg" },
     ],
   },
@@ -65,6 +66,15 @@ export default async function AppShell({
   );
   const balance = row?.balance_cents ?? 0;
 
+  // The operator should see a waiting message from anywhere in the app, not
+  // only by opening /admin/chat on a hunch.
+  const adminUnread = isAdmin(user)
+    ? await query<{ n: number }>(
+        `select count(*)::int as n from chat_messages
+          where author = 'user' and read_at is null`,
+      ).then((r) => r[0]?.n ?? 0)
+    : 0;
+
   const groups = isAdmin(user)
     ? [
         ...GROUPS,
@@ -72,7 +82,7 @@ export default async function AppShell({
           title: "Operator",
           items: [
             { href: "/admin", label: "System" },
-            { href: "/admin/chat", label: "Chat" },
+            { href: "/admin/chat", label: "Chat", badge: adminUnread },
             { href: "/admin/users", label: "People" },
             { href: "/admin/brains", label: "All brains" },
             { href: "/admin/marketing", label: "Marketing" },
@@ -110,6 +120,7 @@ export default async function AppShell({
               {g.items.map((i) => (
                 <Link key={i.href} href={i.href} data-active={i.href === active}>
                   {i.label}
+                  {(i.badge ?? 0) > 0 && <span className="nav-badge">{i.badge}</span>}
                 </Link>
               ))}
             </div>

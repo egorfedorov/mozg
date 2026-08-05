@@ -263,3 +263,60 @@ export async function deleteUser(formData: FormData) {
   console.log(`[admin] ${admin.email} deleted user ${id}`);
   revalidatePath("/admin/users");
 }
+
+/**
+ * Write to a person first — the payments list is where this earns its keep:
+ * a stuck invoice is a reason to reach out, not to wait for them to find
+ * chatmozg. Lands as an operator message, so the mascot badge and their /chat
+ * thread light up exactly like a reply would.
+ */
+export async function messageUser(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const userId = String(formData.get("user_id"));
+  const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
+  if (!userId || !body) return;
+
+  await query(
+    `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
+    [userId, body],
+  );
+  console.log(`[admin] ${admin.email} messaged user ${userId}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/chat");
+}
+
+/**
+ * The mozgpay receiving addresses, editable without a deploy. An empty field
+ * clears the override and the env value (if any) takes back over. Only new
+ * invoices use the new address — open ones are watched at the address they
+ * were issued with, so rotation never strands a payer mid-flight.
+ */
+const WALLET_FIELDS = [
+  { key: "mozgpay_addr_tron", field: "tron", pattern: /^T[1-9A-HJ-NP-Za-km-z]{33}$/ },
+  { key: "mozgpay_addr_eth", field: "eth", pattern: /^0x[0-9a-fA-F]{40}$/ },
+  { key: "mozgpay_addr_sol", field: "sol", pattern: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/ },
+  { key: "mozgpay_addr_btc", field: "btc", pattern: /^(bc1[0-9a-z]{20,70}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/ },
+] as const;
+
+export async function saveWallets(formData: FormData) {
+  const admin = await requireAdmin();
+
+  for (const w of WALLET_FIELDS) {
+    const value = String(formData.get(w.field) ?? "").trim();
+    if (!value) {
+      await query(`delete from app_settings where key = $1`, [w.key]);
+      continue;
+    }
+    // A typo here points real money at the void — refuse anything that does
+    // not even look like an address on that chain.
+    if (!w.pattern.test(value)) continue;
+    await query(
+      `insert into app_settings (key, value) values ($1, $2)
+       on conflict (key) do update set value = excluded.value, updated_at = now()`,
+      [w.key, value],
+    );
+  }
+  console.log(`[admin] ${admin.email} updated mozgpay wallet addresses`);
+  revalidatePath("/admin");
+}
