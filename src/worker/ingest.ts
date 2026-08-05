@@ -247,6 +247,14 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
       return { status: "rejected", notes: 0, findings };
     }
 
+    // A fragment is not a fact. Production holds "examples" of 19 characters —
+    // titles with no body to speak of — and they dilute search without ever
+    // answering anything. The floor is low on purpose: "Use pnpm, never npm"
+    // is a legitimate 19-character rule, so the test is title+body together.
+    extracted.notes = extracted.notes.filter(
+      (n) => (n.title + " " + n.body).trim().length >= 40,
+    );
+
     if (!extracted.notes.length) {
       await query(
         `update sources

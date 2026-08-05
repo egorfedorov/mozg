@@ -21,8 +21,23 @@ import { enqueueIngest, PRIORITY } from "@/worker/queue";
  * leaving them to guess why their agent still gives bad answers.
  */
 
-const MAX_CHECKS = 30;
 const JUDGE_BATCH = 5;
+
+/**
+ * How many questions a corpus deserves. Thirty flat was the old rule, and it
+ * made every score mean something different: 30 probes over 5 notes is an
+ * audit, 30 over 3,600 (owasp-cheatsheets) is a spot check dressed as one.
+ * One question per ~25 notes, floored at 30 so small brains keep a real
+ * exam, capped at 100 so the judge bill stays sane.
+ */
+export function examSize(noteCount: number): number {
+  return Math.min(100, Math.max(30, Math.round(noteCount / 25)));
+}
+
+/** Anti-bluff share: a fifth of the exam, never fewer than three probes. */
+export function negativeTarget(totalChecks: number): number {
+  return Math.max(3, Math.round(totalChecks * 0.2));
+}
 
 // ─── generating the checks ───────────────────────────────────────────────────
 
@@ -87,12 +102,28 @@ export async function generateChecks(brain: Brain): Promise<number> {
   // exams with no anchor in what the family actually holds: every question
   // a gap question, every sitting a zero.
   const scope = await familyIds(brain);
+  // Stratified, not newest-first: 200 recent titles showed the generator ~5%
+  // of a large brain and whatever category was ingested last. Round-robin
+  // across categories gives every subject a seat before any subject gets two.
   const titles = await query<{ title: string; category: string | null }>(
-    `select title, category from notes
-      where brain_id = any($1::uuid[]) and status = 'active'
-      order by created_at desc limit 200`,
+    `select title, category from (
+       select title, category,
+              row_number() over (partition by coalesce(category, '')
+                                 order by random()) as rn
+         from notes
+        where brain_id = any($1::uuid[]) and status = 'active') t
+      order by rn, random()
+      limit 300`,
     [scope],
   );
+
+  const { n: scopeNotes } = await one<{ n: number }>(
+    `select count(*)::int as n from notes
+      where brain_id = any($1::uuid[]) and status = 'active'`,
+    [scope],
+  );
+  const target = examSize(scopeNotes);
+  const negatives = negativeTarget(target);
 
   const { data: raw } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
@@ -102,12 +133,12 @@ export async function generateChecks(brain: Brain): Promise<number> {
     system:
           "You write exams for knowledge bases that AI coding agents read.\n\n" +
           "Given a goal and the titles of the notes a brain currently holds, write " +
-          `up to ${MAX_CHECKS} control questions that verify whether the brain can ` +
+          `up to ${target} control questions that verify whether the brain can ` +
           "actually support that goal.\n\n" +
           "Each check has a question a user would really ask, and `expect` — what a " +
           "correct answer must contain. Make `expect` checkable: name the specific " +
           "value, rule or behaviour, not 'a good explanation'.\n\n" +
-          "Group the checks into 4-7 categories.\n\n" +
+          "Group the checks into 4-10 categories.\n\n" +
           // Measured on production: owasp-asvs sat at 29% and nearly every
           // failure was "list all seventeen chapters", "which requirements apply
           // only to Level 3", "what is the title of V14". A brain answers from
@@ -139,7 +170,7 @@ export async function generateChecks(brain: Brain): Promise<number> {
           "NOT currently cover. Those failures are the point — they tell the user " +
           "what material is missing. An exam that only asks what the brain already " +
           "knows is worthless.\n\n" +
-          "Also include 2-3 checks with kind \"negative\": plausible questions a " +
+          `Also include about ${negatives} checks with kind "negative": plausible questions a ` +
           "user might genuinely ask this brain that are OUTSIDE its scope — " +
           "neighbouring topics, adjacent products, common confusions the goal " +
           "does not cover. For these, `expect` must say that the correct " +
@@ -181,7 +212,7 @@ export async function generateChecks(brain: Brain): Promise<number> {
       );
     }
   }
-  checks = checks.slice(0, MAX_CHECKS);
+  checks = checks.slice(0, target);
 
   // One transaction: as separate statements a crash between the delete and
   // the inserts left the brain with zero generated checks, and the next exam
@@ -233,12 +264,17 @@ export function countDegraded(checks: { reranked: boolean }[]): number {
 export async function generateNegativeProbes(brain: Brain): Promise<number> {
   if (!brain.goal) return 0;
 
-  const existing = await one<{ n: number }>(
-    `select count(*)::int as n from checks
-      where brain_id = $1 and kind = 'negative' and enabled`,
+  // Top up to the fleet-wide share (a fifth of the exam), not just from zero:
+  // exams written under the old "2-3 probes" rule stay under-measured on the
+  // anti-bluff axis otherwise, and it is their worst axis (62% vs 80% pass).
+  const counts = await one<{ neg: number; total: number }>(
+    `select count(*) filter (where kind = 'negative')::int as neg,
+            count(*)::int as total
+       from checks where brain_id = $1 and enabled`,
     [brain.id],
   );
-  if (existing.n > 0) return 0;
+  const want = negativeTarget(counts.total) - counts.neg;
+  if (want <= 0) return 0;
 
   const scope = await familyIds(brain);
   const categories = await query<{ category: string }>(
@@ -260,7 +296,7 @@ export async function generateNegativeProbes(brain: Brain): Promise<number> {
     system:
       "You write anti-bluff probes for a knowledge base that AI coding agents read.\n\n" +
       "Given a goal, the categories its exam already covers, and a sample of the " +
-      "notes it holds, write exactly 3 checks with kind \"negative\": plausible " +
+      `notes it holds, write exactly ${want} checks with kind "negative": plausible ` +
       "questions a user might genuinely ask this brain that are OUTSIDE its scope — " +
       "neighbouring topics, adjacent products, the confusions its subject invites.\n\n" +
       "They must be believable, not absurd: \"how do I configure Vite\" asked of a " +
@@ -290,9 +326,10 @@ export async function generateNegativeProbes(brain: Brain): Promise<number> {
         return p.success ? [p.data] : [];
       });
 
-  // Only negatives, and only a handful: a probe that arrives as a positive check
-  // would be graded as coverage the brain is expected to have.
-  const probes = items.filter((c) => c.kind === "negative").slice(0, 3);
+  // Only negatives, and only what tops the exam up to its share: a probe that
+  // arrives as a positive check would be graded as coverage the brain is
+  // expected to have.
+  const probes = items.filter((c) => c.kind === "negative").slice(0, want);
   if (!probes.length) return 0;
 
   for (const c of probes) {

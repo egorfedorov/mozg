@@ -1,4 +1,5 @@
 import { query } from "@/db";
+import { notifyGaps } from "@/lib/operator-chat";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
 import { growSearchGapChecks } from "@/worker/search-gaps";
@@ -294,6 +295,61 @@ export async function refreshBrain(brainId: string): Promise<{
   };
 }
 
+/**
+ * Walk open gaps to the people who can close them. 90 pending suggestions
+ * sat unread in the database — collected demand nobody was told about. One
+ * message per brain per week (rate_limits carries the clock), three or more
+ * open gaps before it is worth a ping.
+ */
+export async function notifyGapOwners(limit = 20): Promise<number> {
+  const rows = await query<{
+    brain_id: string;
+    slug: string;
+    title: string;
+    owner_id: string;
+    n: number;
+  }>(
+    `select b.id as brain_id, b.slug, b.title, b.owner_id, count(*)::int as n
+       from gap_suggestions g join brains b on b.id = g.brain_id
+      where g.status = 'pending'
+      group by b.id, b.slug, b.title, b.owner_id
+     having count(*) >= 3
+      order by count(*) desc
+      limit $1`,
+    [limit],
+  );
+
+  let sent = 0;
+  for (const r of rows) {
+    const action = `gap_notice:${r.brain_id}`;
+    const recent = await query(
+      `select 1 from rate_limits
+        where user_id = $1 and action = $2 and created_at > now() - interval '7 days'`,
+      [r.owner_id, action],
+    );
+    if (recent.length) continue;
+
+    const qs = await query<{ question: string }>(
+      `select question from gap_suggestions
+        where brain_id = $1 and status = 'pending'
+        order by created_at desc limit 3`,
+      [r.brain_id],
+    );
+    await query(`insert into rate_limits (user_id, action) values ($1, $2)`, [
+      r.owner_id,
+      action,
+    ]);
+    await notifyGaps(
+      r.owner_id,
+      { title: r.title, slug: r.slug },
+      qs.map((q) => q.question),
+      r.n,
+    ).catch(() => {});
+    sent++;
+  }
+  return sent;
+}
+
 export async function runMaintenance(): Promise<{
   refresh: RefreshReport;
   examined: number;
@@ -303,6 +359,7 @@ export async function runMaintenance(): Promise<{
   abandoned: number;
 }> {
   const resumed = await requeueBudgetPaused();
+  await notifyGapOwners();
   // Before examStaleBrains: an abandoned run closed here is a brain that gets
   // re-queued in the same pass instead of waiting six hours for the next one.
   const abandoned = await closeAbandonedRuns();

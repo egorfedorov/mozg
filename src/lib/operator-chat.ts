@@ -122,3 +122,32 @@ export async function notifyBudgetPaused(
     { userId },
   ).catch(() => {});
 }
+
+/**
+ * Tell a brain's owner what real searches could not answer. The gap list
+ * already exists — this walks it to the person who can act on it, with the
+ * mascot badge and a push doing the knocking. One message per brain per
+ * week: gaps accumulate, nagging does not help them close.
+ */
+export async function notifyGaps(
+  userId: string,
+  brain: { title: string; slug: string },
+  questions: string[],
+  totalOpen: number,
+): Promise<void> {
+  const list = questions.map((q) => `• ${q}`).join("\n");
+  const body =
+    `Your brain "${brain.title}" has ${totalOpen} question${totalOpen === 1 ? "" : "s"} ` +
+    `real searches could not answer. The freshest:\n${list}\n\n` +
+    `Add a source that covers them (or run /mozg:update) and the next exam turns ` +
+    `them green: mozg.sh/brains/${brain.slug}. Reply here if you want a hand.`;
+
+  await query(
+    `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
+    [userId, body],
+  );
+  sendPush(
+    { title: `mozg: "${brain.title}" has open gaps`, body: questions[0] ?? "", url: "/chat" },
+    { userId },
+  ).catch(() => {});
+}
