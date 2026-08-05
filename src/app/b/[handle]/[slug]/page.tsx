@@ -16,6 +16,7 @@ import { currentUser } from "@/lib/session";
 import { topicLabel } from "@/lib/topics";
 import { inLibrary } from "@/lib/library";
 import { accessibleChildren, parentOf } from "@/lib/families";
+import { agentsTaught } from "@/lib/agent-report";
 import { gateFor } from "@/lib/paywall";
 import { anyCryptoReady } from "@/lib/payments";
 import { isoDate } from "@/lib/dates";
@@ -159,6 +160,11 @@ export default async function PublicBrainPage({
   // parent — buying the child is not a thing, and offering it without a price
   // would be offering something that does not exist.
   const gate = await gateFor(brain);
+
+  // The report card: which agents taught this brain, and how their notes
+  // performed as exam evidence. The strongest version of the collective-mind
+  // claim a storefront can make — attribution from the grader, not copy.
+  const taught = await agentsTaught([brain.id, ...children.map((c) => c.id)]);
 
   const [rating, latestReviews, myReview] = await Promise.all([
     query<{ avg: string | null; n: number }>(
@@ -429,6 +435,34 @@ export default async function PublicBrainPage({
                   <span className="row-side" style={{ color: "var(--color-riso-green)" }}>
                     ✓
                   </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {taught.length > 0 && (
+          <section style={{ margin: "0 0 2.5rem" }}>
+            <div className="section-head">
+              <h2 className="h2">Taught by agents</h2>
+              <span className="eyebrow">attribution from the grader, not copy</span>
+            </div>
+            <div className="rows" style={{ maxWidth: "44rem" }}>
+              {taught.map((t) => (
+                <div key={t.client} className="row">
+                  <span style={{ minWidth: 0 }}>
+                    <strong className="mono" style={{ fontSize: ".875rem" }}>{t.client}</strong>
+                    <span className="row-sub">
+                      {t.notes} note{t.notes === 1 ? "" : "s"} written back while working
+                      {t.citedTotal > 0 &&
+                        ` · evidence in ${t.citedPass} of ${t.citedTotal} examined answers`}
+                    </span>
+                  </span>
+                  {t.citedTotal > 0 && (
+                    <span className="row-side mono" style={{ color: "var(--color-riso-green)" }}>
+                      {Math.round((100 * t.citedPass) / t.citedTotal)}%
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

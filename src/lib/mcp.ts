@@ -16,6 +16,9 @@ import { searchBrain, briefBrain } from "@/lib/search";
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
+import { structured, costCents } from "@/lib/claude";
+import { recordSpend } from "@/lib/spend";
+import { env } from "@/lib/env";
 import { slugify } from "@/lib/brains";
 import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
@@ -89,6 +92,29 @@ export const TOOLS: ToolDef[] = [
         },
       },
       required: ["brain", "query"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "brain_verify",
+    description:
+      "Check a claim against the brain before acting on it or presenting it as " +
+      "fact. Returns supported / contradicted / not_covered with the evidence " +
+      "notes. Use it on your own drafted answer when the stakes are real — a " +
+      "migration step, a money path, an API contract. A claim the brain cannot " +
+      "confirm is flagged to the brain's owner as a gap.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Brain handle." },
+        claim: {
+          type: "string",
+          description:
+            "One specific, checkable statement — a value, rule or behaviour. " +
+            "Not a paragraph.",
+        },
+      },
+      required: ["brain", "claim"],
       additionalProperties: false,
     },
   },
@@ -451,6 +477,8 @@ export async function callTool(
       return brainBrief(String(args.brain ?? ""), owner);
     case "brain_search":
       return brainSearch(args, owner);
+    case "brain_verify":
+      return brainVerify(args, owner);
     case "brain_read":
       return brainRead(args, owner);
     case "brain_write":
@@ -799,6 +827,116 @@ async function brainSearch(
     ownerId: resolved.brain.owner_id,
     results: hits.length,
     topScore: hits[0]?.score,
+  };
+}
+
+/**
+ * The second opinion: retrieve what the brain holds on a claim, ask the
+ * judge (the same model that grades exams) whether the evidence supports it,
+ * and answer with a verdict plus the notes it stands on. A claim the brain
+ * cannot confirm files a gap suggestion — every caught bluff makes the next
+ * exam harder and tells the owner what to teach, which is the whole loop.
+ */
+async function brainVerify(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const claim = String(args.claim ?? "").trim().slice(0, 1000);
+  if (!claim) return { text: "Give brain_verify one checkable claim.", isError: true };
+
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+  if (resolved.locked) {
+    return {
+      text: await lockedText(resolved.brain),
+      isError: true,
+      brainId: resolved.brain.id,
+      ownerId: resolved.brain.owner_id,
+      results: 0,
+    };
+  }
+
+  const scope = await familyScopeFor(resolved.brain, owner.userId);
+  const { hits } = await searchBrain(scope, claim, { limit: 5 });
+
+  const fileGap = async () => {
+    // One pending row per phrasing — a claim verified in a loop must not
+    // flood the owner's gap list.
+    await query(
+      `insert into gap_suggestions (brain_id, question)
+       select $1, $2
+        where not exists (select 1 from gap_suggestions
+                           where brain_id = $1 and question = $2 and status = 'pending')`,
+      [resolved.brain.id, claim],
+    ).catch(() => {});
+  };
+
+  if (!hits.length) {
+    await fileGap();
+    return {
+      text:
+        `not_covered — "${resolved.brain.title}" holds nothing on this claim. ` +
+        "Do not present it as confirmed by the brain; say it is unverified. " +
+        "The gap has been flagged to the brain's owner.",
+      brainId: resolved.brain.id,
+      ownerId: resolved.brain.owner_id,
+      results: 0,
+    };
+  }
+
+  const { data, usage } = await structured<{
+    verdict: "supported" | "contradicted" | "not_covered";
+    reason: string;
+  }>({
+    model: env.MODEL_JUDGE,
+    system:
+      "You verify claims against retrieved knowledge-base passages. Judge ONLY " +
+      "from the passages: 'supported' if they confirm the claim, 'contradicted' " +
+      "if they say otherwise (quote the difference), 'not_covered' if they are " +
+      "about something else. Never use your own memory of the subject — the " +
+      "passages are newer than you.",
+    content: [
+      {
+        type: "text",
+        text:
+          `Claim:\n${claim}\n\nPassages:\n` +
+          hits.map((h, i) => `[${i + 1}] ${h.title}\n${h.excerpt}`).join("\n\n"),
+      },
+    ],
+    toolName: "submit_verdict",
+    toolDescription: "Return the verdict on the claim.",
+    schema: {
+      type: "object",
+      properties: {
+        verdict: { type: "string", enum: ["supported", "contradicted", "not_covered"] },
+        reason: { type: "string", description: "One sentence, citing the passage." },
+      },
+      required: ["verdict", "reason"],
+    },
+    maxTokens: 400,
+  });
+  await recordSpend("verify", costCents(env.MODEL_JUDGE, usage), {
+    brainId: resolved.brain.id,
+  });
+
+  if (data.verdict !== "supported") await fileGap();
+
+  const evidence = hits
+    .slice(0, 3)
+    .map((h, i) => `[${i + 1}] ${h.title} (note_id: ${h.note_id})`)
+    .join("\n");
+  return {
+    text:
+      `${data.verdict} — ${data.reason}\n\nEvidence:\n${evidence}` +
+      (data.verdict === "contradicted"
+        ? "\n\nUse what the brain says, not the claim — its notes are newer than model memory. brain_read a note_id above for the full text."
+        : data.verdict === "not_covered"
+          ? "\n\nSay this is unverified if you present it. The gap has been flagged to the brain's owner."
+          : ""),
+    brainId: resolved.brain.id,
+    ownerId: resolved.brain.owner_id,
+    results: hits.length,
   };
 }
 

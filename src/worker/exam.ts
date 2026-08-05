@@ -602,6 +602,7 @@ export async function runExam(
           reason: string | null;
           retrieval_hits: number | null;
           retrieval_top_score: number | null;
+          evidence: string[] | null;
         }>(`select * from check_results where run_id = $1`, [prev.id])
       : [];
 
@@ -623,7 +624,7 @@ export async function runExam(
 
     const carried = new Map<
       string,
-      { passed: boolean; reason: string; hits: number; top: number | null }
+      { passed: boolean; reason: string; hits: number; top: number | null; evidence: string[] | null }
     >();
     if (prev && !mini) {
       for (const r of prevResults) {
@@ -634,6 +635,7 @@ export async function runExam(
             reason: r.reason ?? "carried from the previous run (material unchanged)",
             hits: r.retrieval_hits ?? 0,
             top: r.retrieval_top_score,
+            evidence: r.evidence,
           });
         }
       }
@@ -653,12 +655,15 @@ export async function runExam(
       reranked: boolean;
       retrievalHits: number;
       retrievalTopScore: number | null;
+      evidence: string[];
     }[] = [];
     for (const check of fresh) {
       const { hits, reranked } = await searchBrain(scope, check.question, { limit: 5 });
       contexts.push({
         check,
         context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),
+        // The verdict's paper trail: which notes the judge actually read.
+        evidence: hits.map((h) => h.note_id),
         // Whether the cross-encoder actually ran. A sitting graded on plain RRF
         // order measures a degraded system and records the number as if it were
         // the brain's — see the check below.
@@ -698,6 +703,7 @@ export async function runExam(
       reason: string;
       retrievalHits: number;
       retrievalTopScore: number | null;
+      evidence: string[] | null;
     }[] = [];
 
     for (let i = 0; i < contexts.length; i += JUDGE_BATCH) {
@@ -730,6 +736,7 @@ export async function runExam(
             "judge returned no verdict",
           retrievalHits: entry.retrievalHits,
           retrievalTopScore: entry.retrievalTopScore,
+          evidence: entry.evidence,
         });
       }
     }
@@ -745,15 +752,16 @@ export async function runExam(
         reason: c.reason,
         retrievalHits: c.hits,
         retrievalTopScore: c.top,
+        evidence: c.evidence,
       });
     }
 
     for (const r of results) {
       await query(
         `insert into check_results
-           (run_id, check_id, passed, reason, retrieval_hits, retrieval_top_score)
-         values ($1, $2, $3, $4, $5, $6)`,
-        [run.id, r.check.id, r.passed, r.reason, r.retrievalHits, r.retrievalTopScore],
+           (run_id, check_id, passed, reason, retrieval_hits, retrieval_top_score, evidence)
+         values ($1, $2, $3, $4, $5, $6, $7::uuid[])`,
+        [run.id, r.check.id, r.passed, r.reason, r.retrievalHits, r.retrievalTopScore, r.evidence],
       );
     }
 
