@@ -54,8 +54,13 @@ function lines(f: MascotFacts): { text: string; tone?: "good" | "warn" }[] {
     return out;
   }
 
+  // Plurals, and the case a brain taught by an agent falls into: it holds notes
+  // and has no sources at all, where "from 0 sources" reads like a fault.
+  const noteWord = `${f.notes.toLocaleString()} note${f.notes === 1 ? "" : "s"}`;
   out.push({
-    text: `I hold ${f.notes.toLocaleString()} notes from ${f.sourcesReady} source${f.sourcesReady === 1 ? "" : "s"}.`,
+    text: f.sourcesReady
+      ? `I hold ${noteWord} from ${f.sourcesReady} source${f.sourcesReady === 1 ? "" : "s"}.`
+      : `I hold ${noteWord}, taught to me directly rather than read from a source.`,
   });
 
   if (f.strong.length) {
