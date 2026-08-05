@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+import type { Announcement } from "@/lib/announcements";
+
+/**
+ * Maintenance is loud, news is not. A degraded queue has to interrupt — it
+ * explains why someone's brain looks stuck — while a shipped feature earns one
+ * quiet line. Same bar, two voices; nothing here blinks or animates, because a
+ * status bar that moves reads as an ad.
+ */
+const TONE: Record<Announcement["kind"], { bg: string; fg: string; label: string }> = {
+  maintenance: { bg: "var(--color-riso-red)", fg: "var(--paper)", label: "maintenance" },
+  news: { bg: "var(--color-riso-green)", fg: "var(--ink)", label: "new" },
+  notice: { bg: "var(--ink-2)", fg: "var(--paper)", label: "notice" },
+};
+
+export default function AnnouncementBannerClient({
+  announcement,
+}: {
+  announcement: Announcement;
+}) {
+  const [shown, setShown] = useState(true);
+  if (!shown) return null;
+
+  const tone = TONE[announcement.kind];
+  const firstLine = announcement.body.trim().split("\n")[0];
+
+  return (
+    <div
+      id="mozg-notice"
+      style={{ background: tone.bg, color: tone.fg, borderBottom: "1.5px solid var(--ink)" }}
+    >
+      <div
+        className="shell"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: ".75rem",
+          paddingBlock: ".5rem",
+          fontSize: ".8125rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <span
+          className="mono"
+          style={{ textTransform: "uppercase", letterSpacing: ".08em", opacity: 0.8 }}
+        >
+          {tone.label}
+        </span>
+        <span style={{ opacity: 0.55 }}>·</span>
+        <strong style={{ fontWeight: 600 }}>{announcement.title}</strong>
+        {firstLine && <span style={{ opacity: 0.9 }}>{firstLine}</span>}
+        {announcement.ends_at && announcement.kind === "maintenance" && (
+          <span className="mono" style={{ opacity: 0.75 }}>
+            until {new Date(announcement.ends_at).toISOString().slice(11, 16)} UTC
+          </span>
+        )}
+        <a
+          href="/changelog"
+          className="mono"
+          style={{ marginLeft: "auto", color: tone.fg, textDecoration: "underline" }}
+        >
+          all news →
+        </a>
+        <button
+          onClick={() => {
+            try {
+              localStorage.setItem(`mozg-notice-${announcement.id}`, "1");
+            } catch {
+              // Private mode: dismiss for this page load only.
+            }
+            setShown(false);
+          }}
+          aria-label="Dismiss"
+          style={{
+            background: "none",
+            border: 0,
+            color: tone.fg,
+            opacity: 0.7,
+            cursor: "pointer",
+            font: "inherit",
+            padding: ".25rem",
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}

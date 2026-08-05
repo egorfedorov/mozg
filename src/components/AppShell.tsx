@@ -78,6 +78,7 @@ export default async function AppShell({
             { href: "/admin/marketing", label: "Marketing" },
             { href: "/admin/lessons", label: "Lessons" },
             { href: "/admin/promo", label: "Promo" },
+            { href: "/admin/announcements", label: "Announcements" },
           ],
         },
       ]

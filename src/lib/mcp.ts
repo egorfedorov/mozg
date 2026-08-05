@@ -1,4 +1,5 @@
 import { query, maybeOne, one } from "@/db";
+import { agentNotice } from "@/lib/announcements";
 import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
 import {
@@ -414,6 +415,11 @@ export async function callTool(
 }
 
 async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
+  // An agent that cannot reach a brain during a deploy reports the brain as
+  // broken, and its user believes it. One line at the top of the session's first
+  // call is the cheapest place to say "this is us, for twenty minutes" — and
+  // brain_list is that call by convention (its own description says so).
+  const notice = await agentNotice();
   const rows = await query<{
     handle: string;
     title: string;
@@ -477,9 +483,12 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
       "\nFull list: https://mozg.sh/explore"
     : "";
 
+  const heading = notice ? `${notice}\n\n` : "";
+
   if (!rows.length) {
     return {
       text:
+        heading +
         "No brains on your shelf yet. Create one with brain_create and feed " +
         "it with brain_add_source — or use a public brain below directly." +
         catalogueBlock,
@@ -516,7 +525,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
   }
 
   return {
-    text: `${rows.length} brain(s) available:\n\n${lines.join("\n")}${catalogueBlock}`,
+    text: `${heading}${rows.length} brain(s) available:\n\n${lines.join("\n")}${catalogueBlock}`,
   };
 }
 

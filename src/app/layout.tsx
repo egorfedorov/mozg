@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
 import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import Analytics from "@/components/Analytics";
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* No footer here on purpose: it belongs to the public side of the site.
           A workspace ends in work, not in a wall of links out. */}
       <body>
+        <AnnouncementBanner />
         <StarBanner />
         {children}
         <Analytics />

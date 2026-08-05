@@ -1,4 +1,5 @@
 import TopBar from "@/components/TopBar";
+import { newsArchive } from "@/lib/announcements";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 
@@ -11,6 +12,11 @@ export const metadata = {
  * Curated, not generated: one entry per thing a user can feel, written when
  * it ships. During a beta the visible pace of a changelog is itself the
  * product's best argument.
+ *
+ * Announcements posted from /admin/announcements land above this list, dated the
+ * same way. The two are different in origin, not in kind: this list is written
+ * with the release, those are written in the moment — a pack that landed, an
+ * outage that ended — and nobody should have to redeploy to say one.
  */
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
@@ -70,7 +76,8 @@ const ENTRIES: { date: string; title: string; body: string }[] = [
   },
 ];
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
+  const news = await newsArchive(20);
   return (
     <>
       <TopBar />
@@ -87,6 +94,29 @@ export default function ChangelogPage() {
         </p>
 
         <div style={{ marginTop: "2.5rem", display: "grid", gap: "1.5rem", maxWidth: "72ch" }}>
+          {news.map((n) => (
+            <article
+              key={n.id}
+              style={{
+                borderLeft: `3px solid ${
+                  n.kind === "news" ? "var(--color-riso-green)" : "var(--ink-3)"
+                }`,
+                paddingLeft: "1.25rem",
+              }}
+            >
+              <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: 0 }}>
+                {n.starts_at.slice(0, 10)}
+              </p>
+              <h2 className="h3" style={{ margin: ".25rem 0 .4rem" }}>
+                {n.title}
+              </h2>
+              {n.body.trim() && (
+                <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem", whiteSpace: "pre-line" }}>
+                  {n.body}
+                </p>
+              )}
+            </article>
+          ))}
           {ENTRIES.map((e, i) => (
             <article
               key={i}
