@@ -26,18 +26,36 @@ STORAGE_VOLUME="${MOZG_STORAGE_VOLUME:-mozg_storage}"
 mkdir -p "$DEST/daily" "$DEST/weekly"
 cd "$DIR"
 
+# One backup at a time. Two runs a day is normal — the nightly cron plus every
+# deploy — and they overlap the moment a deploy lands near 03:17, which is
+# exactly what happened: both wrote the same .tmp path, their output interleaved,
+# and the finished file decompressed with "trailing garbage". The atomic rename
+# below cannot help when the file being renamed was written by two processes.
+#
+# Waiting rather than exiting: a deploy's whole reason for calling this is to
+# have a restore point before it migrates, so it must not proceed on the
+# assumption that somebody else's backup covers it.
+exec 9>"$DEST/.backup.lock"
+if ! flock -w 1800 9; then
+  echo "$(date -Is)  FAIL  another backup held the lock for 30 minutes"
+  exit 1
+fi
+
 stamp=$(date +%Y-%m-%d)
 out="$DEST/daily/mozg-$stamp.sql.gz"
+# Belt and braces: a per-process temporary name, so even without the lock two
+# runs could not corrupt each other's dump.
+tmp="$out.$$.tmp"
 
 # --clean --if-exists so the dump can be restored over an existing database
 # without hand-dropping it first, which is exactly when you are least calm.
 docker compose -f docker-compose.prod.yml exec -T db \
   pg_dump -U mozg -d mozg --clean --if-exists --no-owner --no-privileges \
-  | gzip -9 > "$out.tmp"
+  | gzip -9 > "$tmp"
 
 # Only replace the real file once the dump succeeded — a truncated backup that
 # looks present is worse than an obviously missing one.
-mv "$out.tmp" "$out"
+mv "$tmp" "$out"
 size=$(du -h "$out" | cut -f1)
 
 # The storage volume holds the uploaded screenshot originals. They can
@@ -45,12 +63,13 @@ size=$(du -h "$out" | cut -f1)
 # brain with notes whose source image is gone. Tarred through a throwaway
 # container because a named volume has no host path you can safely tar.
 sout="$DEST/daily/storage-$stamp.tar.gz"
+stmp="storage-$stamp.tar.gz.$$.tmp"
 docker run --rm -v "$STORAGE_VOLUME:/data:ro" -v "$DEST/daily:/backup" alpine \
-  tar -czf "/backup/storage-$stamp.tar.gz.tmp" -C /data .
+  tar -czf "/backup/$stmp" -C /data .
 
 # Same rule as the database dump: replace the real file only once the tar
 # succeeded.
-mv "$DEST/daily/storage-$stamp.tar.gz.tmp" "$sout"
+mv "$DEST/daily/$stmp" "$sout"
 ssize=$(du -h "$sout" | cut -f1)
 
 # Sunday's copy is kept longer, so a problem noticed weeks later is still
