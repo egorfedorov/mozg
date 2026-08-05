@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Announcement } from "@/lib/announcements";
+import { useTucked } from "./useTucked";
 
 /**
  * Maintenance is loud, news is not. A degraded queue has to interrupt — it
@@ -21,6 +22,7 @@ export default function AnnouncementBannerClient({
   announcement: Announcement;
 }) {
   const [shown, setShown] = useState(true);
+  const tucked = useTucked();
   if (!shown) return null;
 
   const tone = TONE[announcement.kind];
@@ -29,7 +31,13 @@ export default function AnnouncementBannerClient({
   return (
     <div
       id="mozg-notice"
-      style={{ background: tone.bg, color: tone.fg, borderBottom: "1.5px solid var(--ink)" }}
+      style={{
+        background: tone.bg,
+        color: tone.fg,
+        borderBottom: "1.5px solid var(--ink)",
+        // Same rule as the star bar: whole or gone, never a clipped sliver.
+        visibility: tucked ? "hidden" : "visible",
+      }}
     >
       <div
         className="shell"

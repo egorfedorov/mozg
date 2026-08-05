@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { limitsFor } from "@/lib/plans";
+import { notifyBudgetPaused } from "@/lib/operator-chat";
 import { byokStorage } from "@/lib/byok";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSION, type ExtractResult } from "@/lib/extract";
@@ -162,6 +163,14 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
             ? { window: "daily", spent: day, budget: limits.dailyExtractCents }
             : null;
       if (over) {
+        // The owner hears about it in chat (mascot badge included), not only
+        // in a source's error field nobody opens. Deduped inside; must not
+        // block or fail the pause itself.
+        await notifyBudgetPaused(
+          brain.owner_id,
+          over.window as "monthly" | "daily",
+          owner.plan,
+        ).catch(() => {});
         throw new Error(
           `${over.window} budget: extraction paused — ` +
             `${(over.spent / 100).toFixed(2)} of ${(over.budget / 100).toFixed(2)} USD used ` +

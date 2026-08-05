@@ -78,3 +78,35 @@ export async function translateThreadsForOperator(limit = 40): Promise<number> {
   );
   return results.filter(Boolean).length;
 }
+
+/**
+ * Tell the owner their extraction paused, once — 41 failing sources in one
+ * crawl must not become 41 messages. Lands as an operator chat message, so
+ * the mascot badge lights up wherever they are in the app.
+ */
+export async function notifyBudgetPaused(
+  userId: string,
+  window: "monthly" | "daily",
+  plan: string,
+): Promise<void> {
+  const recent = await query(
+    `select 1 from rate_limits
+      where user_id = $1 and action = 'budget_notice'
+        and created_at > now() - interval '3 days'`,
+    [userId],
+  );
+  if (recent.length) return;
+  await query(`insert into rate_limits (user_id, action) values ($1, 'budget_notice')`, [
+    userId,
+  ]);
+
+  const body =
+    window === "monthly"
+      ? `Heads up — your ${plan} plan's monthly extraction budget is used up, so reading new sources is paused. Nothing is lost: they resume automatically as the 30-day window rolls, or right away on a bigger plan (mozg.sh/settings). Teaching from your own CLI or your own API key stays unlimited. Reply here if anything is unclear — a person reads this.`
+      : `Heads up — today's extraction budget on your ${plan} plan is used up, so reading new sources is paused. They resume automatically within 24 hours; a bigger plan raises the ceiling (mozg.sh/settings). Reply here if anything is unclear — a person reads this.`;
+
+  await query(
+    `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
+    [userId, body],
+  );
+}

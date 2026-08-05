@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTucked } from "./useTucked";
 
 /**
  * Dismissable, and it stays dismissed — a banner that returns on every page
@@ -13,6 +14,7 @@ import { useState } from "react";
  */
 export default function StarBannerClient({ stars, repo }: { stars: number | null; repo: string }) {
   const [shown, setShown] = useState(true);
+  const tucked = useTucked();
   if (!shown) return null;
 
   return (
@@ -22,6 +24,9 @@ export default function StarBannerClient({ stars, repo }: { stars: number | null
         background: "var(--ink)",
         color: "var(--paper)",
         borderBottom: "1.5px solid var(--ink)",
+        // Scrolled pages hide it whole — a half-clipped bar above the sticky
+        // topbar read as something broken covering the page.
+        visibility: tucked ? "hidden" : "visible",
       }}
     >
       <div
