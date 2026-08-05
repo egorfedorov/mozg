@@ -534,32 +534,37 @@ a {
   gap: 0;
 }
 
-/* The one loud item in the strip. Filled rather than outlined so it reads as the
-   primary action of the whole navigation, and it keeps its own hover instead of
-   borrowing the group behaviour beside it. */
+/* The first item in the strip, and the one a first-time visitor wants. It earns
+   its prominence with a green glyph rather than with a filled block: a black slab
+   in a paper-coloured bar shouts, and the rest of this design never shouts. */
 .nav-start {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.9rem;
-  margin-right: 0.25rem;
-  background: var(--ink);
-  color: var(--paper);
+  color: var(--ink);
   text-decoration: none;
   border-right: 1px solid var(--rule);
 }
 
 .nav-start:hover {
-  background: var(--color-riso-red);
+  background: var(--paper);
+}
+
+.nav-start:hover .nav-start-icon,
+.nav-start[data-active="true"] .nav-start-icon {
+  color: var(--color-riso-green);
 }
 
 .nav-start[data-active="true"] {
-  background: var(--color-riso-red);
+  background: var(--paper);
+  box-shadow: inset 0 -3px 0 var(--color-riso-green);
 }
 
 .nav-start-icon {
   flex: 0 0 auto;
+  color: var(--color-riso-green);
 }
 
 .nav-start-label {
@@ -572,7 +577,7 @@ a {
 .nav-start-note {
   display: block;
   font-size: 0.6875rem;
-  opacity: 0.75;
+  color: var(--ink-3);
   white-space: nowrap;
 }
 
