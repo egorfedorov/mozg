@@ -66,6 +66,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     pages: [
       { href: "/pricing", label: "Pricing", note: "your inference is free, ours is the plan" },
       { href: "/changelog", label: "News & changelog", note: "what shipped, dated" },
+      { href: "/changes", label: "What the brains learned", note: "knowledge deltas, verified by re-sits" },
       { href: "/roadmap", label: "Roadmap", note: "what is next, with its gate" },
     ],
   },
