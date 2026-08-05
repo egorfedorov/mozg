@@ -329,10 +329,12 @@ export default async function PublicBrainPage({
                   <span className="u">&gt;</span> use {handle}/{brain.slug} — …
                 </div>
                 <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
-                  <CopyMcpCommand
-                    command={`claude mcp add --transport http mozg ${env.NEXT_PUBLIC_APP_URL}/mcp --header "Authorization: Bearer YOUR_TOKEN"`}
-                  />
-                  {!user && (
+                  {user ? (
+                    <CopyMcpCommand
+                      signedIn
+                      commandFor={`claude mcp add --transport http mozg ${env.NEXT_PUBLIC_APP_URL}/mcp --header "Authorization: Bearer __TOKEN__"`}
+                    />
+                  ) : (
                     <Link
                       className="btn"
                       href="/sign-in"
@@ -343,10 +345,19 @@ export default async function PublicBrainPage({
                         borderColor: "var(--color-riso-yellow)",
                       }}
                     >
-                      Get a token
+                      Sign in — get this command with your token in it
                     </Link>
                   )}
                 </div>
+                {!user && (
+                  // For someone landing here from a Discord link with zero
+                  // context: one sentence, no jargon, says exactly what
+                  // signing in buys them.
+                  <p style={{ margin: ".75rem 0 0", color: "#9aa1ab", fontSize: ".8125rem", fontFamily: "inherit" }}>
+                    New here? Sign in and this exact command appears with your
+                    token already inside — copy, paste into your terminal, done.
+                  </p>
+                )}
               </section>
             )}
           </div>

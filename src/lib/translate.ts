@@ -35,13 +35,14 @@ export async function translate(
   text: string,
   target: string | { sameAs: string },
 ): Promise<{ text: string; same: boolean }> {
+  const model = env.MODEL_TRANSLATE ?? env.MODEL_JUDGE;
   const instruction =
     typeof target === "string"
       ? `Translate into ${LANG_NAMES[target] ?? target}.`
       : `Translate into the language this sample is written in:\n<sample>${target.sameAs.slice(0, 500)}</sample>`;
 
   const { data, usage } = await structured<{ translation: string; already_target: boolean }>({
-    model: env.MODEL_TRANSLATE,
+    model,
     system:
       "You translate short support-chat messages. Keep the tone, keep code/URLs/product names (mozg, chatmozg, brain names) untranslated, no explanations. " +
       "If the text is ALREADY in the requested language, return it unchanged and set already_target=true.",
@@ -59,9 +60,7 @@ export async function translate(
     maxTokens: 2000,
   });
 
-  await recordSpend("translate", costCents(env.MODEL_TRANSLATE, usage), {
-    model: env.MODEL_TRANSLATE,
-  });
+  await recordSpend("translate", costCents(model, usage), { model });
 
   return { text: data.already_target ? text : data.translation, same: data.already_target };
 }
