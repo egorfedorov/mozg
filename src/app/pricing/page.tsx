@@ -2,7 +2,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
-import { PLANS } from "@/lib/plans";
+import { PLANS, PLAN_PRICE_CENTS } from "@/lib/plans";
 import { PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { currentUser } from "@/lib/session";
 import { foundingSpotsLeft, FOUNDING_LIMIT } from "@/lib/upgrade";
@@ -29,11 +29,11 @@ const PLAN_PRICES: Record<string, string> = {
 
 const PLAN_PITCH: Record<string, string> = {
   free:
-    "The whole catalogue, connecting agents, learning — free. One brain of your own, and you may teach it as much as you like from your CLI: /mozg:train reads your docs on the Claude or Kimi subscription you already pay for and writes the notes straight in. Our AI is a taste here — half a dollar of inference a day, enough for a trial brain.",
+    "Full access to everything already built: the whole catalogue, every agent you connect, learning, exports of what you can read. Plus one brain of your own that you may teach without limit — from your CLI on the Claude or Kimi subscription you already pay for, or on your own API key. Nothing here expires into a trial.",
   pro:
-    "Our AI does the reading. Point it at a documentation site and it crawls, extracts, sits the exam and re-reads what changed — nothing to run, no API key to wire up, no terminal left open.",
+    "Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference a month is included; the other $5 is the servers and the exam judge.",
   team:
-    "The same, for a team's shared brains and many agents at once — higher ceilings on every count.",
+    "The same at team scale: $90 of our inference a month, a hundred brains, fifty thousand agent calls. Bring your own key on any plan and the budget stops applying entirely.",
 };
 
 export default async function PricingPage() {
@@ -57,14 +57,17 @@ export default async function PricingPage() {
           Our AI teaching costs.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Two ways to fill a brain, and the difference is whose inference
-          reads the material. <strong>Yours is free</strong>: install the
-          plugin, run <code>/mozg:train</code>, and the agent on your existing
-          Claude or Kimi subscription does the reading and writes the notes in.
-          No plan, no API key, no bill from us. <strong>Ours is the plan</strong>
-          : hand over a documentation URL and our AI crawls it, extracts the
-          notes, sits the exam and re-reads what changed — while you are asleep,
-          with nothing running on your machine.
+          Two ways to fill a brain, and the difference is whose inference reads
+          the material. <strong>Yours is free, always</strong>: install the
+          plugin and run <code>/mozg:train</code>, and the agent on the Claude or
+          Kimi subscription you already pay for does the reading and writes the
+          notes in — or set your own API key in settings and paste URLs the same
+          way a plan does. No plan, no bill from us, no cap on how much you
+          teach. <strong>Ours is the plan</strong>: hand over a documentation URL
+          and our models crawl it, extract the notes, sit the exam and re-read
+          what changed while you are asleep. A plan states how much of that
+          inference it includes — $20 a month on Pro, $90 on Team — because a
+          number you can check beats a promise you cannot.
         </p>
         <p className="lede" style={{ maxWidth: "58ch" }}>
           Everything else stays free either way: the code (AGPL), the whole
@@ -85,8 +88,14 @@ export default async function PricingPage() {
               marginTop: ".75rem",
             }}
           >
-            Founding members: the first {FOUNDING_LIMIT} paying accounts keep
-            −50% forever · {spots} spot{spots === 1 ? "" : "s"} left
+            {/* The offer already existed in the code and whispered here. It is
+                the strongest thing on this page, so it says the resulting price
+                rather than a percentage: −50% is a claim, $12.50 is a number. */}
+            Founding offer · the first {FOUNDING_LIMIT} paying accounts keep half
+            price <strong>forever</strong> — Pro ${(PLAN_PRICE_CENTS.pro / 200).toFixed(2)}/mo
+            instead of ${(PLAN_PRICE_CENTS.pro / 100).toFixed(0)}, Team $
+            {(PLAN_PRICE_CENTS.team / 200).toFixed(2)} instead of $
+            {(PLAN_PRICE_CENTS.team / 100).toFixed(0)} · {spots} of {FOUNDING_LIMIT} left
           </p>
         )}
 
@@ -136,9 +145,14 @@ export default async function PricingPage() {
                       never how much you may teach with your own. */}
                   <li>✓ teach from your CLI — unlimited notes</li>
                   <li>
-                    {p.dailyExtractCents >= 3000
-                      ? `✓ our AI reads for you — $${(p.dailyExtractCents / 100).toFixed(0)} of inference a day`
-                      : `our AI: $${(p.dailyExtractCents / 100).toFixed(2)} a day — a trial brain, not a corpus`}
+                    {p.monthlyExtractCents > 0
+                      ? `✓ our AI reads for you — $${(p.monthlyExtractCents / 100).toFixed(0)} of inference a month`
+                      : "— our AI reading for you: that is the paid part"}
+                  </li>
+                  <li>
+                    {p.monthlyExtractCents > 0
+                      ? "✓ or your own key, and the budget stops applying"
+                      : "✓ your own API key — unlimited, you pay the model"}
                   </li>
                   <li>
                     {p.sources === 0

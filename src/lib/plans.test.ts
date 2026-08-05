@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { effectivePlan, limitsFor, PLAN_PRICE_CENTS, PLAN_PERIOD_DAYS } from "./plans";
+import { effectivePlan, limitsFor, PLANS, PLAN_PRICE_CENTS, PLAN_PERIOD_DAYS } from "./plans";
 
 const NOW = new Date("2026-08-04T00:00:00Z");
 
@@ -40,4 +40,28 @@ test("the price table matches the marketed prices", () => {
   assert.equal(PLAN_PRICE_CENTS.pro, 2500); // $25/mo
   assert.equal(PLAN_PRICE_CENTS.team, 9500); // $95/mo
   assert.ok(PLAN_PERIOD_DAYS >= 28, "a month of service must cover February");
+});
+
+test("a plan cannot include more inference than it costs", () => {
+  // The bug this exists to prevent shipped once: Pro's only ceiling was $30 a
+  // DAY, which is up to $900 a month of tokens sold for $25. Any future edit
+  // that makes the included inference exceed the price fails here.
+  for (const plan of ["pro", "team"] as const) {
+    const price = PLAN_PRICE_CENTS[plan];
+    const included = PLANS[plan].monthlyExtractCents;
+    assert.ok(
+      included < price,
+      `${plan}: includes ${included}¢ of inference at a ${price}¢ price`,
+    );
+    // And the daily runaway guard must not be able to outrun the month either.
+    assert.ok(PLANS[plan].dailyExtractCents * 30 > included, `${plan}: daily cap unreachable`);
+    assert.ok(PLANS[plan].dailyExtractCents < included, `${plan}: a single day can eat the month`);
+  }
+
+  // Free buys none of our inference: it teaches from its own CLI or its own key.
+  assert.equal(PLANS.free.monthlyExtractCents, 0);
+  assert.equal(PLANS.free.dailyExtractCents, 0);
+  // But it is not read-only — that is the point of the free tier.
+  assert.equal(PLANS.free.write, true);
+  assert.ok(PLANS.free.calls > 0);
 });

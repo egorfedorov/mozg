@@ -17,7 +17,7 @@ full=0
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
-say "1/5  local checks"
+say "1/6  local checks"
 npm run typecheck
 npm test 2>&1 | tail -3
 
@@ -28,22 +28,42 @@ fi
 git push -q origin main
 echo "  pushed $(git rev-parse --short HEAD)"
 
-say "2/5  pulling on $HOST"
+say "2/6  pulling on $HOST"
 ssh "$HOST" "cd $DIR && git fetch -q origin && git reset -q --hard origin/main && git log --oneline | head -1"
 
-say "3/5  rebuilding"
+say "3/6  building the new image"
 sha=$(git rev-parse HEAD)
+# Build without swapping. The order matters: the new app must not take traffic
+# before the schema it expects exists — a page reading a table added by this
+# deploy answered 500 for the forty seconds between the container starting and
+# the migration running, which is a real outage for whoever refreshed then.
 if [ "$full" = 1 ]; then
-  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d --build"
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml build"
 else
   # The embed image carries torch and takes minutes to rebuild; its code
   # changes far less often than the app's.
-  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d --build app worker"
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml build app worker"
+fi
+
+say "4/6  backup + migrations, before the swap"
+# Never migrate against the only copy of the data: dump and restore-check the
+# database first, so a bad migration means restoring a minutes-old backup from
+# /var/backups/mozg instead of last night's.
+ssh "$HOST" "$DIR/deploy/backup.sh"
+# A one-off container from the image just built, not the running one: that is
+# what lets the schema move first. Migrations are additive, so the old app keeps
+# serving happily against the new schema for the seconds this takes.
+ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml run --rm --no-deps -T app node dist/migrate.mjs 2>&1 | tail -3"
+
+say "5/6  swapping"
+if [ "$full" = 1 ]; then
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d"
+else
+  ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d app worker"
   # Then bring up anything the compose file gained that the host does not run
-  # yet, without rebuilding it. Naming services to rebuild silently skips new
-  # ones: adding embed-query shipped an app pointed at a host that did not
-  # exist, and search degraded to text-only while every smoke check stayed
-  # green.
+  # yet. Naming services silently skips new ones: adding embed-query shipped an
+  # app pointed at a host that did not exist, and search degraded to text-only
+  # while every smoke check stayed green.
   ssh "$HOST" "cd $DIR && GIT_SHA=$sha docker compose -f docker-compose.prod.yml up -d"
 fi
 
@@ -60,14 +80,7 @@ if [ "$running" != "$sha" ]; then
 fi
 echo "  running $running"
 
-say "4/5  backup + migrations"
-# Never migrate against the only copy of the data: dump and restore-check the
-# database first, so a bad migration means restoring a minutes-old backup from
-# /var/backups/mozg instead of last night's.
-ssh "$HOST" "$DIR/deploy/backup.sh"
-ssh "$HOST" "cd $DIR && docker compose -f docker-compose.prod.yml exec -T app npm run db:migrate:prod 2>&1 | tail -3"
-
-say "5/5  smoke test"
+say "6/6  smoke test"
 fail=0
 # /.well-known/mcp-registry-auth is our domain proof for the MCP Registry: if it
 # stops serving, the next publish cannot authenticate (see docs/REGISTRY.md).

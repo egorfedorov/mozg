@@ -140,18 +140,36 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
         `select u.plan, u.paid_until from "user" u where u.id = $1`,
         [brain.owner_id],
       );
-      const budget = byok ? Infinity : limitsFor(owner.plan as never, owner.paid_until).dailyExtractCents;
-      const { spent } = await one<{ spent: number }>(
-        `select coalesce(sum(s.cost_cents), 0)::int as spent
+      const limits = limitsFor(owner.plan as never, owner.paid_until);
+      // Two windows, and both matter. The month is what the plan bought — a
+      // ceiling only on the day was selling up to thirty times the price in
+      // tokens. The day is the runaway guard on top: a crawl in a loop loses a
+      // day of the allowance rather than the whole month.
+      const { month, day } = await one<{ month: number; day: number }>(
+        `select coalesce(sum(s.cost_cents) filter (
+                  where s.processed_at > now() - interval '30 days'), 0)::int as month,
+                coalesce(sum(s.cost_cents) filter (
+                  where s.processed_at > now() - interval '24 hours'), 0)::int as day
            from sources s join brains b on b.id = s.brain_id
-          where b.owner_id = $1 and s.processed_at > now() - interval '24 hours'`,
+          where b.owner_id = $1 and s.processed_at > now() - interval '30 days'`,
         [brain.owner_id],
       );
-      if (spent >= budget) {
+      const over = byok
+        ? null
+        : month >= limits.monthlyExtractCents
+          ? { window: "monthly", spent: month, budget: limits.monthlyExtractCents }
+          : day >= limits.dailyExtractCents
+            ? { window: "daily", spent: day, budget: limits.dailyExtractCents }
+            : null;
+      if (over) {
         throw new Error(
-          `daily budget: extraction paused — ${(spent / 100).toFixed(2)} of ` +
-            `${(budget / 100).toFixed(2)} USD used in the last 24h on the ` +
-            `${owner.plan} plan. Resumes automatically as the window rolls.`,
+          `${over.window} budget: extraction paused — ` +
+            `${(over.spent / 100).toFixed(2)} of ${(over.budget / 100).toFixed(2)} USD used ` +
+            `on the ${owner.plan} plan. ` +
+            (over.budget === 0
+              ? "Our AI reading for you is what a plan buys; teaching from your own CLI or " +
+                "your own API key (settings) stays unlimited and starts working immediately."
+              : "Resumes automatically as the window rolls."),
         );
       }
 
