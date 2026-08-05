@@ -3,6 +3,7 @@ import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
 import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import MascotDock from "@/components/MascotDock";
 import Analytics from "@/components/Analytics";
 import "./globals.css";
 
@@ -57,6 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AnnouncementBanner />
         <StarBanner />
         {children}
+        {/* Last in the body, fixed in the corner: it must not participate in the
+            page's layout, only sit above it. */}
+        <MascotDock />
         <Analytics />
       </body>
     </html>

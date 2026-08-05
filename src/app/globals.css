@@ -1459,3 +1459,155 @@ a.row:hover {
   padding: 0.05em 0.3em;
   border: 1px solid var(--rule);
 }
+
+/* ─── the mascot dock ───────────────────────────────────────────────────────
+   A brain bottom-right on every page, and the drawer it opens. Fixed, above the
+   sticky header's z-index, and out of the way of the page's own scroll. */
+.dock-button {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.dock-button:hover {
+  background: var(--paper-2);
+}
+
+/* Pressed-in when open, so the button reads as the thing holding the panel. */
+.dock-button[data-open="true"] {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+.dock-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  background: var(--color-riso-red);
+  color: var(--paper);
+  border: 1.5px solid var(--ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6875rem;
+}
+
+/* Two motions: the whole brain breathes, one fold thinks. Slow on purpose — a
+   fast idle animation in the corner of a reading page is an irritant. */
+@keyframes dock-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes dock-think {
+  0%, 100% { opacity: 0.85; }
+  45% { opacity: 0.15; }
+}
+
+.dock-brain-live {
+  animation: dock-breathe 4.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.dock-brain-live .dock-fold-think {
+  animation: dock-think 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-brain-live,
+  .dock-brain-live .dock-fold-think {
+    animation: none;
+  }
+}
+
+.dock-panel {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: calc(clamp(0.75rem, 2vw, 1.5rem) + 72px);
+  z-index: 40;
+  width: min(24rem, calc(100vw - 1.5rem));
+  max-height: min(32rem, calc(100vh - 8rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.dock-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.dock-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.dock-close {
+  background: none;
+  border: 0;
+  padding: 0.15rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
+}
+
+.dock-body {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.dock-thread {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dock-msg {
+  border-left: 3px solid var(--rule);
+  padding-left: 0.7rem;
+}
+
+.dock-msg[data-author="operator"] {
+  border-left-color: var(--color-riso-red);
+}
+
+.dock-msg-at {
+  margin: 0 0 0.15rem;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.dock-msg-body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+
+.dock-foot {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
