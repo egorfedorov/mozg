@@ -73,3 +73,11 @@ test("a plan cannot include more inference than it costs", () => {
   assert.equal(PLANS.free.write, true);
   assert.ok(PLANS.free.calls > 0);
 });
+
+test("export is the paid act — free reads over MCP, paid takes the file", () => {
+  assert.equal(PLANS.free.exports, false);
+  assert.equal(PLANS.pro.exports, true);
+  assert.equal(PLANS.team.exports, true);
+  // An expired paid plan loses export along with everything else.
+  assert.equal(limitsFor("pro", "2020-01-01T00:00:00Z").exports, false);
+});

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/db";
 import type { Note } from "@/db/types";
 import { accessFor, canExport } from "@/lib/access";
+import { limitsFor } from "@/lib/plans";
 import { requireUser } from "@/lib/session";
 
 /**
@@ -46,6 +47,23 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   if (!canExport(found.brain, found.access)) {
     return NextResponse.json(
       { error: "This brain's licence does not allow export." },
+      { status: 403 },
+    );
+  }
+
+  // The paid gate. Pricing and settings have always listed export as a Pro
+  // feature — this is where it is finally enforced. Free reads everything
+  // over MCP; taking the file home is the paid act. A file exported while
+  // paid keeps working forever, which is what the marketing promises.
+  if (!user) {
+    return NextResponse.json({ error: "Sign in to export." }, { status: 401 });
+  }
+  if (!limitsFor(user.plan).exports) {
+    return NextResponse.json(
+      {
+        error:
+          "Export is part of the Pro plan. The brain stays fully readable and searchable over MCP on free — upgrading is only for taking the file with you.",
+      },
       { status: 403 },
     );
   }

@@ -7,6 +7,7 @@ import { createGiftLink, revokeGiftLink } from "./gift-actions";
 import { maybeOne, query } from "@/db";
 import type { Brain, Grant } from "@/db/types";
 import { currentUser } from "@/lib/session";
+import { limitsFor } from "@/lib/plans";
 import { env } from "@/lib/env";
 
 export default async function SharePage({
@@ -114,24 +115,34 @@ export default async function SharePage({
             Export
           </h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            Take the brain with you. These files keep working with no server and no
-            subscription — which is the point.
+            Take the brain with you. A file, once exported, keeps working with
+            no server and no subscription — exporting it is the Pro part.
           </p>
-          <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
-            {[
-              ["claude", "CLAUDE.md"],
-              ["skill", "Claude Skill"],
-              ["agents", "AGENTS.md"],
-            ].map(([format, label]) => (
-              <a
-                key={format}
-                className="btn btn-ghost"
-                href={`/api/brains/${brain.id}/export?format=${format}`}
-              >
-                {label}
-              </a>
-            ))}
-          </div>
+          {limitsFor(user.plan).exports ? (
+            <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
+              {[
+                ["claude", "CLAUDE.md"],
+                ["skill", "Claude Skill"],
+                ["agents", "AGENTS.md"],
+              ].map(([format, label]) => (
+                <a
+                  key={format}
+                  className="btn btn-ghost"
+                  href={`/api/brains/${brain.id}/export?format=${format}`}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+              🔒 CLAUDE.md · Claude Skill · AGENTS.md —{" "}
+              <Link href="/settings" style={{ textDecoration: "underline" }}>
+                on the Pro plan
+              </Link>
+              . Over MCP the brain stays fully readable on free.
+            </p>
+          )}
         </section>
 
         <hr className="rule" style={{ margin: "3rem 0 0" }} />
