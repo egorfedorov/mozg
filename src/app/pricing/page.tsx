@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Pricing — mozg",
   description:
-    "mozg is open source and the official catalogue is free. Money buys one thing: our servers doing the training — or bring your own API key and pay nobody.",
+    "Teaching a brain from your own CLI subscription is free, and always will be. A plan buys one thing: our AI doing the reading, so there is no API key to wire up.",
 };
 
 /**
@@ -28,9 +28,12 @@ const PLAN_PRICES: Record<string, string> = {
 };
 
 const PLAN_PITCH: Record<string, string> = {
-  free: "The whole catalogue, connecting agents, learning — free. Plus one trial brain on our inference, or unlimited building on your own API key (settings → train on your own key).",
-  pro: "We pay the inference: brains build, examine and re-read on our keys, no babysitting.",
-  team: "For a team feeding shared brains and many agents.",
+  free:
+    "The whole catalogue, connecting agents, learning — free. One brain of your own, and you may teach it as much as you like from your CLI: /mozg:train reads your docs on the Claude or Kimi subscription you already pay for and writes the notes straight in. Our AI is a taste here — half a dollar of inference a day, enough for a trial brain.",
+  pro:
+    "Our AI does the reading. Point it at a documentation site and it crawls, extracts, sits the exam and re-reads what changed — nothing to run, no API key to wire up, no terminal left open.",
+  team:
+    "The same, for a team's shared brains and many agents at once — higher ceilings on every count.",
 };
 
 export default async function PricingPage() {
@@ -49,19 +52,25 @@ export default async function PricingPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">Pricing</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
-          One thing costs money.
+          Your agent teaches free.
           <br />
-          Everything else is free.
+          Our AI teaching costs.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          The code is open source (AGPL), the whole official catalogue is
-          free, reading and connecting agents is free, learning is free.
-          Building your own brains spends model tokens — so you either take a{" "}
-          <strong>plan</strong> and our servers spend, or set{" "}
-          <strong>your own API key</strong> in settings and build without
-          limits on your spend. Marketplace brains by outside authors, when
-          priced, are bought once from a <strong>balance</strong> — 95% goes
-          to the author.
+          Two ways to fill a brain, and the difference is whose inference
+          reads the material. <strong>Yours is free</strong>: install the
+          plugin, run <code>/mozg:train</code>, and the agent on your existing
+          Claude or Kimi subscription does the reading and writes the notes in.
+          No plan, no API key, no bill from us. <strong>Ours is the plan</strong>
+          : hand over a documentation URL and our AI crawls it, extracts the
+          notes, sits the exam and re-reads what changed — while you are asleep,
+          with nothing running on your machine.
+        </p>
+        <p className="lede" style={{ maxWidth: "58ch" }}>
+          Everything else stays free either way: the code (AGPL), the whole
+          official catalogue, connecting agents, reading, learning. Marketplace
+          brains by outside authors, when priced, are bought once from a{" "}
+          <strong>balance</strong> — 95% goes to the author.
         </p>
 
         {spots > 0 && (
@@ -121,6 +130,16 @@ export default async function PricingPage() {
                   }}
                 >
                   <li>{p.brains === 0 ? "— building needs Pro" : `${p.brains} brains`}</li>
+                  {/* True on every plan, and stated on every plan: the point is
+                      that the free column is not a crippled version. What free
+                      limits is how many brains and how much of OUR inference,
+                      never how much you may teach with your own. */}
+                  <li>✓ teach from your CLI — unlimited notes</li>
+                  <li>
+                    {p.dailyExtractCents >= 3000
+                      ? `✓ our AI reads for you — $${(p.dailyExtractCents / 100).toFixed(0)} of inference a day`
+                      : `our AI: $${(p.dailyExtractCents / 100).toFixed(2)} a day — a trial brain, not a corpus`}
+                  </li>
                   <li>
                     {p.sources === 0
                       ? "catalogue + purchased brains"
@@ -209,6 +228,18 @@ export default async function PricingPage() {
               [
                 "Why pay at all, when the model already knows things?",
                 "You pay for what the model gets wrong: docs newer than its training, specs precise enough that a paraphrase is a bug, and your own conventions nobody published. A brain's exam score tells you exactly whether that gap is real before you spend anything.",
+              ],
+              [
+                "If teaching from my CLI is free, what does Pro actually buy?",
+                "Whose AI does the reading. Teaching from your CLI spends the subscription you already pay Anthropic or Moonshot for: your agent opens the docs, distils the notes and writes them in — we only store and index them, which costs us a self-hosted embedding, so we charge nothing. Pro is our inference doing that work: you paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week. Nothing runs on your machine, no API key gets wired up anywhere, and a docs site of five hundred pages is a URL rather than an evening.",
+              ],
+              [
+                "So the free plan is not a crippled version?",
+                "No, and it says so on the card above: teaching from your own CLI is unlimited on every plan, including free. What free gives you of our AI is a trial brain — enough to feel the difference between an exam-scored corpus built in an afternoon and one you assembled by hand. The plans differ in how much of our inference you can spend per day, how many brains you keep, and how many agent calls a month you make.",
+              ],
+              [
+                "Can I use my own API key instead of a plan?",
+                "Yes — settings → train on your own key, with Anthropic or anything OpenAI-compatible (OpenAI, Kimi, DeepSeek, Qwen, GLM). Then our daily ceiling steps aside entirely, because the spend is yours on your key. A plan is for people who would rather not hold a key at all.",
               ],
               [
                 "Does using a brain burn my API tokens?",
