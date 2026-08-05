@@ -52,6 +52,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     summary: "what people do with it",
     pages: [
       { href: "/stories", label: "How people use it", note: "an artist, a company, a game studio" },
+      { href: "/styles", label: "Style brains", note: "sell your style, not fight the scrapers" },
       { href: "/explore", label: "Catalogue", note: "brains to take, free" },
       { href: "https://learn.mozg.sh", label: "Learn as a human", note: "the same brain, as a course", external: true },
     ],
