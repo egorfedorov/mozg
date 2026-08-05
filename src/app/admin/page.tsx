@@ -10,7 +10,7 @@ import {
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
-import { settleWithdrawal, resolveUpgrade } from "./actions";
+import { settleWithdrawal, resolveUpgrade, requeueBrainSources } from "./actions";
 import WalletsForm from "./WalletsForm";
 import MessageUserForm from "./MessageUserForm";
 import { query } from "@/db";
@@ -313,15 +313,26 @@ export default async function AdminPage() {
 
         {attention.length > 0 && (
           <Section title="Brains with failed sources" aside={`${attention.length} affected`}>
+            <p className="lede" style={{ marginBottom: ".75rem" }}>
+              Fix the cause first — budget errors mean the owner&apos;s plan ran out
+              of extraction money, so grant a plan or wait for the window —
+              then requeue. Budget-paused sources also resume themselves on the
+              next maintenance pass.
+            </p>
             <Rows>
               {attention.map((b) => (
-                <Row
-                  key={b.id}
-                  tint="red"
-                  title={b.title}
-                  sub={b.owner_email}
-                  side={`${b.failed_sources} failed`}
-                />
+                <div key={b.id} className="row-block">
+                  <Row
+                    tint="red"
+                    title={b.title}
+                    sub={b.owner_email}
+                    side={`${b.failed_sources} failed`}
+                  />
+                  <form action={requeueBrainSources} style={{ padding: "0 1.1rem .7rem" }}>
+                    <input type="hidden" name="brain_id" value={b.id} />
+                    <button type="submit">Requeue {b.failed_sources} failed</button>
+                  </form>
+                </div>
               ))}
             </Rows>
           </Section>

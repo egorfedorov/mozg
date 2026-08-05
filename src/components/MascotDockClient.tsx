@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ChatForm from "@/app/chat/ChatForm";
+import AutoRefresh from "@/components/AutoRefresh";
 import { markDockSeen } from "./dock-actions";
 
 /**
@@ -157,6 +158,9 @@ export default function MascotDockClient({
                   </div>
                 )}
                 <ChatForm />
+                {/* While the drawer is open, replies land without a reload —
+                    the server half re-renders on each tick, closed costs zero. */}
+                <AutoRefresh active={open} intervalMs={15_000} />
                 <p className="mono dock-foot">
                   <Link className="linkish" href="/chat">
                     open the full thread →

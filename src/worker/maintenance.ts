@@ -241,17 +241,23 @@ export async function recrawlSites(limit = RECRAWL_BATCH, brainId?: string): Pro
 }
 
 /**
- * Sources paused by the extraction budget resume themselves. The budget is a
- * rolling 24h window, so by the next maintenance pass there is usually room
- * again; if not, the re-run costs one SQL check and fails with the same
- * message — no model is paid until the window actually has space.
+ * Sources paused by the extraction budget resume themselves. The daily window
+ * usually has room again by the next pass; the monthly one rolls slower but
+ * also moves the moment the owner upgrades their plan — and either way a
+ * premature re-run costs one SQL check and fails with the same message. No
+ * model is paid until the window actually has space.
+ *
+ * Both prefixes, deliberately: this sweep matched only 'daily budget:%' while
+ * ingest also writes 'monthly budget:%' — 41 sources on one free account sat
+ * failed forever, waiting for a requeue that could never see them.
  */
 export async function requeueBudgetPaused(limit = 50): Promise<number> {
   const due = await query<{ id: string }>(
     `update sources set status = 'queued', error = null
       where id in (
         select id from sources
-         where status = 'failed' and error like 'daily budget:%'
+         where status = 'failed'
+           and (error like 'daily budget:%' or error like 'monthly budget:%')
          order by processed_at
          limit $1
       )

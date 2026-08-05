@@ -343,3 +343,26 @@ export async function saveWallets(
     at: new Date().toISOString().slice(11, 16) + " UTC",
   };
 }
+
+/**
+ * Put a brain's failed sources back on the queue, from the attention list.
+ * The usual pairing: fix the cause first (grant a plan, adjust a balance),
+ * then press this. Budget-paused sources also resume themselves via the
+ * maintenance sweep — this button is for not waiting six hours.
+ */
+export async function requeueBrainSources(formData: FormData) {
+  const admin = await requireAdmin();
+  const brainId = String(formData.get("brain_id"));
+  if (!brainId) return;
+
+  const rows = await query<{ id: string }>(
+    `update sources set status = 'queued', error = null, reject_reason = null
+      where brain_id = $1 and status in ('failed', 'rejected') and kind <> 'site'
+      returning id`,
+    [brainId],
+  );
+  const { enqueueIngest, PRIORITY } = await import("@/worker/queue");
+  for (const s of rows) await enqueueIngest(s.id, PRIORITY.background);
+  console.log(`[admin] ${admin.email} requeued ${rows.length} source(s) on brain ${brainId}`);
+  revalidatePath("/admin");
+}
