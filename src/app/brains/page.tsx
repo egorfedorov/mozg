@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import AppShell from "@/components/AppShell";
 import BrainCard from "@/components/BrainCard";
 import QuickStart from "@/components/QuickStart";
@@ -33,6 +34,12 @@ export default async function BrainsPage() {
     needsAttention(user.id),
     recentActivity(user.id),
   ]);
+
+  // A brand-new account meets the onboarding once. The cookie is set by
+  // /welcome itself, so skipping it there means never being sent back.
+  if (!brains.length && !(await cookies()).get("mozg-welcomed")) {
+    redirect("/welcome");
+  }
 
   if (!brains.length) return <FirstRun />;
 

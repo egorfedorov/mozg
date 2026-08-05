@@ -465,6 +465,30 @@ export default async function Home() {
           </Link>
         </section>
 
+        {/* The whole pitch again, as 28 seconds of motion. Code-rendered
+            (Remotion), so the type stays razor sharp; muted autoplay makes it
+            a living poster, the controls carry the sound for whoever asks. */}
+        <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
+          <p className="eyebrow">The whole idea · 28 seconds</p>
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            controls
+            poster="/brand/intro-poster.jpg"
+            style={{
+              width: "100%",
+              display: "block",
+              marginTop: "1rem",
+              border: "1.5px solid var(--ink)",
+              boxShadow: "6px 6px 0 var(--ink)",
+            }}
+          >
+            <source src="/brand/intro-720.mp4" type="video/mp4" />
+          </video>
+        </section>
+
         <div style={{ margin: "clamp(3rem, 8vw, 4.5rem) 0 2.5rem" }}>
           <Scribble />
         </div>
