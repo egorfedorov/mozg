@@ -1566,23 +1566,13 @@ a.row:hover {
   50% { transform: scale(1.06); }
 }
 
-@keyframes dock-think {
-  0%, 100% { opacity: 0.85; }
-  45% { opacity: 0.15; }
-}
-
 .dock-brain-live {
   animation: dock-breathe 4.5s ease-in-out infinite;
   transform-origin: center;
 }
 
-.dock-brain-live .dock-fold-think {
-  animation: dock-think 2.6s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dock-brain-live,
-  .dock-brain-live .dock-fold-think {
+  .dock-brain-live {
     animation: none;
   }
 }

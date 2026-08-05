@@ -134,37 +134,14 @@ export default function MascotDockClient({
 }
 
 /**
- * The same brain the brain pages use, at dock size. Fixed at five filled folds
- * here rather than tied to a score: this one is the product, not a measurement.
+ * The mascot itself — a drawn brain in the same print style as the portraits on
+ * /stories, which is where the site's illustration already lives. It replaced an
+ * inline SVG I drew by hand: two lobes made of bezier guesswork read as a diagram
+ * of a brain, not as a character, and this thing has to be likeable.
  */
 function BrainFace({ animate }: { animate: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 96 96"
-      width="42"
-      height="42"
-      aria-hidden
-      className={animate ? "dock-brain dock-brain-live" : "dock-brain"}
-    >
-      <path
-        d="M34 18c-9 0-15 6-15 13 0 3-4 4-4 9s4 7 4 10c0 8 7 13 15 13h4v9h6v-9h10c9 0 15-5 15-13 0-3 4-5 4-10s-4-6-4-9c0-7-6-13-15-13-3-4-8-6-12-6s-8 2-8 6z"
-        fill="var(--paper)"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinejoin="round"
-      />
-      {[0, 1, 2, 3, 4].map((i) => (
-        <path
-          key={i}
-          className={i === 2 ? "dock-fold dock-fold-think" : "dock-fold"}
-          d={`M${26 + i * 2} ${30 + i * 9} q10 ${i % 2 ? -6 : 6} 22 0 q10 ${i % 2 ? 6 : -6} 18 0`}
-          fill="none"
-          stroke="var(--color-riso-red)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-      ))}
-    </svg>
-  );
+  // A fixed-size local illustration inside a fixed-size button: next/image would
+  // add a loader and an optimisation round trip for 23KB that never changes size.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/brand/mascot.webp" alt="" width={44} height={44} className={animate ? "dock-brain dock-brain-live" : "dock-brain"} />;
 }

@@ -99,44 +99,15 @@ function lines(f: MascotFacts): { text: string; tone?: "good" | "warn" }[] {
 }
 
 /**
- * The face. A brain drawn the way the rest of the site draws things — one weight
- * of line, no gradients, no eyes that follow the cursor. It changes with the
- * score rather than being decorative: the folds fill in as the brain learns, so
- * the picture carries the same information as the number beside it.
+ * The face: the drawn mascot, the same character as the one in the corner of every
+ * page. It used to be an SVG whose folds filled in with the score — a nice idea
+ * that looked like a diagram; the number is said in words two lines away, and the
+ * character is worth more than the redundancy.
  */
-function Face({ score }: { score: number | null }) {
-  const filled = score === null ? 0 : Math.round((score / 100) * 5);
-  return (
-    <svg
-      viewBox="0 0 96 96"
-      width="72"
-      height="72"
-      role="img"
-      aria-label={score === null ? "A brain, not yet examined" : `A brain, ${score}% examined`}
-      style={{ flex: "0 0 auto", color: "var(--ink)" }}
-    >
-      {/* the outline: two lobes and a stem */}
-      <path
-        d="M34 18c-9 0-15 6-15 13 0 3-4 4-4 9s4 7 4 10c0 8 7 13 15 13h4v9h6v-9h10c9 0 15-5 15-13 0-3 4-5 4-10s-4-6-4-9c0-7-6-13-15-13-3-4-8-6-12-6s-8 2-8 6z"
-        fill="var(--paper)"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
-      {/* the folds fill in with what it knows */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <path
-          key={i}
-          d={`M${26 + i * 2} ${30 + i * 9} q10 ${i % 2 ? -6 : 6} 22 0 q10 ${i % 2 ? 6 : -6} 18 0`}
-          fill="none"
-          stroke={i < filled ? "var(--color-riso-red)" : "currentColor"}
-          strokeWidth={i < filled ? "2" : "1.2"}
-          opacity={i < filled ? 0.9 : 0.28}
-          strokeLinecap="round"
-        />
-      ))}
-    </svg>
-  );
+function Face() {
+  // Same reasoning as the dock's: fixed size, local, tiny, never resized.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/brand/mascot.webp" alt="" width={72} height={72} style={{ flex: "0 0 auto" }} />;
 }
 
 export default function BrainMascot({ facts, slug }: { facts: MascotFacts; slug: string }) {
@@ -149,7 +120,7 @@ export default function BrainMascot({ facts, slug }: { facts: MascotFacts; slug:
       style={{ display: "grid", gap: "1rem" }}
     >
       <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-        <Face score={facts.score} />
+        <Face />
         <div style={{ minWidth: 0 }}>
           <p className="eyebrow" style={{ margin: "0 0 .4rem" }}>
             {facts.title} says

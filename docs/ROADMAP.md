@@ -1,8 +1,7 @@
 # Roadmap
 
 What is shipped, and what the rest of 2026 goes on. Business planning and
-launch copy live in the product itself (`/admin/marketing`), not in the
-repository.
+launch copy live in the product itself, not in the repository.
 
 The dates below are a commitment to **sequence**, not to calendar days: one
 maintainer plus agents, three items a month, and each month has a gate that
@@ -45,7 +44,8 @@ the third is the one thing that stops a willing buyer today.
   the *same* ledger row crypto already writes, so purchases, refunds and the
   spend ledger stay one story.
   *Done when:* a real card charge and its refund both show in
-  `/settings/balance` and in `/admin`, and no code path knows which rail paid.
+  `/settings/balance` and in the ledger, and no code path knows which rail
+  paid.
 - **Per-CLI packs.** `/connect` has the AGENTS.md snippet; Codex, Cursor,
   Kimi CLI and Qwen Code each want a config folder instead. Ready-made
   directories turn connecting into a copy, and the MCP Registry listing turns
@@ -86,13 +86,18 @@ just becomes an apology.
   different fixes and only one of them is "add a source".
   *Done when:* every failed check leaves an actionable row, and the brain page
   says which of the three it is.
-- **The public benchmark.** The exam already measures what a brain knows;
-  point it at a stock model and it measures what the model *doesn't*. One
-  page per catalogue brain: model from memory vs the same model with the
-  brain, same questions, dated. It is the honest version of a marketing
-  claim, and it is the mechanism we already have.
+- **The public benchmark, and the judge behind it.** The exam already measures
+  what a brain knows; point it at a stock model and it measures what the model
+  *doesn't*. One page per catalogue brain: model from memory vs the same model
+  with the brain, same questions, dated. But a score is worth exactly what the
+  grader is worth, and ours is a model that disagreed with itself by ten points
+  until `JUDGE_VOTES=3` averaged the disagreement away — averaged, not measured.
+  Every competing memory tool cites someone else's benchmark; ours is our own,
+  so the grader has to be published with it or the number is just a nicer
+  claim.
   *Done when:* `/vs` links a dated, reproducible score table for the ten
-  largest catalogue brains.
+  largest catalogue brains, and each table carries the judge's agreement rate
+  against a hand-marked sample of the same answers.
 
 *Gate:* the whole catalogue re-reads nightly for less than a plan's monthly price.
 
@@ -121,7 +126,7 @@ seat sold today is a personal account with extra quota.
 
 ## Ideas with a verdict attached
 
-Three asked for repeatedly, kept here rather than in a month because each one
+Five asked for repeatedly, kept here rather than in a month because each one
 needs its honest answer written down before it gets a date.
 
 - **The brain reports on itself.** Shipped, in the smallest form: a brain page
@@ -156,6 +161,33 @@ needs its honest answer written down before it gets a date.
   subject, not an engineering project.
   *Done when:* the motion rules of a house style are a brain an editor's agent can
   query mid-timeline.
+
+- **Project memory: yes for the decisions, no for the transcript.** Team memory
+  hubs keep every session and distil it later, and the ask arrives here as "why
+  does my agent forget what we settled last week". Half of it already works:
+  `brain_write` lets an agent file a decision as a note, review holds it to the
+  same bar as any other agent-written material, and the next sitting asks about
+  it — which is more than a chat log has ever done for anyone. What is missing
+  is filing without ceremony, at the moment work ends, into a brain that stays
+  private. What we should not build is the warehouse under it. Keeping every
+  turn in order to distil it later means storing conversations nothing has
+  checked, and unchecked memory that sounds confident is the exact thing this
+  product exists to replace — a context file with a database bill, wearing a
+  timestamp.
+  *Done when:* a decision filed at the end of one session is what an agent gets
+  back in the next one, and a question about it appears in the sitting after
+  that.
+
+- **An index of your codebase: no.** Asked for every time a memory tool ships a
+  call graph. An agent with the repository open answers "who calls this" with a
+  grep, and gets today's answer; a pre-built graph answers it as of the last
+  sync, and a stale call graph is worse than none because it fails quietly. The
+  part that genuinely is not in the repository is *why* the code is shaped this
+  way — the design that was rejected, the constraint that killed it, the module
+  that must not be touched and the incident that decided it. None of that is an
+  index. All of it is a note, and a note can be examined.
+  *Done when:* an architecture brain answers "why is it built this way" for a
+  codebase whose grep already answers everything else.
 
 ## November — learn stops being a bonus
 
@@ -205,5 +237,7 @@ is what nobody was awake for.
 - A hosted vector database. Retrieval is an implementation detail here.
 - A chat UI. Agents are the interface; `learn` is the human one.
 - Sitting between you and your model. Everything exports; keys are yours.
+- A transcript warehouse. A session becomes memory when something has checked
+  it, and not one turn earlier.
 - Growth that outruns measurement. A brain nobody can score is a context
   file with a database bill.
