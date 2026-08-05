@@ -534,6 +534,54 @@ a {
   gap: 0;
 }
 
+/* The one loud item in the strip. Filled rather than outlined so it reads as the
+   primary action of the whole navigation, and it keeps its own hover instead of
+   borrowing the group behaviour beside it. */
+.nav-start {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  margin-right: 0.25rem;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  border-right: 1px solid var(--rule);
+}
+
+.nav-start:hover {
+  background: var(--color-riso-red);
+}
+
+.nav-start[data-active="true"] {
+  background: var(--color-riso-red);
+}
+
+.nav-start-icon {
+  flex: 0 0 auto;
+}
+
+.nav-start-label {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.9375rem;
+  line-height: 1.1;
+}
+
+.nav-start-note {
+  display: block;
+  font-size: 0.6875rem;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .nav-start-note {
+    display: none;
+  }
+}
+
 /* Four groups, each a <details>. The panel is absolutely positioned so opening
    one does not push the page down — a nav that moves the article under the
    reader's cursor is worse than a nav that hides things. */

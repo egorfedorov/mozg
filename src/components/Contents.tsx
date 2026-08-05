@@ -32,7 +32,6 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
       // First, because the person who needs it does not know the words the other
       // pages use — including the word in the group label above it.
       { href: "/basics", label: "Never heard of MCP?", note: "start from zero, no jargon" },
-      { href: "/start", label: "Start here", note: "zero to a thinking agent, ~10 min" },
       { href: "/connect", label: "Connect a client", note: "your CLI, one command" },
       { href: "/make", label: "Make a brain", note: "six panels" },
       { href: "/guide", label: "The long guide", note: "every detail, in order" },
@@ -74,6 +73,28 @@ export default function Contents({ active }: { active?: string }) {
   return (
     <nav className="contents" aria-label="Pages">
       <div className="shell contents-inner">
+        {/* Out of the dropdown and into the bar. Of everything in this nav, one
+            link is what a first-time visitor is looking for, and it was two
+            clicks and a hover behind a group label. Its own colour, its own
+            arrow, first in the row — the rest of the strip stays quiet so this
+            one can be loud. */}
+        <Link href="/start" className="nav-start" data-active={"/start" === active}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden className="nav-start-icon">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M9 8l6 4-6 4z"
+              fill="currentColor"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>
+            <span className="nav-start-label">Start here</span>
+            <span className="nav-start-note">~10 min to a thinking agent</span>
+          </span>
+        </Link>
+
         {GROUPS.map((g) => {
           const here = g.pages.some((p) => p.href === active);
           return (

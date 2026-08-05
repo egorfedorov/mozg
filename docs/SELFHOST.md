@@ -47,6 +47,44 @@ cp .env.example .env
 #   openssl rand -hex 32
 ```
 
+#### Sign-in providers
+
+Each provider appears on `/sign-in` only when its two variables are set — the
+button is rendered from the config, so a provider that is not configured cannot
+become a button that leads to an error page. Nothing else needs changing when one
+is added; restart the app and it is there.
+
+**GitHub** — [Settings → Developer settings → OAuth Apps → New](https://github.com/settings/developers).
+Homepage `https://your.domain`, callback:
+
+```
+https://your.domain/api/auth/callback/github
+```
+
+**Google** — [Google Cloud console → APIs & Services → Credentials → Create
+credentials → OAuth client ID](https://console.cloud.google.com/apis/credentials),
+type *Web application*. Add both:
+
+```
+Authorised JavaScript origin:  https://your.domain
+Authorised redirect URI:       https://your.domain/api/auth/callback/google
+```
+
+Then in `.env`:
+
+```bash
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+```
+
+The redirect URI has to match to the character, including the scheme and the
+absence of a trailing slash — a mismatch is the cause of nearly every
+`redirect_uri_mismatch` and Google will not tell you which character. On the
+cloud that domain is `mozg.sh`; the callback path is better-auth's own and does
+not change.
+
 ### 3. Schema
 
 The identity tables belong to better-auth, so its migration runs first:
