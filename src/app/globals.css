@@ -1815,3 +1815,24 @@ a.row:hover {
 .row-block .reach {
   padding: 0 1.1rem 0.6rem;
 }
+
+/* A flat, no-dropdown item in the contents strip (the catalogue). Dressed
+   exactly like a group summary so the bar reads as one family. */
+.nav-flat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.55rem 1rem 0.5rem;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--rule);
+  color: inherit;
+}
+
+.nav-flat:hover {
+  background: var(--paper);
+}
+
+.nav-flat[data-active="true"] .nav-label {
+  color: var(--color-riso-red);
+}

@@ -8,7 +8,14 @@ import { useEffect, useState } from "react";
  * prompt comes from a user gesture — which a button click is, so one code
  * path covers all three.
  */
-export default function PushToggle({ vapidPublicKey }: { vapidPublicKey: string }) {
+export default function PushToggle({
+  vapidPublicKey,
+  enabledNote = "✓ this browser gets notified",
+}: {
+  vapidPublicKey: string;
+  /** The on-state line — says what, exactly, this browser now hears about. */
+  enabledNote?: string;
+}) {
   const [state, setState] = useState<
     "checking" | "unsupported" | "off" | "on" | "denied" | "working"
   >("checking");
@@ -93,7 +100,7 @@ export default function PushToggle({ vapidPublicKey }: { vapidPublicKey: string 
       {state === "on" ? (
         <>
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-green)" }}>
-            ✓ this browser gets a notification for new messages and payments
+            {enabledNote}
           </span>
           <button className="btn btn-ghost" style={{ padding: ".35rem .8rem" }} onClick={disable}>
             Turn off

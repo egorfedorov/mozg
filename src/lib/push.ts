@@ -25,21 +25,40 @@ function vapid(): boolean {
   return true;
 }
 
+/** Straight from env, NOT lib/admin — that module pulls next/navigation,
+    which the worker bundle (payments → push) must never carry. */
+const ADMIN_EMAILS = env.ADMIN_EMAILS.split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
 /**
- * Send to every subscribed browser. Dead endpoints (404/410 — the browser
- * unsubscribed or the user revoked permission) are pruned as they answer.
+ * Send to the target's subscribed browsers: one person's, or every
+ * operator's. Dead endpoints (404/410 — the browser unsubscribed or the
+ * user revoked permission) are pruned as they answer.
  */
-export async function sendPush(payload: {
-  title: string;
-  body: string;
-  /** Where a click lands, e.g. "/admin/chat". */
-  url: string;
-}): Promise<void> {
+export async function sendPush(
+  payload: {
+    title: string;
+    body: string;
+    /** Where a click lands, e.g. "/admin/chat". */
+    url: string;
+  },
+  target: { userId: string } | "admins" = "admins",
+): Promise<void> {
   if (!vapid()) return;
 
-  const subs = await query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
-    `select id, endpoint, p256dh, auth from push_subscriptions`,
-  );
+  const subs =
+    target === "admins"
+      ? await query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+          `select ps.id, ps.endpoint, ps.p256dh, ps.auth
+             from push_subscriptions ps join "user" u on u.id = ps.user_id
+            where lower(u.email) = any($1::text[])`,
+          [ADMIN_EMAILS],
+        )
+      : await query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
+          `select id, endpoint, p256dh, auth from push_subscriptions where user_id = $1`,
+          [target.userId],
+        );
 
   await Promise.all(
     subs.map(async (s) => {

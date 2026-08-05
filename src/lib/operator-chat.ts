@@ -1,5 +1,6 @@
 import { query } from "@/db";
 import { translate } from "@/lib/translate";
+import { sendPush } from "@/lib/push";
 
 /**
  * The one door for operator → user messages (reply in /admin/chat, reach-out
@@ -47,6 +48,13 @@ export async function sendOperatorMessage(
      values ($1, 'operator', $2, $3)`,
     [userId, send, source],
   );
+
+  // Their browsers, if they turned notifications on. The message IS stored —
+  // a push hiccup changes nothing.
+  sendPush(
+    { title: "mozg replied", body: send.slice(0, 140), url: "/chat" },
+    { userId },
+  ).catch(() => {});
 }
 
 /**
@@ -109,4 +117,8 @@ export async function notifyBudgetPaused(
     `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
     [userId, body],
   );
+  sendPush(
+    { title: "mozg: extraction paused", body: body.slice(0, 140), url: "/chat" },
+    { userId },
+  ).catch(() => {});
 }

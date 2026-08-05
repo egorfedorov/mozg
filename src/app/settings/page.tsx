@@ -8,6 +8,8 @@ import PlanPanel from "./PlanPanel";
 import AiKeyPanel from "./AiKeyPanel";
 import { limitsFor, type PaidPlan } from "@/lib/plans";
 import { pendingPlanRequest } from "@/lib/upgrade";
+import { env } from "@/lib/env";
+import PushToggle from "@/components/PushToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +64,23 @@ export default async function SettingsPage() {
         </h2>
         <ProfileForm name={user.name ?? ""} handle={user.handle ?? ""} />
       </section>
+
+      {env.VAPID_PUBLIC_KEY && (
+        <section style={{ marginTop: "2.5rem" }}>
+          <h2 className="h2" style={{ marginBottom: ".5rem" }}>
+            Notifications
+          </h2>
+          <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
+            A browser notification when mozg replies to you in chatmozg — even
+            with the site closed. Per browser; works in Chrome, Safari 16.4+
+            and Firefox.
+          </p>
+          <PushToggle
+            vapidPublicKey={env.VAPID_PUBLIC_KEY}
+            enabledNote="✓ this browser gets notified when mozg replies"
+          />
+        </section>
+      )}
 
       <section style={{ marginTop: "2.5rem" }}>
         <h2 className="h2" style={{ marginBottom: ".75rem" }}>

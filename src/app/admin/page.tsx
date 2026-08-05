@@ -13,7 +13,7 @@ import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
 import { settleWithdrawal, resolveUpgrade, requeueBrainSources } from "./actions";
 import WalletsForm from "./WalletsForm";
 import MessageUserForm from "./MessageUserForm";
-import PushToggle from "./PushToggle";
+import PushToggle from "@/components/PushToggle";
 import { query } from "@/db";
 import { env } from "@/lib/env";
 
@@ -310,7 +310,10 @@ export default async function AdminPage() {
             on the laptop and the phone separately.
           </p>
           {env.VAPID_PUBLIC_KEY ? (
-            <PushToggle vapidPublicKey={env.VAPID_PUBLIC_KEY} />
+            <PushToggle
+              vapidPublicKey={env.VAPID_PUBLIC_KEY}
+              enabledNote="✓ this browser gets a notification for new messages and payments"
+            />
           ) : (
             <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: 0 }}>
               VAPID keys are not set — generate with `npx web-push

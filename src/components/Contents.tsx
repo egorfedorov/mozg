@@ -97,7 +97,7 @@ export default function Contents({ active }: { active?: string }) {
 
         {GROUPS.map((g) => {
           const here = g.pages.some((p) => p.href === active);
-          return (
+          const group = (
             // `name` makes the four a radio set: opening one closes the others,
             // browser-side, with no state to keep. `key` includes the active page
             // so a navigation re-mounts the group and it collapses again.
@@ -129,6 +129,20 @@ export default function Contents({ active }: { active?: string }) {
                 ))}
               </div>
             </details>
+          );
+          return (
+            <span key={`${g.label}-wrap-${active ?? ""}`} style={{ display: "contents" }}>
+              {group}
+              {/* The catalogue, promoted to the bar itself after Start: it is
+                  the one destination with something to take home, and it was
+                  buried two clicks deep inside "Uses". */}
+              {g.label === "Start" && (
+                <Link href="/explore" className="nav-flat" data-active={"/explore" === active}>
+                  <span className="nav-label">Catalogue</span>
+                  <span className="nav-summary-note">ready brains, free to add</span>
+                </Link>
+              )}
+            </span>
           );
         })}
       </div>
