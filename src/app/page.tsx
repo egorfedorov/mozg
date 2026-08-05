@@ -60,6 +60,40 @@ export default async function Home() {
       limit 3`,
   );
 
+  // The learning claim, receipted: public brains whose LAST exam sitting
+  // passed questions the sitting before could not. Real diffs from the
+  // grader, not copy — an empty list hides the rows rather than faking one.
+  const learning = await query<{
+    title: string;
+    slug: string;
+    handle: string;
+    gained: number;
+  }>(
+    `with runs as (
+       select r.brain_id, r.id,
+              row_number() over (partition by r.brain_id order by r.started_at desc) as rn
+         from check_runs r
+         join brains b on b.id = r.brain_id
+        where r.status = 'done' and r.kind = 'full' and b.visibility = 'public'
+     )
+     select b.title, b.slug, u.handle, d.gained
+       from (
+         select r1.brain_id,
+                count(*) filter (where cur.passed and prev.passed is distinct from true)::int as gained
+           from runs r1
+           join check_results cur on cur.run_id = r1.id and r1.rn = 1
+           join runs r2 on r2.brain_id = r1.brain_id and r2.rn = 2
+           left join check_results prev
+             on prev.run_id = r2.id and prev.check_id = cur.check_id
+          group by r1.brain_id
+       ) d
+       join brains b on b.id = d.brain_id
+       join "user" u on u.id = b.owner_id
+      where d.gained > 0 and u.handle is not null
+      order by d.gained desc
+      limit 3`,
+  );
+
   return (
     <>
       <script
@@ -377,6 +411,25 @@ export default async function Home() {
             </Link>
             .
           </p>
+
+          {learning.length > 0 && (
+            <div className="rows" style={{ marginTop: "1.5rem", maxWidth: "44rem" }}>
+              {learning.map((l) => (
+                <Link key={l.slug} className="row" href={`/b/${l.handle}/${l.slug}`}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{l.title}</strong>
+                    <span className="row-meta">between its last two exam sittings</span>
+                  </span>
+                  <span className="row-side mono" style={{ color: "var(--color-riso-green)" }}>
+                    +{l.gained} newly passed
+                  </span>
+                </Link>
+              ))}
+              <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0, padding: ".5rem 1.25rem" }}>
+                live from the grader — these numbers change as the brains re-sit
+              </p>
+            </div>
+          )}
         </section>
 
         {/* The lead magnet: the same knowledge, for the human. Free course,
