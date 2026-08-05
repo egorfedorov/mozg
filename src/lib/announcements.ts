@@ -50,10 +50,13 @@ export interface Announcement {
  * while `next build` prerenders static pages on a machine with no database — and
  * a banner is not worth failing a build over. At runtime a database that cannot
  * answer this has bigger problems than a missing bar.
+ *
+ * Exported uncached as well: unstable_cache needs a Next request context that a
+ * test does not have, and the SQL is the part worth testing while the cache is
+ * infrastructure wrapped around it.
  */
-export const liveAnnouncements = unstable_cache(
-  async (): Promise<Announcement[]> =>
-    queryOrNone<Announcement>(
+export async function readLiveAnnouncements(): Promise<Announcement[]> {
+  return queryOrNone<Announcement>(
       `select id, kind, title, body, to_agents,
               to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
               to_char(ends_at   at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as ends_at
@@ -63,7 +66,11 @@ export const liveAnnouncements = unstable_cache(
           and (ends_at is null or ends_at > now())
         order by starts_at desc
         limit 3`,
-    ),
+  );
+}
+
+export const liveAnnouncements = unstable_cache(
+  readLiveAnnouncements,
   ["live-announcements"],
   // Cached because this runs in the root layout and again on every brain_list:
   // uncached, that is a query per page view and per agent call, to display a bar
@@ -82,7 +89,12 @@ export const liveAnnouncements = unstable_cache(
  * cheap enough that nobody would want to turn it off.
  */
 export async function agentNotice(): Promise<string | null> {
-  const live = (await liveAnnouncements()).filter((a) => a.to_agents);
+  return formatAgentNotice(await liveAnnouncements());
+}
+
+/** The formatting, separately, because that is the part with rules in it. */
+export function formatAgentNotice(all: Announcement[]): string | null {
+  const live = all.filter((a) => a.to_agents);
   if (!live.length) return null;
   return live
     .map((a) => {
