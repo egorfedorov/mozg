@@ -51,52 +51,81 @@ export default async function PricingPage() {
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">Pricing</p>
-        <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
-          Your agent teaches free.
-          <br />
-          Our AI teaching costs.
+        <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", margin: ".5rem 0 1rem", maxWidth: "18ch" }}>
+          Your agent teaches free. Our AI teaching costs.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Two ways to fill a brain, and the difference is whose inference reads
-          the material. <strong>Yours is free, always</strong>: install the
-          plugin and run <code>/mozg:train</code>, and the agent on the Claude or
-          Kimi subscription you already pay for does the reading and writes the
-          notes in — or set your own API key in settings and paste URLs the same
-          way a plan does. No plan, no bill from us, no cap on how much you
-          teach. <strong>Ours is the plan</strong>: hand over a documentation URL
-          and our models crawl it, extract the notes, sit the exam and re-read
-          what changed while you are asleep. A plan states how much of that
-          inference it includes — $20 a month on Pro, $65 on Team — because a
-          number you can check beats a promise you cannot.
-        </p>
-        <p className="lede" style={{ maxWidth: "58ch" }}>
-          Everything else stays free either way: the code (AGPL), the whole
-          official catalogue, connecting agents, reading, learning. Marketplace
-          brains by outside authors, when priced, are bought once from a{" "}
-          <strong>balance</strong> — 95% goes to the author.
+          Two ways to fill a brain — the difference is whose inference reads the
+          material. Everything else is free either way: the code (AGPL), the
+          whole catalogue, connecting agents, reading, learning.
         </p>
 
+        {/* The two ways, as two cards instead of one wall of prose — this is
+            the page's whole argument, and it deserves columns, not commas. */}
+        <div
+          style={{
+            display: "grid",
+            gap: "1.25rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            marginTop: "1.75rem",
+            maxWidth: "62rem",
+          }}
+        >
+          <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-green)" }}>
+            <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
+              Your CLI teaches · free, always
+            </p>
+            <p style={{ color: "var(--ink-2)", margin: 0, lineHeight: 1.6 }}>
+              Install the plugin, run <code className="mono">/mozg:train</code> —
+              the agent on the Claude or Kimi subscription you already pay for
+              reads the material and writes the notes in. Or set your own API
+              key and paste URLs. No plan, no bill from us, no cap on how much
+              you teach.
+            </p>
+          </div>
+          <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-red)" }}>
+            <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
+              Our AI teaches · the plan
+            </p>
+            <p style={{ color: "var(--ink-2)", margin: 0, lineHeight: 1.6 }}>
+              Hand over a documentation URL — our models crawl it, extract the
+              notes, sit the exam and re-read what changed while you sleep. A
+              plan states how much of that inference it includes — $20/mo on
+              Pro, $65 on Team — because a number you can check beats a promise
+              you cannot.
+            </p>
+          </div>
+        </div>
+
         {spots > 0 && (
-          <p
-            className="mono"
+          <div
             style={{
-              display: "inline-block",
-              border: "1.5px solid var(--color-riso-red)",
-              color: "var(--color-riso-red)",
-              padding: ".45rem .8rem",
-              fontSize: ".8125rem",
-              marginTop: ".75rem",
+              display: "flex",
+              alignItems: "baseline",
+              gap: ".75rem 1.25rem",
+              flexWrap: "wrap",
+              border: "1.5px solid var(--ink)",
+              background: "var(--color-riso-yellow)",
+              boxShadow: "4px 4px 0 var(--ink)",
+              padding: ".85rem 1.25rem",
+              marginTop: "1.75rem",
+              maxWidth: "62rem",
             }}
           >
-            {/* The offer already existed in the code and whispered here. It is
-                the strongest thing on this page, so it says the resulting price
-                rather than a percentage: −50% is a claim, $12.50 is a number. */}
-            Founding offer · the first {FOUNDING_LIMIT} paying accounts keep half
-            price <strong>forever</strong> — Pro ${(PLAN_PRICE_CENTS.pro / 200).toFixed(2)}/mo
-            instead of ${(PLAN_PRICE_CENTS.pro / 100).toFixed(0)}, Team $
-            {(PLAN_PRICE_CENTS.team / 200).toFixed(2)} instead of $
-            {(PLAN_PRICE_CENTS.team / 100).toFixed(0)} · {spots} of {FOUNDING_LIMIT} left
-          </p>
+            {/* The strongest thing on this page says the resulting price, not a
+                percentage: −50% is a claim, $12.50 is a number. */}
+            <strong className="mono" style={{ fontSize: ".8125rem", textTransform: "uppercase", letterSpacing: ".08em" }}>
+              Founding offer
+            </strong>
+            <span style={{ fontSize: ".9375rem" }}>
+              The first {FOUNDING_LIMIT} paying accounts keep half price{" "}
+              <strong>forever</strong> — Pro ${(PLAN_PRICE_CENTS.pro / 200).toFixed(2)}/mo, Team $
+              {(PLAN_PRICE_CENTS.team / 200).toFixed(2)}/mo.
+            </span>
+            <span className="mono" style={{ fontSize: ".8125rem", marginLeft: "auto", whiteSpace: "nowrap" }}>
+              {spots} of {FOUNDING_LIMIT} left
+            </span>
+          </div>
         )}
 
         {/* ── plans ─────────────────────────────────────────────────────── */}
@@ -245,19 +274,46 @@ export default async function PricingPage() {
             <h2 className="h2">Balance — how paying works</h2>
             <span className="eyebrow">crypto now · card on the way</span>
           </div>
-          <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
-            Purchases come from a balance you top up once — USDT, USDC, BTC and
-            other coins today, cards soon. Selling brains pays into the same
-            balance, and authors withdraw from it. Every movement is listed on
-            one page, nothing hidden.
-          </p>
-          <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
-            <Link className="btn" href={user ? "/settings/topup" : "/sign-in?next=/settings/topup"}>
-              Top up balance
-            </Link>
-            <Link className="btn btn-ghost" href="/explore?price=paid">
-              Browse the catalogue
-            </Link>
+          <div
+            style={{
+              display: "grid",
+              gap: "2rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <p style={{ color: "var(--ink-2)", maxWidth: "48ch", marginTop: 0 }}>
+                Purchases come from a balance you top up once — USDT, USDC, BTC
+                and other coins today, cards soon. Selling brains pays into the
+                same balance, and authors withdraw from it. Every movement is
+                listed on one page, nothing hidden.
+              </p>
+              <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
+                <Link className="btn" href={user ? "/settings/topup" : "/sign-in?next=/settings/topup"}>
+                  Top up balance
+                </Link>
+                <Link className="btn btn-ghost" href="/explore?price=paid">
+                  Browse the catalogue
+                </Link>
+              </div>
+            </div>
+            {/* The money's whole loop in four lines, so the empty right half of
+                this section stops looking like a layout accident. */}
+            <div className="panel">
+              <p className="eyebrow" style={{ marginBottom: ".6rem" }}>
+                Where a dollar goes
+              </p>
+              <ul
+                className="mono"
+                style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: ".45rem", fontSize: ".8125rem", color: "var(--ink-2)" }}
+              >
+                <li>top up → balance · crypto, no card needed</li>
+                <li>buy a brain once → it stays yours, updates included</li>
+                <li>{100 - PLATFORM_FEE_PERCENT}% → the author · {PLATFORM_FEE_PERCENT}% keeps this running</li>
+                <li>authors withdraw → same balance, one ledger page</li>
+              </ul>
+            </div>
           </div>
         </section>
 
