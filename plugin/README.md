@@ -21,7 +21,7 @@ Claude Code and `/brains` will list what you can read.
 
 ## What the agent gets
 
-Eight tools. The descriptions tell it *when* to reach for each, which is the
+Ten tools. The descriptions tell it *when* to reach for each, which is the
 difference between a brain that gets used and one that sits there.
 
 | Tool | For |
@@ -34,11 +34,28 @@ difference between a brain that gets used and one that sits there.
 | `brain_write_batch` | Save a whole set of notes from a training session in one call |
 | `brain_create` | Start a new brain without leaving the editor |
 | `brain_add_source` | Feed it documentation pages or a block of text |
+| `library_add` | Put a catalogue brain on your shelf without opening a browser |
+| `library_remove` | Take one off again; the brain itself is untouched |
 
 ## Commands
 
-- `/brains` — the map: what you can read and which one fits what you are doing
-- `/learn [handle]` — save what this session worked out back into a brain
+- `/mozg:brains` — the map: what you can read and which one fits what you are doing
+- `/mozg:add [subject]` — find a brain in the catalogue and shelve it from here
+- `/mozg:sync` — write the shelf into `.mozg/brains.md` so every session starts knowing it
+- `/mozg:learn [handle]` — save what this session worked out back into a brain
+- `/mozg:train <handle> <material>` — teach a brain from docs you point at, on your own subscription
+- `/mozg:teach [handle]` — an interview that fills the brain's known gaps
+
+## The shelf, locally
+
+`/mozg:sync` writes `.mozg/brains.md` and offers to import it from `CLAUDE.md`.
+After that the session-start hook names your brains offline, in milliseconds,
+without a call — including private ones and whatever you added yesterday, which
+no amount of guessing from `package.json` could know. Add a brain on the web or
+with `/mozg:add`, re-run `/mozg:sync`, and this project knows about it.
+
+The file is a map, never a copy: handles, goals and exam scores. Notes stay on
+the server, where they keep being updated.
 
 ## Nothing is downloaded
 

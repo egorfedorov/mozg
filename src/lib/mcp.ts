@@ -1,5 +1,6 @@
 import { query, maybeOne, one } from "@/db";
 import { agentNotice } from "@/lib/announcements";
+import { addToLibrary, removeFromLibrary } from "@/lib/library";
 import type { Brain, Note } from "@/db/types";
 import { canWrite, type Access } from "@/lib/access";
 import {
@@ -161,6 +162,38 @@ export const TOOLS: ToolDef[] = [
         },
       },
       required: ["brain", "notes"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "library_add",
+    description:
+      "Put a public brain from the catalogue on your shelf, by handle. After " +
+      "this it shows up in brain_list for every agent you connect, and stays " +
+      "the author's — adding is not copying, so it keeps being updated by them. " +
+      "Use it when brain_list showed a catalogue brain you want permanently, or " +
+      "the user names a subject the catalogue covers. A paid brain needs a " +
+      "purchase first; this will say so rather than half-adding it.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Handle from the catalogue, e.g. mozg/nextjs." },
+      },
+      required: ["brain"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "library_remove",
+    description:
+      "Take a brain off your shelf. The brain itself is untouched — this only " +
+      "stops it appearing in brain_list. Reversible with library_add.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Handle, as shown by brain_list." },
+      },
+      required: ["brain"],
       additionalProperties: false,
     },
   },
@@ -409,6 +442,10 @@ export async function callTool(
       return brainCreate(args, owner);
     case "brain_add_source":
       return brainAddSource(args, owner);
+    case "library_add":
+      return libraryAdd(args, owner);
+    case "library_remove":
+      return libraryRemove(args, owner);
     default:
       return { text: `Unknown tool: ${name}`, isError: true };
   }
@@ -1295,5 +1332,58 @@ function notFound(handle: string): ToolOutcome {
     text:
       `No brain "${handle}" is available to you. Call brain_list to see what is.`,
     isError: true,
+  };
+}
+
+/**
+ * Shelving a catalogue brain from the CLI.
+ *
+ * The web has had an "add" button since the catalogue existed; an agent had no
+ * way to do it, so a user working in their terminal had to go to a browser to
+ * make a brain permanent. Same helper underneath as the web button — paid,
+ * private and own-brain cases answer with words rather than a silent no-op,
+ * because the agent has to tell the user what to do next.
+ */
+async function libraryAdd(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+
+  const result = await addToLibrary(owner.userId, resolved.brain.id);
+  if (result.ok) {
+    return {
+      text: result.already
+        ? `${handle} is already on your shelf.`
+        : `Added ${handle} — ${resolved.brain.title}. It is in brain_list from now on, ` +
+          `and stays maintained by its author. Run /mozg:sync to write it into this ` +
+          `project's local map.`,
+    };
+  }
+
+  const why: Record<typeof result.reason, string> = {
+    "not-found": `No brain at ${handle}.`,
+    "not-public": `${handle} is not public, so it cannot be added. Ask its owner to share it with your email instead.`,
+    unpaid: `${handle} is a paid brain. Buy it at https://mozg.sh/b/${handle} and it lands on your shelf with the purchase.`,
+    own: `${handle} is yours already — your own brains are always in brain_list.`,
+  };
+  return { text: why[result.reason], isError: true };
+}
+
+async function libraryRemove(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+
+  await removeFromLibrary(owner.userId, resolved.brain.id);
+  return {
+    text:
+      `Removed ${handle} from your shelf — it is out of brain_list now. ` +
+      `The brain itself is untouched, and library_add puts it back.`,
   };
 }
