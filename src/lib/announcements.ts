@@ -31,6 +31,13 @@ export interface Announcement {
   kind: AnnouncementKind;
   title: string;
   body: string;
+  /**
+   * Formatted in SQL, both of them, and this is not a style choice: node-postgres
+   * hands a timestamptz back as a Date, the type here said string, and TypeScript
+   * believed the type. `starts_at.slice(0, 10)` on the changelog then threw for
+   * every published news item — the page 500'd the moment the first one existed,
+   * and nothing in the build could have caught it.
+   */
   starts_at: string;
   ends_at: string | null;
   to_agents: boolean;
@@ -47,7 +54,9 @@ export interface Announcement {
 export const liveAnnouncements = unstable_cache(
   async (): Promise<Announcement[]> =>
     queryOrNone<Announcement>(
-      `select id, kind, title, body, starts_at, ends_at, to_agents
+      `select id, kind, title, body, to_agents,
+              to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
+              to_char(ends_at   at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as ends_at
          from announcements
         where published
           and starts_at <= now()
@@ -89,7 +98,9 @@ export async function agentNotice(): Promise<string | null> {
 /** The news feed: everything published, whether or not its banner window is open. */
 export async function newsArchive(limit = 50): Promise<Announcement[]> {
   return queryOrNone<Announcement>(
-    `select id, kind, title, body, starts_at, ends_at, to_agents
+    `select id, kind, title, body, to_agents,
+            to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
+            to_char(ends_at   at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as ends_at
        from announcements
       where published and kind in ('news', 'notice')
       order by starts_at desc
