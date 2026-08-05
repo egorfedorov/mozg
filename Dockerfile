@@ -71,6 +71,10 @@ COPY package.json next.config.ts ./
 # dist/migrate.mjs resolves the migration files relative to itself
 # (../src/db/migrations) — only that folder is needed, not the whole src tree.
 COPY src/db/migrations ./src/db/migrations
+# /roadmap renders docs/ROADMAP.md at request time so the page and the repository
+# cannot drift. Without this line the page ships and falls back to "could not read
+# it", which is exactly the kind of half-working thing it exists to avoid.
+COPY docs/ROADMAP.md ./docs/ROADMAP.md
 
 RUN useradd -m -u 10001 mozg && chown -R mozg:mozg /app
 
