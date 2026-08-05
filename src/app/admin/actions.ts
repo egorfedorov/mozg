@@ -8,6 +8,7 @@ import { resolvePlanRequest } from "@/lib/upgrade";
 import { requireAdmin } from "@/lib/admin";
 import { TOPIC_KEYS } from "@/lib/topics";
 import { scanSecrets, scanInjection } from "@/lib/scan";
+import { sendOperatorMessage } from "@/lib/operator-chat";
 
 /**
  * Operator actions. Each one re-checks requireAdmin() — the page guard runs on
@@ -275,12 +276,10 @@ export async function messageUser(formData: FormData) {
 
   const userId = String(formData.get("user_id"));
   const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
+  const lang = String(formData.get("lang") ?? "auto");
   if (!userId || !body) return;
 
-  await query(
-    `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
-    [userId, body],
-  );
+  await sendOperatorMessage(userId, body, lang);
   console.log(`[admin] ${admin.email} messaged user ${userId}`);
   revalidatePath("/admin");
   revalidatePath("/admin/chat");
@@ -299,24 +298,48 @@ const WALLET_FIELDS = [
   { key: "mozgpay_addr_btc", field: "btc", pattern: /^(bc1[0-9a-z]{20,70}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/ },
 ] as const;
 
-export async function saveWallets(formData: FormData) {
+export async function saveWallets(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ saved: string[]; cleared: string[]; rejected: string[]; at: string }> {
   const admin = await requireAdmin();
+
+  const saved: string[] = [];
+  const cleared: string[] = [];
+  const rejected: string[] = [];
 
   for (const w of WALLET_FIELDS) {
     const value = String(formData.get(w.field) ?? "").trim();
     if (!value) {
-      await query(`delete from app_settings where key = $1`, [w.key]);
+      const gone = await query(
+        `delete from app_settings where key = $1 returning key`,
+        [w.key],
+      );
+      if (gone.length) cleared.push(w.field);
       continue;
     }
     // A typo here points real money at the void — refuse anything that does
-    // not even look like an address on that chain.
-    if (!w.pattern.test(value)) continue;
+    // not even look like an address on that chain, and SAY so: a silent skip
+    // reads as saved, which is worse than no validation at all.
+    if (!w.pattern.test(value)) {
+      rejected.push(w.field);
+      continue;
+    }
     await query(
       `insert into app_settings (key, value) values ($1, $2)
        on conflict (key) do update set value = excluded.value, updated_at = now()`,
       [w.key, value],
     );
+    saved.push(w.field);
   }
-  console.log(`[admin] ${admin.email} updated mozgpay wallet addresses`);
+  console.log(
+    `[admin] ${admin.email} wallets: saved=[${saved}] cleared=[${cleared}] rejected=[${rejected}]`,
+  );
   revalidatePath("/admin");
+  return {
+    saved,
+    cleared,
+    rejected,
+    at: new Date().toISOString().slice(11, 16) + " UTC",
+  };
 }

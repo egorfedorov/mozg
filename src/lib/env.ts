@@ -24,6 +24,7 @@ const schema = z.object({
   ANTHROPIC_BASE_URL: z.string().url().optional(),
   MODEL_EXTRACT: z.string().default("claude-opus-5"),
   MODEL_JUDGE: z.string().default("claude-haiku-4-5"),
+  MODEL_TRANSLATE: z.string().default("claude-haiku-4-5"),
   // The judge is not deterministic: the same brain re-sat the same exam and
   // moved ±10 points (62→51 on one, 49→46 on another). An odd number of votes
   // with majority rule turns that noise into a stable number the owner can

@@ -3,18 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
+import { sendOperatorMessage } from "@/lib/operator-chat";
 
 export async function replyInChat(formData: FormData) {
   await requireAdmin();
 
   const userId = String(formData.get("user_id"));
   const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
+  const lang = String(formData.get("lang") ?? "auto");
   if (!userId || !body) return;
 
-  await query(
-    `insert into chat_messages (user_id, author, body) values ($1, 'operator', $2)`,
-    [userId, body],
-  );
+  await sendOperatorMessage(userId, body, lang);
   // Answering a thread is reading it.
   await query(
     `update chat_messages set read_at = now()

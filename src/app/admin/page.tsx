@@ -9,8 +9,10 @@ import {
   openPlanRequests,
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
+import { REPLY_LANGS } from "@/lib/translate";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
-import { settleWithdrawal, resolveUpgrade, messageUser, saveWallets } from "./actions";
+import { settleWithdrawal, resolveUpgrade, messageUser } from "./actions";
+import WalletsForm from "./WalletsForm";
 import { query } from "@/db";
 import { env } from "@/lib/env";
 
@@ -269,9 +271,19 @@ export default async function AdminPage() {
                       name="body"
                       rows={2}
                       required
-                      placeholder="Saw your payment is stuck — anything I can help with?"
+                      placeholder="Пиши по-русски — уйдёт на языке собеседника"
                     />
-                    <button className="btn" style={{ padding: ".35rem .8rem" }}>Send</button>
+                    <span style={{ display: "flex", gap: ".6rem", alignItems: "center" }}>
+                      <button className="btn" style={{ padding: ".35rem .8rem" }}>Send</button>
+                      <label className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", display: "flex", gap: ".35rem", alignItems: "center" }}>
+                        send in
+                        <select name="lang" defaultValue="auto" style={{ font: "inherit", border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".2rem .3rem" }}>
+                          {REPLY_LANGS.map((l) => (
+                            <option key={l.code} value={l.code}>{l.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </span>
                   </form>
                 </details>
               </div>
@@ -285,24 +297,14 @@ export default async function AdminPage() {
             back to env. Only NEW invoices use a changed address — open ones
             are watched at the address they were issued with.
           </p>
-          <form action={saveWallets} style={{ display: "grid", gap: ".7rem", maxWidth: "40rem" }}>
-            {wallets.map((w) => (
-              <label key={w.field} style={{ display: "grid", gap: ".25rem" }}>
-                <span className="eyebrow">{w.label}</span>
-                <input
-                  type="text"
-                  name={w.field}
-                  defaultValue={wallet(w.field)}
-                  placeholder={w.envValue ? `env: ${w.envValue}` : "not set — coin hidden from payers"}
-                  className="mono"
-                  style={{ width: "100%", padding: ".5rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", fontSize: ".8125rem" }}
-                />
-              </label>
-            ))}
-            <div>
-              <button className="btn">Save wallets</button>
-            </div>
-          </form>
+          <WalletsForm
+            wallets={wallets.map((w) => ({
+              field: w.field,
+              label: w.label,
+              value: wallet(w.field),
+              envValue: w.envValue,
+            }))}
+          />
         </Section>
 
         <Section title="Money" aside="the ledger, not the balances">

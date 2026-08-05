@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
+import { translateThreadsForOperator } from "@/lib/operator-chat";
+import { REPLY_LANGS } from "@/lib/translate";
 import { replyInChat, markThreadRead } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,10 @@ export const metadata = { title: "Chat — mozg admin" };
  */
 export default async function AdminChatPage() {
   await requireAdmin().catch(() => redirect("/"));
+
+  // Fill missing Russian translations before reading the thread — each
+  // message is translated exactly once, so steady-state this is a no-op.
+  await translateThreadsForOperator();
 
   const threads = await query<{
     user_id: string;
@@ -33,10 +39,20 @@ export default async function AdminChatPage() {
       order by 4 desc, max(m.created_at) desc`,
   );
 
-  const bodies = new Map<string, { author: string; body: string; at: string }[]>();
+  const bodies = new Map<
+    string,
+    { author: string; body: string; at: string; translation: string | null; source_body: string | null }[]
+  >();
   if (threads.length) {
-    const msgs = await query<{ user_id: string; author: string; body: string; at: string }>(
-      `select user_id, author, body,
+    const msgs = await query<{
+      user_id: string;
+      author: string;
+      body: string;
+      at: string;
+      translation: string | null;
+      source_body: string | null;
+    }>(
+      `select user_id, author, body, translation, source_body,
               to_char(created_at at time zone 'UTC', 'MM-DD HH24:MI') as at
          from chat_messages
         where user_id = any($1::text[])
@@ -88,6 +104,19 @@ export default async function AdminChatPage() {
                   {m.author === "operator" ? "you" : t.email} · {m.at}
                 </p>
                 <p style={{ margin: 0, whiteSpace: "pre-wrap", fontSize: ".9375rem" }}>{m.body}</p>
+                {/* Their message, rendered into Russian — shown only when it
+                    actually differs from the original. */}
+                {m.author === "user" && m.translation && m.translation !== m.body && (
+                  <p style={{ margin: ".35rem 0 0", whiteSpace: "pre-wrap", fontSize: ".875rem", color: "var(--ink-2)", borderLeft: "2px solid var(--rule)", paddingLeft: ".6rem" }}>
+                    {m.translation}
+                  </p>
+                )}
+                {/* What you actually typed, when the wire carried a translation. */}
+                {m.author === "operator" && m.source_body && (
+                  <p style={{ margin: ".35rem 0 0", whiteSpace: "pre-wrap", fontSize: ".875rem", color: "var(--ink-3)", borderLeft: "2px solid var(--rule)", paddingLeft: ".6rem" }}>
+                    {m.source_body}
+                  </p>
+                )}
               </div>
             ))}
 
@@ -100,8 +129,16 @@ export default async function AdminChatPage() {
                 placeholder="Reply — lands in their /chat instantly"
                 style={{ width: "100%", padding: ".55rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".875rem" }}
               />
-              <div style={{ display: "flex", gap: ".6rem" }}>
+              <div style={{ display: "flex", gap: ".6rem", alignItems: "center" }}>
                 <button className="btn" style={{ padding: ".4rem .8rem" }}>Reply</button>
+                <label className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", display: "flex", gap: ".35rem", alignItems: "center" }}>
+                  send in
+                  <select name="lang" defaultValue="auto" style={{ font: "inherit", border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".2rem .3rem" }}>
+                    {REPLY_LANGS.map((l) => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                </label>
                 {t.unread > 0 && (
                   <button formAction={markThreadRead} className="btn btn-ghost" style={{ padding: ".4rem .8rem" }}>
                     Mark read
