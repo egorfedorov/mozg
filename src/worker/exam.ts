@@ -475,6 +475,20 @@ export async function runExam(
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
   if (!brain.goal) return null;
 
+  // An empty corpus cannot sit an exam. Without this, a brain whose notes
+  // were deleted would pass its anti-bluff probes on the void ("correctly"
+  // has no answer) and walk away with a fresh score — the exact lie the
+  // counter trigger just retired.
+  const { n: corpus } = await one<{ n: number }>(
+    `select count(*)::int as n from notes
+      where brain_id = any($1::uuid[]) and status = 'active'`,
+    [await familyIds(brain)],
+  );
+  if (corpus === 0) {
+    console.log(`[exam] ${brainId} skipped — no active notes to examine`);
+    return null;
+  }
+
   // A full sitting costs three judge votes per check. Seeding a catalogue
   // pack finishes one brain after another and each finish queues one — the
   // day a dozen packs land, that is dozens of full sittings for material
