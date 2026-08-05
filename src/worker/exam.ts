@@ -108,6 +108,24 @@ export async function generateChecks(brain: Brain): Promise<number> {
           "correct answer must contain. Make `expect` checkable: name the specific " +
           "value, rule or behaviour, not 'a good explanation'.\n\n" +
           "Group the checks into 4-7 categories.\n\n" +
+          // Measured on production: owasp-asvs sat at 29% and nearly every
+          // failure was "list all seventeen chapters", "which requirements apply
+          // only to Level 3", "what is the title of V14". A brain answers from
+          // the handful of passages retrieval returns, so a question that needs
+          // the whole corpus in one answer measures the size of that window and
+          // nothing else — and the score it produces is a lie about the
+          // material, permanently, because the check never stops failing.
+          "Every question must be answerable from a handful of passages. Do NOT " +
+          "ask for exhaustive enumerations or corpus-wide counts — no \"list all\", " +
+          "no \"which of the N are X\", no \"how many\" across the whole subject. " +
+          "Ask for a specific rule, value, signature or behaviour instead: the " +
+          "thing someone actually needs mid-task.\n\n" +
+          // The other half of the same failure: an expectation that was true when
+          // written and is not any more punishes a brain for being current.
+          "Write `expect` from what the notes in front of you actually say. If " +
+          "your own memory of this subject disagrees with them, the notes are the " +
+          "authority here — they were read from today's documentation and your " +
+          "memory has a date on it.\n\n" +
           "Crucially: include checks for aspects the goal implies but the notes do " +
           "NOT currently cover. Those failures are the point — they tell the user " +
           "what material is missing. An exam that only asks what the brain already " +
