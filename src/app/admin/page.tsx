@@ -248,9 +248,13 @@ export default async function AdminPage() {
           </Section>
         )}
 
+        <div id="payments">
         <Section title="Payments" aside="who paid, who is waiting">
+          {/* Live money first. An invoice that expired unpaid is not news —
+              seven red rows of old test attempts buried the one pending
+              payment worth watching, so the noise folds shut below. */}
           <Rows empty="No invoices yet. The first one shows up the moment someone opens a payment page.">
-            {payments.map((p, i) => (
+            {payments.filter((p) => p.status !== "failed" && p.status !== "expired").map((p, i) => (
               <div key={i} className="row-block">
                 <Row
                   title={`${formatCents(p.amount_cents)} · ${p.email}`}
@@ -260,15 +264,44 @@ export default async function AdminPage() {
                   }
                   meta={p.created_at}
                   side={p.status}
-                  tint={p.status === "paid" ? "green" : p.status === "pending" ? "orange" : "red"}
+                  tint={p.status === "paid" ? "green" : "orange"}
                 />
-                {/* A failed invoice is a reason to reach out, not to wait for
+                {/* A stuck invoice is a reason to reach out, not to wait for
                     them to find chatmozg. Lands in their thread + mascot badge. */}
                 <MessageUserForm userId={p.user_id} label={p.email} />
               </div>
             ))}
           </Rows>
+
+          {payments.some((p) => p.status === "failed" || p.status === "expired") && (
+            <details style={{ marginTop: ".75rem" }}>
+              <summary className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", cursor: "pointer" }}>
+                {payments.filter((p) => p.status === "failed" || p.status === "expired").length}{" "}
+                expired without payment — show
+              </summary>
+              <div style={{ marginTop: ".5rem" }}>
+                <Rows>
+                  {payments.filter((p) => p.status === "failed" || p.status === "expired").map((p, i) => (
+                    <div key={i} className="row-block">
+                      <Row
+                        title={`${formatCents(p.amount_cents)} · ${p.email}`}
+                        sub={
+                          (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
+                          `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
+                        }
+                        meta={p.created_at}
+                        side={p.status}
+                        tint="red"
+                      />
+                      <MessageUserForm userId={p.user_id} label={p.email} />
+                    </div>
+                  ))}
+                </Rows>
+              </div>
+            </details>
+          )}
         </Section>
+        </div>
 
         <Section title="Notifications" aside="Chrome · Safari 16.4+ · Firefox">
           <p className="lede" style={{ marginBottom: ".75rem" }}>

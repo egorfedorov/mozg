@@ -175,7 +175,7 @@ export default function MascotDockClient({
                       </Link>
                     )}
                     {operator.payments > 0 && (
-                      <Link href="/admin" className="dock-ach">
+                      <Link href="/admin#payments" className="dock-ach">
                         <span>
                           <strong>Payments</strong>
                           <span className="dock-ach-blurb">

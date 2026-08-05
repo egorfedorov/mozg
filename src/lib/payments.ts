@@ -311,7 +311,7 @@ function pushPayment(userId: string, amountCents: number, phase: "started" | "pa
           ? `paid: $${(amountCents / 100).toFixed(2)} · ${u?.email ?? "?"}`
           : `payment started: $${(amountCents / 100).toFixed(2)} · ${u?.email ?? "?"}`,
       body: phase === "paid" ? "the money landed" : "invoice opened — watch /admin",
-      url: "/admin",
+      url: "/admin#payments",
     });
   })().catch(() => {});
 }
