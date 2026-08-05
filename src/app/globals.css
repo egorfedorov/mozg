@@ -584,6 +584,21 @@ a {
   white-space: nowrap;
 }
 
+/* Hover opens it, click still does too.
+   A <details> cannot be opened by CSS, but Chrome and Safari expose its content
+   as ::details-content, and that can be made visible on hover — so pointer users
+   get a menu that drops on approach while touch and keyboard keep the click that
+   works everywhere. Browsers without the pseudo-element simply keep click, which
+   is why this is written as an enhancement rather than as the mechanism.
+   Guarded by (hover: hover) so a tap on a phone does not leave a panel hanging
+   open under a finger that has moved on. */
+@media (hover: hover) {
+  .nav-group:hover::details-content {
+    content-visibility: visible;
+    block-size: auto;
+  }
+}
+
 .nav-panel {
   position: absolute;
   top: 100%;

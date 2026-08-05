@@ -10,11 +10,36 @@
  * A sixth story that cannot manage all three does not belong on this page.
  */
 
-export type StoryArtKind = "style" | "closed" | "platform" | "maintainer" | "agency";
+export type StoryArtKind =
+  | "style"
+  | "closed"
+  | "platform"
+  | "maintainer"
+  | "agency"
+  | "solo"
+  | "everywhere";
 
 export interface Story {
   id: string;
   who: string;
+  /**
+   * The person the story is about.
+   *
+   * Composites, and the page says so out loud — inventing a customer and quoting
+   * them would be a fabricated testimonial, which is a different thing from a
+   * worked example. What makes a persona useful is that the problem and the
+   * resolution are concrete enough to recognise yourself in.
+   */
+  person: {
+    name: string;
+    role: string;
+    /** The sentence they would say before. */
+    problem: string;
+    /** What changed, in the same voice. */
+    resolution: string;
+    /** File in /public/stories. */
+    portrait: string;
+  };
   title: string;
   oneLine: string;
   accent: string;
@@ -39,6 +64,15 @@ export const STORIES: Story[] = [
     id: "the-artist",
     who: "An artist, a teacher, anyone with a method",
     title: "He sold the method, not the paintings",
+    person: {
+      name: "Íris",
+      role: "illustrator and art director, twenty years of it",
+      problem:
+        "\u201cI can teach my method to one apprentice at a time, and I have run out of time. Every generator gives me the average of everyone, which is exactly what my clients pay me not to be.\u201d",
+      resolution:
+        "\u201cThe method is a brain now. It scored 84%, which told me which of my own rules I had never actually written down. People buy it, their agents work the way I work, and I keep 95%.\u201d",
+      portrait: "/stories/artist.webp",
+    },
     oneLine: "A style becomes a brain, and the brain earns while he sleeps",
     accent: "var(--color-riso-red)",
     art: "style",
@@ -68,6 +102,15 @@ export const STORIES: Story[] = [
     id: "the-closed-company",
     who: "A company with software nobody outside has ever seen",
     title: "They taught the AI their own program, and it never left the building",
+    person: {
+      name: "Marek",
+      role: "platform lead at a 200-person insurer",
+      problem:
+        "\u201cOur billing service was never on the internet, so every answer the AI gives about it is invented \u2014 confidently. Three people know how it really works and they spend their day being a helpdesk.\u201d",
+      resolution:
+        "\u201cThe manual, the runbooks and the ticket decisions are one private brain, taught from our own machines. Forty people ask it instead of asking them. Nothing raw left the building.\u201d",
+      portrait: "/stories/company.webp",
+    },
     oneLine: "Internal documentation as a private brain, on their own key",
     accent: "var(--color-riso-blue)",
     art: "closed",
@@ -98,6 +141,15 @@ export const STORIES: Story[] = [
     id: "shipping-a-game",
     who: "A studio shipping on somebody else's platform",
     title: "The platform changed its API. The brain noticed; the model did not",
+    person: {
+      name: "Dima",
+      role: "slot developer, two-person studio",
+      problem:
+        "\u201cThe platform's docs move weekly and the model answers from last year. I found out during submission, which is the most expensive place to find out.\u201d",
+      resolution:
+        "\u201cPlatform brain from the catalogue, studio brain of our own. The agent asks before it guesses \u2014 and it proposed anticipation on the third reel before I knew the word.\u201d",
+      portrait: "/stories/studio.webp",
+    },
     oneLine: "Platform docs plus house conventions, both scored, both current",
     accent: "var(--color-riso-green)",
     art: "platform",
@@ -127,6 +179,15 @@ export const STORIES: Story[] = [
     id: "the-maintainer",
     who: "Whoever maintains a library or a set of docs",
     title: "Every question her docs could not answer arrived as a list",
+    person: {
+      name: "Ada",
+      role: "maintainer of a mid-sized open-source library",
+      problem:
+        "\u201cI cannot see which page confused a reader, and most of my readers are agents now. They invent an answer, then open an issue that costs me an hour.\u201d",
+      resolution:
+        "\u201cThe brain sits an exam on my docs and classifies every failure. Searches that found nothing become questions. My roadmap arrives as a list instead of as issues.\u201d",
+      portrait: "/stories/maintainer.webp",
+    },
     oneLine: "The exam turns real agent searches into a documentation roadmap",
     // Not yellow: #ffe800 as text on paper is invisible, and this accent is used
     // for an eyebrow and a quote rule, not a fill.
@@ -158,6 +219,15 @@ export const STORIES: Story[] = [
     id: "the-agency",
     who: "An agency, a consultancy, anyone with many clients",
     title: "Twelve projects, twelve brains, no more onboarding by shoulder-tap",
+    person: {
+      name: "Noor",
+      role: "technical lead at a twelve-client agency",
+      problem:
+        "\u201cOur real product is context, and it lives in people's heads. Every new developer learns it by tapping a shoulder, and every agent session starts as a stranger.\u201d",
+      resolution:
+        "\u201cOne brain per project, filled as the work happens. A dormant project comes back with its reasoning intact, and a finished one leaves as a file the client keeps.\u201d",
+      portrait: "/stories/agency.webp",
+    },
     oneLine: "Conventions that outlive staff turnover and every context reset",
     accent: "var(--color-riso-red)",
     art: "agency",
@@ -181,5 +251,79 @@ export const STORIES: Story[] = [
     ],
     limit:
       "Twelve brains is twelve things to keep current. A brain nobody has taught in three months has an old score and says so, which is better than a stale context file — but it is still stale, and the honest move is to retire it rather than let an agent trust it.",
+  },
+{
+    id: "the-solo-builder",
+    who: "Somebody building software without being a developer",
+    title: "She could not tell when the AI was lying to her",
+    oneLine: "A beginner gets a professional's answer, and can check it",
+    accent: "var(--color-riso-blue)",
+    art: "solo",
+    person: {
+      name: "Kat",
+      role: "founder, first product, no engineering background",
+      problem:
+        "\u201cThe agent writes code faster than I can read it. When it is wrong I find out days later, and I have no way to tell the difference \u2014 it sounds equally sure both times.\u201d",
+      resolution:
+        "\u201cNow it searches a brain for the framework I am on and quotes the current option, with a score on it. When the brain does not know, it says so \u2014 and that sentence is worth more to me than the code.\u201d",
+      portrait: "/stories/solo.webp",
+    },
+    body: [
+      "The most common person building software today cannot read the output. They describe what they want, the agent writes it, and the thing either works or it does not. When it does not, the reason is somewhere in a file they cannot audit.",
+      "The failure that hurts is not a crash \u2014 a crash is honest. It is the code that runs against an option renamed two versions ago, or a pattern the framework abandoned, written with total confidence because the model learned it before the change. A developer would notice. This person cannot.",
+      "A brain gives them the one thing they were missing: a source that is dated and scored. The agent quotes the current option and says where it came from; when the brain has no answer, it says that instead of inventing one. The beginner does not become an expert \u2014 they become somebody who can tell a fact from a guess, which is most of what expertise buys you here.",
+    ],
+    moment: {
+      ask: "\u201cAdd login to my app. I do not know what any of the options mean \u2014 just do it properly.\u201d",
+      without:
+        "A tutorial from a year ago: an auth pattern the framework has since replaced, a session cookie without the flags that stop it being stolen, and no way for her to know any of that. It runs, which is the problem.",
+      withBrain:
+        "The current pattern, quoted from this month's documentation, with the two settings that matter named and explained in a sentence each \u2014 and one honest line: \u201cthe brain does not cover social login for this framework, so verify that part.\u201d She knows exactly which part to have somebody check.",
+    },
+    steps: [
+      "Start from /basics if the words are new \u2014 it explains agents, MCP and brains without assuming any of them.",
+      "Take the brain for whatever you are building with from the catalogue. Free, and the score tells you how much to trust it before you rely on it.",
+      "Connect your agent once, then keep asking in your own words. You do not need the vocabulary; the brain has it.",
+      "When something goes wrong, ask the agent to search the brain and quote the source. \u201cWhere did you get that\u201d is a question it can now answer.",
+    ],
+    limit:
+      "A brain does not make code correct \u2014 it makes the knowledge behind it current and checkable. Somebody still has to read the important parts, and a brain that says \u201cI do not cover this\u201d is telling you where to find that somebody.",
+  },
+  {
+    id: "every-agent",
+    who: "Anyone who uses more than one agent, or changes agent",
+    title: "She taught it once, and switched tools without losing it",
+    oneLine: "Knowledge that is not locked to whoever made your agent",
+    accent: "var(--ink)",
+    art: "everywhere",
+    person: {
+      name: "Mira",
+      role: "senior engineer, three agents open on any given day",
+      problem:
+        "\u201cI taught Claude our conventions, then the team moved to a different tool and it knew nothing. Built-in memory belongs to whoever built the agent, not to me.\u201d",
+      resolution:
+        "\u201cThe conventions live in a brain now. Every agent I connect reads the same one, and when I switch tools I lose nothing but the keyboard shortcuts.\u201d",
+      portrait: "/stories/everywhere.webp",
+    },
+    body: [
+      "Every agent has memory now, and every one of those memories belongs to the company that made it. Teach one tool your conventions and the next knows nothing. Change tools \u2014 which everybody has done at least once in the past year \u2014 and you teach it all again.",
+      "There is a quieter version of the same problem: two agents at the same time. One writes code, one reviews it, and they disagree about a convention because only one of them was ever told. The disagreement looks like a technical dispute and is really a filing problem.",
+      "A brain sits outside all of them. It is reached over MCP, which every serious agent now speaks, so the same knowledge answers Claude Code, Codex, Cursor and whatever ships next quarter. And if you leave the product entirely, the brain exports as a file that keeps working with no account at all \u2014 which is the only honest form a promise like this can take.",
+    ],
+    moment: {
+      ask: "\u201cWhy did the review agent flag this? The one that wrote it said it was fine.\u201d",
+      without:
+        "Two agents with two private memories, each confident. Somebody spends twenty minutes arbitrating a disagreement that exists only because the convention was written down in one place and not the other.",
+      withBrain:
+        "Both read the same note, and it has a date and a reason attached: \u201cwe stopped doing it that way in March, because of the incident in the note below.\u201d The dispute ends in the time it takes to read one paragraph, and the answer does not depend on which tool asked.",
+    },
+    steps: [
+      "Put the conventions in a brain rather than in one agent's memory \u2014 the agent can write them there itself with brain_write as they get settled.",
+      "Connect every agent you use to the same brain. One command each; they all speak MCP.",
+      "/mozg:sync writes the shelf into the project, so a new tool on a new machine starts knowing what exists.",
+      "Export whenever you like \u2014 CLAUDE.md, AGENTS.md or a Skill. Leaving is meant to be cheap; that is what makes staying a choice.",
+    ],
+    limit:
+      "MCP is the reason this works, so an agent that does not speak it is out of reach \u2014 for those, the export is the answer, and an export is a snapshot with all the staleness that implies.",
   },
 ];

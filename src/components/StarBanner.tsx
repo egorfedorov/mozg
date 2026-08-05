@@ -1,4 +1,5 @@
 import StarBannerClient from "./StarBannerClient";
+import { liveAnnouncements } from "@/lib/announcements";
 
 const REPO = "egorfedorov/mozg";
 
@@ -12,6 +13,12 @@ const REPO = "egorfedorov/mozg";
  * rather than removing it: the ask matters more than the count.
  */
 export default async function StarBanner() {
+  // Never two bars at once. An announcement is the more urgent of the two by
+  // definition — it is why somebody's ingest is paused or what they need to
+  // update — and stacking the star ask on top of it pushed the page's own
+  // headline below the fold. The ask waits for a quiet day.
+  if ((await liveAnnouncements()).length) return null;
+
   let stars: number | null = null;
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}`, {

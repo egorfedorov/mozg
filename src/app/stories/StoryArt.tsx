@@ -126,7 +126,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
     caption: "Two brains, different jobs: the platform moves, the studio accumulates",
     draw: (accent) => (
       <>
-        <text x="14" y="26" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
+        <text x="16" y="22" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
           the platform, weekly
         </text>
         {[0, 1, 2].map((i) => (
@@ -151,7 +151,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
           re-read on change
         </text>
 
-        <text x="14" y="106" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
+        <text x="16" y="94" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
           your team, as you work
         </text>
         {[0, 1, 2].map((i) => (
@@ -168,17 +168,17 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
         <text x="236" y="116" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
           studio brain
         </text>
-        <text x="236" y="130" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
+        <text x="236" y="130" textAnchor="middle" className="mono" fontSize="9" fill="currentColor" opacity="0.7">
           written, never crawled
         </text>
 
         <path d="M290 46 L330 76" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
         <path d="M290 120 L330 90" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
-        <rect x="336" y="62" width="62" height="42" fill="none" stroke="currentColor" strokeWidth="2" />
-        <text x="367" y="80" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+        <rect x="330" y="62" width="72" height="42" fill="none" stroke="currentColor" strokeWidth="2" />
+        <text x="366" y="80" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
           agent
         </text>
-        <text x="367" y="94" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
+        <text x="366" y="94" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
           asks first
         </text>
       </>
@@ -293,6 +293,87 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
         </text>
         <text x="370" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
           handover
+        </text>
+      </>
+    ),
+  },
+  solo: {
+    caption: "The beginner's missing instrument: an answer with a date and a score on it",
+    draw: (accent) => (
+      <>
+        <rect x="18" y="40" width="96" height="66" fill="none" stroke="currentColor" strokeWidth="2" />
+        <text x="66" y="70" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+          &quot;just do it
+        </text>
+        <text x="66" y="86" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+          properly&quot;
+        </text>
+
+        <path d="M120 73 L156 73" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
+
+        <rect x="162" y="26" width="104" height="42" fill="none" stroke="var(--color-riso-red)" strokeWidth="2" />
+        <text x="214" y="43" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
+          from memory
+        </text>
+        <text x="214" y="57" textAnchor="middle" className="mono" fontSize="10" fill="var(--color-riso-red)">
+          undated, unchecked
+        </text>
+
+        <rect x="162" y="80" width="104" height="42" fill="none" stroke={accent} strokeWidth="2.5" />
+        <text x="214" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
+          from the brain
+        </text>
+        <text x="214" y="111" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
+          dated · 84% · cited
+        </text>
+
+        <path d="M272 101 L308 101" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
+        <rect x="314" y="80" width="86" height="42" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <text x="357" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
+          she can check
+        </text>
+        <text x="357" y="111" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
+          without reading code
+        </text>
+      </>
+    ),
+  },
+
+  everywhere: {
+    caption: "One brain, every agent — and a file to leave with",
+    draw: (accent) => (
+      <>
+        {["Claude Code", "Codex", "Cursor"].map((name, i) => (
+          <g key={name}>
+            <rect x="14" y={24 + i * 40} width="92" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <text x="60" y={43 + i * 40} textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
+              {name}
+            </text>
+            <path
+              d={`M110 ${39 + i * 40} L166 79`}
+              stroke="currentColor"
+              strokeWidth="1.5"
+              opacity="0.6"
+              markerEnd="url(#story-arrow)"
+            />
+          </g>
+        ))}
+
+        <rect x="172" y="56" width="92" height="46" fill={accent} opacity="0.12" stroke={accent} strokeWidth="2.5" />
+        <text x="218" y="76" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
+          one brain
+        </text>
+        <text x="218" y="92" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.75">
+          same note, one date
+        </text>
+
+        <path d="M270 79 L306 79" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" markerEnd="url(#story-arrow)" />
+        <rect x="312" y="58" width="88" height="42" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <text x="356" y="75" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
+          export, any time
+        </text>
+        <text x="356" y="89" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
+          works with no account
         </text>
       </>
     ),

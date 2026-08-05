@@ -163,14 +163,34 @@ export default async function PricingPage() {
                   <li>{p.write ? "✓ agents write lessons back" : "— agents read only"}</li>
                   <li>{p.exports ? "✓ export as CLAUDE.md / Skill" : "— no export"}</li>
                 </ul>
+
+                {/* A price with no way to act on it is a poster. Both buttons land
+                    where the thing actually happens: the plan panel in settings,
+                    which pays from balance and applies founding or a promo code —
+                    or the sign-in that has to come first. */}
+                <div style={{ marginTop: "1.1rem" }}>
+                  {p.key === "free" ? (
+                    <Link className="btn btn-ghost" href={user ? "/brains" : "/sign-in?next=/start"}>
+                      {user ? "Your brains" : "Start free"}
+                    </Link>
+                  ) : (
+                    <Link
+                      className="btn"
+                      href={user ? "/settings#plan" : `/sign-in?next=/settings%23plan`}
+                    >
+                      Subscribe to {p.key === "pro" ? "Pro" : "Team"}
+                      {spots > 0 ? " · half price" : ""}
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
           <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)", marginTop: ".9rem" }}>
-            Plan billing is being wired up — until then upgrades are done by
-            hand within a day: <a href="/chat">chatmozg</a>. The
-            limits are live; the invoice is the manual part.
+            Subscribing pays a month from your balance — top it up with crypto, or
+            ask for an invoice by hand within a day at <a href="/chat">chatmozg</a>.
+            Card checkout is not wired up yet; the limits and the balance are.
           </p>
         </section>
 

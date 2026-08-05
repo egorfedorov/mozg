@@ -50,7 +50,23 @@ export default function AnnouncementBannerClient({
         </span>
         <span style={{ opacity: 0.55 }}>·</span>
         <strong style={{ fontWeight: 600 }}>{announcement.title}</strong>
-        {firstLine && <span style={{ opacity: 0.9 }}>{firstLine}</span>}
+        {/* One line, clamped. A news body written as a paragraph made this bar
+            three lines tall and pushed the page's own headline off the screen —
+            the detail belongs on /changelog, which the link at the end goes to. */}
+        {firstLine && (
+          <span
+            style={{
+              opacity: 0.9,
+              minWidth: 0,
+              flex: "1 1 12rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {firstLine}
+          </span>
+        )}
         {announcement.ends_at && announcement.kind === "maintenance" && (
           <span className="mono" style={{ opacity: 0.75 }}>
             until {new Date(announcement.ends_at).toISOString().slice(11, 16)} UTC

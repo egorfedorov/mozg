@@ -111,13 +111,13 @@ export default function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
             An AI agent is a colleague with two odd properties.
           </h2>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             Imagine hiring someone who has read almost everything ever published —
             every manual, every forum, every tutorial — and can write code, edit
             your files and run commands. That is an AI agent: Claude Code, Cursor,
             Codex. Genuinely useful, and strange in two specific ways.
           </p>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             <strong style={{ color: "var(--ink)" }}>It stopped reading on a date.</strong>{" "}
             Its knowledge was fixed when it was trained. Anything published after
             that — a new version of the tool you use, an option that got renamed,
@@ -125,7 +125,7 @@ export default function BasicsPage() {
             know that it has not seen it. So it answers from what it remembers,
             with total confidence, and sometimes that answer is a year out of date.
           </p>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             <strong style={{ color: "var(--ink)" }}>It forgets everything between conversations.</strong>{" "}
             Explain your project&apos;s rules today and tomorrow it starts blank.
             Everything it knows about your work has to be handed to it again, every
@@ -139,7 +139,7 @@ export default function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
             Which is why the answers look right and are not.
           </h2>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             Two kinds of knowledge are missing, and they fail differently.
             <strong> Public knowledge that moved</strong> — the documentation of
             whatever you are building with, which changed after the model stopped
@@ -148,7 +148,7 @@ export default function BasicsPage() {
             the way your studio does things. No model has ever seen that, so
             everything it says about it is invention.
           </p>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             The usual fix is to paste it all in — a long file of instructions the
             agent reads every session. That works until it does not: the file grows
             past what fits, you pay for all of it whether today&apos;s task needed
@@ -163,7 +163,7 @@ export default function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem", maxWidth: "62ch" }}>
             MCP is a socket. That is genuinely all it is.
           </h2>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch", margin: "0 0 1rem" }}>
             Agents need to reach things outside themselves — your files, a
             database, a service. Every agent used to do that its own way, so every
             service had to be built once per agent. MCP (Model Context Protocol) is
@@ -256,7 +256,7 @@ export default function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
             We keep the knowledge, and we measure it.
           </h2>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             A <strong>brain</strong> is a small library about one subject —
             SvelteKit, your company&apos;s billing service, the way your studio
             builds games. Inside it are notes: one fact each, written to stand
@@ -264,7 +264,7 @@ export default function BasicsPage() {
             question depends on that subject, getting back the two or three notes
             that answer instead of a document it has to read whole.
           </p>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             The part nobody else does is the exam. Every brain is given questions
             drawn from what it claims to cover, made to answer them, and marked —
             so it carries a percentage, and a public list of the questions it
@@ -273,7 +273,7 @@ export default function BasicsPage() {
             exactly where it does not&rdquo;. An agent that is told where knowledge
             ends can say &ldquo;I don&apos;t know&rdquo; instead of inventing.
           </p>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             Where do brains come from? Some are made already — the catalogue holds
             the documentation of a hundred popular tools, free to use, kept
             current. Some you make: paste a documentation link and it gets read for
@@ -288,7 +288,7 @@ export default function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem", maxWidth: "62ch" }}>
             What it looks like in a real morning.
           </h2>
-          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch" }}>
+          <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch", margin: "0 0 1rem" }}>
             You do not have to know the right word for what you want. That is the
             whole point of asking something that actually knows the subject.
           </p>

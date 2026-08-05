@@ -53,7 +53,9 @@ export default function PlanPanel({
   if (!targets.length) return null;
 
   return (
-    <div className="panel" style={{ marginTop: "1.5rem" }}>
+    // #plan: the pricing page's Subscribe buttons link straight here, so the
+    // button and the thing it promises are one click apart.
+    <div id="plan" className="panel" style={{ marginTop: "1.5rem", scrollMarginTop: "6rem" }}>
       <p className="eyebrow">Need more room</p>
 
       {pending ? (
