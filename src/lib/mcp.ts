@@ -96,6 +96,33 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: "brain_handoff",
+    description:
+      "The baton between sessions and agents. Before stopping mid-task, LEAVE a " +
+      "handoff: where you stopped, what is done, what the next session must know " +
+      "— then any agent (this one tomorrow, or a different tool entirely) LISTs " +
+      "open handoffs when it starts and TAKEs one to continue from that exact " +
+      "point. Working state only — durable lessons belong in brain_write. " +
+      "Handoffs expire after 7 days.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        brain: { type: "string", description: "Brain handle the work belongs to." },
+        action: { type: "string", enum: ["leave", "list", "take"] },
+        title: { type: "string", description: "leave: one line — what this baton is." },
+        context: {
+          type: "string",
+          description:
+            "leave: everything the next session needs — status, decisions made, " +
+            "next step, file paths. Write it for an agent with zero memory of today.",
+        },
+        id: { type: "string", description: "take: the handoff id from list." },
+      },
+      required: ["brain", "action"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "brain_verify",
     description:
       "Check a claim against the brain before acting on it or presenting it as " +
@@ -479,6 +506,8 @@ export async function callTool(
       return brainSearch(args, owner);
     case "brain_verify":
       return brainVerify(args, owner);
+    case "brain_handoff":
+      return brainHandoff(args, owner);
     case "brain_read":
       return brainRead(args, owner);
     case "brain_write":
@@ -571,6 +600,25 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
       "\nFull list: https://mozg.sh/explore"
     : "";
 
+  // Open batons ride along on the map — this is how a fresh session finds
+  // out yesterday's session (or a different agent) left work mid-flight.
+  const batons = await query<{ handle: string; n: number }>(
+    `select coalesce(u.handle || '/', '') || b.slug as handle, count(*)::int as n
+       from handoffs h
+       join brains b on b.id = h.brain_id
+       left join "user" u on u.id = b.owner_id and b.owner_id <> $1
+      where h.status = 'open' and h.expires_at > now()
+        and (b.owner_id = $1
+             or exists (select 1 from library l where l.user_id = $1 and l.brain_id = b.id))
+      group by 1`,
+    [owner.userId],
+  );
+  const batonBlock = batons.length
+    ? "\n\n⚑ Open handoffs — work left mid-flight for the next session to take:\n" +
+      batons.map((b) => `- ${b.handle}: ${b.n}`).join("\n") +
+      '\nCall brain_handoff {"brain": "...", "action": "list"} before starting fresh work there.'
+    : "";
+
   const heading = notice ? `${notice}\n\n` : "";
 
   if (!rows.length) {
@@ -613,7 +661,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
   }
 
   return {
-    text: `${heading}${rows.length} brain(s) available:\n\n${lines.join("\n")}${catalogueBlock}`,
+    text: `${heading}${rows.length} brain(s) available:\n\n${lines.join("\n")}${batonBlock}${catalogueBlock}`,
   };
 }
 
@@ -827,6 +875,108 @@ async function brainSearch(
     ownerId: resolved.brain.owner_id,
     results: hits.length,
     topScore: hits[0]?.score,
+  };
+}
+
+/**
+ * The baton. Working state travels between sessions and between DIFFERENT
+ * agents through the brain they share — Claude Code leaves off, Codex picks
+ * up. Deliberately not notes: a handoff is true for days and then never
+ * again, so it lives in its own table, expires on its own clock, and no exam
+ * or search ever meets it. Identity is the token's name — "one token per
+ * machine" makes it the honest name for who left the baton and who took it.
+ */
+async function brainHandoff(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const handle = String(args.brain ?? "");
+  const action = String(args.action ?? "list");
+  const resolved = await resolveBrain(handle, owner.userId);
+  if (!resolved) return notFound(handle);
+  if (resolved.locked) {
+    return { text: await lockedText(resolved.brain), isError: true, results: 0 };
+  }
+  const brain = resolved.brain;
+  const me = await maybeOne<{ name: string | null }>(
+    `select name from mcp_tokens where id = $1`,
+    [owner.tokenId],
+  ).then((r) => r?.name || "an agent");
+
+  if (action === "leave") {
+    const title = String(args.title ?? "").trim().slice(0, 200);
+    const context = String(args.context ?? "").trim().slice(0, 8000);
+    if (!title || context.length < 40) {
+      return {
+        text: "A handoff needs a title and real context — write it for an agent with zero memory of today.",
+        isError: true,
+      };
+    }
+    const row = await one<{ id: string }>(
+      `insert into handoffs (brain_id, author_id, agent_client, title, context)
+       values ($1, $2, $3, $4, $5) returning id`,
+      [brain.id, owner.userId, me, title, context],
+    );
+    return {
+      text:
+        `Handoff left on "${brain.title}" (id: ${row.id}). Any agent that lists ` +
+        "handoffs on this brain in the next 7 days can take it and continue.",
+      brainId: brain.id,
+      ownerId: brain.owner_id,
+      results: 1,
+    };
+  }
+
+  if (action === "take") {
+    const id = String(args.id ?? "");
+    const h = await maybeOne<{ title: string; context: string; agent_client: string | null; created_at: Date }>(
+      `update handoffs set status = 'taken', taken_by = $3, taken_at = now()
+        where id = $1 and brain_id = $2 and status = 'open' and expires_at > now()
+        returning title, context, agent_client, created_at`,
+      [id, brain.id, me],
+    );
+    if (!h) {
+      return { text: "That handoff is gone — already taken, expired, or the id is wrong. Call action \"list\".", isError: true };
+    }
+    return {
+      text:
+        `Taken. Left by ${h.agent_client ?? "an agent"} on ${h.created_at.toISOString().slice(0, 16).replace("T", " ")} UTC:\n\n` +
+        `# ${h.title}\n\n${h.context}\n\n` +
+        "Continue from here. When you stop, leave your own handoff — and save any durable lesson with brain_write.",
+      brainId: brain.id,
+      ownerId: brain.owner_id,
+      results: 1,
+    };
+  }
+
+  const open = await query<{ id: string; title: string; agent_client: string | null; created_at: Date }>(
+    `select id, title, agent_client, created_at from handoffs
+      where brain_id = $1 and status = 'open' and expires_at > now()
+      order by created_at desc limit 10`,
+    [brain.id],
+  );
+  if (!open.length) {
+    return {
+      text: `No open handoffs on "${brain.title}". Leave one before stopping mid-task.`,
+      brainId: brain.id,
+      ownerId: brain.owner_id,
+      results: 0,
+    };
+  }
+  return {
+    text:
+      `Open handoffs on "${brain.title}":\n` +
+      open
+        .map(
+          (h) =>
+            `- ${h.title} — left by ${h.agent_client ?? "an agent"}, ` +
+            `${h.created_at.toISOString().slice(0, 16).replace("T", " ")} UTC (id: ${h.id})`,
+        )
+        .join("\n") +
+      `\n\nCall brain_handoff with action "take" and an id to continue one.`,
+    brainId: brain.id,
+    ownerId: brain.owner_id,
+    results: open.length,
   };
 }
 

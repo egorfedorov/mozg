@@ -369,6 +369,9 @@ export async function runMaintenance(): Promise<{
 }> {
   const resumed = await requeueBudgetPaused();
   await notifyGapOwners();
+  // Expired batons linger 30 days for postmortems, then go — nobody resumes
+  // work from a month-old handoff, and the table stays a queue, not a log.
+  await query(`delete from handoffs where expires_at < now() - interval '30 days'`);
   // Before examStaleBrains: an abandoned run closed here is a brain that gets
   // re-queued in the same pass instead of waiting six hours for the next one.
   const abandoned = await closeAbandonedRuns();

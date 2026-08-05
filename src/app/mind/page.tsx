@@ -121,6 +121,25 @@ export default async function MindPage() {
     calls: brains.reduce((n, b) => n + b.callsWeek, 0),
   };
 
+  // The relay: batons left mid-task, waiting for the next session — any
+  // agent, not necessarily the one that left them.
+  const handoffs = await query<{
+    handle: string;
+    title: string;
+    agent_client: string | null;
+    status: string;
+    taken_by: string | null;
+    at: string;
+  }>(
+    `select coalesce(b2.handle, '') as handle, h.title, h.agent_client, h.status, h.taken_by,
+            to_char(h.created_at at time zone 'UTC', 'MM-DD HH24:MI') as at
+       from handoffs h
+       join (select id, slug as handle from brains where id = any($1::uuid[])) b2 on b2.id = h.brain_id
+      where h.expires_at > now()
+      order by h.created_at desc limit 8`,
+    [ids],
+  );
+
   return (
     <AppShell active="/mind" eyebrow="Everything your agents can know" title="Your mind">
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
@@ -129,6 +148,31 @@ export default async function MindPage() {
         week. Green — proven on its exam; red — where it honestly fails. Type
         to find who knows what.
       </p>
+
+      {handoffs.length > 0 && (
+        <section style={{ margin: "0 0 1.75rem" }}>
+          <div className="section-head">
+            <h2 className="h2">Handoffs</h2>
+            <span className="eyebrow">work left mid-flight, any agent can take it</span>
+          </div>
+          <div className="rows" style={{ maxWidth: "52rem" }}>
+            {handoffs.map((h, i) => (
+              <div key={i} className="row" data-tint={h.status === "open" ? "orange" : undefined}>
+                <span style={{ minWidth: 0 }}>
+                  <strong>{h.title}</strong>
+                  <span className="row-meta">
+                    {h.handle} · left by {h.agent_client ?? "an agent"} · {h.at}
+                    {h.status === "taken" && ` · taken by ${h.taken_by ?? "an agent"}`}
+                  </span>
+                </span>
+                <span className="row-side mono" style={{ fontSize: ".75rem", color: h.status === "open" ? "var(--color-riso-orange)" : "var(--ink-3)" }}>
+                  {h.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <MindMap brains={brains} />
     </AppShell>
