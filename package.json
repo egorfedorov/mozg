@@ -17,7 +17,7 @@
     "db:migrate:prod": "node dist/migrate.mjs",
     "ingest": "tsx --env-file-if-exists=.env scripts/ingest.ts",
     "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
-    "test": "tsx --test src/lib/*.test.ts",
+    "test": "tsx --test src/lib/*.test.ts src/worker/*.test.ts",
     "auth:migrate": "npx --yes @better-auth/cli migrate --y",
     "check:access": "tsx --env-file-if-exists=.env scripts/check-access.ts",
     "try:extract": "tsx --env-file-if-exists=.env scripts/try-extract.ts",

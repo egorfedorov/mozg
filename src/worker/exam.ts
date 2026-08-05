@@ -176,6 +176,18 @@ export async function generateChecks(brain: Brain): Promise<number> {
 }
 
 /**
+ * Checks whose retrieval ran without the cross-encoder.
+ *
+ * Named and exported so the rule that depends on it can be tested without
+ * standing up a whole sitting: the number this returns decides whether a score
+ * is published or the run is failed, which makes it the most consequential
+ * arithmetic in the file.
+ */
+export function countDegraded(checks: { reranked: boolean }[]): number {
+  return checks.filter((c) => !c.reranked).length;
+}
+
+/**
  * How deep to look when deciding whether a missing answer is absent or merely
  * ranked below the five the judge sees. Matches diagnose-exam.ts, so the label
  * the exam files and the one the script prints mean the same thing.
@@ -502,7 +514,7 @@ export async function runExam(
     // Failing the run is the honest outcome. examStaleBrains re-queues it, and
     // the previous score stays on screen with its own timestamp rather than
     // being overwritten by a lie.
-    const degradedChecks = contexts.filter((c) => !c.reranked).length;
+    const degradedChecks = countDegraded(contexts);
     if (degradedChecks > 0) {
       throw new Error(
         `retrieval degraded: ${degradedChecks}/${contexts.length} checks were ` +

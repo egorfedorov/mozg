@@ -58,9 +58,11 @@ test("a plan cannot include more inference than it costs", () => {
     assert.ok(PLANS[plan].dailyExtractCents < included, `${plan}: a single day can eat the month`);
   }
 
-  // Free buys none of our inference: it teaches from its own CLI or its own key.
-  assert.equal(PLANS.free.monthlyExtractCents, 0);
-  assert.equal(PLANS.free.dailyExtractCents, 0);
+  // Free gets a taste of our inference, not an allowance — and the daily cap must
+  // not exceed the monthly one, or the trial becomes a monthly-renewing salary.
+  assert.ok(PLANS.free.monthlyExtractCents > 0, "free should be able to try our AI once");
+  assert.ok(PLANS.free.monthlyExtractCents <= 100, "a taste, not an allowance");
+  assert.ok(PLANS.free.dailyExtractCents <= PLANS.free.monthlyExtractCents);
   // But it is not read-only — that is the point of the free tier.
   assert.equal(PLANS.free.write, true);
   assert.ok(PLANS.free.calls > 0);

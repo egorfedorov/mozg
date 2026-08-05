@@ -48,10 +48,13 @@ export const PLANS: Record<Plan, PlanLimits> = {
   // the gate never applied to brain_write, and it is the only path that reads
   // this flag.
   // Free reads everything and teaches without limit — from its own CLI or its
-  // own API key, where the inference is not ours to pay for. What it does not
-  // get is our models doing the reading: that is the paid act, and pretending
-  // otherwise with a token allowance made the free plan a thing to farm.
-  free: { brains: 1, sources: 30, calls: 300, dailyExtractCents: 0, monthlyExtractCents: 0, examSittings: 1, write: true, exports: false },
+  // own API key, where the inference is not ours to pay for. Our models reading
+  // for it is a taste, not an allowance: 50¢ a month, which is one small brain
+  // built once. The old shape was 50¢ a *day*, which is $15 a month of our
+  // tokens per free account and a thing to farm; the same number with a monthly
+  // window is a trial that cannot be repeated, and the landing promise ("paste a
+  // link, get a brain") stays true without a card.
+  free: { brains: 1, sources: 30, calls: 300, dailyExtractCents: 50, monthlyExtractCents: 50, examSittings: 1, write: true, exports: false },
   // $25/mo buys $20 of our inference. The remaining five cover hosting, the
   // embedder, storage and the exams' judge — and are the margin. The daily cap
   // is a fifth of the month, so a runaway crawl loses a day, not the month.

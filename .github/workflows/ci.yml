@@ -20,3 +20,11 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm test
+
+      # The plugin lives here but installs from egorfedorov/mozg-plugin, and the
+      # two drifted silently once already — the published copy sat two commands
+      # and a rewritten hook behind while the server side was live. No secret
+      # needed to notice: the marketplace repository is public, so CI can read it
+      # and refuse to be quiet about a difference.
+      - name: Published plugin matches plugin/
+        run: ./scripts/check-plugin-published.sh

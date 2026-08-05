@@ -29,7 +29,7 @@ const PLAN_PRICES: Record<string, string> = {
 
 const PLAN_PITCH: Record<string, string> = {
   free:
-    "Full access to everything already built: the whole catalogue, every agent you connect, learning, exports of what you can read. Plus one brain of your own that you may teach without limit — from your CLI on the Claude or Kimi subscription you already pay for, or on your own API key. Nothing here expires into a trial.",
+    "Full access to everything already built: the whole catalogue, every agent you connect, learning, exports of what you can read. Plus one brain of your own that you may teach without limit — from your CLI on the Claude or Kimi subscription you already pay for, or on your own API key. And one paste-a-URL trial on our AI, so you can see the difference before deciding it is worth $25.",
   pro:
     "Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference a month is included; the other $5 is the servers and the exam judge.",
   team:
@@ -145,12 +145,12 @@ export default async function PricingPage() {
                       never how much you may teach with your own. */}
                   <li>✓ teach from your CLI — unlimited notes</li>
                   <li>
-                    {p.monthlyExtractCents > 0
+                    {p.monthlyExtractCents >= 1000
                       ? `✓ our AI reads for you — $${(p.monthlyExtractCents / 100).toFixed(0)} of inference a month`
-                      : "— our AI reading for you: that is the paid part"}
+                      : `our AI: $${(p.monthlyExtractCents / 100).toFixed(2)} a month — one trial brain, once`}
                   </li>
                   <li>
-                    {p.monthlyExtractCents > 0
+                    {p.monthlyExtractCents >= 1000
                       ? "✓ or your own key, and the budget stops applying"
                       : "✓ your own API key — unlimited, you pay the model"}
                   </li>
