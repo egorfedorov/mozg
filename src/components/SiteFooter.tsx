@@ -1,8 +1,14 @@
 import Link from "next/link";
+import StatusDot from "@/components/StatusDot";
+import CookieSettingsLink from "@/components/CookieSettingsLink";
 
 /**
  * Every page ends here. Grouped by what someone is trying to do, not by our
  * routing: read about it, learn to build one, or get at their own account.
+ *
+ * The legal column is deliberately a column and not fine print: "where do I
+ * turn analytics off" is a question with an answer, and burying the answer is
+ * the same as not having one.
  */
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
@@ -34,6 +40,15 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/settings", label: "Account" },
       { href: "/settings/balance", label: "Balance" },
       { href: "/settings/tokens", label: "Tokens" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { href: "/terms", label: "Terms of Service" },
+      { href: "/privacy", label: "Privacy Policy" },
+      { href: "/cookies", label: "Cookie Policy" },
+      { href: "/status", label: "Status" },
     ],
   },
 ];
@@ -82,6 +97,13 @@ export default function SiteFooter() {
                   </Link>
                 </li>
               ))}
+              {/* Withdrawing consent has to be reachable from the same place
+                  it was given, and that place is every page's footer. */}
+              {col.title === "Legal" && (
+                <li>
+                  <CookieSettingsLink />
+                </li>
+              )}
             </ul>
           </nav>
         ))}
@@ -100,6 +122,7 @@ export default function SiteFooter() {
         }}
       >
         <span>mozg.sh</span>
+        <StatusDot />
         <span>Brains are licensed CC BY-NC-SA by default — copying is fine, reselling is not.</span>
         <span style={{ flex: 1 }} />
         <a href="https://github.com/egorfedorov/mozg">github</a>

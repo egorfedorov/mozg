@@ -4,6 +4,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
 import { Section } from "@/components/ui";
+import CopyErrors from "./CopyErrors";
 import { resolveErrors } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -71,23 +72,68 @@ export default async function AdminErrorsPage() {
       order by c.created_at desc limit 30`,
   );
 
+  const open = groups.reduce((n, g) => n + g.n, 0);
+
+  // What the operator actually pastes into an agent. Deduped by message on
+  // purpose: a hundred identical stacks is one fact repeated, and pasting all
+  // of them buries the other kinds that were also open. The count survives the
+  // dedup, so "this happened 164 times" is still in the text.
+  const report = [
+    `mozg errors — ${open} open across ${groups.length} kind${groups.length === 1 ? "" : "s"}`,
+    `captured ${new Date().toISOString().slice(0, 16).replace("T", " ")}Z · ${process.env.GIT_SHA ?? "unknown build"}`,
+    ...groups.flatMap((g) => {
+      const mine = byGroup.get(`${g.source}/${g.kind}`) ?? [];
+      const distinct = mine.filter(
+        (r, i) => mine.findIndex((o) => o.message === r.message) === i,
+      );
+      return [
+        "",
+        `## ${g.source}/${g.kind} — ${g.n} open, latest ${g.latest}`,
+        ...distinct.slice(0, 5).flatMap((r) => {
+          const same = mine.filter((o) => o.message === r.message).length;
+          return [
+            "",
+            `${r.at}${r.email ? ` · ${r.email}` : ""}${same > 1 ? ` · ×${same} in the last ${mine.length}` : ""}`,
+            r.message,
+            ...(r.detail ? [r.detail] : []),
+          ];
+        }),
+        ...(distinct.length > 5 ? ["", `(+${distinct.length - 5} other messages in this group)`] : []),
+      ];
+    }),
+    ...(failedCalls.length
+      ? [
+          "",
+          `## failed MCP calls · 24h — ${failedCalls.length}`,
+          ...failedCalls.map(
+            (c) => `${c.at} ${c.tool}${c.email ? ` · ${c.email}` : ""} — ${c.error ?? "no reason recorded"}`,
+          ),
+        ]
+      : []),
+  ].join("\n");
+
   return (
     <AppShell active="/admin/errors" eyebrow="Operator" title="Errors">
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {groups.reduce((n, g) => n + g.n, 0)} open across {groups.length} kind
+        {open} open across {groups.length} kind
         {groups.length === 1 ? "" : "s"}. Resolving acknowledges — rows stay
         for postmortems.{" "}
         <AutoRefresh active intervalMs={30_000} label="live" />
       </p>
 
-      {groups.length > 0 && (
-        <form action={resolveErrors} style={{ marginBottom: "1rem" }}>
-          <input type="hidden" name="source" value="*" />
-          <button className="btn btn-ghost" style={{ padding: ".4rem .8rem" }}>
-            Resolve everything
-          </button>
-        </form>
-      )}
+      <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        {(open > 0 || failedCalls.length > 0) && (
+          <CopyErrors text={report} count={open} />
+        )}
+        {groups.length > 0 && (
+          <form action={resolveErrors}>
+            <input type="hidden" name="source" value="*" />
+            <button className="btn btn-ghost" style={{ padding: ".4rem .8rem" }}>
+              Resolve everything
+            </button>
+          </form>
+        )}
+      </div>
 
       {groups.length === 0 && (
         <p className="lede">Nothing open. The next failure from any layer lands here.</p>

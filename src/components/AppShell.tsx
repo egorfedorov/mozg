@@ -80,9 +80,19 @@ export default async function AppShell({
       ])
     : [0, 0];
 
+  // The public page only exists once there is a handle to put it under, and
+  // linking to /b/null would be a 404 with your own name on it.
+  const base = user.handle
+    ? GROUPS.map((g) =>
+        g.title === "Work"
+          ? { ...g, items: [...g.items, { href: `/b/${user.handle}`, label: "Your page" }] }
+          : g,
+      )
+    : GROUPS;
+
   const groups = isAdmin(user)
     ? [
-        ...GROUPS,
+        ...base,
         {
           title: "Operator",
           items: [
@@ -98,7 +108,7 @@ export default async function AppShell({
           ],
         },
       ]
-    : GROUPS;
+    : base;
 
   return (
     <div className="app">

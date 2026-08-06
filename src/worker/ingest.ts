@@ -43,6 +43,23 @@ export class SourceBusyError extends Error {
   }
 }
 
+/**
+ * Thrown when the owner's extraction budget is spent. A decision, not a
+ * failure: nothing is broken, the plan simply bought this much reading this
+ * month. It still marks the source failed — that is the flag
+ * requeueBudgetPaused looks for — but the worker neither retries it nor files
+ * it in the error centre. Both used to happen, and one free account produced
+ * 164 identical "monthly budget" rows: fifty sources requeued every six-hour
+ * maintenance pass, each retried three times by pg-boss, every attempt writing
+ * the same expected sentence into the operator's triage list.
+ */
+export class BudgetPausedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BudgetPausedError";
+  }
+}
+
 export async function ingestSource(sourceId: string): Promise<IngestResult> {
   // A deploy briefly runs two workers at once, and the new one's orphan sweep
   // requeues whatever the old one is still finishing — two extractions, two
@@ -171,7 +188,7 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
           over.window as "monthly" | "daily",
           owner.plan,
         ).catch(() => {});
-        throw new Error(
+        throw new BudgetPausedError(
           `${over.window} budget: extraction paused — ` +
             `${(over.spent / 100).toFixed(2)} of ${(over.budget / 100).toFixed(2)} USD used ` +
             `on the ${owner.plan} plan. ` +

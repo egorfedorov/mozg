@@ -6,6 +6,8 @@ import {
   writeAgentNote,
   writeNeedsReview,
   MAX_BATCH_NOTES,
+  PROPOSALS_PER_HOUR,
+  proposalAllowed,
   type AgentNoteInput,
   type WriteNoteResult,
 } from "@/lib/agent-write";
@@ -45,9 +47,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!resolved?.access) {
     return NextResponse.json({ error: "Brain not found." }, { status: 404 });
   }
-  if (!canWrite(resolved.access)) {
+  // The third door onto the same pipeline, and it gets the same answer as the
+  // MCP ones: a reader proposes rather than being turned away. Proposals land
+  // pending and attributed, so nothing here can change what the brain says.
+  const proposing = !canWrite(resolved.access);
+  if (proposing && !resolved.brain.contributions) {
     return NextResponse.json(
-      { error: "You have read-only access to this brain." },
+      { error: "This brain is not accepting notes from readers." },
       { status: 403 },
     );
   }
@@ -94,9 +100,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   for (const raw of notes) {
     const input = raw ?? {};
+    // Same throttle as the MCP door and charged the same way — per note. The
+    // burst limit and the monthly quota protect our bill; neither protects the
+    // owner's review queue from one looping client.
+    if (proposing && !(await proposalAllowed(userId, resolved.brain.id))) {
+      results.push({
+        title: String(input.title ?? "").trim().slice(0, 200),
+        status: "rejected",
+        reason: `At most ${PROPOSALS_PER_HOUR} proposals per hour to one brain.`,
+      });
+      continue;
+    }
     let r: WriteNoteResult;
     try {
-      r = await writeAgentNote(resolved.brain, { pending, agentClient: "http" }, input);
+      r = await writeAgentNote(
+        resolved.brain,
+        { pending, agentClient: "http", proposedBy: proposing ? userId : null },
+        input,
+      );
     } catch (err) {
       // err.message can carry pg details — logged, not returned. One bad
       // note must not fail the rest of the batch.

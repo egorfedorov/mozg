@@ -37,6 +37,8 @@ export interface Brain {
   score: number | null;
   score_at: Date | null;
   review_required: boolean;
+  /** Readers' agents may propose notes. They always land pending; see 0067. */
+  contributions: boolean;
   note_count: number;
   source_count: number;
   /** 0 means free. Access to a paid brain is bought once, from balance. */
@@ -115,6 +117,8 @@ export interface Note {
   confidence: number;
   author: "ingest" | "human" | "agent" | "consolidated";
   agent_client: string | null;
+  /** The reader whose agent proposed this note. Null when the owner wrote it. */
+  proposed_by: string | null;
   status: NoteStatus;
   superseded_by: string | null;
   /** Feedback-driven ranking multiplier, clamped 0.5-2.0; see note-weight.ts. */

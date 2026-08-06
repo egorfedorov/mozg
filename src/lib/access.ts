@@ -89,6 +89,16 @@ export function canWrite(access: Access): boolean {
   return access === "owner" || access === "contributor";
 }
 
+/**
+ * Proposing is not writing. Anyone who may read a brain may offer it a note,
+ * and that note waits pending until the owner approves it — so the permission
+ * being granted here is "add a row to someone's review queue", not "change
+ * what their brain answers". See migration 0067.
+ */
+export function canPropose(access: Access): boolean {
+  return access !== null;
+}
+
 export function canAdmin(access: Access): boolean {
   return access === "owner";
 }

@@ -4,7 +4,8 @@ import type { Access } from "@/lib/access";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { findDuplicateNote, type DuplicateMatch } from "@/lib/dedup";
-import { scanSecrets } from "@/lib/scan";
+import { rateLimited } from "@/lib/rate-limit";
+import { scanInjection, scanSecrets } from "@/lib/scan";
 import { enqueueExam } from "@/worker/queue";
 import { normalizeCategory } from "@/lib/category";
 
@@ -17,6 +18,28 @@ import { normalizeCategory } from "@/lib/category";
 
 /** Notes per batch call. Matches the url cap on brain_add_source. */
 export const MAX_BATCH_NOTES = 25;
+
+/**
+ * Proposals per hour, per reader, per brain — enforced at every door.
+ *
+ * A review queue is a person, and a person who opens theirs to two hundred
+ * machine-written notes closes it for good. The other limits in front of these
+ * endpoints protect the platform's bill; this one protects the owner's
+ * attention, which is the scarcer resource.
+ */
+export const PROPOSALS_PER_HOUR = 20;
+
+/**
+ * Take one unit of that budget, or report it spent.
+ *
+ * Counted per note rather than per call, deliberately: a batch holds
+ * twenty-five, so charging the batch once would have let one reader put five
+ * hundred notes an hour in front of an owner while staying inside a limit
+ * named "twenty".
+ */
+export async function proposalAllowed(userId: string, brainId: string): Promise<boolean> {
+  return !(await rateLimited(userId, `propose:${brainId}`, PROPOSALS_PER_HOUR));
+}
 
 export interface AgentNoteInput {
   title?: unknown;
@@ -55,7 +78,16 @@ export function writeNeedsReview(brain: Brain, access: Access): boolean {
  */
 export async function writeAgentNote(
   brain: Brain,
-  opts: { pending: boolean; agentClient: string },
+  opts: {
+    pending: boolean;
+    agentClient: string;
+    /**
+     * Set when the writer is a reader rather than an owner or contributor —
+     * the note is a proposal. Recorded on the row so the review screen can
+     * show whose it is and how their earlier ones turned out.
+     */
+    proposedBy?: string | null;
+  },
   input: AgentNoteInput,
 ): Promise<WriteNoteResult> {
   // Capped like brain_create does (80/4000), only looser — a note is longer
@@ -80,7 +112,30 @@ export async function writeAgentNote(
     };
   }
 
-  const { pending } = opts;
+  // A proposal is text a stranger is putting in front of somebody else's
+  // agents. "Ignore your previous instructions" in a note is not a bad note,
+  // it is an attack on every reader of the brain — and the owner reviewing it
+  // is reading with human eyes, which is precisely the wrong detector for a
+  // string aimed at a model. Publication already runs this scan; the door a
+  // stranger writes through needs it more.
+  if (opts.proposedBy) {
+    const steering = scanInjection(`${title}\n${body}`);
+    if (steering.length) {
+      return {
+        status: "rejected",
+        title,
+        reason:
+          "Rejected: this reads as an instruction to whoever's model loads it " +
+          `(${[...new Set(steering.map((s) => s.label))].join(", ")}), not as a fact ` +
+          "about the subject. Write what is true, not what the reader should do.",
+      };
+    }
+  }
+
+  // Pending by construction, not by the caller remembering to ask for it. The
+  // gate that must never be bypassed belongs next to the insert it protects,
+  // not in each of the three doors that reach it.
+  const pending = opts.pending || Boolean(opts.proposedBy);
   const texts = chunksForNote(title, body);
 
   // The duplicate check needs the note's vector, so the embed moved ahead of
@@ -115,8 +170,9 @@ export async function writeAgentNote(
   // correction to the note it resembles. The reviewer sees both and decides.
   const note = await one<{ id: string }>(
     `insert into notes
-       (brain_id, title, body, category, kind, author, agent_client, status, confidence)
-     values ($1, $2, $3, $4, $5, 'agent', $6, 'pending', 0.7)
+       (brain_id, title, body, category, kind, author, agent_client, status,
+        confidence, proposed_by)
+     values ($1, $2, $3, $4, $5, 'agent', $6, 'pending', 0.7, $7)
      returning id`,
     [
       brain.id,
@@ -127,6 +183,7 @@ export async function writeAgentNote(
       normalizeCategory(typeof input.category === "string" ? input.category : null),
       typeof input.kind === "string" ? input.kind : "fact",
       opts.agentClient,
+      opts.proposedBy ?? null,
     ],
   );
 

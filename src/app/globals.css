@@ -1836,3 +1836,101 @@ a.row:hover {
 .nav-flat[data-active="true"] .nav-label {
   color: var(--color-riso-red);
 }
+
+/* ─── cookie consent ────────────────────────────────────────────────────────
+   A bar at the bottom, not a full-screen wall: the page underneath stays
+   readable while the choice is open, which is the difference between asking
+   and holding the content hostage. It sits above the mascot dock, and on a
+   phone it is the full width because a card with margins there is just a
+   smaller wall. */
+
+.cookie-bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+  pointer-events: none;
+}
+
+.cookie-card {
+  pointer-events: auto;
+  width: min(46rem, 100%);
+  max-height: min(80vh, 40rem);
+  overflow: auto;
+  background: var(--paper-2);
+  border: 1.5px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.cookie-rows {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+
+.cookie-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid var(--rule);
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+}
+
+.cookie-row[data-locked] {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.cookie-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cookie-switch input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-riso-green);
+}
+
+.cookie-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* ─── legal pages ───────────────────────────────────────────────────────────
+   Long prose, one column, generous leading. These are the pages people skim
+   for one clause, so headings need to stand off the text they own. */
+
+.legal p,
+.legal li {
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+.legal h2 {
+  margin: 2.25rem 0 0.6rem;
+}
+
+.legal ul {
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.legal li strong {
+  color: var(--ink);
+}
+
+.legal a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

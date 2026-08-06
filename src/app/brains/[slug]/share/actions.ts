@@ -30,6 +30,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       visibility: z.enum(["private", "link", "public"]),
       license: z.enum(["nc", "mit", "proprietary"]),
       review_required: z.coerce.boolean(),
+      contributions: z.coerce.boolean(),
       // Entered in dollars, stored in cents. Anything above $1000 is a slipped
       // decimal point far more often than it is a real price.
       price: z.coerce.number().min(0).max(1000),
@@ -39,6 +40,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       visibility: formData.get("visibility"),
       license: formData.get("license"),
       review_required: formData.get("review_required") === "on",
+      contributions: formData.get("contributions") === "on",
       price: String(formData.get("price") ?? "0").replace(",", ".") || "0",
       topic: String(formData.get("topic") ?? "other"),
     });
@@ -115,7 +117,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
 
   await query(
     `update brains set visibility = $2, license = $3, review_required = $4,
-            price_cents = $5, topic = $6, updated_at = now()
+            price_cents = $5, topic = $6, contributions = $7, updated_at = now()
       where id = $1`,
     [
       brain.id,
@@ -124,6 +126,7 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
       parsed.data.review_required,
       priceCents,
       parsed.data.topic,
+      parsed.data.contributions,
     ],
   );
 

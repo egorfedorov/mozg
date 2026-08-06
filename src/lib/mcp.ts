@@ -3,11 +3,13 @@ import { agentNotice } from "@/lib/announcements";
 import { addToLibrary, removeFromLibrary } from "@/lib/library";
 import { enqueueRefresh } from "@/worker/queue";
 import type { Brain, Note } from "@/db/types";
-import { canWrite, type Access } from "@/lib/access";
+import { canPropose, canWrite, type Access } from "@/lib/access";
 import {
   writeAgentNote,
   writeNeedsReview,
   MAX_BATCH_NOTES,
+  PROPOSALS_PER_HOUR,
+  proposalAllowed,
   type AgentNoteInput,
   type WriteNoteResult,
 } from "@/lib/agent-write";
@@ -167,7 +169,9 @@ export const TOOLS: ToolDef[] = [
       "correction to something the brain had wrong, a pitfall you hit. Write one " +
       "self-contained fact per call, phrased so it helps someone who was not in " +
       "this conversation. Do not save what the repository or this chat already " +
-      "records, and never save credentials, tokens or personal data.",
+      "records, and never save credentials, tokens or personal data. Works on " +
+      "brains you only read too: there it saves as a proposal for the owner to " +
+      "review, so write it anyway rather than dropping what you learned.",
     inputSchema: {
       type: "object",
       properties: {
@@ -191,7 +195,8 @@ export const TOOLS: ToolDef[] = [
       "notes per call. Prefer this when a training session produced a set of " +
       "notes: one call instead of many. Each note is scanned, deduplicated and " +
       "saved on its own, so one rejection loses nothing else — read the " +
-      "per-note results in the reply and only redo the ones that failed.",
+      "per-note results in the reply and only redo the ones that failed. On a " +
+      "brain you only read, the batch becomes proposals for its owner.",
     inputSchema: {
       type: "object",
       properties: {
@@ -281,7 +286,8 @@ export const TOOLS: ToolDef[] = [
       "Positive: the note proved correct and useful for your task. Both shift " +
       "how the note ranks in future searches. Say what you observed, not just " +
       "that you agree or disagree. Do not use this for notes that are merely " +
-      "incomplete — brain_write a better one instead where you have write access.",
+      "incomplete — brain_write a better one instead; on a brain you only read " +
+      "that becomes a proposal for its owner, which is still the right move.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1156,6 +1162,77 @@ async function brainRead(
   };
 }
 
+type WriteMode =
+  | { ok: true; pending: boolean; proposedBy: string | null; proposing: boolean }
+  | { ok: false; outcome: ToolOutcome };
+
+/**
+ * May this caller put a note on this brain, and in what shape?
+ *
+ * Three answers, and the middle one is the point. An owner or contributor
+ * writes. A plain reader *proposes*: the note is saved pending, attributed to
+ * them, and it changes nothing the brain answers until the owner approves it.
+ * Only a brain whose owner switched contributions off refuses outright.
+ *
+ * Shared by brain_write and brain_write_batch, because a rule enforced on one
+ * door and not the next is the failure mode this codebase keeps meeting.
+ */
+async function writeModeFor(
+  resolved: Resolved,
+  handle: string,
+  owner: TokenOwner,
+): Promise<WriteMode> {
+  // Every plan can write today — PLANS.free included, because an agent note
+  // costs a self-hosted bge-m3 embed, not Anthropic extraction spend. The
+  // check stays so a future plan that turns write off is enforced here, not
+  // just advertised on the pricing page.
+  if (!limitsFor(owner.plan).write) {
+    return {
+      ok: false,
+      outcome: {
+        text:
+          `Writing back is not enabled on the ${owner.plan} plan. ` +
+          "Tell the user what you would have saved and that they can turn it on " +
+          "at mozg.sh/settings — do not retry.",
+        isError: true,
+      },
+    };
+  }
+
+  if (canWrite(resolved.access)) {
+    return {
+      ok: true,
+      pending: writeNeedsReview(resolved.brain, resolved.access),
+      proposedBy: null,
+      proposing: false,
+    };
+  }
+
+  if (!canPropose(resolved.access) || !resolved.brain.contributions) {
+    return {
+      ok: false,
+      outcome: {
+        text:
+          `${handle} is not accepting notes from readers — its owner turned ` +
+          "contributions off. Tell the user what you learned so it is not lost, " +
+          "and do not retry.",
+        isError: true,
+      },
+    };
+  }
+
+  return { ok: true, pending: true, proposedBy: owner.userId, proposing: true };
+}
+
+/** The same sentence at both write doors, so an agent gets one answer. */
+function proposalLimitHit(handle: string): string {
+  return (
+    `You have proposed ${PROPOSALS_PER_HOUR} notes to ${handle} in the last hour, ` +
+    "which is the limit — its owner reviews these by hand. Tell the user what " +
+    "else you learned and try again later."
+  );
+}
+
 async function brainWrite(
   args: Record<string, unknown>,
   owner: TokenOwner,
@@ -1164,29 +1241,18 @@ async function brainWrite(
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
 
-  if (!canWrite(resolved.access)) {
-    return {
-      text: `You have read-only access to ${handle}.`,
-      isError: true,
-    };
+  const mode = await writeModeFor(resolved, handle, owner);
+  if (!mode.ok) return mode.outcome;
+
+  if (mode.proposing && !(await proposalAllowed(owner.userId, resolved.brain.id))) {
+    return { text: proposalLimitHit(handle), isError: true };
   }
 
-  // Every plan can write today — PLANS.free included, because an agent note
-  // costs a self-hosted bge-m3 embed, not Anthropic extraction spend. The
-  // check stays so a future plan that turns write off is enforced here, not
-  // just advertised on the pricing page.
-  if (!limitsFor(owner.plan).write) {
-    return {
-      text:
-        `Writing back is not enabled on the ${owner.plan} plan. ` +
-        "Tell the user what you would have saved and that they can turn it on " +
-        "at mozg.sh/settings — do not retry.",
-      isError: true,
-    };
-  }
-
-  const pending = writeNeedsReview(resolved.brain, resolved.access);
-  const r = await writeAgentNote(resolved.brain, { pending, agentClient: "mcp" }, args);
+  const r = await writeAgentNote(
+    resolved.brain,
+    { pending: mode.pending, agentClient: "mcp", proposedBy: mode.proposedBy },
+    args,
+  );
 
   if (r.status === "rejected") {
     return { text: r.reason, isError: true };
@@ -1208,16 +1274,22 @@ async function brainWrite(
   }
 
   return {
-    text: r.pending
-      ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +
-        "in search until approved." +
-        (r.lookalike
-          ? `\n\nHeads-up: it looks very close to the existing note ` +
-            `"${r.lookalike.title}" (note_id: ${r.lookalike.note_id}). The reviewer ` +
-            "sees both and decides — but if this was meant as a correction, " +
-            "brain_read that note and write again stating what it gets wrong."
-          : "")
-      : `Saved to ${handle}. It is searchable now.`,
+    text:
+      (mode.proposing
+        ? `Proposed to ${handle}. You have read access, not write access, so it ` +
+          "was saved as a proposal under your account: its owner sees it in their " +
+          "review queue and decides. It answers nobody until then — say so if the " +
+          "user was expecting the brain to know this immediately."
+        : r.pending
+          ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +
+            "in search until approved."
+          : `Saved to ${handle}. It is searchable now.`) +
+      (r.lookalike
+        ? `\n\nHeads-up: it looks very close to the existing note ` +
+          `"${r.lookalike.title}" (note_id: ${r.lookalike.note_id}). The reviewer ` +
+          "sees both and decides — but if this was meant as a correction, " +
+          "brain_read that note and write again stating what it gets wrong."
+        : ""),
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,
@@ -1237,22 +1309,8 @@ async function brainWriteBatch(
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
 
-  if (!canWrite(resolved.access)) {
-    return {
-      text: `You have read-only access to ${handle}.`,
-      isError: true,
-    };
-  }
-
-  if (!limitsFor(owner.plan).write) {
-    return {
-      text:
-        `Writing back is not enabled on the ${owner.plan} plan. ` +
-        "Tell the user what you would have saved and that they can turn it on " +
-        "at mozg.sh/settings — do not retry.",
-      isError: true,
-    };
-  }
+  const mode = await writeModeFor(resolved, handle, owner);
+  if (!mode.ok) return mode.outcome;
 
   const notes = Array.isArray(args.notes) ? args.notes : [];
   if (!notes.length) {
@@ -1267,15 +1325,24 @@ async function brainWriteBatch(
     };
   }
 
-  const pending = writeNeedsReview(resolved.brain, resolved.access);
   const lines: string[] = [];
   let saved = 0;
 
   for (const raw of notes) {
     const input = (raw ?? {}) as AgentNoteInput;
+    // Charged per note, not per call — a batch of twenty-five is twenty-five
+    // rows in somebody's review queue whatever it cost to send.
+    if (mode.proposing && !(await proposalAllowed(owner.userId, resolved.brain.id))) {
+      lines.push(`✗ ${proposalLimitHit(handle)}`);
+      break;
+    }
     let r: WriteNoteResult;
     try {
-      r = await writeAgentNote(resolved.brain, { pending, agentClient: "mcp" }, input);
+      r = await writeAgentNote(
+        resolved.brain,
+        { pending: mode.pending, agentClient: "mcp", proposedBy: mode.proposedBy },
+        input,
+      );
     } catch (err) {
       // err.message can carry pg details — logged, not returned, same rule as
       // the route's tools/call catch.
@@ -1288,13 +1355,15 @@ async function brainWriteBatch(
     if (r.status === "saved") {
       saved++;
       lines.push(
-        r.pending
-          ? `✓ "${r.title}" — saved, queued for the owner's review.` +
-            (r.lookalike
-              ? ` Looks very close to "${r.lookalike.title}" ` +
-                `(note_id: ${r.lookalike.note_id}); the reviewer decides.`
-              : "")
-          : `✓ "${r.title}" — saved, searchable now.`,
+        (mode.proposing
+          ? `✓ "${r.title}" — proposed, waiting on the owner.`
+          : r.pending
+            ? `✓ "${r.title}" — saved, queued for the owner's review.`
+            : `✓ "${r.title}" — saved, searchable now.`) +
+          (r.lookalike
+            ? ` Looks very close to "${r.lookalike.title}" ` +
+              `(note_id: ${r.lookalike.note_id}); the reviewer decides.`
+            : ""),
       );
     } else if (r.status === "duplicate") {
       lines.push(
@@ -1308,7 +1377,13 @@ async function brainWriteBatch(
   }
 
   return {
-    text: `${saved} of ${notes.length} notes saved to ${handle}.\n\n` + lines.join("\n"),
+    text:
+      `${saved} of ${notes.length} notes ${mode.proposing ? "proposed to" : "saved to"} ${handle}.` +
+      (mode.proposing
+        ? " You have read access, not write access — the owner reviews these before " +
+          "the brain answers with them."
+        : "") +
+      `\n\n${lines.join("\n")}`,
     isError: saved === 0,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
@@ -1329,10 +1404,13 @@ async function brainFeedback(
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle);
 
+  // An empty reason used to fail the call outright, and the vote went in the
+  // bin with it. That is backwards: the signal is what moves the note's
+  // ranking weight, and the prose is a courtesy to the owner on top. Take the
+  // vote, keep the nudge — refusing a report because it was terse taught
+  // agents that brain_feedback is a tool that errors, so they stopped calling
+  // it.
   const reason = String(args.reason ?? "").trim().slice(0, 1000);
-  if (!reason) {
-    return { text: "Say what you observed — an empty report helps nobody.", isError: true };
-  }
 
   const note = await maybeOne<{ id: string; title: string }>(
     `select id, title from notes where id = $1 and brain_id = $2 and status = 'active'`,
@@ -1358,12 +1436,17 @@ async function brainFeedback(
   await refreshNoteWeight(note.id);
 
   return {
-    text: useful
-      ? `Noted — "${note.title}" held up in real use. It will rank a little ` +
-        "higher for the next agent."
-      : `Reported "${note.title}" to the owner of ${handle}. The note keeps ` +
-        "answering until they review it — if your task needs the corrected fact " +
-        "now, state it to the user directly rather than re-searching.",
+    text:
+      (useful
+        ? `Noted — "${note.title}" held up in real use. It will rank a little ` +
+          "higher for the next agent."
+        : `Reported "${note.title}" to the owner of ${handle}. The note keeps ` +
+          "answering until they review it — if your task needs the corrected fact " +
+          "now, state it to the user directly rather than re-searching.") +
+      (reason
+        ? ""
+        : "\n\nRecorded without a reason. Next time pass `reason` with what you " +
+          "actually observed — the owner cannot act on a bare vote, only rank on it."),
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: 1,

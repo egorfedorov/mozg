@@ -23,7 +23,7 @@ async function withSourceOwner<T>(sourceId: string, fn: () => Promise<T>): Promi
 
 import { query } from "@/db";
 import { reportError } from "@/lib/errors";
-import { ingestSource, SourceBusyError } from "@/worker/ingest";
+import { BudgetPausedError, ingestSource, SourceBusyError } from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
@@ -90,6 +90,14 @@ async function main() {
         // pg-boss swallows the throw into its retry bookkeeping, so a failure
         // would otherwise leave no trace in the log at all — the worst possible
         // shape for an ops problem.
+        // A spent budget is a decision the plan already made. The source row
+        // carries the reason and maintenance requeues it when the window
+        // rolls, so retrying now would only re-derive the same sentence three
+        // more times. Swallowed on purpose: nothing here is broken.
+        if (err instanceof BudgetPausedError) {
+          console.log(`[ingest] ${sourceId} paused — ${err.message}`);
+          return;
+        }
         if (err instanceof SourceBusyError) {
           console.log(`[ingest] ${sourceId} ${err.message}`);
         } else {

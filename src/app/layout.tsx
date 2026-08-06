@@ -5,6 +5,7 @@ import StarBanner from "@/components/StarBanner";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MascotDock from "@/components/MascotDock";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
+import CookieConsent from "@/components/CookieConsent";
 import Analytics from "@/components/Analytics";
 import "./globals.css";
 
@@ -63,6 +64,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             page's layout, only sit above it. */}
         <MascotDock />
         <ClientErrorReporter />
+        {/* Above Analytics in the tree and ahead of it in effect: the loader
+            reads the cookie this writes, so an unanswered banner means an
+            unloaded tracker. */}
+        <CookieConsent />
         <Analytics />
       </body>
     </html>

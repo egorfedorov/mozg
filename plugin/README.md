@@ -32,7 +32,7 @@ difference between a brain that gets used and one that sits there.
 | `brain_read` | Open one note in full |
 | `brain_verify` | Check a claim against the brain before acting on it — supported / contradicted / not_covered, with evidence. Unconfirmed claims are flagged to the owner as gaps |
 | `brain_handoff` | The baton between sessions and agents: leave working state when you stop mid-task, and the next session — this agent or a different tool entirely — takes it and continues |
-| `brain_write` | Save a convention or a pitfall worth keeping |
+| `brain_write` | Save a convention or a pitfall worth keeping — on a brain you only read it goes to its owner as a proposal, so nothing you learn is thrown away |
 | `brain_write_batch` | Save a whole set of notes from a training session in one call |
 | `brain_create` | Start a new brain without leaving the editor |
 | `brain_add_source` | Feed it documentation pages or a block of text |

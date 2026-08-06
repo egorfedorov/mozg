@@ -66,9 +66,21 @@ export default async function BrainPage({
       `select * from sources where brain_id = $1 order by created_at desc limit 50`,
       [brain.id],
     ),
-    query<Note>(
-      `select * from notes where brain_id = $1 and status = 'pending'
-        order by created_at desc`,
+    // Proposals from readers arrive in this same queue, so the row has to say
+    // whose it is and how their earlier ones turned out — judging a stranger's
+    // note with nothing to go on is how a reviewer starts rejecting all of
+    // them, which is the same as not accepting contributions at all.
+    query<
+      Note & { proposer: string | null; taken: number; refused: number }
+    >(
+      `select n.*, coalesce(u.handle, u.email) as proposer,
+              (select count(*)::int from notes p
+                where p.proposed_by = n.proposed_by and p.status = 'active') as taken,
+              (select count(*)::int from notes p
+                where p.proposed_by = n.proposed_by and p.status = 'rejected') as refused
+         from notes n left join "user" u on u.id = n.proposed_by
+        where n.brain_id = $1 and n.status = 'pending'
+        order by n.created_at desc`,
       [brain.id],
     ),
     query<{ n: number }>(
@@ -601,8 +613,10 @@ export default async function BrainPage({
               <span className="eyebrow">{pending.length} waiting</span>
             </div>
             <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
-              These were saved by an agent mid-task. They stay out of search until
-              you approve them — that is what keeps the brain sharp instead of noisy.
+              These were saved by an agent mid-task — yours, or a reader&apos;s proposing
+              something they learned. They stay out of search and out of the exam until
+              you approve them, which is what lets the door stay open without the brain
+              going soft.
             </p>
 
             <div className="panel" style={{ padding: 0 }}>
@@ -614,7 +628,10 @@ export default async function BrainPage({
                   <div style={{ display: "flex", gap: "1rem", alignItems: "baseline" }}>
                     <strong style={{ flex: 1 }}>{note.title}</strong>
                     <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-                      {note.agent_client ?? "agent"} · {note.kind}
+                      {note.proposer
+                        ? `proposed by ${note.proposer} · ${note.taken} taken / ${note.refused} refused`
+                        : note.agent_client ?? "agent"}{" "}
+                      · {note.kind}
                     </span>
                   </div>
                   <p style={{ margin: ".4rem 0 .75rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>

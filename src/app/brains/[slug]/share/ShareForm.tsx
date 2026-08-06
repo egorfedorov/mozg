@@ -182,6 +182,24 @@ export default function ShareForm({
           </span>
         </label>
 
+        <label style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>
+          <input
+            type="checkbox"
+            name="contributions"
+            defaultChecked={brain.contributions}
+            style={{ marginTop: ".25rem" }}
+          />
+          <span>
+            <strong>Take proposals from readers</strong>
+            <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+              Someone whose agent learns something about this brain mid-task can send
+              it to you. Proposals always wait for your approval — they are invisible
+              to search and absent from the exam until you take them — so this cannot
+              change what the brain answers, only what is in your review queue.
+            </span>
+          </span>
+        </label>
+
         {settings?.error && (
           <p className="mono" style={{ color: "var(--color-riso-red)", fontSize: ".8125rem", margin: 0 }}>
             {settings.error}
