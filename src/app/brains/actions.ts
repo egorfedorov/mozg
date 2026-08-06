@@ -22,6 +22,7 @@ const createSchema = z.object({
   // An unknown topic is a stale form, not something worth an error message.
   topic: z.string().catch("other").transform((t) => (TOPIC_KEYS.includes(t) ? t : "other")),
   parent: z.string().trim().optional(),
+  kind: z.enum(["knowledge", "style"]).catch("knowledge"),
 });
 
 export async function createBrain(_prev: unknown, formData: FormData) {
@@ -34,6 +35,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
     docs: String(formData.get("docs") ?? "") || undefined,
     price: String(formData.get("price") ?? "0").replace(",", ".") || "0",
     topic: formData.get("topic") ?? "other",
+    kind: formData.get("kind") === "style" ? "style" : "knowledge",
     parent: String(formData.get("parent") ?? "") || undefined,
   });
   if (!parsed.success) {
@@ -96,8 +98,8 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   }
 
   const brain = await one<Brain>(
-    `insert into brains (owner_id, slug, title, goal, topic, parent_id, visibility, price_cents)
-     values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id, visibility, price_cents, kind)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
     [
       user.id,
       slug,
@@ -107,6 +109,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
       parentId,
       priceCents > 0 ? "public" : "private",
       priceCents,
+      parsed.data.kind,
     ],
   );
 
