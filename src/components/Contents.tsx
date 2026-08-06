@@ -15,6 +15,12 @@ import Link from "next/link";
  *
  * The subtitles stay, but inside the panel where there is room to read them
  * rather than in a bar that has to stay one line tall.
+ *
+ * On a phone the same strip was a trap: the groups wrapped onto two rows, and
+ * a dropdown that has to live inside its own flex cell opened as a column half
+ * the screen wide, under whichever label happened to share its row. So the
+ * phone gets its own shape — one Menu bar, one sheet, every page in it at full
+ * width. Same GROUPS, rendered twice; each viewport hides the other.
  */
 
 interface Page {
@@ -73,29 +79,106 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
   },
 ];
 
+function PageLink({ page, active }: { page: Page; active?: string }) {
+  return (
+    <Link
+      href={page.href}
+      className="nav-item"
+      data-active={page.href === active}
+      {...(page.external ? { target: "_blank", rel: "noreferrer" } : {})}
+    >
+      <span className="nav-item-label">
+        {page.label}
+        {page.external ? " ↗" : ""}
+      </span>
+      <span className="nav-item-note">{page.note}</span>
+    </Link>
+  );
+}
+
+const START = { href: "/start", label: "Start here", note: "~10 min to a thinking agent" };
+const CATALOGUE = { href: "/explore", label: "Catalogue", note: "ready brains, free to add" };
+
+function StartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden className="nav-start-icon">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M9 8l6 4-6 4z"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The phone menu. One bar that says where you are, one sheet that holds
+ * everything — no second tap to open a group, because a sheet has the height a
+ * dropdown never had. Still a <details>: no JavaScript, closes on navigation
+ * because the key carries the active page.
+ */
+function Sheet({ active }: { active?: string }) {
+  const here =
+    [START, CATALOGUE].find((p) => p.href === active)?.label ??
+    GROUPS.find((g) => g.pages.some((p) => p.href === active))?.label;
+
+  return (
+    <details className="nav-sheet" key={active ?? ""}>
+      <summary className="nav-sheet-bar">
+        <span className="nav-sheet-burger" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </span>
+        <span className="nav-sheet-title">Menu</span>
+        {here ? <span className="nav-sheet-where">{here}</span> : null}
+      </summary>
+
+      <div className="nav-sheet-body">
+        <Link href={START.href} className="nav-sheet-start" data-active={START.href === active}>
+          <StartIcon />
+          <span>
+            <span className="nav-start-label">{START.label}</span>
+            <span className="nav-start-note">{START.note}</span>
+          </span>
+        </Link>
+
+        <PageLink page={CATALOGUE} active={active} />
+
+        {GROUPS.map((g) => (
+          <section key={g.label} className="nav-sheet-group">
+            <h2 className="nav-sheet-label">
+              {g.label}
+              <span className="nav-sheet-summary">{g.summary}</span>
+            </h2>
+            {g.pages.map((p) => (
+              <PageLink key={p.href} page={p} active={active} />
+            ))}
+          </section>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default function Contents({ active }: { active?: string }) {
   return (
     <nav className="contents" aria-label="Pages">
+      <Sheet active={active} />
       <div className="shell contents-inner">
         {/* Out of the dropdown and into the bar. Of everything in this nav, one
             link is what a first-time visitor is looking for, and it was two
             clicks and a hover behind a group label. Its own colour, its own
             arrow, first in the row — the rest of the strip stays quiet so this
             one can be loud. */}
-        <Link href="/start" className="nav-start" data-active={"/start" === active}>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden className="nav-start-icon">
-            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path
-              d="M9 8l6 4-6 4z"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="1"
-              strokeLinejoin="round"
-            />
-          </svg>
+        <Link href={START.href} className="nav-start" data-active={START.href === active}>
+          <StartIcon />
           <span>
-            <span className="nav-start-label">Start here</span>
-            <span className="nav-start-note">~10 min to a thinking agent</span>
+            <span className="nav-start-label">{START.label}</span>
+            <span className="nav-start-note">{START.note}</span>
           </span>
         </Link>
 
@@ -117,19 +200,7 @@ export default function Contents({ active }: { active?: string }) {
               </summary>
               <div className="nav-panel">
                 {g.pages.map((p) => (
-                  <Link
-                    key={p.href}
-                    href={p.href}
-                    className="nav-item"
-                    data-active={p.href === active}
-                    {...(p.external ? { target: "_blank", rel: "noreferrer" } : {})}
-                  >
-                    <span className="nav-item-label">
-                      {p.label}
-                      {p.external ? " ↗" : ""}
-                    </span>
-                    <span className="nav-item-note">{p.note}</span>
-                  </Link>
+                  <PageLink key={p.href} page={p} active={active} />
                 ))}
               </div>
             </details>
@@ -143,12 +214,12 @@ export default function Contents({ active }: { active?: string }) {
                 group,
                 <Link
                   key="catalogue-flat"
-                  href="/explore"
+                  href={CATALOGUE.href}
                   className="nav-flat"
-                  data-active={"/explore" === active}
+                  data-active={CATALOGUE.href === active}
                 >
-                  <span className="nav-label">Catalogue</span>
-                  <span className="nav-summary-note">ready brains, free to add</span>
+                  <span className="nav-label">{CATALOGUE.label}</span>
+                  <span className="nav-summary-note">{CATALOGUE.note}</span>
                 </Link>,
               ]
             : [group];

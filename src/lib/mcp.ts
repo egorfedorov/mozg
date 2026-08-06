@@ -705,7 +705,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
 
 async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcome> {
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   const brief = await briefBrain(resolved.brain.id);
 
@@ -866,7 +866,7 @@ async function brainSearch(
   const handle = String(args.brain ?? "");
   const q = String(args.query ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.locked) {
     return {
       text: await lockedText(resolved.brain),
@@ -975,7 +975,7 @@ async function brainHandoff(
   const handle = String(args.brain ?? "");
   const action = String(args.action ?? "list");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.locked) {
     return { text: await lockedText(resolved.brain), isError: true, results: 0 };
   }
@@ -1078,7 +1078,7 @@ async function brainVerify(
   if (!claim) return { text: "Give brain_verify one checkable claim.", isError: true };
 
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.locked) {
     return {
       text: await lockedText(resolved.brain),
@@ -1178,7 +1178,7 @@ async function brainRead(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.locked) {
     return {
       text: await lockedText(resolved.brain),
@@ -1291,7 +1291,7 @@ async function brainWrite(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   const mode = await writeModeFor(resolved, handle, owner);
   if (!mode.ok) return mode.outcome;
@@ -1368,7 +1368,7 @@ async function brainWriteBatch(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   const mode = await writeModeFor(resolved, handle, owner);
   if (!mode.ok) return mode.outcome;
@@ -1464,7 +1464,7 @@ async function brainFeedback(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   // An empty reason used to fail the call outright, and the vote went in the
   // bin with it. That is backwards: the signal is what moves the note's
@@ -1677,7 +1677,7 @@ async function brainAddSource(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.access !== "owner") {
     return {
       text: `Only the owner of ${handle} can add material to it.`,
@@ -1822,10 +1822,75 @@ async function brainAddSource(
   };
 }
 
-function notFound(handle: string): ToolOutcome {
+/**
+ * The dead end, made into a signpost.
+ *
+ * "Call brain_list to see what is" costs a round trip that the server could
+ * have saved by answering with the list — and an agent that already believes
+ * the handle it invented is right often does not make that call at all. It
+ * apologises to the user instead, and the question is lost. So the refusal
+ * carries the shelf: same handles brain_list prints, near-misses first, and a
+ * different first line when the tool was called with no brain at all (an empty
+ * name is a missing argument, not a wrong one — saying `No brain ""` reads
+ * like a bug in the server).
+ */
+async function notFound(handle: string, userId: string): Promise<ToolOutcome> {
+  const rows = await query<{ handle: string; title: string }>(
+    `select b.slug as handle, b.title from brains b where b.owner_id = $1
+     union all
+     select u.handle || '/' || b.slug, b.title
+       from brains b
+       join grants g on g.brain_id = b.id
+       join "user" u on u.id = b.owner_id
+       join "user" me on lower(me.email) = lower(g.email)
+      where me.id = $1 and me."emailVerified"
+     union all
+     select u.handle || '/' || b.slug, b.title
+       from library l
+       join brains b on b.id = l.brain_id
+       join "user" u on u.id = b.owner_id
+      where l.user_id = $1
+      order by 1`,
+    [userId],
+  );
+
+  const asked = handle.trim().toLowerCase();
+  const head = asked
+    ? `No brain "${handle}" is available to you.`
+    : "That tool needs a brain name and was called without one.";
+
+  if (!rows.length) {
+    return {
+      text:
+        `${head} Your shelf is empty — create one with brain_create, or add a ` +
+        "public one from https://mozg.sh/explore.",
+      isError: true,
+    };
+  }
+
+  // Near-misses first: an agent that guessed a slug usually guessed most of
+  // its words. Slug against slug — the owner prefix is dropped on both sides,
+  // or every brain by the same owner counts as a near miss on the word "mozg".
+  const slug = (h: string) => h.slice(h.indexOf("/") + 1);
+  const words = new Set(slug(asked).split(/[\-_\s]+/).filter((w) => w.length > 2));
+  const near = words.size
+    ? rows.filter((r) =>
+        slug(r.handle.toLowerCase())
+          .split(/[\-_]+/)
+          .some((w) => words.has(w)),
+      )
+    : [];
+  const ordered = [...near, ...rows.filter((r) => !near.includes(r))];
+
   return {
     text:
-      `No brain "${handle}" is available to you. Call brain_list to see what is.`,
+      `${head} These are yours to use — pass one of these handles verbatim:\n` +
+      ordered
+        .slice(0, 20)
+        .map((r) => `- ${r.handle} — ${r.title}`)
+        .join("\n") +
+      (ordered.length > 20 ? `\n…and ${ordered.length - 20} more (brain_list)` : "") +
+      (near.length ? "\n\nThe first ones are the closest to what you asked for." : ""),
     isError: true,
   };
 }
@@ -1845,7 +1910,7 @@ async function libraryAdd(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   const result = await addToLibrary(owner.userId, resolved.brain.id);
   if (result.ok) {
@@ -1873,7 +1938,7 @@ async function libraryRemove(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
 
   await removeFromLibrary(owner.userId, resolved.brain.id);
   return {
@@ -1896,7 +1961,7 @@ async function brainRefresh(
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const resolved = await resolveBrain(handle, owner.userId);
-  if (!resolved) return notFound(handle);
+  if (!resolved) return notFound(handle, owner.userId);
   if (resolved.access !== "owner") {
     return {
       text:

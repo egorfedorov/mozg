@@ -711,24 +711,154 @@ a {
   color: var(--paper);
 }
 
-/* On a phone there is no room to float a panel beside a scrolling strip, and a
-   dropdown pinned to a horizontally-scrolled parent lands off-screen. Let the
-   open group push the page instead: the reader asked for it. */
-@media (max-width: 640px) {
-  .nav-group {
-    flex: 1 0 auto;
-  }
+/* ─── the phone menu ────────────────────────────────────────────────────── */
 
-  .nav-summary-note {
+/* Two shapes, one set of links. Above 640 the strip; at or below it the sheet,
+   because a dropdown that lives inside a wrapped flex cell opens at that cell's
+   width, under whichever label shared its row. */
+.nav-sheet {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .contents-inner {
     display: none;
   }
 
-  .nav-panel {
-    position: static;
-    min-width: 0;
-    border-left: 0;
-    border-right: 0;
-    box-shadow: none;
+  .nav-sheet {
+    display: block;
+  }
+
+  /* The bar. Left half says what it does, right half says where you already
+     are — the one thing the closed strip used to answer with its underline. */
+  .nav-sheet-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem var(--gutter);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-sheet-bar::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-sheet[open] .nav-sheet-bar {
+    background: var(--paper);
+    box-shadow: inset 0 -1px 0 var(--rule);
+  }
+
+  /* Three rules that fold into a cross when the sheet is open. Cheap, and it
+     tells a thumb whether the next tap opens or closes. */
+  .nav-sheet-burger {
+    flex: 0 0 auto;
+    display: grid;
+    gap: 4px;
+    width: 18px;
+  }
+
+  .nav-sheet-burger span {
+    display: block;
+    height: 2px;
+    background: var(--ink);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+
+  .nav-sheet[open] .nav-sheet-burger span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .nav-sheet[open] .nav-sheet-burger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .nav-sheet[open] .nav-sheet-burger span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  .nav-sheet-title {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.9375rem;
+    color: var(--ink);
+  }
+
+  .nav-sheet-where {
+    margin-left: auto;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    color: var(--ink-3);
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--rule);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Everything at once, one tap per page — a sheet has the height a dropdown
+     never had, so there is no reason to make a group a second tap. It scrolls
+     itself rather than the page under it, and stops short of the fold so the
+     bar that closes it is always reachable. */
+  .nav-sheet-body {
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--paper);
+    border-top: 1px solid var(--rule);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-sheet-start {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem var(--gutter);
+    text-decoration: none;
+    color: var(--ink);
+    border-bottom: 1px solid var(--rule);
+    box-shadow: inset 3px 0 0 var(--color-riso-green);
+  }
+
+  .nav-sheet-start .nav-start-note {
+    display: block;
+    margin-top: 0.15rem;
+  }
+
+  .nav-sheet-start[data-active="true"] {
+    background: var(--paper-2);
+  }
+
+  .nav-sheet-label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.85rem var(--gutter) 0.4rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .nav-sheet-summary {
+    font-size: 0.6875rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-3);
+    opacity: 0.75;
+  }
+
+  .nav-sheet-group {
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Rows built for a thumb, not a cursor. */
+  .nav-sheet .nav-item {
+    padding: 0.7rem var(--gutter);
   }
 }
 .sk-panel {
