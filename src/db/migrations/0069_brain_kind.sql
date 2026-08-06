@@ -1,0 +1,23 @@
+-- 0069 — a brain has a second nature: knowledge, or a style
+--
+-- Everything in the extraction and exam prompts was written for one audience.
+-- "You build knowledge packs that AI coding agents read", "prefer exact pixel
+-- offsets", "keep API parameter tables lossless", "working code examples are
+-- first-class". Point that at an illustrator's paintings — which is exactly
+-- what /styles/new tells an artist to upload — and the model dutifully hunts
+-- for endpoints and pixel offsets in a watercolour. It finds none, so it
+-- writes prose about mood, and prose about mood cannot reproduce a style.
+--
+-- A style brain is not a knowledge base with an art topic. It answers a
+-- different question ("draw the way I draw", not "what is true about X"), so
+-- it needs different extraction, a different exam, and a different thing said
+-- to the agent that loads it. `topic` could not carry that: topic is a
+-- catalogue shelf, and a brain about the history of Bauhaus belongs on the art
+-- shelf while being pure knowledge.
+--
+-- Default 'knowledge' so every existing brain keeps behaving exactly as it
+-- does today. /styles/new sets 'style'; the sharing settings let an owner
+-- change it, because a brain built by hand before this existed has no other
+-- way to say what it is.
+alter table brains add column if not exists kind text not null default 'knowledge'
+  check (kind in ('knowledge', 'style'));

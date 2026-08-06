@@ -131,7 +131,29 @@ export async function generateChecks(brain: Brain): Promise<number> {
     toolDescription: "Save the exam. Call once with every check you wrote.",
     schema: GEN_SCHEMA,
     system:
-          "You write exams for knowledge bases that AI coding agents read.\n\n" +
+          (brain.kind === "style"
+            ? // A style is not a subject to be quizzed about, it is a
+              // procedure to be reproduced. So the exam asks what a person
+              // standing at the easel would need — values, weights, the
+              // nevers — because those are the questions whose failure means
+              // "a buyer cannot draw in this style from what you sold them".
+              // A style scoring well on "describe the mood" is a style that
+              // sold nothing.
+              "You write exams that decide whether a written-down visual style " +
+              "can actually be REPRODUCED from it.\n\n" +
+              "Every question must be one an artist or an image model would need " +
+              "answered before making the next piece: an exact colour value, an " +
+              "outline weight, how shading is achieved, an edge treatment, a " +
+              "proportion rule, or something the style must never do. `expect` " +
+              "names the value or the rule.\n\n" +
+              "Never ask what a picture depicts, and never ask about mood, feeling " +
+              "or influences unless the answer is a concrete instruction. " +
+              "\"Warm and nostalgic\" is not a checkable expectation; \"the only " +
+              "saturated ink is #f15060; everything else is cream or near-black\" " +
+              "is.\n\n" +
+              "Include at least two checks on the hard nevers — the things that " +
+              "give an imitation away.\n\n"
+            : "You write exams for knowledge bases that AI coding agents read.\n\n") +
           "Given a goal and the titles of the notes a brain currently holds, write " +
           `up to ${target} control questions that verify whether the brain can ` +
           "actually support that goal.\n\n" +

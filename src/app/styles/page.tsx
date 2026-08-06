@@ -124,7 +124,7 @@ export default async function StylesPage() {
             Browse them by artist, see what each one teaches and what it scored,
             and take one to your agent.
           </p>
-          <Link className="btn" href="/gallery">
+          <Link className="btn" href="https://gallery.mozg.sh">
             Open the gallery
           </Link>
         </section>

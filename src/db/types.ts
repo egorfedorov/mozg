@@ -41,6 +41,9 @@ export interface Brain {
   contributions: boolean;
   /** Storage key of the one upload the owner made public as a cover; see 0068. */
   cover_key: string | null;
+  /** What this brain is: a knowledge pack, or a reproducible style. See 0069 —
+   *  it selects the extraction prompt and the exam, not just a label. */
+  kind: "knowledge" | "style";
   note_count: number;
   source_count: number;
   /** 0 means free. Access to a paid brain is bought once, from balance. */

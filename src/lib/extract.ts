@@ -16,7 +16,7 @@ const NOTE_KINDS = ["fact", "rule", "layout", "example", "pitfall"] as const;
 
 /** Bumped when the extraction prompt changes meaningfully — it invalidates
  *  the extraction cache, which cannot see the prompt any other way. */
-export const EXTRACT_PROMPT_VERSION = "v2";
+export const EXTRACT_PROMPT_VERSION = "v3";
 
 export interface ExtractedNote {
   title: string;
@@ -77,6 +77,115 @@ const JSON_SCHEMA = {
   required: ["notes"],
   additionalProperties: false,
 } as const;
+
+/**
+ * Which of the two extractors this source gets. A style brain reads its
+ * material as an art director; everything else reads it as a knowledge pack.
+ */
+function promptFor(opts: {
+  goal: string | null;
+  categories?: string[];
+  focus?: string[];
+  style?: boolean;
+}): string {
+  return opts.style
+    ? styleSystemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? [])
+    : systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []);
+}
+
+/**
+ * The style extractor.
+ *
+ * A separate prompt, not a paragraph bolted onto the knowledge one, because
+ * almost every instruction in that prompt is actively wrong here. It says the
+ * reader is a coding agent, asks for pixel offsets and API tables, and calls
+ * code examples first-class. Pointed at a painting, a model following it finds
+ * none of those, and falls back to the one thing an image always affords:
+ * describing the mood. "Warm, nostalgic, hand-drawn feel" is true of ten
+ * thousand illustrators and reproduces none of them.
+ *
+ * So this asks the opposite question. Not "what is depicted" but "what would I
+ * have to do to draw the next one" — and it insists on numbers, because a
+ * measurement is the only kind of style note that survives being read by a
+ * machine six months later. The named categories are fixed on purpose: they
+ * match the fields /styles/new offers, so a style written by hand and a style
+ * read from artwork land in the same shelves and the exam can compare them.
+ */
+function styleSystemPrompt(
+  goal: string | null,
+  categories: string[],
+  focus: string[] = [],
+): string {
+  return [
+    "You are an art director reverse-engineering a visual style so that another",
+    "artist — or an image model — can reproduce it exactly. You are given one",
+    "artwork at a time.",
+    "",
+    goal
+      ? `The style you are describing:\n<goal>\n${goal}\n</goal>`
+      : "Describe the style of the artwork so it can be reproduced.",
+    "",
+    "You are NOT describing what is depicted. Nobody will ask this brain what",
+    "was in the picture. They will ask how to make the next one look like it.",
+    "A note about the subject is waste; a note about the treatment is the",
+    "product.",
+    "",
+    "MEASURE, do not admire. Every note must carry something a person could",
+    "check by holding a ruler, a colour picker or a stopwatch to the work:",
+    "- exact hex values, and which one dominates and which one accents;",
+    "- outline weight, whether it varies along a stroke, whether it is closed;",
+    "- how shading is achieved — halftone, hatching, flat blocks, gradient —",
+    "  and at what density or angle;",
+    "- edge treatment: hard, feathered, keyline, none;",
+    "- how light behaves: direction, whether shadows are coloured, contrast;",
+    "- composition habits: negative space, where the subject sits, framing;",
+    "- proportion rules, especially for faces and figures;",
+    "- texture and grain, and whether it sits over everything or only in shapes.",
+    "",
+    "'The palette is warm and muted' is worthless. '#f15060 coral is the only",
+    "saturated colour; everything else is #eceee7 cream and near-black #14161a'",
+    "is the note. If you cannot put a value on something, say what it is",
+    "measured against instead — 'the outline is roughly twice the weight of the",
+    "interior linework'.",
+    "",
+    "Write at least one 'pitfall' note for what this style NEVER does. The",
+    "nevers are what stop an imitation: anyone can copy a palette, and the",
+    "thing that gives a fake away is the gradient or the glow the original",
+    "would never use. Look for what is conspicuously absent.",
+    "",
+    "For each observation write a self-contained note:",
+    "- title: short, searchable, naming the aspect ('Outline weight and colour').",
+    "- body: the rule in full sentences, with its values. It must make sense to",
+    "  a reader who cannot see the artwork. Never write 'as shown here'.",
+    "- kind: rule for how to do it, fact for what it is, pitfall for a never.",
+    "- category: one of Palette, Line & outline, Light & shading, Texture &",
+    "  materials, Composition, Subjects, Nevers, Background. Reuse these exact",
+    "  names — the style's own form uses them.",
+    "- confidence: lower it when one artwork is thin evidence for a rule. A",
+    "  habit you can only see once is a guess; say so with the number.",
+    "",
+    ...(focus.length
+      ? [
+          "IN ADDITION to the full extraction above — never instead of it — the",
+          "brain currently FAILS these exam questions. If this artwork shows",
+          "their answer, measure it precisely:",
+          ...focus.map((q) => `- ${q}`),
+          "",
+        ]
+      : []),
+    categories.length
+      ? `Categories already used in this brain, reuse where they fit:\n${categories.map((c) => `- ${c}`).join("\n")}`
+      : "",
+    "",
+    "Never transcribe a signature, a watermark, or any personal data.",
+    "",
+    "If the artwork shows nothing about the style that you can state as a rule,",
+    "return an empty list. That is a correct answer and far better than",
+    "inventing an observation to seem useful.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 function systemPrompt(
   goal: string | null,
@@ -181,13 +290,13 @@ const TOOL_DESCRIPTION =
 
 export async function extractFromImage(
   image: Buffer,
-  opts: { goal: string | null; categories?: string[]; focus?: string[] },
+  opts: { goal: string | null; categories?: string[]; focus?: string[]; style?: boolean },
 ): Promise<ExtractResult> {
   const { data, mediaType } = await prepareImage(image);
 
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
-    system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
+    system: promptFor(opts),
     toolName: "save_notes",
     toolDescription: TOOL_DESCRIPTION,
     schema: JSON_SCHEMA,
@@ -233,11 +342,11 @@ function finish(raw: unknown, usage: Usage): ExtractResult {
  */
 export async function extractFromPdf(
   pdf: Buffer,
-  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[] },
+  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[]; style?: boolean },
 ): Promise<ExtractResult> {
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
-    system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
+    system: promptFor(opts),
     toolName: "save_notes",
     toolDescription: TOOL_DESCRIPTION,
     schema: JSON_SCHEMA,
@@ -309,7 +418,7 @@ const SEGMENT_CONCURRENCY = 4;
 
 export async function extractFromText(
   text: string,
-  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[] },
+  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[]; style?: boolean },
 ): Promise<ExtractResult> {
   const parts = segments(text);
 
@@ -322,7 +431,7 @@ export async function extractFromText(
     try {
       const { data: raw, usage: u } = await structured<unknown>({
         model: env.MODEL_EXTRACT,
-        system: systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []),
+        system: promptFor(opts),
         toolName: "save_notes",
         toolDescription: TOOL_DESCRIPTION,
         schema: JSON_SCHEMA,

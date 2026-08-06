@@ -19,7 +19,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/why", label: "Why mozg" },
       { href: "/vs", label: "A brain and a Skill file" },
       { href: "/explore", label: "Catalogue" },
-      { href: "/gallery", label: "Style gallery" },
+      { href: "https://gallery.mozg.sh", label: "Style gallery" },
       { href: "/explore?price=free", label: "Free brains (all official)" },
       { href: "/explore?price=paid", label: "Marketplace" },
       { href: "/roadmap", label: "Roadmap — dated and gated" },

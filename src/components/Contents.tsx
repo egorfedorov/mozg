@@ -53,7 +53,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     summary: "what people do with it",
     pages: [
       { href: "/stories", label: "How people use it", note: "an artist, a company, a game studio" },
-      { href: "/gallery", label: "Style gallery", note: "buy the way someone works" },
+      { href: "https://gallery.mozg.sh", label: "Style gallery", note: "buy the way someone works", external: true },
       { href: "/styles", label: "Sell your style", note: "the answer to scraping that pays you" },
       { href: "/audit", label: "Audit a knowledge base", note: "exam-as-a-service, dated" },
       { href: "https://learn.mozg.sh", label: "Learn as a human", note: "the same brain, as a course", external: true },

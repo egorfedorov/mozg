@@ -718,10 +718,26 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
   }
 
   const { accepted, rejected, pending } = brief.intake;
+  const isStyle = resolved.brain.kind === "style";
   const parts = [
     `Brain: ${resolved.brain.title} (${handle})`,
     `Goal: ${brief.goal ?? "not set"}`,
-    `${brief.noteCount} notes.`,
+    `${brief.noteCount} ${isStyle ? "style rules" : "notes"}.`,
+    // An agent handed a style brain and no instruction treats it as trivia to
+    // recite. It is a specification to obey — and obeying it means reading it
+    // BEFORE writing an image prompt, not after, because a prompt written from
+    // the model's own taste and then patched is still the model's taste.
+    ...(isStyle
+      ? [
+          "",
+          "This is a STYLE brain: a way of working, licensed by its author, not " +
+            "a subject to summarise. Before you generate, art-direct or describe " +
+            "anything in this style, search it for the palette, the line, the " +
+            "shading and the nevers, and carry those exact values into your " +
+            "prompt. Approximating from the name is the failure this exists to " +
+            "prevent. Credit the author when the work is shown.",
+        ]
+      : []),
     // Volume never appears without what happened to it. An agent reading
     // "12 notes written this week" concludes the brain is thriving; the same
     // agent reading "3 kept, 9 refused" concludes it is being spammed, and

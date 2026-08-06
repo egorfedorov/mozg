@@ -191,6 +191,43 @@ export default function ShareForm({
           </span>
         </label>
 
+        {/* What the brain IS, which decides how it is read and examined —
+            not a catalogue label. Placed above the cover because the two
+            belong together: a style is the thing that needs a picture. */}
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
+          <legend className="eyebrow" style={{ padding: 0 }}>What this brain is</legend>
+          {[
+            {
+              value: "knowledge",
+              label: "Knowledge",
+              detail:
+                "Facts, conventions, APIs, decisions. Read as documentation; examined on what it can answer.",
+            },
+            {
+              value: "style",
+              label: "A style",
+              detail:
+                "A way of working — palette, line, light, the hard nevers. Uploads are read by an art director rather than a documentation reader, the exam asks whether the style can actually be reproduced from it, and it appears in the gallery.",
+            },
+          ].map((k) => (
+            <label key={k.value} style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>
+              <input
+                type="radio"
+                name="kind"
+                value={k.value}
+                defaultChecked={brain.kind === k.value}
+                style={{ marginTop: ".3rem" }}
+              />
+              <span>
+                <strong>{k.label}</strong>
+                <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
+                  {k.detail}
+                </span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
         {/* The gallery card. A style is judged with the eyes in a second, so a
             brain without one lists below every brain that has one — which is
             the correct incentive, and the reason this sits in the sharing

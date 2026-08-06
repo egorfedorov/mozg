@@ -61,8 +61,8 @@ export async function createStyleBrain(_prev: unknown, formData: FormData) {
   if (exists.length) return { error: `You already have a brain at "${slug}".` };
 
   const brain = await one<{ id: string }>(
-    `insert into brains (owner_id, slug, title, goal, topic, color, review_required)
-     values ($1, $2, $3, $4, 'art', 'red', false)
+    `insert into brains (owner_id, slug, title, goal, topic, color, review_required, kind)
+     values ($1, $2, $3, $4, 'art', 'red', false, 'style')
      returning id`,
     [
       user.id,

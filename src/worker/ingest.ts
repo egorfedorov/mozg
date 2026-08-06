@@ -448,12 +448,21 @@ async function cachedTextExtract(
   label?: string,
 ): Promise<ExtractResult> {
   const focus = await failedFocus(brain.id);
+  const style = brain.kind === "style";
   // Focus is part of the goal hash: a focused re-read is a different ask
   // than the blind first read, and must not be answered from its cache.
+  //
+  // So is the brain's kind, and that one is load-bearing: the cache is shared
+  // across brains by content, so without it the first brain to read a page
+  // decides how every later brain reads it — a style brain asking for palette
+  // values would be handed the knowledge extraction some documentation brain
+  // paid for an hour earlier, and never know.
   const key = [
     contentHash(text),
     env.MODEL_EXTRACT,
-    contentHash(`${EXTRACT_PROMPT_VERSION}\n${brain.goal ?? ""}\n${focus.join("\n")}`),
+    contentHash(
+      `${EXTRACT_PROMPT_VERSION}\n${style ? "style" : "knowledge"}\n${brain.goal ?? ""}\n${focus.join("\n")}`,
+    ),
   ];
 
   const hit = await maybeOne<{ payload: ExtractResult }>(
@@ -466,7 +475,7 @@ async function cachedTextExtract(
     return { ...hit.payload, usage: { ...hit.payload.usage, costCents: 0 } };
   }
 
-  const result = await extractFromText(text, { goal: brain.goal, categories, label, focus });
+  const result = await extractFromText(text, { goal: brain.goal, categories, label, focus, style });
 
   await query(
     `insert into extract_cache (content_hash, model, goal_hash, payload, note_count)
@@ -478,10 +487,13 @@ async function cachedTextExtract(
 }
 
 async function extract(source: Source, brain: Brain, categories: string[]) {
+  // A style brain reads its material as an art director rather than as a
+  // documentation reader — different prompt entirely; see lib/extract.ts.
+  const style = brain.kind === "style";
   if (source.kind === "image") {
     if (!source.storage_key) throw new Error("image source has no storage key");
     const bytes = await storage.get(source.storage_key);
-    return extractFromImage(bytes, { goal: brain.goal, categories });
+    return extractFromImage(bytes, { goal: brain.goal, categories, style });
   }
 
   if (source.mime === "application/pdf") {
@@ -490,6 +502,7 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
     return extractFromPdf(bytes, {
       goal: brain.goal,
       categories,
+      style,
       label: source.original_name ?? undefined,
     });
   }

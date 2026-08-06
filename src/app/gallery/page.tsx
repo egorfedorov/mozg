@@ -1,6 +1,5 @@
 import Link from "next/link";
-import TopBar from "@/components/TopBar";
-import SiteFooter from "@/components/SiteFooter";
+import GalleryShell from "./GalleryShell";
 import { query } from "@/db";
 import { coverUrl } from "@/lib/covers";
 
@@ -66,9 +65,7 @@ export default async function GalleryPage() {
   const artists = new Set(styles.map((s) => s.handle)).size;
 
   return (
-    <>
-      <TopBar />
-
+    <GalleryShell>
       <main>
         {/* Its own front door rather than the product's contents strip: the
             person arriving here is looking for work to buy, not for docs. */}
@@ -90,7 +87,7 @@ export default async function GalleryPage() {
               taken back.
             </p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", alignItems: "center" }}>
-              <Link className="btn gal-btn" href="/styles">
+              <Link className="btn gal-btn" href="https://mozg.sh/styles">
                 How it works for artists
               </Link>
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--paper-2)", opacity: 0.6 }}>
@@ -110,7 +107,7 @@ export default async function GalleryPage() {
                 among them, it takes an afternoon and the catalogue listing is
                 free.
               </p>
-              <Link className="btn" href="/styles">
+              <Link className="btn" href="https://mozg.sh/styles">
                 Put your style up
               </Link>
             </div>
@@ -119,7 +116,7 @@ export default async function GalleryPage() {
               {styles.map((s) => {
                 const cover = coverUrl(s);
                 return (
-                  <Link key={s.id} className="gal-card" href={`/b/${s.handle}/${s.slug}`}>
+                  <Link key={s.id} className="gal-card" href={`https://mozg.sh/b/${s.handle}/${s.slug}`}>
                     <span className="gal-cover">
                       {cover ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -170,13 +167,11 @@ export default async function GalleryPage() {
               not.
             </p>
             <p style={{ marginBottom: 0 }}>
-              <Link href="/styles">The full argument, and how to sell one →</Link>
+              <Link href="https://mozg.sh/styles">The full argument, and how to sell one →</Link>
             </p>
           </section>
         </div>
       </main>
-
-      <SiteFooter />
-    </>
+    </GalleryShell>
   );
 }
