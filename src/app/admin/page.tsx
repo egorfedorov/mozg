@@ -7,6 +7,7 @@ import {
   adminBrains,
   openPayouts,
   openPlanRequests,
+  toolReach,
 } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { Section, Stats, Stat, Rows, Row } from "@/components/ui";
@@ -24,7 +25,7 @@ export const metadata = { title: "Admin — mozg", robots: { index: false, follo
 export default async function AdminPage() {
   await requireAdmin();
 
-  const [h, money, ledger, brains, payouts, requests, payments, totals] = await Promise.all([
+  const [h, money, ledger, brains, payouts, requests, payments, totals, reach] = await Promise.all([
     health(),
     adminMoney(),
     adminLedger(12),
@@ -58,6 +59,7 @@ export default async function AdminPage() {
          (select count(*)::int from brains where visibility = 'public') as public_brains,
          (select count(*)::int from brains where price_cents > 0) as paid_brains`,
     ),
+    toolReach(),
   ]);
 
   // What today actually cost us: extraction and exams keep their cost on
@@ -130,6 +132,36 @@ export default async function AdminPage() {
               label="MCP · 24 h"
               dot={h.failuresDay > 0 ? "down" : "ok"}
               value={`${h.callsDay} calls${h.failuresDay ? `, ${h.failuresDay} failed` : ""}`}
+            />
+          </Stats>
+        </Section>
+
+        {/* The one number that can say the persuasion is not working. Four
+            layers exist to make an agent reach for a brain unprompted and none
+            of them was measured — an account that connects and only ever lists
+            has a brain it never asks, which a total call count hides because
+            listing is itself a call. */}
+        <Section
+          title="Do connected agents actually use it? · 7 days"
+          aside="distinct accounts, not calls"
+        >
+          <Stats>
+            <Stat label="Agents calling" value={String(reach.active)} note="any tool" />
+            <Stat
+              label="…that searched"
+              value={reach.active ? `${reach.searched} · ${Math.round((reach.searched / reach.active) * 100)}%` : "0"}
+              dot={reach.active && reach.searched / reach.active >= 0.5 ? "ok" : "down"}
+              note="asked before answering"
+            />
+            <Stat
+              label="…that wrote back"
+              value={String(reach.wrote)}
+              note="taught it something"
+            />
+            <Stat
+              label="…that left a baton"
+              value={String(reach.handed)}
+              note="handoff for the next session"
             />
           </Stats>
         </Section>

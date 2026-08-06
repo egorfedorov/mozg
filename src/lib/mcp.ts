@@ -59,9 +59,10 @@ export const TOOLS: ToolDef[] = [
     name: "brain_brief",
     description:
       "Get a compact map of one brain: its goal, the categories of knowledge it " +
-      "holds, and its known gaps. Cheap — call it before searching so you know " +
-      "whether this brain can answer the question at all and which words it uses. " +
-      "Do not skip this and guess at search terms.",
+      "holds, its known gaps, and any unfinished work an earlier session left " +
+      "here. Cheap — call it before searching so you know whether this brain " +
+      "can answer the question at all and which words it uses. Do not skip this " +
+      "and guess at search terms.",
     inputSchema: {
       type: "object",
       properties: {
@@ -75,11 +76,14 @@ export const TOOLS: ToolDef[] = [
     name: "brain_search",
     description:
       "Search a brain for knowledge relevant to your current task. Call this " +
-      "whenever the answer depends on project-specific conventions, layouts, " +
-      "rules or decisions that are not already in this conversation — before " +
-      "answering from general knowledge. Prefer several short, specific queries " +
-      "over one long one. Returns ranked excerpts with note ids — excerpts are " +
-      "cut short; brain_read gives the full note.",
+      "BEFORE answering, whenever the question names a file, a version, an API, " +
+      "a config key or a convention — or asks how something is done \"here\", " +
+      "\"in this project\" or \"in our setup\". Those are the answers your " +
+      "training data has an outdated version of and will give confidently. " +
+      "Skip it for general programming questions this brain has no stake in. " +
+      "Prefer several short, specific queries over one long one. Returns ranked " +
+      "excerpts with note ids — excerpts are cut short; brain_read gives the " +
+      "full note.",
     inputSchema: {
       type: "object",
       properties: {
@@ -166,12 +170,16 @@ export const TOOLS: ToolDef[] = [
     name: "brain_write",
     description:
       "Save a durable lesson back into the brain: a convention you confirmed, a " +
-      "correction to something the brain had wrong, a pitfall you hit. Write one " +
-      "self-contained fact per call, phrased so it helps someone who was not in " +
-      "this conversation. Do not save what the repository or this chat already " +
-      "records, and never save credentials, tokens or personal data. Works on " +
-      "brains you only read too: there it saves as a proposal for the owner to " +
-      "review, so write it anyway rather than dropping what you learned.",
+      "correction to something the brain had wrong, a pitfall you hit. The " +
+      "moment to call it is when you have just worked something out that took " +
+      "real digging and would take the next session the same digging. Write one " +
+      "self-contained fact per call — it will be read alone, months later, by " +
+      "someone with none of this conversation, so name the file, version or " +
+      "number it turns on and say why, not only what. Do not save what the " +
+      "repository or this chat already records, and never save credentials, " +
+      "tokens or personal data. Works on brains you only read too: there it " +
+      "saves as a proposal for the owner to review, so write it anyway rather " +
+      "than dropping what you learned.",
     inputSchema: {
       type: "object",
       properties: {
@@ -709,11 +717,39 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
     void enqueueSummary(resolved.brain.id).catch(() => {});
   }
 
+  const { accepted, rejected, pending } = brief.intake;
   const parts = [
     `Brain: ${resolved.brain.title} (${handle})`,
     `Goal: ${brief.goal ?? "not set"}`,
     `${brief.noteCount} notes.`,
+    // Volume never appears without what happened to it. An agent reading
+    // "12 notes written this week" concludes the brain is thriving; the same
+    // agent reading "3 kept, 9 refused" concludes it is being spammed, and
+    // one of those two conclusions is the true one.
+    ...(accepted + rejected + pending > 0
+      ? [
+          `Agent notes this week: ${accepted} kept, ${rejected} refused` +
+            (pending ? `, ${pending} awaiting review` : "") +
+            (rejected > accepted
+              ? " — more refused than kept, so write fewer and better here."
+              : ""),
+        ]
+      : []),
   ];
+
+  // Before the map of what it knows: what somebody was doing here and did not
+  // finish. An agent orienting itself in a brain needs "where was I" ahead of
+  // "what is here" — resuming beats re-deciding, and a baton read after the
+  // agent has already planned its own approach is a baton ignored.
+  if (brief.batons.length) {
+    parts.push(
+      "",
+      `⚑ ${brief.batons.length} open handoff${brief.batons.length === 1 ? "" : "s"} — work left mid-flight here:`,
+      ...brief.batons.map((b) => `  - ${b.title} (${b.agent ?? "an agent"}, ${b.at})`),
+      `Read one with brain_handoff {"brain": "${handle}", "action": "take"} before starting`,
+      "fresh work on the same thing — it carries the state this brief cannot.",
+    );
+  }
 
   // Summaries first: the synthesised "what it knows" per category is the
   // fastest orientation the brain can offer, before the raw category tree
@@ -1289,6 +1325,15 @@ async function brainWrite(
           `"${r.lookalike.title}" (note_id: ${r.lookalike.note_id}). The reviewer ` +
           "sees both and decides — but if this was meant as a correction, " +
           "brain_read that note and write again stating what it gets wrong."
+        : "") +
+      // Said to the one party that can still act on it cheaply. The note is
+      // already saved, so this is an invitation to write a better one, not a
+      // failure to retry — spelled out, because an agent reading a complaint
+      // after a success will otherwise resend the same note verbatim.
+      (r.warnings.length
+        ? `\n\nQuality: ${r.warnings.map((w) => w.says).join("; ")}. ` +
+          "The note is saved — do not resend it. If you can fix this now, write " +
+          "the improved version and say it replaces this one."
         : ""),
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
@@ -1363,7 +1408,8 @@ async function brainWriteBatch(
           (r.lookalike
             ? ` Looks very close to "${r.lookalike.title}" ` +
               `(note_id: ${r.lookalike.note_id}); the reviewer decides.`
-            : ""),
+            : "") +
+          (r.warnings.length ? `\n    quality: ${r.warnings.map((w) => w.says).join("; ")}` : ""),
       );
     } else if (r.status === "duplicate") {
       lines.push(

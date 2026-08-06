@@ -136,6 +136,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         status: "saved",
         pending: r.pending,
         ...(r.lookalike ? { lookalike: r.lookalike } : {}),
+        ...(r.warnings.length ? { warnings: r.warnings } : {}),
       });
     } else if (r.status === "duplicate") {
       results.push({ title: r.title, status: "duplicate", existing: r.existing });

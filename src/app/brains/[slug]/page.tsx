@@ -10,6 +10,7 @@ import AddUrls from "@/components/AddUrls";
 import GoalEditor from "@/components/GoalEditor";
 import CallLog from "@/components/CallLog";
 import AutoRefresh from "@/components/AutoRefresh";
+import { noteWarnings } from "@/lib/note-quality";
 import { approveNote, rejectNote, dismissFlag } from "./review-actions";
 import { runExamNow, addCheck, removeCheck } from "./exam-actions";
 import { retrySource, deleteSource, waiveScan } from "./source-actions";
@@ -637,6 +638,19 @@ export default async function BrainPage({
                   <p style={{ margin: ".4rem 0 .75rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
                     {note.body}
                   </p>
+                  {/* Recomputed here rather than stored on the row: the rules
+                      change, and a column would show yesterday's opinion of a
+                      note forever. These are hints for the eye about to read
+                      it — nothing here rejected anything. */}
+                  {noteWarnings(note.title, note.body, note.kind).map((w) => (
+                    <p
+                      key={w.rule}
+                      className="mono"
+                      style={{ margin: "0 0 .4rem", fontSize: ".75rem", color: "var(--color-riso-orange)" }}
+                    >
+                      ⚠ {w.says}
+                    </p>
+                  ))}
                   <div style={{ display: "flex", gap: ".5rem" }}>
                     <form action={approveNote}>
                       <input type="hidden" name="id" value={note.id} />

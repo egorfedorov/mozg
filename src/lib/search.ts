@@ -246,6 +246,28 @@ export interface BrainBrief {
   covers: { label: string; notes: number }[];
   /** Sources beyond the cap: the list is a sample, not the inventory. */
   hiddenCovers: number;
+  /**
+   * Work left mid-flight on this brain, still unclaimed.
+   *
+   * A brief was a map of knowledge and nothing else, so an agent could read
+   * everything the brain knows and still not learn that yesterday's session
+   * stopped halfway through a migration. The batons were visible only through
+   * brain_list, which an agent calls once at the start and never again — by
+   * the time it picks a brain, the baton has scrolled out of its attention.
+   * One call now answers both "what does this know" and "where was I".
+   */
+  batons: { title: string; agent: string | null; at: string }[];
+  /**
+   * Agent-written notes of the last week, by what happened to them.
+   *
+   * The number that goes up on its own is "notes written", and a brain tuned
+   * to it fills with true, unactionable prose — which is worse than an empty
+   * brain, because an empty brain does not answer confidently. Putting
+   * accepted next to rejected on the same line is the cheapest defence: it
+   * makes volume unreadable without its quality, so neither can be quoted
+   * alone.
+   */
+  intake: { accepted: number; rejected: number; pending: number };
 }
 
 /**
@@ -295,7 +317,7 @@ function groupCategories(rows: { name: string; notes: number }[]): {
 }
 
 export async function briefBrain(brainId: string): Promise<BrainBrief> {
-  const [goalRow, summaries, categories, titles, gaps, covers] = await Promise.all([
+  const [goalRow, summaries, categories, titles, gaps, covers, batons, intake] = await Promise.all([
     query<{ goal: string | null; note_count: number }>(
       `select goal, note_count from brains where id = $1`,
       [brainId],
@@ -357,6 +379,29 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
         limit ${MAX_COVERS + 1}`,
       [brainId],
     ),
+    // Open, unexpired, whoever left them: a baton is for the next session, and
+    // "next" is deliberately not "yours" — a different agent on a different
+    // machine taking it up is the point of the table existing.
+    query<{ title: string; agent: string | null; at: string }>(
+      `select title, agent_client as agent,
+              to_char(created_at at time zone 'UTC', 'MM-DD HH24:MI') as at
+         from handoffs
+        where brain_id = $1 and status = 'open' and expires_at > now()
+        order by created_at desc limit 5`,
+      [brainId],
+    ),
+    // Only agent-written notes: ingest's output is not something a reviewer
+    // accepts or refuses, so counting it here would dilute the one ratio this
+    // line exists to show.
+    query<{ accepted: number; rejected: number; pending: number }>(
+      `select count(*) filter (where status = 'active')::int as accepted,
+              count(*) filter (where status = 'rejected')::int as rejected,
+              count(*) filter (where status = 'pending')::int as pending
+         from notes
+        where brain_id = $1 and author = 'agent'
+          and created_at > now() - interval '7 days'`,
+      [brainId],
+    ),
   ]);
 
   const { groups, hidden } = groupCategories(categories);
@@ -371,6 +416,8 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
     hiddenCovers: Math.max(0, covers.length - MAX_COVERS),
     sampleTitles: titles.map((t) => t.title),
     knownGaps: gaps.map((g) => g.category),
+    batons,
+    intake: intake[0] ?? { accepted: 0, rejected: 0, pending: 0 },
   };
 }
 

@@ -328,37 +328,80 @@ async function main() {
          from notes n join brains b on b.id = n.brain_id
         where b.slug = 'check-mcp-scratch' and n.author = 'agent'`,
     );
-    check("it waits for review", written?.status === "pending", written?.status ?? "missing");
+    // These three asserted a product that no longer exists, and because this
+    // script runs by hand rather than in CI, they sat red without anyone
+    // reading them — which is the exact failure the error centre was built to
+    // stop, one layer up. What they used to claim, and why it changed:
+    //
+    //  - "it waits for review": the owner teaching their OWN brain through
+    //    their own token has activated inline since writeNeedsReview grew its
+    //    owner bypass. Review is for outside writers. This account is the
+    //    owner, so pending here would be the bug.
+    //  - "a free plan is refused": free gained write in efbd6cb, deliberately —
+    //    an agent note costs a self-hosted embed, not Anthropic spend.
+    //
+    // So they now assert the contract as it stands. The pending path they were
+    // reaching for is covered where it actually lives: a READER proposing, in
+    // the block below.
     check(
-      "and is not searchable until approved",
-      written?.chunks === 0,
+      "the owner's own note is live at once",
+      written?.status === "active",
+      written?.status ?? "missing",
+    );
+    check(
+      "and it is chunked, so search can find it",
+      (written?.chunks ?? 0) > 0,
       `${written?.chunks ?? "?"} chunks`,
     );
 
-    // Free plans are told on the plan page that writing back is Pro. That
-    // sentence was decoration until this was enforced.
     await query(`update "user" set plan = 'free' where id = $1`, [owner.id]);
-    const refused = await rpc(
+    const onFree = await rpc(
       "tools/call",
       {
         name: "brain_write",
-        arguments: { brain: "check-mcp-scratch", title: "Nope", body: "Should be refused." },
+        arguments: {
+          brain: "check-mcp-scratch",
+          title: "Free plans may teach too",
+          body: "Written on the free plan, which costs a self-hosted embed rather than model spend.",
+        },
       },
       token,
     );
     // When the account's monthly call quota is spent (heavy suite days), the
     // quota gate answers before the write gate can — that masks this check
     // rather than failing it, and the honest report is "skipped", not red.
-    if (/quota/i.test(textOf(refused.body.result))) {
+    if (/quota/i.test(textOf(onFree.body.result))) {
       console.log("  ~ free-plan write check skipped: monthly call quota exhausted on this account");
     } else {
       check(
-        "a free plan is refused, as the plan page promises",
-        Boolean(refused.body.result?.isError) && /Pro/.test(textOf(refused.body.result)),
-        textOf(refused.body.result).slice(0, 50),
+        "a free plan may write back, as the pricing page promises",
+        !onFree.body.result?.isError,
+        textOf(onFree.body.result).slice(0, 50),
       );
     }
     await query(`update "user" set plan = 'admin' where id = $1`, [owner.id]);
+
+    // The quality checklist reaches the one party that can still act on it.
+    // Warnings never refuse — a note that trips every rule is still saved.
+    const sloppy = await rpc(
+      "tools/call",
+      {
+        name: "brain_write",
+        arguments: {
+          brain: "check-mcp-scratch",
+          title: "Sloppy note the checklist should notice",
+          body: "As shown above, it generally works and should be fine.",
+          kind: "rule",
+        },
+      },
+      token,
+    );
+    const sloppyText = textOf(sloppy.body.result);
+    check(
+      "a vague note is still saved, with quality warnings attached",
+      !sloppy.body.result?.isError && /Quality:/.test(sloppyText),
+      sloppyText.slice(sloppyText.indexOf("Quality:"), sloppyText.indexOf("Quality:") + 60) || sloppyText.slice(0, 60),
+    );
 
     console.log("\ngrouping brains into a family");
     const kid = await rpc(

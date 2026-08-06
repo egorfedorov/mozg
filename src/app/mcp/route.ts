@@ -153,12 +153,28 @@ async function handle(rpc: RpcRequest, owner: Owner) {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: "mozg", version: "0.1.0" },
+          // Written as a working order rather than a description. The old
+          // version said what the tools were for and left the agent to infer
+          // when — which it did by never inferring it, and answering from
+          // training data with a brain sitting one call away. Each line names
+          // the moment, because a moment is what an agent can act on.
           instructions:
-            "mozg holds project-specific knowledge brains. Call brain_list once " +
-            "at the start of a session. Before answering anything that depends on " +
-            "this project's own conventions, search the relevant brain rather than " +
-            "answering from general knowledge. When you confirm a convention or hit " +
-            "a pitfall worth keeping, save it with brain_write.",
+            "mozg holds project-specific knowledge brains — material that is " +
+            "newer than your training data and scored against an exam.\n" +
+            "- Call brain_list once at the start of a session.\n" +
+            "- Call brain_brief on a brain before your first search in it: it " +
+            "returns the vocabulary to search with, the gaps not to trust, and " +
+            "any unfinished work left by an earlier session.\n" +
+            "- Call brain_search BEFORE answering whenever the question touches " +
+            "this project's conventions, file layout, versions, APIs, or any " +
+            "\"how do we do X here\" — your training data does not know these " +
+            "and will sound confident anyway. Skip it for general programming " +
+            "questions the brain has no stake in.\n" +
+            "- Call brain_write after working something out that cost real " +
+            "effort to find and would cost the next session the same. On brains " +
+            "you only read, this becomes a proposal for the owner — still worth " +
+            "sending.\n" +
+            "- Call brain_handoff to leave working state when you stop mid-task.",
         },
       };
 

@@ -8,6 +8,7 @@ import { rateLimited } from "@/lib/rate-limit";
 import { scanInjection, scanSecrets } from "@/lib/scan";
 import { enqueueExam } from "@/worker/queue";
 import { normalizeCategory } from "@/lib/category";
+import { noteWarnings, type NoteWarning } from "@/lib/note-quality";
 
 /**
  * The agent-note write pipeline, shared by every path an agent can teach
@@ -55,6 +56,8 @@ export type WriteNoteResult =
       pending: boolean;
       /** Set when the note went to review and resembles an existing one. */
       lookalike: DuplicateMatch | null;
+      /** Quality hints — never a reason it was refused. See lib/note-quality.ts. */
+      warnings: NoteWarning[];
     }
   | { status: "duplicate"; title: string; existing: DuplicateMatch }
   | { status: "rejected"; title: string; reason: string };
@@ -223,5 +226,13 @@ export async function writeAgentNote(
     void enqueueExam(brain.id).catch(() => {});
   }
 
-  return { status: "saved", title, pending, lookalike: pending ? duplicate : null };
+  return {
+    status: "saved",
+    title,
+    pending,
+    lookalike: pending ? duplicate : null,
+    // Computed after the note is safely stored, never before: a quality hint
+    // must not be able to cost somebody the note it was hinting about.
+    warnings: noteWarnings(title, body, typeof input.kind === "string" ? input.kind : "fact"),
+  };
 }

@@ -178,6 +178,47 @@ export interface AdminMoney {
   purchases: number;
 }
 
+export interface ToolReach {
+  /** Distinct accounts whose agents called anything this week. */
+  active: number;
+  /** …of those, how many ever searched. */
+  searched: number;
+  /** …how many ever wrote a note back. */
+  wrote: number;
+  /** …how many left a baton for the next session. */
+  handed: number;
+}
+
+/**
+ * Does any of the persuasion actually work?
+ *
+ * Four layers exist to make an agent reach for a brain unprompted — the server
+ * instructions, the tool descriptions, the session-start hook, the CLAUDE.md
+ * import — and not one of them was measured. Sharpening the wording of four
+ * unmeasured layers is how a product accumulates rituals: every change feels
+ * like an improvement and none of them can be wrong.
+ *
+ * This is the number that can be wrong. An account whose agent connects and
+ * only ever calls brain_list has a brain it never asks — that is the failure,
+ * and it is invisible in a total call count, which the very same agent inflates
+ * by listing every session.
+ *
+ * Distinct accounts rather than calls, on purpose: one enthusiastic agent
+ * making four hundred searches must not read as adoption.
+ */
+export async function toolReach(): Promise<ToolReach> {
+  const [row] = await query<ToolReach>(
+    `select
+       count(distinct caller_id)::int as active,
+       count(distinct caller_id) filter (where tool = 'brain_search')::int as searched,
+       count(distinct caller_id) filter (where tool in ('brain_write', 'brain_write_batch'))::int as wrote,
+       count(distinct caller_id) filter (where tool = 'brain_handoff')::int as handed
+     from calls
+    where created_at > now() - interval '7 days'`,
+  );
+  return row ?? { active: 0, searched: 0, wrote: 0, handed: 0 };
+}
+
 /**
  * The ledger, not the balances. `outstanding` is what users are holding and we
  * therefore owe — the number that matters if anyone ever asks for a payout.
