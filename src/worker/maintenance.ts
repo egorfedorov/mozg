@@ -123,12 +123,13 @@ export async function refreshUrlSources(
 
     report.changed++;
 
-    await query(
+    const retired = await query<{ id: string }>(
       `update notes
           set status = 'superseded',
               superseded_reason = 'the page it came from changed',
               superseded_at = now()
-        where source_id = $1 and status = 'active'`,
+        where source_id = $1 and status = 'active'
+        returning id`,
       [source.id],
     );
 
@@ -150,6 +151,16 @@ export async function refreshUrlSources(
               note_count = 0, error = null, extract_payload = null
         where id = $1`,
       [source.id, hash],
+    );
+
+    // The refresh itself, kept. refresh_count above says how many times this
+    // page has moved; without this row, changed_at would overwrite when — and
+    // "is this brain maintained" is a question about the series, not the last
+    // entry in it. See 0072.
+    await query(
+      `insert into source_refreshes (source_id, brain_id, content_hash, notes_retired)
+       values ($1, $2, $3, $4)`,
+      [source.id, source.brain_id, hash, retired.length],
     );
 
     await query(`update brains set content_changed_at = now() where id = $1`, [
