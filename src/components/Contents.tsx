@@ -56,7 +56,6 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
       { href: "/gallery", label: "Style gallery", note: "buy the way someone works" },
       { href: "/styles", label: "Sell your style", note: "the answer to scraping that pays you" },
       { href: "/audit", label: "Audit a knowledge base", note: "exam-as-a-service, dated" },
-      { href: "/explore", label: "Catalogue", note: "brains to take, free" },
       { href: "https://learn.mozg.sh", label: "Learn as a human", note: "the same brain, as a course", external: true },
     ],
   },

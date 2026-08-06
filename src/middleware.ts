@@ -5,11 +5,52 @@ import { NextRequest, NextResponse } from "next/server";
  * address. The host decides the surface: requests arriving on the learn
  * subdomain are rewritten into /learn, so the service has clean URLs
  * (learn.mozg.sh/mozg/expo) without a second deployment to operate.
+ *
+ * gallery.mozg.sh is the same trick for the style gallery, but much smaller:
+ * the gallery is one page, and everything you can click from it — a style's
+ * page, signing in, buying — belongs to the main site. So the root serves the
+ * wall and every other path goes home, rather than growing a second tree that
+ * would have to be kept in step with the first.
  */
 const SESSION_COOKIE = "__Secure-better-auth.session_token";
 
+/** Paths that must behave identically whichever host they arrive on. */
+function isInfrastructure(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/brand") ||
+    pathname.includes(".")
+  );
+}
+
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
+
+  if (host.startsWith("gallery.")) {
+    const { pathname } = req.nextUrl;
+    if (isInfrastructure(pathname)) return NextResponse.next();
+
+    // The wall itself.
+    if (pathname === "/") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/gallery";
+      return NextResponse.rewrite(url);
+    }
+
+    // The shared header and footer link to /gallery with a relative href,
+    // because the same components render on mozg.sh. On this host that would
+    // be gallery.mozg.sh/gallery — the same page at a second URL, which is
+    // exactly the duplicate the learn subdomain also had to fix.
+    if (pathname === "/gallery") {
+      return NextResponse.redirect(new URL("/", req.nextUrl), 308);
+    }
+
+    // A style's page, the catalogue, the account — all of it is the main site.
+    return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);
+  }
+
   if (!host.startsWith("learn.")) {
     // Two same-name session cookies at different scopes is a real problem: one
     // left over from before the cookie widened to .mozg.sh, one current, and the
@@ -50,15 +91,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Assets, API and auth stay where they are; only pages move under /learn.
-  if (
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/sign-in") ||
-    pathname.startsWith("/brand") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next();
-  }
+  if (isInfrastructure(pathname)) return NextResponse.next();
 
   // The shared footer and shell link to mozg pages with relative hrefs (they
   // must — the same components render on mozg.sh). On this host those paths

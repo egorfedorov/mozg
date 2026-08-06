@@ -15,7 +15,12 @@ export const metadata = {
     description:
       "Buy the way someone works. Every style is licensed by its author, scored on an exam, and pays them per call.",
     type: "website",
+    url: "https://gallery.mozg.sh",
   },
+  // The wall answers on two addresses — gallery.mozg.sh is the front door and
+  // mozg.sh/gallery is where the shared nav points. Same page, so name the one
+  // that should be indexed rather than let a crawler pick.
+  alternates: { canonical: "https://gallery.mozg.sh" },
 };
 
 interface StyleCard {

@@ -27,7 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/connect`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/guide`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/explore`, changeFrequency: "daily", priority: 0.8 },
-    { url: `${base}/gallery`, changeFrequency: "daily", priority: 0.8 },
+    // Canonical for the gallery is the subdomain; see app/gallery/page.tsx.
+    { url: "https://gallery.mozg.sh", changeFrequency: "daily", priority: 0.8 },
     { url: `${base}/vs`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/vs-skills`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/stories`, changeFrequency: "monthly", priority: 0.8 },
