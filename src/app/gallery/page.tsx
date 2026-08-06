@@ -116,7 +116,7 @@ export default async function GalleryPage() {
               {styles.map((s) => {
                 const cover = coverUrl(s);
                 return (
-                  <Link key={s.id} className="gal-card" href={`https://mozg.sh/b/${s.handle}/${s.slug}`}>
+                  <Link key={s.id} className="gal-card" href={`/gallery/${s.handle}/${s.slug}`}>
                     <span className="gal-cover">
                       {cover ? (
                         // eslint-disable-next-line @next/next/no-img-element

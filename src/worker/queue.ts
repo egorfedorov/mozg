@@ -18,6 +18,7 @@ export const QUEUES = {
   lesson: "lesson",
   summary: "summary",
   refresh: "refresh",
+  generate: "generate",
 } as const;
 
 /**
@@ -180,4 +181,14 @@ export async function enqueueExam(
     { brainId, mini: opts.mini ?? false, force: opts.force ?? false },
     { singletonKey: opts.mini ? `${brainId}:recheck` : brainId, singletonSeconds: 60 },
   );
+}
+
+/**
+ * One image. No singleton key: two people asking the same style for the same
+ * thing are two paid jobs, and collapsing them would hand one buyer a picture
+ * the other paid for.
+ */
+export async function enqueueGeneration(generationId: string): Promise<void> {
+  const b = await getBoss();
+  await b.send(QUEUES.generate, { generationId }, { retryLimit: 0 });
 }

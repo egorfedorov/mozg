@@ -28,6 +28,8 @@ import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
 import { runMaintenance, refreshBrain } from "@/worker/maintenance";
+import { runGeneration } from "@/worker/generate";
+import { failGeneration } from "@/lib/generate";
 import { runConsolidation } from "@/worker/consolidate";
 import { embedHealthy } from "@/lib/embed";
 import { env } from "@/lib/env";
@@ -106,6 +108,30 @@ async function main() {
           });
         }
         throw err;
+      }
+    },
+  );
+
+  // One image, one payment, one artist paid. retryLimit is 0 on this queue —
+  // a retry would be a second call to a paid model for a buyer who was charged
+  // once, so a failure refunds instead.
+  await boss.work(
+    QUEUES.generate,
+    { batchSize: 1, pollingIntervalSeconds: 2 },
+    async ([job]) => {
+      const { generationId } = job.data as { generationId: string };
+      const started = Date.now();
+      try {
+        await runGeneration(generationId);
+        console.log(`[generate] ${generationId} done ${Date.now() - started}ms`);
+      } catch (err) {
+        // The refund is the important half and must happen even when the
+        // reporting fails, so it goes first.
+        const reason = err instanceof Error ? err.message : String(err);
+        await failGeneration(generationId, reason).catch((e) =>
+          reportError("worker", "generate-refund", e, { detail: generationId }),
+        );
+        reportError("worker", "generate", err, { detail: `generation ${generationId}` });
       }
     },
   );

@@ -47,6 +47,15 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.nextUrl), 308);
     }
 
+    // A style's own room: gallery.mozg.sh/egorfdrv/riso-style serves what
+    // /gallery/egorfdrv/riso-style holds. Same trick as learn's rewrite, and
+    // the reason this host is no longer a single page.
+    if (/^\/[^/]+\/[^/]+$/.test(pathname)) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/gallery${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
     // A style's page, the catalogue, the account — all of it is the main site.
     return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);
   }

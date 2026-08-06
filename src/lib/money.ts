@@ -20,7 +20,11 @@ export type LedgerKind =
   | "payout"
   | "refund"
   | "adjustment"
-  | "plan";
+  | "plan"
+  // Per-image use of a style brain: the buyer's debit. The artist's side
+  // is an "earning", the same kind a sale pays them under, so one payout
+  // query still sees everything they are owed.
+  | "generation";
 
 interface MoveOptions {
   client: PoolClient;
