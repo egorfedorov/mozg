@@ -279,6 +279,48 @@ export default async function BrainPage({
           </div>
         )}
 
+        {/* The way in, on its own full-width row — the same shape the public
+            page uses: terminal wide on the left, the share panel beside it.
+            Squeezed into one column of the three-column grid below, the shell
+            command wrapped mid-flag and the two panels stacked into a tower
+            that pushed the scorecard off the fold. */}
+        <div className="use-stack">
+          <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
+
+          <section className="use-side">
+            {brain.visibility === "public" && user.handle ? (
+              <>
+                <p className="eyebrow" style={{ margin: 0 }}>Or send someone the page</p>
+                <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
+                  It is listed in the catalogue with its score and its gaps.
+                  Anyone can add it to their own agents in one click — the
+                  brain stays here, with you, and keeps improving as you add
+                  to it.
+                </p>
+                <Link className="btn" href={`/b/${user.handle}/${brain.slug}`}>
+                  Open its public page
+                </Link>
+                <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0", wordBreak: "break-all" }}>
+                  mozg.sh/b/{user.handle}/{brain.slug}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="eyebrow" style={{ margin: 0 }}>Or let other people read it</p>
+                <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
+                  Right now only your agents can reach this. Sharing gives it a
+                  page with its score and its gaps on it — and nothing is
+                  copied to anyone: the brain stays here and keeps improving as
+                  you add to it.
+                </p>
+                <Link className="btn" href={`/brains/${brain.slug}/share`}>
+                  Share or publish it
+                </Link>
+              </>
+            )}
+          </section>
+        </div>
+
         <div
           style={{
             display: "grid",
@@ -307,50 +349,6 @@ export default async function BrainPage({
               hasGoal: Boolean(brain.goal),
             }}
           />
-
-          {/* One column of the page grid, stacked. Two earlier attempts got
-              this wrong in opposite directions: a nested two-column grid split
-              a single ~440px column and squeezed the shell command to 252px,
-              and making them siblings added a fourth item to an auto-fit grid
-              that then dropped every column from 440px to 345px — breaking the
-              whole page to fit one panel. The panel belongs under the terminal
-              it follows from. */}
-          <div className="use-stack">
-            <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
-
-            <section className="use-side">
-              {brain.visibility === "public" && user.handle ? (
-                <>
-                  <p className="eyebrow" style={{ margin: 0 }}>Or send someone the page</p>
-                  <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
-                    It is listed in the catalogue with its score and its gaps.
-                    Anyone can add it to their own agents in one click — the
-                    brain stays here, with you, and keeps improving as you add
-                    to it.
-                  </p>
-                  <Link className="btn" href={`/b/${user.handle}/${brain.slug}`}>
-                    Open its public page
-                  </Link>
-                  <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0", wordBreak: "break-all" }}>
-                    mozg.sh/b/{user.handle}/{brain.slug}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="eyebrow" style={{ margin: 0 }}>Or let other people read it</p>
-                  <p style={{ color: "var(--ink-2)", margin: ".5rem 0 1rem" }}>
-                    Right now only your agents can reach this. Sharing gives it a
-                    page with its score and its gaps on it — and nothing is
-                    copied to anyone: the brain stays here and keeps improving as
-                    you add to it.
-                  </p>
-                  <Link className="btn" href={`/brains/${brain.slug}/share`}>
-                    Share or publish it
-                  </Link>
-                </>
-              )}
-            </section>
-          </div>
 
           <section className="scorecard">
             <div className="score-head">

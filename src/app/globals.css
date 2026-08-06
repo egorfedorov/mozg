@@ -2424,22 +2424,32 @@ a.row:hover {
   margin: 0;
 }
 
-/* ─── "use this brain", and the panel under it ─────────────────────────────
-   ONE column of the page's auto-fit grid, stacked — not two columns and not
-   two grid items. Both of those were tried: nesting a two-column grid halved
-   a ~440px column and wrapped the shell command mid-flag, and making them
-   siblings added a fourth item to the auto-fit row, which dropped every column
-   on the page from 440px to 345px. A layout fix that damages three other
-   panels is not a fix. */
+/* ─── "use this brain", and the panel beside it ────────────────────────────
+   A full-width row of its own, above the mascot/scorecard grid — the same
+   shape the public brain page uses. It is deliberately NOT a member of that
+   auto-fit grid: as a column the shell command wrapped mid-flag, and as two
+   sibling grid items it added a fourth track that dropped every column on the
+   page from 440px to 345px. Flex with a 3:2 bias keeps the terminal wide and
+   lets the share panel drop underneath on narrow screens. */
 
 .use-stack {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: clamp(.75rem, 2vw, 1.1rem);
-  align-content: start;
+  align-items: stretch;
+  margin: 0 0 1.5rem;
+}
+
+.use-stack > * {
   min-width: 0;
 }
 
+.use-stack > .term {
+  flex: 3 1 340px;
+}
+
 .use-side {
+  flex: 2 1 280px;
   border: 1.5px solid var(--ink);
   background: var(--paper-2);
   padding: clamp(1rem, 3vw, 1.4rem);
