@@ -129,22 +129,26 @@ export default async function StylesPage() {
           </Link>
         </section>
 
-        {/* What is coming — honest about the phase line. */}
+        {/* This block used to be titled "Next on this road". It shipped, so it
+            says so — a roadmap item left standing after it is built reads as a
+            product that never delivers. */}
         <section style={{ marginTop: "3.5rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "clamp(1.25rem, 4vw, 2rem)", maxWidth: "56rem" }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Next on this road</p>
+          <p className="eyebrow" style={{ margin: 0 }}>Live now</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
-            Hosted generation, per image, your cut on every one.
+            People generate in your style without leaving the site, and you earn
+            on every image.
           </h2>
-          <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
-            Today a buyer&apos;s own agent does the generating. The next phase
-            runs it here: anyone pays per image, the style brain steers the
-            model, the artist takes the majority of every generation. If you
-            want your style in the first batch —{" "}
-            <Link href="/chat" style={{ textDecoration: "underline" }}>
-              write to chatmozg
-            </Link>
-            .
+          <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
+            A buyer types what they want on your style&apos;s page in the gallery.
+            Your rules — palette, line, shading, the nevers — are compiled in front
+            of their sentence, so what comes back follows you rather than the
+            model&apos;s idea of your name. 25¢ an image, <strong>10¢ of it
+            yours</strong>, every time. Their own agents can still read the brain
+            over MCP; this is for everyone who does not use one.
           </p>
+          <Link className="btn" href="https://gallery.mozg.sh">
+            See it in the gallery
+          </Link>
         </section>
 
         <section style={{ marginTop: "3rem", display: "flex", gap: ".75rem", flexWrap: "wrap" }}>

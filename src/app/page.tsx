@@ -361,8 +361,10 @@ export default async function Home() {
           <div>
             <p className="eyebrow">Agents write back</p>
             <p style={{ marginTop: ".5rem", color: "var(--ink-2)" }}>
-              An agent that works out a convention saves it. You approve it in a review
-              queue, so the brain gets sharper instead of noisier.
+              An agent that works out a convention saves it. On a brain you only
+              read it arrives as a proposal for its owner — pending, attributed,
+              answering nobody until they take it. Contribution that cannot
+              corrupt.
             </p>
           </div>
           <div>
@@ -462,6 +464,40 @@ export default async function Home() {
           </div>
           <Link className="btn" href="https://learn.mozg.sh/mozg/prompt-engineering">
             Start the course
+          </Link>
+        </section>
+
+        {/* The second service, given the same shape as learn's block: the
+            landing page had no idea the gallery existed, and a whole branch of
+            the product was reachable only from a footer link. */}
+        <section
+          className="panel"
+          style={{
+            marginTop: "clamp(3rem, 7vw, 4.5rem)",
+            display: "flex",
+            gap: "1.5rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>
+              For artists · gallery<span style={{ color: "var(--color-riso-red)" }}>.</span>
+            </p>
+            <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
+              Your style, licensed — not scraped.
+            </h2>
+            <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
+              A style brain holds the way you work: palette with values, line
+              weight, how shading is made, the hard nevers. Buyers&apos; agents
+              follow it over MCP, or they generate right in the gallery — and
+              you are paid <strong>on every image</strong>, not once when a
+              crawler passed through. Unlike a fine-tune on someone&apos;s disk,
+              access can be revoked.
+            </p>
+          </div>
+          <Link className="btn" href="https://gallery.mozg.sh">
+            Open the gallery
           </Link>
         </section>
 

@@ -140,18 +140,35 @@ needs its honest answer written down before it gets a date.
   *Done when:* adding a source makes the brain say what it learned, live, without
   a refresh.
 
-- **Style brains: yes for the knowledge, no for the rendering.** Feeding a brain
-  images of your own work so agents produce work in your style is the artist story
-  on /stories, and the knowledge half is buildable now — the notes hold the
-  decisions (palette rules, lighting, what is never done), and any agent with an
-  image tool follows them. What we should not build is the generator. Becoming an
-  image and video service means holding the model, the queue and the bill for
-  every render, which contradicts the one thing this product promises: it does not
-  sit between you and your model. So the plan is style *specs* that any generator
-  obeys, sold like any other paid brain, and a page showing the same prompt with
-  and without one.
-  *Done when:* a style brain exists in the catalogue, and the same prompt through
-  two different image tools comes back recognisably in that style.
+- **Style brains — shipped, including the rendering I said we should not build.**
+  The knowledge half went in as planned: a style brain is now its own kind, read
+  by an extractor that asks for measurements rather than mood, examined on
+  whether the style can be reproduced from it, and sold like any other brain.
+  Any agent with an image tool follows the rules over MCP.
+
+  The generator is the part this entry used to argue against, and the argument
+  was: becoming an image service means holding the model, the queue and the bill
+  for every render, which contradicts the promise that mozg does not sit between
+  you and your model. Two things changed my mind.
+
+  The promise is intact, because the MCP path is untouched and still first
+  class — a buyer's own agent reads the rules and renders wherever it likes, and
+  that costs us nothing. Generation is a second door, for the far larger number
+  of people who will never install a CLI: an illustrator's customer, a marketer,
+  anyone who wants one picture. Refusing them was refusing the audience the
+  whole style argument is aimed at.
+
+  And it is the only shape where the artist earns *per use*. Selling a brain
+  pays them once; "not once, when a scraper passed through — every time" is the
+  sentence /styles makes, and without a metered render it was a sentence we
+  could not keep.
+
+  It is live at [gallery.mozg.sh](https://gallery.mozg.sh): 25¢ an image, 10¢ of
+  it to the artist, the model's real cost recorded per job. Money is debited
+  before the picture exists and refunded if it never arrives.
+  *Still open:* video and motion-direction brains below; a second artist in the
+  gallery; and whether the rendering margin is worth operating at scale, which
+  only real volume can answer.
 
 - **"Teach it to make video like Apple does."** The same shape, and worth naming
   because it sounds like a different feature: what makes that footage recognisable
