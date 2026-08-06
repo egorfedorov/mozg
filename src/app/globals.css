@@ -2686,3 +2686,81 @@ a.row:hover {
   align-items: flex-start;
   justify-content: center;
 }
+
+/* ─── human / machine ───────────────────────────────────────────────────────
+   The switch sits centred at the foot of every public page, clear of the
+   mascot in the right-hand corner, and the sheet it opens covers the page
+   rather than replacing it — so switching back lands the reader exactly where
+   they were reading. Both stay under the cookie bar (z 60): a consent choice
+   must never end up behind anything. */
+
+.machine-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: auto;
+  /* The page behind must not scroll along at the ends of the sheet. */
+  overscroll-behavior: contain;
+  background: var(--paper-2);
+  padding: clamp(1.5rem, 6vw, 3.5rem) var(--gutter) 6rem;
+}
+
+.machine-sheet[hidden] {
+  display: none;
+}
+
+.machine-sheet pre {
+  margin: 0 auto;
+  max-width: 92ch;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(0.7rem, 1.7vw, 0.8125rem);
+  line-height: 1.75;
+  color: var(--ink);
+  /* Wrapping costs the column alignment on a long line and saves the reader a
+     horizontal scrollbar on a phone. The phone wins. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.machine-switch {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.machine-switch button {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.machine-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.machine-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.machine-switch button[aria-pressed="true"] .machine-dot {
+  background: var(--color-riso-orange);
+  opacity: 1;
+}

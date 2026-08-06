@@ -3,6 +3,8 @@ import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MascotDock from "@/components/MascotDock";
+import MachineView from "@/components/MachineView";
+import { machineDoc } from "@/lib/machine";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import CookieConsent from "@/components/CookieConsent";
 import Analytics from "@/components/Analytics";
@@ -55,6 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Last in the body, fixed in the corner: it must not participate in the
             page's layout, only sit above it. */}
         <MascotDock />
+        {/* The document is built on the server so the numbers in it come from
+            the modules that enforce them; the client half only knows which page
+            it is on. It renders nothing on the workspace side of the site. */}
+        <MachineView doc={machineDoc()} />
         <ClientErrorReporter />
         {/* Above Analytics in the tree and ahead of it in effect: the loader
             reads the cookie this writes, so an unanswered banner means an
