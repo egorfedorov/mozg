@@ -52,3 +52,24 @@ test("unknown model reports zero rather than inventing a price", async () => {
     0,
   );
 });
+
+test("an array argument the model quoted comes back as an array", async () => {
+  const { unstringify } = await load();
+  const schema = {
+    type: "object",
+    properties: { verdicts: { type: "array" }, note: { type: "string" } },
+  };
+
+  // The shape that killed an exam run: the whole array arrived as a string.
+  assert.deepEqual(
+    unstringify({ verdicts: '[{"id":"a","passed":true}]', note: "fine" }, schema),
+    { verdicts: [{ id: "a", passed: true }], note: "fine" },
+  );
+
+  // A field the schema calls a string stays a string even when it parses,
+  // and an array field that is not JSON is left for the schema to report.
+  assert.deepEqual(unstringify({ note: "[1,2]", verdicts: "not json" }, schema), {
+    note: "[1,2]",
+    verdicts: "not json",
+  });
+});

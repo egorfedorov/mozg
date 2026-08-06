@@ -36,6 +36,20 @@ interface RpcRequest {
 const fail = (id: RpcRequest["id"], code: number, message: string, status = 200) =>
   NextResponse.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
 
+/** Tool arguments, whether the client sent an object or the JSON string of one. */
+function parseArgs(raw: unknown): Record<string, unknown> {
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
+}
+
 /**
  * Why the call was refused, in words the agent can act on.
  *
@@ -190,7 +204,11 @@ async function handle(rpc: RpcRequest, owner: Owner) {
 
     case "tools/call": {
       const name = String(params.name ?? "");
-      const args = (params.arguments ?? {}) as Record<string, unknown>;
+      // Some clients forward the model's tool call verbatim and send
+      // `arguments` as the JSON *string* it arrived in. Every field then reads
+      // as undefined and the tool answers "title and body are required" to a
+      // caller that sent both — so parse the quoted form before dispatching.
+      const args = parseArgs(params.arguments);
 
       // A tool that does not exist is a protocol error, not a tool that ran
       // and failed. A client working from a stale tool list has to be able to

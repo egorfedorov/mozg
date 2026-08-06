@@ -85,7 +85,7 @@ export async function structured<T>(opts: {
   const byok = byokStorage.getStore();
   if (byok?.provider === "openai") {
     const { structuredOpenAi } = await import("@/lib/openai-compat");
-    return structuredOpenAi<T>({
+    const out = await structuredOpenAi<unknown>({
       apiKey: byok.apiKey,
       baseURL: byok.baseURL ?? "https://api.openai.com/v1",
       model: byok.model ?? "gpt-4o-mini",
@@ -96,6 +96,7 @@ export async function structured<T>(opts: {
       schema: opts.schema,
       maxTokens: opts.maxTokens,
     });
+    return { data: unstringify(out.data, opts.schema) as T, usage: out.usage };
   }
 
   const response = await claude().messages.create({
@@ -142,7 +143,40 @@ export async function structured<T>(opts: {
     );
   }
 
-  return { data: call.input as T, usage: response.usage };
+  return { data: unstringify(call.input, opts.schema) as T, usage: response.usage };
+}
+
+/**
+ * Take the JSON out of a field the model quoted.
+ *
+ * Weaker models — and every proxy that re-serialises a tool call on the way
+ * through — hand back an array or object argument as a JSON *string*:
+ * `{"verdicts": "[{...}]"}` instead of `{"verdicts": [{...}]}`. The schema
+ * check then reports "expected array, received string" and a whole exam dies
+ * over an encoding detail, with the right answer sitting inside the quotes.
+ * Only fields the schema itself declares as array or object are touched, so a
+ * string that is genuinely meant to be a string is never parsed.
+ */
+export function unstringify(data: unknown, schema: Record<string, unknown>): unknown {
+  const props = (schema as { properties?: Record<string, { type?: string }> }).properties;
+  if (!props || typeof data !== "object" || data === null) return data;
+
+  const out = data as Record<string, unknown>;
+  for (const [key, spec] of Object.entries(props)) {
+    const value = out[key];
+    if (typeof value !== "string") continue;
+    if (spec?.type !== "array" && spec?.type !== "object") continue;
+    try {
+      const parsed: unknown = JSON.parse(value);
+      // A quoted scalar ("7") parses too — that is not the shape we are
+      // rescuing, and swapping it in would hide the real mismatch.
+      if (typeof parsed === "object" && parsed !== null) out[key] = parsed;
+    } catch {
+      // Leave it: the caller's schema error names the real shape, which is
+      // more useful than "unparseable" from here.
+    }
+  }
+  return out;
 }
 
 /**
