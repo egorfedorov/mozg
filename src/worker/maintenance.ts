@@ -22,8 +22,30 @@ import { growSearchGapChecks } from "@/worker/search-gaps";
 /** How long a page may go unchecked. */
 const RECHECK_AFTER = "3 days";
 
-/** Pages per pass. A cap, so one enormous account cannot starve the rest. */
-const REFRESH_BATCH = 40;
+/**
+ * Pages per scheduled pass.
+ *
+ * This number is not a preference, it is the freshness promise divided by the
+ * clock. RECHECK_AFTER says a page may go three days unchecked; the pass runs
+ * four times a day (MAINTENANCE_CRON), so the catalogue can only keep that
+ * promise while `batch x 4 x 3` covers every URL source in the product.
+ *
+ * It was 40, chosen when a few hundred pages existed. At 4,347 URL sources
+ * that is 160 checks a day against 1,449 a day of demand: the pass covered
+ * 11% of its own promise, re-reading a given page roughly once a month while
+ * every log line said `checked=40 unchanged=40` and looked healthy. 500 covers
+ * today's catalogue with about a third to spare, and `due` in the report below
+ * is what says so out loud the next time the catalogue outgrows it.
+ */
+const REFRESH_BATCH = 500;
+
+/**
+ * How many pages are fetched at once. Sequential was fine at 40; at 500 it is
+ * up to four minutes of waiting on other people's servers inside a job pg-boss
+ * expires after fifteen. Six is polite to the hosts (most of the catalogue is
+ * one CDN) and turns the pass back into a minute of work.
+ */
+const REFRESH_CONCURRENCY = 6;
 /**
  * The cap when a person asked. Higher than the scheduled batch because a brain
  * built from a documentation site has hundreds of pages and "update it" that
@@ -39,6 +61,13 @@ export interface RefreshReport {
   failed: number;
   /** Sources that had no fingerprint yet — recorded, not re-read. */
   adopted: number;
+  /**
+   * How many were due when the pass started, batch or no batch. The one number
+   * that tells an operator whether the promise is being kept: `due` above
+   * `checked` for more than a pass or two means pages are ageing out of the
+   * window faster than they are being looked at.
+   */
+  due: number;
 }
 
 /**
@@ -60,15 +89,25 @@ export async function refreshUrlSources(
    */
   brainId?: string,
 ): Promise<RefreshReport> {
-  const due = await query<{ id: string; url: string; brain_id: string; content_hash: string | null }>(
+  const where = `kind = 'url' and status = 'ready' and url is not null
+        and ($1::uuid is null or brain_id = $1::uuid)
+        and ($1::uuid is not null
+             or checked_at is null or checked_at < now() - interval '${RECHECK_AFTER}')`;
+
+  // The backlog, before the cap is applied. Counted separately rather than
+  // inferred from a full batch: "we checked 500" and "500 was all there was"
+  // are the difference between a pass that is keeping up and one that is not.
+  const [{ n: due }] = await query<{ n: number }>(
+    `select count(*)::int as n from sources where ${where}`,
+    [brainId ?? null],
+  );
+
+  const batch = await query<{ id: string; url: string; brain_id: string; content_hash: string | null }>(
     `select id, url, brain_id, content_hash from sources
-      where kind = 'url' and status = 'ready' and url is not null
-        and ($2::uuid is null or brain_id = $2::uuid)
-        and ($2::uuid is not null
-             or checked_at is null or checked_at < now() - interval '${RECHECK_AFTER}')
+      where ${where}
       order by checked_at nulls first
-      limit $1`,
-    [limit, brainId ?? null],
+      limit $2`,
+    [brainId ?? null, limit],
   );
 
   const report: RefreshReport = {
@@ -77,9 +116,13 @@ export async function refreshUrlSources(
     changed: 0,
     failed: 0,
     adopted: 0,
+    due,
   };
 
-  for (const source of due) {
+  type Due = (typeof batch)[number];
+
+  /** One page: fetch, compare, and re-ingest only if the text actually moved. */
+  async function checkOne(source: Due): Promise<void> {
     report.checked++;
     let text: string;
     try {
@@ -93,7 +136,7 @@ export async function refreshUrlSources(
         `update sources set checked_at = now(), error = $2 where id = $1`,
         [source.id, `refresh failed: ${err instanceof Error ? err.message : String(err)}`],
       );
-      continue;
+      return;
     }
 
     const hash = contentHash(text);
@@ -110,7 +153,7 @@ export async function refreshUrlSources(
           where id = $1`,
         [source.id, hash],
       );
-      continue;
+      return;
     }
 
     if (hash === source.content_hash) {
@@ -118,7 +161,7 @@ export async function refreshUrlSources(
       await query(`update sources set checked_at = now(), error = null where id = $1`, [
         source.id,
       ]);
-      continue;
+      return;
     }
 
     report.changed++;
@@ -168,6 +211,13 @@ export async function refreshUrlSources(
     ]);
 
     await enqueueIngest(source.id, PRIORITY.background);
+  }
+
+  // Fixed-width waves rather than a worker pool: the whole point is a ceiling
+  // on simultaneous fetches, and a slice of six is the smallest thing that
+  // gives one. A slow page delays its own wave, not the pass.
+  for (let i = 0; i < batch.length; i += REFRESH_CONCURRENCY) {
+    await Promise.all(batch.slice(i, i + REFRESH_CONCURRENCY).map(checkOne));
   }
 
   return report;

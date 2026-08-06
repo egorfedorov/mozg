@@ -201,7 +201,8 @@ async function main() {
         const { refresh, examined, recrawled, resumed, gapChecks, abandoned } =
           await runMaintenance();
         console.log(
-          `[maintenance] checked=${refresh.checked} unchanged=${refresh.unchanged} ` +
+          `[maintenance] due=${refresh.due} checked=${refresh.checked} ` +
+            `unchanged=${refresh.unchanged} ` +
             `changed=${refresh.changed} failed=${refresh.failed} reexam=${examined} ` +
             `recrawl=${recrawled} resumed=${resumed} gapchecks=${gapChecks} ` +
             `abandoned=${abandoned} ${Date.now() - started}ms`,
