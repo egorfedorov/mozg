@@ -22,33 +22,15 @@ export const metadata = {
 export default async function StylesPage() {
   const user = await currentUser();
 
-  // The artist directory: every public style brain, grouped under the person
-  // who owns the style. The catalogue IS the pitch — real artists, real exam
-  // scores, not mockups.
-  const styleBrains = await query<{
-    handle: string;
-    artist: string;
-    slug: string;
-    title: string;
-    goal: string | null;
-    score: number | null;
-    note_count: number;
-    price_cents: number;
-    buyers: number;
-  }>(
-    `select u.handle, coalesce(u.name, u.handle) as artist,
-            b.slug, b.title, b.goal, b.score, b.note_count, b.price_cents,
-            (select count(*)::int from purchases p where p.brain_id = b.id) as buyers
+  // Two numbers, not the grid: the directory has its own storefront now, and
+  // this page only has to say how big it is and point at it.
+  const [counts] = await query<{ styles: number; artists: number }>(
+    `select count(*)::int as styles, count(distinct b.owner_id)::int as artists
        from brains b join "user" u on u.id = b.owner_id
-      where b.visibility = 'public' and b.topic = 'art' and u.handle is not null
-      order by b.score desc nulls last, b.created_at asc`,
+      where b.visibility = 'public' and b.topic = 'art' and u.handle is not null`,
   );
-  const artists = new Map<string, { artist: string; brains: typeof styleBrains }>();
-  for (const b of styleBrains) {
-    const e = artists.get(b.handle) ?? { artist: b.artist, brains: [] as typeof styleBrains };
-    e.brains.push(b);
-    artists.set(b.handle, e);
-  }
+  const styleCount = counts?.styles ?? 0;
+  const artistCount = counts?.artists ?? 0;
 
   return (
     <>
@@ -128,58 +110,23 @@ export default async function StylesPage() {
           </div>
         </section>
 
-        {/* The artist directory — styles live under the people who own them. */}
-        <section style={{ marginTop: "3.5rem" }}>
-          <div className="section-head">
-            <h2 className="h2">The artists</h2>
-            <span className="eyebrow">exam-scored · bought once · updates included · 95% to the artist</span>
-          </div>
-          {artists.size === 0 ? (
-            <p className="lede">The first artists are writing their styles right now.</p>
-          ) : (
-            <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-              {[...artists.entries()].map(([handle, a]) => (
-                <div key={handle} className="panel" style={{ display: "grid", gap: ".75rem", alignContent: "start" }}>
-                  <div style={{ display: "flex", gap: ".7rem", alignItems: "center" }}>
-                    <span
-                      aria-hidden
-                      className="app-avatar"
-                      style={{ width: 40, height: 40, fontSize: "1.1rem", display: "grid", placeItems: "center", border: "1.5px solid var(--ink)", background: "var(--color-riso-yellow)" }}
-                    >
-                      {a.artist[0]?.toUpperCase() ?? "?"}
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <strong>{a.artist}</strong>
-                      <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                        @{handle} · {a.brains.length} style{a.brains.length === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                  </div>
-                  {a.brains.map((b) => (
-                    <Link
-                      key={b.slug}
-                      href={`/b/${handle}/${b.slug}`}
-                      style={{ border: "1.5px solid var(--ink)", background: "var(--paper)", padding: ".7rem .85rem", display: "grid", gap: ".2rem" }}
-                    >
-                      <span style={{ display: "flex", justifyContent: "space-between", gap: ".75rem", alignItems: "baseline" }}>
-                        <strong style={{ fontSize: ".9375rem" }}>{b.title}</strong>
-                        <span className="mono" style={{ fontSize: ".8125rem", flexShrink: 0 }}>
-                          {b.price_cents > 0 ? `$${(b.price_cents / 100).toFixed(0)}` : "free"}
-                        </span>
-                      </span>
-                      <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                        {b.note_count} rules
-                        {b.score !== null && (
-                          <> · <span style={{ color: "var(--color-riso-green)" }}>trained {b.score}%</span></>
-                        )}
-                        {b.buyers > 0 && ` · ${b.buyers} using it`}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
+        {/* The directory itself now lives on its own storefront — this page is
+            the argument and the machinery, and a grid of other people's work in
+            the middle of it was two pages fighting for one scroll. */}
+        <section style={{ marginTop: "3.5rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "clamp(1.25rem, 4vw, 2rem)", maxWidth: "56rem" }}>
+          <p className="eyebrow" style={{ margin: 0 }}>The styles themselves</p>
+          <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
+            {styleCount > 0
+              ? `${styleCount} style${styleCount === 1 ? "" : "s"} on the shelf, by ${artistCount} artist${artistCount === 1 ? "" : "s"}.`
+              : "The first styles are being written right now."}
+          </h2>
+          <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
+            Browse them by artist, see what each one teaches and what it scored,
+            and take one to your agent.
+          </p>
+          <Link className="btn" href="/explore?topic=art">
+            Browse the styles
+          </Link>
         </section>
 
         {/* What is coming — honest about the phase line. */}
