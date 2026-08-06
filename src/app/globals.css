@@ -1049,6 +1049,17 @@ a.stat:hover {
   }
 }
 
+/* An odd tile out then leaves a dead grey cell beside it — the balance page's
+   three stats read as a missing fourth. Below 520px two columns is the only
+   outcome the grid can reach, so the last one can safely take the whole row.
+   Not above it: at 640px three tiles still fit across, and the span would push
+   the third onto a row of its own for no reason. */
+@media (max-width: 520px) {
+  .stats > .stat:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ─── row list ──────────────────────────────────────────────────────────── */
 /* The most repeated shape in the product: a bordered panel of rows, each with
    a label on the left and a number or control on the right. */
