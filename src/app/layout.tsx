@@ -36,6 +36,15 @@ export const metadata: Metadata = {
   ...(env.GOOGLE_SITE_VERIFICATION
     ? { verification: { google: env.GOOGLE_SITE_VERIFICATION } }
     : {}),
+  // The machine view of this page, as a fetchable URL. An agent handed a link
+  // to any page can find the fact sheet from the markup instead of being told
+  // the address, and the extractors that strip the in-page sheet cannot strip
+  // a <link>.
+  alternates: {
+    types: {
+      "text/plain": [{ url: "/machine.txt", title: "mozg as a fact sheet" }],
+    },
+  },
   openGraph: {
     siteName: "mozg",
     type: "website",
