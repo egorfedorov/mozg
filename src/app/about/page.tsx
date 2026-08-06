@@ -56,7 +56,7 @@ export default function AboutPage() {
               one of them paid when a machine uses it.
             </p>
             <p className="mono lr-byline">
-              Egor Fedorov · Uraanhay Saqa · Sakha Republic
+              Egor Fedorov · Uraanghay Saqa · Sakha Republic
             </p>
           </div>
 
@@ -73,8 +73,12 @@ export default function AboutPage() {
         <section className="lr-body">
           <h2 className="h2">Who is writing this</h2>
           <p>
-            My name is Egor Fedorov. I am Sakha — <em>Uraanhay Saqa</em>, which is
-            what we call ourselves, not what the maps call us. I come from the Sakha
+            My name is Egor Fedorov. I am Sakha —{" "}
+            <a href="https://egorfedorov.github.io/Saqa/index.en.html" target="_blank" rel="noreferrer">
+              <em>Uraanghay Saqa</em>
+            </a>
+            , which is what we call ourselves, not what the maps call us. I come
+            from the Sakha
             Republic: three million square kilometres, a million people, and the
             coldest inhabited places on earth. Winter goes to sixty below. Nothing
             up there survives on its own — a house, a herd, a skill, a language.
@@ -240,6 +244,19 @@ export default function AboutPage() {
             learning properly. We are a rounding error in the training set.
           </p>
           <p>
+            Try it with something real. Ask about the <em>Olonkho</em> — an epic sung
+            across two consecutive nights — or about the nine commandments of the{" "}
+            <em>Aiyy</em>, or the three <em>kut</em> a person is made of. You will
+            get an answer. It will be fluent, and it will be invented, and nothing in
+            it will tell you so. I wrote{" "}
+            <a href="https://egorfedorov.github.io/Saqa/index.en.html" target="_blank" rel="noreferrer">
+              the actual code of honour down, in English, on one page
+            </a>{" "}
+            — because that is the whole argument in miniature. The knowledge exists.
+            It has people who are answerable for it. It was simply never worth enough
+            pages for the vat to bother learning.
+          </p>
+          <p>
             That is where most of the world already stands. Not only languages —
             trades, regions, small disciplines, and the part of every craft that lives
             in people rather than in indexed pages. What is not in the training data
@@ -259,7 +276,7 @@ export default function AboutPage() {
           <Plate
             src="/about/sakha.webp"
             alt="A brain wrapped in Sakha ornament under northern lights"
-            caption="Uraanhay Saqa. Not enough of us to be learned. Enough of us to teach."
+            caption="Uraanghay Saqa. Not enough of us to be learned. Enough of us to teach."
           />
 
           <h2 className="h2">What I am actually claiming</h2>
@@ -309,7 +326,7 @@ export default function AboutPage() {
             <span className="mono">Egor Fedorov</span>
             <br />
             <span className="mono lr-sign-sub">
-              Uraanhay Saqa · Sakha Republic · building mozg in the open
+              Uraanghay Saqa · Sakha Republic · building mozg in the open
             </span>
           </p>
         </section>

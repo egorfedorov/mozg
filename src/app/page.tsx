@@ -668,7 +668,7 @@ export default async function Home() {
               Read it
             </Link>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0" }}>
-              Egor Fedorov · Uraanhay Saqa · Sakha Republic
+              Egor Fedorov · Uraanghay Saqa · Sakha Republic
             </p>
           </div>
         </section>
