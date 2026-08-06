@@ -55,64 +55,80 @@ export default async function MarketingPage() {
   ).then((r) => r[0]);
 
   const oneLiner =
-    "mozg — open-source (AGPL) exam-scored brains for AI agents: paste a docs link, " +
-    "get a searchable brain over MCP with a measured score. Free catalogue, free code.";
+    "mozg — open-source (AGPL) knowledge with an owner, a score and a meter: brains " +
+    "your AI agents query over MCP, measured by an exam they didn't write. Artists " +
+    "license their style the same way and get paid per image. Free catalogue, free code.";
 
   const boilerplate =
-    "mozg is an open-source (AGPL-3.0) platform that turns documentation into " +
-    "brains for AI coding agents. Paste one link — " +
-    "every page is found and read, the material becomes searchable notes, and the " +
-    "brain sits an exam against its own goal, so its score is measured, not claimed. " +
-    "Agents connect from Claude Code, Codex or Cursor with one command and pull only " +
-    "the notes a task needs. Brains learn from use: questions they fail to answer " +
-    "become exam questions, corrections from agents become owner-reviewed notes, and " +
-    "every version is kept. The whole official catalogue is free; self-host from " +
-    "github.com/egorfedorov/mozg (AGPL), or use the cloud where plans cover the " +
-    "inference — or bring your own API key and build for free.";
+    "mozg is an open-source (AGPL-3.0) platform for knowledge that keeps its author. " +
+    "Paste one documentation link — every page is found and read, the material " +
+    "becomes searchable notes, and the brain sits an exam generated from its own " +
+    "stated goal, so its score is measured rather than claimed, and its gaps are " +
+    "published. Agents connect from Claude Code, Codex or Cursor with one command and " +
+    "pull only the notes a task needs. Brains learn from use: unanswered questions " +
+    "become exam questions, and an agent reading someone else's brain can hand back " +
+    "what it worked out — as a proposal that waits for the owner and answers nobody " +
+    "until they take it. A brain can also hold a way of working rather than facts: " +
+    "artists license their style as an exam-scored brain, buyers' agents follow it " +
+    "over MCP or generate in the gallery, and the artist is paid on every image. " +
+    "The whole official catalogue is free; self-host from github.com/egorfedorov/mozg " +
+    "(AGPL), or use the cloud where plans cover the inference — or bring your own API " +
+    "key and build for free.";
 
   const showHn =
-    "Title: Show HN: Mozg – open-source, exam-scored knowledge brains for coding agents\n" +
+    "Title: Show HN: Mozg – knowledge with an owner, a score, and a meter\n" +
     "URL: https://mozg.sh\n\n" +
     "First comment (post right after submitting):\n\n" +
-    "Hi HN. My coding agents kept confidently answering from stale training data — " +
-    "the docs they needed were newer than the model. So I built mozg: paste one link " +
-    "to any documentation and it crawls the whole thing (GitHub tree, llms.txt, " +
-    "sitemap, or a link walk), extracts it into searchable notes, and connects to " +
-    "Claude Code, Codex, Cursor or anything else over MCP.\n\n" +
-    "The part I haven't seen elsewhere: every brain sits an exam. You state what the " +
-    "brain is *for*, that becomes ~30 control questions, and after every ingest it " +
-    "re-sits them — a measured score plus the exact list of missing material, instead " +
-    "of guessing why your agent still answers badly. The exam deliberately asks about " +
-    "things the brain does NOT yet cover; the failures are the point.\n\n" +
-    "Since launch prep it also learns from use: when any connected agent searches a " +
-    "brain and gets nothing, that query becomes an exam question, and the next " +
-    "re-read of the sources chases it. Nobody files a ticket — hitting the gap is " +
-    "the report.\n\n" +
-    "It's open source (AGPL): https://github.com/egorfedorov/mozg — the whole " +
-    "product, self-hostable with your own keys. The entire official catalogue " +
-    "(Next.js App Router, Expo, Svelte 5, Tailwind v4, the MCP spec) is free. The " +
-    "cloud makes money one honest way: paid plans cover the inference our servers " +
-    "spend building YOUR brains — or you set your own API key and pay nobody.\n\n" +
+    "Hi HN. My coding agents kept answering confidently from training data older " +
+    "than the docs. The usual fix is a CLAUDE.md or a memory server, and both have " +
+    "the same hole: nothing can tell you what they actually cover.\n\n" +
+    "So mozg does one unusual thing — every brain sits an exam. You state what it is " +
+    "*for*, that becomes ~30 control questions, and it re-sits them after every " +
+    "ingest. You get a measured score plus the exact list of questions it failed, " +
+    "published on the brain's page so an agent is told the gaps before it searches. " +
+    "The exam deliberately asks about material the brain does NOT have yet; the " +
+    "failures are the roadmap. Anti-bluff questions check it refuses what it does " +
+    "not know.\n\n" +
+    "Two things fell out of that design that I did not plan:\n\n" +
+    "1. Brains learn from being used. A search that returns nothing becomes an exam " +
+    "question, and the next re-read of the sources chases it. And an agent reading " +
+    "someone else's brain can hand back what it worked out — it arrives as a " +
+    "proposal: pending, attributed, invisible to search and absent from the exam " +
+    "until the owner takes it. Contribution without the power to corrupt, which is " +
+    "the only version of an open knowledge base that survives the internet.\n\n" +
+    "2. A brain does not have to hold facts. It can hold a way of working. A style " +
+    "brain is read by a different extractor — not \"what is depicted\" but \"what " +
+    "would I have to do to draw the next one\", and it insists on measurements: hex " +
+    "values, outline weight, how shading is made, and the nevers. Artists license " +
+    "that instead of fighting scrapers; buyers' agents follow it over MCP, or " +
+    "generate at gallery.mozg.sh for 25c an image with 10c going to the artist on " +
+    "every one. Unlike a fine-tune someone downloaded, access is revocable.\n\n" +
+    "Open source (AGPL): https://github.com/egorfedorov/mozg — the whole product, " +
+    "self-hostable with your own keys. The entire official catalogue is free. The " +
+    "cloud makes money one honest way: plans cover the inference our servers spend " +
+    "building YOUR brains, or you set your own API key and pay nobody.\n\n" +
     "Details people usually ask about:\n" +
-    "- Searching a brain costs zero tokens of context — retrieval is server-side.\n" +
-    "- Agents can flag a note as wrong when reality disagrees; the owner reviews.\n" +
-    "- Everything exports as CLAUDE.md / AGENTS.md / a Claude Skill — leaving is cheap.\n" +
-    "- Marketplace: free and paid brains; paid ones answer 5 real queries free.\n\n" +
-    "Stack: Next.js + Postgres/pgvector + a local bge-m3 embedder; extraction and " +
-    "the exam judge are Claude via API. Happy to answer anything about the exam " +
-    "mechanics or the crawler.";
+    "- Searching costs zero tokens of context — retrieval is server-side.\n" +
+    "- Everything exports as CLAUDE.md / AGENTS.md / a Claude Skill; leaving is cheap.\n" +
+    "- Public status page and a dated changelog; it is honestly labelled beta.\n\n" +
+    "Stack: Next.js + Postgres/pgvector + a local bge-m3 embedder and reranker; " +
+    "extraction and the exam judge are Claude via API. Happy to answer anything " +
+    "about the exam mechanics, the crawler, or why I ended up building the image " +
+    "generator I had written a roadmap entry against.";
 
   const xThread =
-    "1/ Your coding agent doesn't need a bigger context window. It needs a brain " +
-    "that actually knows your stack — and can prove it. mozg.sh: paste one docs " +
-    "link → trained, exam-scored, connected over MCP.\n\n" +
-    "2/ The exam is the trick: your goal becomes ~30 control questions, re-sat " +
-    "after every upload. \"Trained 92%\" is measured, not claimed. The failing 8% " +
-    "tells you exactly what to feed it next.\n\n" +
-    "3/ Open source under AGPL, the whole catalogue free, and it learns from " +
-    "use — any question a brain can't answer becomes an exam question " +
-    "automatically. github.com/egorfedorov/mozg · " +
-    `${s.brains} public brains — mozg.sh/explore`;
+    "1/ Everything we know is going into one memory that belongs to nobody. It can " +
+    "work in your manner and cannot tell you your name; it doesn't know your " +
+    "particular project; and it cannot say where it stops.\n\n" +
+    "2/ mozg is the opposite shape: many brains, each still owned by whoever filled " +
+    "it. Each sits an exam generated from its own goal, so \"trained 92%\" is " +
+    "measured — and the questions it failed are published, so your agent is told the " +
+    "gaps before it searches.\n\n" +
+    "3/ Same mechanism, other audience: an artist writes their style down — palette " +
+    "values, line weight, the hard nevers — and gets paid every time an agent works " +
+    "in it. Not once when a scraper passed through.\n\n" +
+    "4/ Open source, AGPL, whole catalogue free. " +
+    `github.com/egorfedorov/mozg · ${s.brains} public brains — mozg.sh`;
 
   const collectivePost =
     "Every knowledge file you write starts dying the day you write it.\n\n" +
@@ -128,14 +144,23 @@ export default async function MarketingPage() {
     "r/ClaudeAI — title: I got tired of my agent's confident wrong answers, so my " +
     "docs now sit an exam\n\n" +
     "Body: CLAUDE.md files rot silently — you find out when the agent ships " +
-    "something wrong. I built mozg.sh around one idea: knowledge must be measured. " +
-    "Paste a docs link, it becomes a searchable brain over MCP, and the brain sits " +
-    "~30 exam questions generated from what you said it's for. The score and gaps " +
-    "are public on the brain's page; questions real agents ask and miss get added " +
-    "to the exam automatically. As of this week it's open source (AGPL): " +
-    "github.com/egorfedorov/mozg — run it yourself, or use the cloud where the " +
-    "whole catalogue is free and connecting is a Claude Code one-liner " +
-    "(mozg.sh/connect). Would love hard feedback — it's in beta.";
+    "something wrong. mozg is built on one idea: knowledge must be measured. Paste a " +
+    "docs link, it becomes a searchable brain your agent reads over MCP, and the " +
+    "brain sits ~30 exam questions generated from what you said it is for. The score " +
+    "AND the questions it failed are public on the brain's page, so the agent is " +
+    "told where to stop trusting it. Questions real agents ask and miss get added to " +
+    "the exam automatically.\n\n" +
+    "Newer bit: if your agent works something out while reading someone else's " +
+    "brain, it can hand it back. That arrives as a proposal — pending, attributed, " +
+    "answering nobody until the owner takes it. So the shared brains get better from " +
+    "being used without anyone being able to poison them.\n\n" +
+    "Open source (AGPL): github.com/egorfedorov/mozg — run it yourself, or use the " +
+    "cloud where the whole catalogue is free and connecting is a one-liner " +
+    "(mozg.sh/connect). Hard feedback welcome, it is in beta and the status page is " +
+    "public.\n\n" +
+    "[Posting note: r/ClaudeAI auto-removes link-heavy posts from low-karma " +
+    "accounts. Post the body with ONE link, put the rest in a first comment, and " +
+    "check the subreddit's flair requirement before submitting.]";
 
   const discordStake =
     "Построил игру на Stake Engine с агентами? Я собрал все их доки в подключаемый " +
@@ -144,6 +169,47 @@ export default async function MarketingPage() {
     "бесплатно — включая семью Slot Studio: механики+математика, чеклист аппрува " +
     "(за что реально реджектят), фронтенд, комплаенс. https://mozg.sh/explore, " +
     "раздел gamedev. Фидбек крайне welcome — я сам с этих доков шипплю.";
+
+  // The audience the product grew into and the kit had never addressed. Written
+  // for people who are angry about scraping and have heard "just use Glaze" —
+  // so it opens by conceding that, because they already know it failed.
+  const artistPost =
+    "Title: Cloaking lost. So I built the other option: license the style and get " +
+    "paid per image.\n\n" +
+    "Body: Glaze, Nightshade, every cloaking tool — each broken within months. The " +
+    "arms race is not winnable and the only remedy left on offer is a lawsuit.\n\n" +
+    "There is a third road. Write the style down instead of guarding it: the palette " +
+    "with its actual hex values, the outline weight, how the shading is made, the " +
+    "things you never do. That becomes a licensed product an AI agent follows — and " +
+    "it sits an exam, so a buyer can see the style is genuinely reproducible from it " +
+    "rather than taking your word.\n\n" +
+    "What that changes: you are paid every time someone works in your manner, not " +
+    "once when a crawler passed through. 95% of the licence, and 10c of every 25c " +
+    "image generated in it. And unlike a fine-tune sitting on somebody's disk, " +
+    "access is revocable — a LoRA in the wild is forever, a licence is not.\n\n" +
+    "It is free to list, open source, and the rules stay yours: the brain sells what " +
+    "you know, never your pictures. gallery.mozg.sh\n\n" +
+    "[Subreddits where this is on-topic and self-promo is allowed with flair: " +
+    "r/SideProject, r/artbusiness, r/ArtistLounge (read rules — several ban links " +
+    "outright). Lead with the concession about cloaking; leading with the product " +
+    "reads as an ad to this audience.]";
+
+  const manifestoPost =
+    "Everything we know is going into one memory that belongs to nobody.\n\n" +
+    "Three things follow from that shape, and none of them is a bug. It dissolves " +
+    "the author — it can work in your manner and cannot tell you your name. It does " +
+    "not know your particular world: not the decision your team made in March, not " +
+    "why the obvious approach is forbidden in your building. And it cannot say where " +
+    "it stops, because a single memory with no edges has no way to represent its own " +
+    "boundary — what it learned from ten thousand sources and what it is inventing " +
+    "right now arrive at exactly the same confidence.\n\n" +
+    "I am building the opposite: many minds, each owned by the person who filled it, " +
+    "each examined, each able to say where it stops — and every one of them paid " +
+    "when a machine uses it.\n\n" +
+    "Written from the Sakha Republic, where about 450,000 people speak a language " +
+    "any frontier model will answer in confidently and wrongly. Not enough of us to " +
+    "be learned. Enough of us to teach.\n\n" +
+    "https://mozg.sh/about";
 
   const dm =
     "Hey — saw you're building with [Claude Code/Cursor]. I made a thing that might " +
@@ -154,9 +220,10 @@ export default async function MarketingPage() {
     "feedback is worth more to me than the signup.";
 
   const bio =
-    "X bio: Building mozg.sh — exam-scored brains for AI coding agents. Paste a " +
-    "link, get knowledge your agent can prove it has.\n\n" +
-    "PH tagline: Brains for AI agents — trained from one link, scored by an exam.\n\n" +
+    "X bio: Building mozg.sh — knowledge with an owner, a score and a meter. Brains " +
+    "your agent can prove it has; styles artists get paid for.\n\n" +
+    "PH tagline: Brains for AI agents — trained from one link, scored by an exam, " +
+    "and paying whoever filled them.\n\n" +
     `Stats line (live): ${s.brains} public brains, average exam score ${s.avg}%, ` +
     `${s.paid} paid.`;
 
@@ -166,7 +233,10 @@ export default async function MarketingPage() {
         Everything here is written to be pasted as-is. Numbers are pulled live
         from the catalogue ({s.brains} public brains, avg score {s.avg}%). The
         rule of the voice: no claim a database row or an exam score can&apos;t
-        back.
+        back. Two audiences now — developers who want an agent that can prove
+        what it knows, and artists who want paying for their style instead of
+        losing it. Posts that mention a subreddit carry its posting rule with
+        them, because the copy is not what got the last one auto-removed.
       </p>
 
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Launch runbook — go top to bottom</h2>
@@ -285,6 +355,16 @@ export default async function MarketingPage() {
       <Block title="Show HN" hint="post 15:00–17:00 CET" text={showHn} />
       <Block title="X thread" hint="3 tweets" text={xThread} />
       <Block title="Reddit r/ClaudeAI" text={redditClaude} />
+      <Block
+        title="For artists — the anti-scraping post"
+        hint="r/SideProject, r/artbusiness · lead with the concession, not the product"
+        text={artistPost}
+      />
+      <Block
+        title="The manifesto post"
+        hint="X / LinkedIn / HN comment — the argument, no feature list"
+        text={manifestoPost}
+      />
       <Block title="Stake Engine Discord" hint="RU" text={discordStake} />
       <Block
         title="Stake Engine Discord — EN"
