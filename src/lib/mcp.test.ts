@@ -3,9 +3,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { callTool } from "./mcp";
 import { stubDb } from "./test-db";
-import { PLANS } from "./plans";
+import type { TokenOwner } from "./tokens";
 
-const owner = { userId: "u1", tokenId: "t1", plan: PLANS.free };
+const owner: TokenOwner = { userId: "u1", tokenId: "t1", plan: "free" };
 
 /**
  * The refusal an agent gets when it guessed a handle. It used to say only
