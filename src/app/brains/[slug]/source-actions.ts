@@ -170,3 +170,37 @@ export async function deleteSource(formData: FormData) {
 
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
+
+/**
+ * Promote one uploaded image to the brain's cover, or clear it.
+ *
+ * This is the single door that makes a private upload publicly visible, so it
+ * is a deliberate act by the owner and nothing infers it. Only images qualify —
+ * a cover is what a buyer judges a style by, and a PDF is not that.
+ */
+export async function setCover(formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const slug = String(formData.get("slug"));
+  const id = String(formData.get("id") ?? "");
+
+  // Clearing takes no source: the empty id is the "remove it" case.
+  if (!id) {
+    await query(`update brains set cover_key = null where owner_id = $1 and slug = $2`, [
+      user.id,
+      slug,
+    ]);
+    revalidatePath(`/brains/${slug}`);
+    return;
+  }
+
+  const source = await ownedSource(id, user.id);
+  if (!source || source.kind !== "image" || !source.storage_key) return;
+
+  await query(`update brains set cover_key = $2 where id = $1`, [
+    source.brain_id,
+    source.storage_key,
+  ]);
+  revalidatePath(`/brains/${slug}`);
+}

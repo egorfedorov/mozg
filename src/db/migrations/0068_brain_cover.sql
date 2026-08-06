@@ -1,0 +1,14 @@
+-- 0068 — a cover for a brain, so a style can be sold by looking at it
+--
+-- Style brains are bought with the eyes. The catalogue showed a title, a
+-- score and a count of rules — which is exactly enough to judge a knowledge
+-- base and nowhere near enough to judge a way of drawing. An illustrator's
+-- listing has to show the work, or the whole "sell your style instead of
+-- fighting the scrapers" argument dies on the shop floor.
+--
+-- The image is one the owner already uploaded as a source. Promoting one to
+-- cover is a deliberate act by the owner and nothing else: source images are
+-- private material served behind an access check, and this is the one door
+-- that makes a single chosen frame public. Storing the key rather than a copy
+-- keeps one file on disk; deleting the source clears the cover with it.
+alter table brains add column if not exists cover_key text;

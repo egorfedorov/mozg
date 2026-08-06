@@ -124,8 +124,8 @@ export default async function StylesPage() {
             Browse them by artist, see what each one teaches and what it scored,
             and take one to your agent.
           </p>
-          <Link className="btn" href="/explore?topic=art">
-            Browse the styles
+          <Link className="btn" href="/gallery">
+            Open the gallery
           </Link>
         </section>
 

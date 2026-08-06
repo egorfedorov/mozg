@@ -27,6 +27,7 @@ function brain(over: Partial<Brain>): Brain {
     score_at: null,
     review_required: false,
     contributions: true,
+    cover_key: null,
     note_count: 0,
     source_count: 0,
     price_cents: 0,

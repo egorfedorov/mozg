@@ -5,7 +5,8 @@ import type { Brain, Grant } from "@/db/types";
 // money-math, not money: this is a client component and @/lib/money drags in pg.
 import { PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { TOPICS } from "@/lib/topics";
-import { updateSharing, inviteByEmail, removeGrant } from "./actions";
+import { updateSharing, inviteByEmail, removeGrant, uploadCover } from "./actions";
+import { coverUrl } from "@/lib/covers";
 
 const VISIBILITY = [
   {
@@ -52,9 +53,17 @@ export default function ShareForm({
 }) {
   const [settings, saveSettings, savingSettings] = useActionState(updateSharing, null);
   const [invite, sendInvite, inviting] = useActionState(inviteByEmail, null);
+  const [cover, saveCover, savingCover] = useActionState(uploadCover, null);
+  const existingCover = coverUrl(brain);
 
   return (
     <>
+      {/* Its own form, outside the settings one: a file input inside the
+          settings form would re-upload the image on every unrelated save, and
+          nested forms are not a thing. The fieldset below targets it by id. */}
+      <form id="cover-form" action={saveCover} style={{ display: "none" }}>
+        <input type="hidden" name="slug" value={brain.slug} />
+      </form>
       <form action={saveSettings} className="panel" style={{ display: "grid", gap: "2rem" }}>
         <input type="hidden" name="slug" value={brain.slug} />
 
@@ -181,6 +190,45 @@ export default function ShareForm({
             </span>
           </span>
         </label>
+
+        {/* The gallery card. A style is judged with the eyes in a second, so a
+            brain without one lists below every brain that has one — which is
+            the correct incentive, and the reason this sits in the sharing
+            settings rather than three clicks away. */}
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".6rem" }}>
+          <legend className="eyebrow" style={{ padding: 0 }}>Gallery cover</legend>
+          <p style={{ color: "var(--ink-2)", fontSize: ".9375rem", margin: 0, maxWidth: "56ch" }}>
+            One image, shown on the catalogue and the style gallery. It is the
+            only upload that becomes public — everything you taught the brain
+            with stays private.
+          </p>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
+            {existingCover && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={existingCover}
+                alt="Current cover"
+                width={120}
+                height={90}
+                style={{ width: 120, height: 90, objectFit: "cover", border: "1.5px solid var(--ink)" }}
+              />
+            )}
+            <span style={{ display: "grid", gap: ".5rem" }}>
+              <input type="file" name="cover" accept="image/*" form="cover-form" />
+              <span style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}>
+                <button className="btn btn-ghost" form="cover-form" disabled={savingCover} style={{ padding: ".4rem .8rem" }}>
+                  {savingCover ? "Uploading…" : existingCover ? "Replace cover" : "Upload cover"}
+                </button>
+                {cover?.error && (
+                  <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-red)" }}>{cover.error}</span>
+                )}
+                {cover?.ok && (
+                  <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}>Saved</span>
+                )}
+              </span>
+            </span>
+          </div>
+        </fieldset>
 
         <label style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>
           <input

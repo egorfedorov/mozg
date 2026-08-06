@@ -13,7 +13,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import { noteWarnings } from "@/lib/note-quality";
 import { approveNote, rejectNote, dismissFlag } from "./review-actions";
 import { runExamNow, addCheck, removeCheck } from "./exam-actions";
-import { retrySource, deleteSource, waiveScan } from "./source-actions";
+import { retrySource, deleteSource, waiveScan, setCover } from "./source-actions";
 import GapSuggestions from "@/components/GapSuggestions";
 import type { GapKind } from "@/lib/gap-kind";
 import { maybeOne, query } from "@/db";
@@ -766,6 +766,39 @@ export default async function BrainPage({
                         <input type="hidden" name="slug" value={brain.slug} />
                         <button className="mono" style={linkButton}>
                           it&apos;s an example — allow
+                        </button>
+                      </ConfirmForm>
+                    )}
+                    {/* The one door that makes a private upload public. Only
+                        offered on images, and only once the brain is public —
+                        a cover on a private brain is a promise we would have
+                        to break the moment someone opened the gallery. */}
+                    {s.kind === "image" && s.storage_key && (
+                      <ConfirmForm
+                        action={setCover}
+                        message={
+                          brain.cover_key === s.storage_key
+                            ? "Remove this as the cover? The brain goes back to a text-only card."
+                            : "Use this image as the public cover? Anyone browsing the catalogue will see it — the rest of your uploads stay private."
+                        }
+                      >
+                        <input
+                          type="hidden"
+                          name="id"
+                          value={brain.cover_key === s.storage_key ? "" : s.id}
+                        />
+                        <input type="hidden" name="slug" value={brain.slug} />
+                        <button
+                          className="mono"
+                          style={{
+                            ...linkButton,
+                            color:
+                              brain.cover_key === s.storage_key
+                                ? "var(--color-riso-green)"
+                                : undefined,
+                          }}
+                        >
+                          {brain.cover_key === s.storage_key ? "★ cover" : "make cover"}
                         </button>
                       </ConfirmForm>
                     )}

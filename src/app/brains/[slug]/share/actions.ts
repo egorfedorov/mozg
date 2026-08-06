@@ -9,6 +9,7 @@ import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 import { scanSecrets, scanPII, scanInjection } from "@/lib/scan";
 import { TOPIC_KEYS } from "@/lib/topics";
+import { storage, storageKey } from "@/lib/storage";
 
 async function ownedBrain(slug: string, userId: string): Promise<Brain | null> {
   return maybeOne<Brain>(`select * from brains where owner_id = $1 and slug = $2`, [
@@ -185,4 +186,41 @@ export async function removeGrant(formData: FormData) {
     brain.id,
   ]);
   revalidatePath(`/brains/${slug}/share`);
+}
+
+/**
+ * Upload a cover for the gallery.
+ *
+ * Separate from promoting a source, because the two cases are genuinely
+ * different. A style brain trained on the artist's own uploads already has
+ * images to choose from; a brain written as text has none, and until this
+ * existed those brains could never appear on the gallery wall at all — which
+ * is most of them, since writing the rules is the recommended way to teach a
+ * style you do not want to hand over as files.
+ *
+ * The file goes to storage and nowhere else: no source row, no extraction, no
+ * notes, no bill. It is a shop window, not material.
+ */
+export async function uploadCover(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const slug = String(formData.get("slug"));
+  const brain = await ownedBrain(slug, user.id);
+  if (!brain) return { error: "Brain not found." };
+
+  const file = formData.get("cover");
+  if (!(file instanceof File) || file.size === 0) return { error: "Pick an image first." };
+  if (!file.type.startsWith("image/")) return { error: "That is not an image." };
+  // A cover renders at ~400px wide. Anything past a few megabytes is a camera
+  // original nobody meant to publish at full size.
+  if (file.size > 6_000_000) return { error: "Too large — 6 MB is the ceiling for a cover." };
+
+  const key = storageKey(brain.id, file.name);
+  await storage.put(key, Buffer.from(await file.arrayBuffer()), file.type);
+  await query(`update brains set cover_key = $2 where id = $1`, [brain.id, key]);
+
+  revalidatePath(`/brains/${slug}/share`);
+  revalidatePath("/gallery");
+  return { ok: true };
 }

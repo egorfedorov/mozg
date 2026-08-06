@@ -39,6 +39,8 @@ export interface Brain {
   review_required: boolean;
   /** Readers' agents may propose notes. They always land pending; see 0067. */
   contributions: boolean;
+  /** Storage key of the one upload the owner made public as a cover; see 0068. */
+  cover_key: string | null;
   note_count: number;
   source_count: number;
   /** 0 means free. Access to a paid brain is bought once, from balance. */
