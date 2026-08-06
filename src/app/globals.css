@@ -2424,24 +2424,10 @@ a.row:hover {
   margin: 0;
 }
 
-/* ─── "use this brain", two up ──────────────────────────────────────────────
-   The terminal and the one other thing worth doing, side by side — the same
-   shape the public brain page uses, so the act reads identically whether you
-   own the brain or found it. Stacks below 900px, where two columns would each
-   be too narrow to hold a shell command without wrapping mid-flag. */
-
-.use-grid {
-  display: grid;
-  gap: clamp(1rem, 2.5vw, 1.5rem);
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-}
-
-@media (min-width: 900px) {
-  .use-grid {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  }
-}
+/* ─── the panel beside "use this brain" ────────────────────────────────────
+   A sibling in the page's auto-fit grid, not a nested one: wrapping it and the
+   terminal in a grid of their own split a single ~440px column in half and
+   squeezed the shell command down to 252px. */
 
 .use-side {
   border: 1.5px solid var(--ink);

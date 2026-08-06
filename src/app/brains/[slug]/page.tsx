@@ -308,14 +308,14 @@ export default async function BrainPage({
             }}
           />
 
-          {/* The same two-up the public page uses, because this is the same
-              moment: the command on the left, and the one other thing worth
-              doing with a brain on the right. Owners had the terminal alone,
-              which answered "how do I connect" and never "now what". */}
-          <div className="use-grid">
-            <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
+          {/* Siblings, not a nested grid. The page is already an auto-fit grid
+              of ~330px columns, so wrapping these two in a grid of their own
+              split ONE column in half and squeezed the shell command to 252px.
+              As siblings they each take a column, which is what the public
+              page's two-up looks like. */}
+          <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
 
-            <section className="use-side">
+          <section className="use-side">
               {brain.visibility === "public" && user.handle ? (
                 <>
                   <p className="eyebrow" style={{ margin: 0 }}>Or send someone the page</p>
@@ -346,8 +346,7 @@ export default async function BrainPage({
                   </Link>
                 </>
               )}
-            </section>
-          </div>
+          </section>
 
           <section className="scorecard">
             <div className="score-head">
