@@ -113,42 +113,58 @@ export default async function AppShell({
   return (
     <div className="app">
       <aside className="app-rail">
-        <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>
-          mozg<span>.</span>
-        </Link>
+        {/* Below 900px the rail is a bar across the top and everything under
+            the wordmark collapses behind this toggle. A checkbox rather than
+            React state on purpose: the shell is a server component, and a
+            phone that has not finished hydrating still has to be able to open
+            the only navigation the workspace has. Desktop never shows it. */}
+        <input type="checkbox" id="app-nav-open" className="app-nav-check" aria-label="Menu" />
 
-        <Link href="/settings" className="app-me">
-          <span className="app-avatar" aria-hidden>
-            {(user.handle ?? user.email)[0]?.toUpperCase() ?? "?"}
-          </span>
-          <span style={{ minWidth: 0 }}>
-            <span className="app-me-name">{user.handle ?? user.email.split("@")[0]}</span>
-            <span className="app-me-sub">
-              {user.plan} · {formatCents(balance)}
+        <div className="app-rail-head">
+          <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>
+            mozg<span>.</span>
+          </Link>
+
+          <label htmlFor="app-nav-open" className="app-burger mono">
+            <span className="app-burger-shut">☰ menu</span>
+            <span className="app-burger-open">✕ close</span>
+          </label>
+        </div>
+
+        <div className="app-rail-body">
+          <Link href="/settings" className="app-me">
+            <span className="app-avatar" aria-hidden>
+              {(user.handle ?? user.email)[0]?.toUpperCase() ?? "?"}
             </span>
-          </span>
-        </Link>
+            <span style={{ minWidth: 0 }}>
+              <span className="app-me-name">{user.handle ?? user.email.split("@")[0]}</span>
+              <span className="app-me-sub">
+                {user.plan} · {formatCents(balance)}
+              </span>
+            </span>
+          </Link>
 
-        <nav className="app-nav">
-          {groups.map((g) => (
-            <div key={g.title}>
-              <p className="eyebrow app-nav-title">{g.title}</p>
-              {g.items.map((i) => (
-                <Link key={i.href} href={i.href} data-active={i.href === active}>
-                  {i.label}
-                  {(i.badge ?? 0) > 0 && <span className="nav-badge">{i.badge}</span>}
-                </Link>
-              ))}
+          <nav className="app-nav">
+            {groups.map((g) => (
+              <div key={g.title}>
+                <p className="eyebrow app-nav-title">{g.title}</p>
+                {g.items.map((i) => (
+                  <Link key={i.href} href={i.href} data-active={i.href === active}>
+                    {i.label}
+                    {(i.badge ?? 0) > 0 && <span className="nav-badge">{i.badge}</span>}
+                  </Link>
+                ))}
+              </div>
+            ))}
+
+            <div>
+              <p className="eyebrow app-nav-title">Elsewhere</p>
+              <Link href="/explore">Catalogue</Link>
+              <Link href="/guide">Guide</Link>
+              <SignOutLink />
             </div>
-          ))}
-
-          <div>
-            <p className="eyebrow app-nav-title">Elsewhere</p>
-            <Link href="/explore">Catalogue</Link>
-            <Link href="/guide">Guide</Link>
-            <SignOutLink />
-          </div>
-        </nav>
+          </nav>
+        </div>
       </aside>
 
       <div className="app-main" style={narrow ? { maxWidth: 820 } : undefined}>
