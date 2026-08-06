@@ -1026,6 +1026,29 @@ a.stat:hover {
   margin-top: 0.35rem;
 }
 
+/* A 150px minimum fits three tiles across a phone, and a display-face
+   "$4833.00" is wider than the ~113px of text that leaves — the balance page
+   showed "$4833" with the cents sliced off by the tile border. Money that is
+   wrong by a clip is worse than money in a smaller type size. Two per row,
+   and the numerals come down to match. */
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  }
+
+  .stat {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .stat-value {
+    font-size: 1.375rem;
+  }
+
+  .stat-value[data-big="true"] {
+    font-size: 1.625rem;
+  }
+}
+
 /* ─── row list ──────────────────────────────────────────────────────────── */
 /* The most repeated shape in the product: a bordered panel of rows, each with
    a label on the left and a number or control on the right. */
