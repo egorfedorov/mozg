@@ -68,7 +68,7 @@ export function middleware(req: NextRequest) {
     "/explore", "/pricing", "/beta", "/changelog", "/chat", "/brains",
     "/settings", "/b", "/mind", "/gift", "/pay", "/admin", "/llms.txt",
     // The shared footer links to these from learn pages too.
-    "/terms", "/privacy", "/cookies", "/status",
+    "/terms", "/privacy", "/cookies", "/status", "/about",
   ];
   if (MOZG_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);

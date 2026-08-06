@@ -1934,3 +1934,203 @@ a.row:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ─── the manifesto longread ────────────────────────────────────────────────
+   One column, wide measure for the plates, narrow measure for the prose. The
+   argument is carried by the reading, so nothing here competes with it: no
+   cards, no sidebars, no callout boxes with icons. Just paper, ink and the
+   occasional full-width riso plate to let the eye rest. */
+
+.longread {
+  padding-block: clamp(1.5rem, 4vw, 3rem) 0;
+}
+
+.lr-hero {
+  max-width: 62rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 5vw, 2rem);
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .lr-hero {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+/* Sized to land in four lines beside the portrait. Hard <br> breaks were
+   worse than useless here: the column is already narrow, so each forced line
+   broke again and the headline ran to eight. */
+.lr-title {
+  font-size: clamp(1.85rem, 4vw, 3.1rem);
+  line-height: 1.07;
+  letter-spacing: -0.02em;
+  margin: 0.4rem 0 1.25rem;
+}
+
+.lr-lede {
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 34ch;
+  margin: 0 0 1.25rem;
+}
+
+.lr-byline {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* The portrait is a printed plate, not a cutout: it carries its own cream
+   paper to the edge, so it needs no shadow. The first version had one, and
+   because the plate is a rectangle rather than a silhouette the shadow read as
+   a stray grey rule down the right-hand side. */
+.lr-portrait {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  justify-self: center;
+}
+
+.lr-body {
+  max-width: 40rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 5vw, 2rem);
+  padding-block: clamp(2rem, 6vw, 3.5rem);
+}
+
+.lr-body p {
+  font-size: clamp(1.02rem, 1.5vw, 1.13rem);
+  line-height: 1.68;
+  color: var(--ink-2);
+  margin: 0 0 1.15rem;
+}
+
+.lr-body p strong {
+  color: var(--ink);
+}
+
+.lr-body h2 {
+  margin: clamp(2.5rem, 6vw, 3.5rem) 0 1rem;
+}
+
+.lr-body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--color-riso-red);
+  text-decoration-thickness: 2px;
+}
+
+/* A pull quote is the one place the display face is allowed into the body. */
+.lr-quote {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.35rem, 3.4vw, 2.05rem) !important;
+  line-height: 1.18 !important;
+  color: var(--ink) !important;
+  border-left: 4px solid var(--color-riso-red);
+  padding-left: clamp(1rem, 3vw, 1.5rem);
+  margin: clamp(2rem, 5vw, 2.75rem) 0 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Plates break the measure on purpose: the prose is 40rem, the picture is
+   wider, and that rhythm is what makes a long page feel walkable. */
+.lr-plate {
+  margin: clamp(2rem, 5vw, 3rem) 0;
+  width: min(56rem, 92vw);
+  margin-inline: calc(50% - min(28rem, 46vw));
+  text-align: center;
+}
+
+.lr-plate img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lr-plate figcaption {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  margin-top: 0.75rem;
+  padding-inline: 1rem;
+}
+
+.lr-claims {
+  display: grid;
+  gap: 0.9rem;
+  padding-left: 1.4rem;
+  margin: 0 0 1.15rem;
+  /* The global reset strips markers from every list. Here the numbers are the
+     content — "five things I am claiming" reads as a manifesto; the same five
+     as unmarked paragraphs read as more prose. */
+  list-style: decimal;
+}
+
+.lr-claims li::marker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--color-riso-red);
+}
+
+.lr-claims li {
+  font-size: clamp(1.02rem, 1.5vw, 1.13rem);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.lr-claims li strong {
+  color: var(--ink);
+}
+
+.lr-sign {
+  margin-top: clamp(2.5rem, 6vw, 3.5rem) !important;
+  padding-top: 1.5rem;
+  border-top: 1.5px solid var(--ink);
+  font-size: 0.9375rem !important;
+}
+
+.lr-sign-sub {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+
+/* ─── the manifesto card on the landing page ────────────────────────────────
+   A face and one sentence. The rest of the page argues features; this is the
+   only place a person speaks, so it gets air rather than a border. */
+
+.lp-manifesto {
+  margin-top: clamp(3.5rem, 9vw, 5rem);
+  display: flex;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  border-top: 1.5px solid var(--ink);
+  padding-top: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.lp-manifesto img {
+  width: 132px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.lp-manifesto-quote {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0.5rem 0 0;
+  max-width: 30ch;
+}

@@ -638,11 +638,46 @@ export default async function Home() {
           </a>
         </section>
 
+        {/* Who is behind this, and what they think it is for. A landing page
+            argues features; one person saying why they built it is the thing a
+            feature list cannot do, and it belongs here rather than three clicks
+            into the footer. */}
+        <section className="lp-manifesto">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/about/portrait.webp"
+            alt="Egor Fedorov"
+            width={132}
+            height={176}
+            loading="lazy"
+          />
+          <div style={{ minWidth: 0 }}>
+            <p className="eyebrow" style={{ margin: 0 }}>
+              The manifesto
+            </p>
+            <p className="lp-manifesto-quote">
+              Everything we know is being poured into one memory that belongs to
+              nobody. I am building the opposite.
+            </p>
+            <p style={{ color: "var(--ink-2)", margin: ".6rem 0 1rem", maxWidth: "54ch" }}>
+              Why knowledge should keep its author, why a thing that claims to know
+              should sit an exam, and what a language spoken by 450,000 people has
+              to do with any of it.
+            </p>
+            <Link className="btn btn-ghost" href="/about">
+              Read it
+            </Link>
+            <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0" }}>
+              Egor Fedorov · Uraanhay Saqa · Sakha Republic
+            </p>
+          </div>
+        </section>
+
         {/* One clear way out of the page. */}
         <section
           className="panel"
           style={{
-            marginTop: "clamp(3.5rem, 9vw, 5rem)",
+            marginTop: "clamp(2rem, 5vw, 3rem)",
             display: "flex",
             gap: "1.5rem",
             flexWrap: "wrap",

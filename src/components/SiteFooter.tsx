@@ -15,6 +15,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Product",
     links: [
+      { href: "/about", label: "The manifesto" },
       { href: "/why", label: "Why mozg" },
       { href: "/vs", label: "A brain and a Skill file" },
       { href: "/explore", label: "Catalogue" },
@@ -125,6 +126,7 @@ export default function SiteFooter() {
         <StatusDot />
         <span>Brains are licensed CC BY-NC-SA by default — copying is fine, reselling is not.</span>
         <span style={{ flex: 1 }} />
+        <a href="/about">manifesto</a>
         <a href="https://github.com/egorfedorov/mozg">github</a>
         <a href="/beta">beta</a>
         <a href="/changelog">changelog</a>

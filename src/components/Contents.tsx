@@ -41,6 +41,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     label: "About",
     summary: "what this is, and why",
     pages: [
+      { href: "/about", label: "The manifesto", note: "what this is for, and who by" },
       { href: "/why", label: "Why it exists", note: "the problem this solves" },
       { href: "/vs", label: "Brain or file", note: "and when a file wins" },
       { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
