@@ -45,7 +45,7 @@ export default function ConnectBox({
         <span className="term-dot" />
         <span className="term-dot" />
         <span className="term-dot" />
-        <span style={{ marginLeft: ".5rem" }}>connect</span>
+        <span style={{ marginLeft: ".5rem" }}>use this brain</span>
       </div>
 
       <div style={{ marginBottom: ".9rem", wordBreak: "break-all" }}>

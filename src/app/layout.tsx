@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
 import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
@@ -7,31 +6,24 @@ import MascotDock from "@/components/MascotDock";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import CookieConsent from "@/components/CookieConsent";
 import Analytics from "@/components/Analytics";
+import "./fonts.css";
 import "./globals.css";
 
-// Cyrillic throughout: brains will hold Russian notes, and a fallback glyph in
-// a note title is the fastest way to make a product feel unfinished.
-const display = Unbounded({
-  subsets: ["latin", "cyrillic"],
-  weight: ["700", "800"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const body = Golos_Text({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-const mono = JetBrains_Mono({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "700"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
+/**
+ * Fonts are vendored into public/fonts and declared in fonts.css, not fetched
+ * by next/font/google.
+ *
+ * That helper downloads from fonts.gstatic.com at build time, so every build —
+ * here, in CI, on a self-hoster's laptop behind a firewall — depended on a
+ * third party answering. It failed twice in one afternoon with "Error while
+ * requesting resource" and nothing wrong in the code. A build that breaks for
+ * reasons outside the repository is one nobody can reproduce or trust.
+ *
+ * Cyrillic is carried on its own unicode-range subset rather than merged in:
+ * brains hold Russian notes, a fallback glyph in a note title is the fastest
+ * way to make a product feel unfinished, and an English-only reader still
+ * downloads only the Latin file. See scripts/fetch-fonts.mjs.
+ */
 export const metadata: Metadata = {
   // Absolute URLs for every og:/twitter: tag below — without a base, crawlers
   // get relative paths and the share card silently loses its image.
@@ -53,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en">
       {/* No footer here on purpose: it belongs to the public side of the site.
           A workspace ends in work, not in a wall of links out. */}
       <body>
