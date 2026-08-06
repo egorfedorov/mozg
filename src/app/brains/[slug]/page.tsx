@@ -308,14 +308,17 @@ export default async function BrainPage({
             }}
           />
 
-          {/* Siblings, not a nested grid. The page is already an auto-fit grid
-              of ~330px columns, so wrapping these two in a grid of their own
-              split ONE column in half and squeezed the shell command to 252px.
-              As siblings they each take a column, which is what the public
-              page's two-up looks like. */}
-          <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
+          {/* One column of the page grid, stacked. Two earlier attempts got
+              this wrong in opposite directions: a nested two-column grid split
+              a single ~440px column and squeezed the shell command to 252px,
+              and making them siblings added a fourth item to an auto-fit grid
+              that then dropped every column from 440px to 345px — breaking the
+              whole page to fit one panel. The panel belongs under the terminal
+              it follows from. */}
+          <div className="use-stack">
+            <ConnectBox slug={brain.slug} hasToken={tokenCount > 0} />
 
-          <section className="use-side">
+            <section className="use-side">
               {brain.visibility === "public" && user.handle ? (
                 <>
                   <p className="eyebrow" style={{ margin: 0 }}>Or send someone the page</p>
@@ -346,7 +349,8 @@ export default async function BrainPage({
                   </Link>
                 </>
               )}
-          </section>
+            </section>
+          </div>
 
           <section className="scorecard">
             <div className="score-head">

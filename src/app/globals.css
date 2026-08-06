@@ -2424,10 +2424,20 @@ a.row:hover {
   margin: 0;
 }
 
-/* ─── the panel beside "use this brain" ────────────────────────────────────
-   A sibling in the page's auto-fit grid, not a nested one: wrapping it and the
-   terminal in a grid of their own split a single ~440px column in half and
-   squeezed the shell command down to 252px. */
+/* ─── "use this brain", and the panel under it ─────────────────────────────
+   ONE column of the page's auto-fit grid, stacked — not two columns and not
+   two grid items. Both of those were tried: nesting a two-column grid halved
+   a ~440px column and wrapped the shell command mid-flag, and making them
+   siblings added a fourth item to the auto-fit row, which dropped every column
+   on the page from 440px to 345px. A layout fix that damages three other
+   panels is not a fix. */
+
+.use-stack {
+  display: grid;
+  gap: clamp(.75rem, 2vw, 1.1rem);
+  align-content: start;
+  min-width: 0;
+}
 
 .use-side {
   border: 1.5px solid var(--ink);
