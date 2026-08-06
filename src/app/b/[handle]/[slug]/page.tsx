@@ -218,12 +218,51 @@ export default async function PublicBrainPage({
           name: brain.title,
           description: brain.goal ?? undefined,
           url: `${env.NEXT_PUBLIC_APP_URL}/b/${handle}/${slug}`,
+          // Google reads any Product with an offer as a merchant listing and
+          // treats a missing image as a hard error, so the card is dropped
+          // from results entirely. The OG card is the picture of a brain we
+          // already generate; the route serves it without the cache-busting
+          // query metadata adds.
+          image: `${env.NEXT_PUBLIC_APP_URL}/b/${handle}/${slug}/opengraph-image`,
           brand: { "@type": "Brand", name: "mozg" },
           offers: {
             "@type": "Offer",
             price: ((brain.price_cents ?? 0) / 100).toFixed(2),
             priceCurrency: "USD",
             availability: "https://schema.org/InStock",
+            url: `${env.NEXT_PUBLIC_APP_URL}/b/${handle}/${slug}`,
+            // The same report warns about the two policies every physical
+            // good needs. A brain is delivered over MCP the moment it is
+            // bought: nothing ships, and nothing can be sent back.
+            shippingDetails: {
+              "@type": "OfferShippingDetails",
+              shippingRate: { "@type": "MonetaryAmount", value: "0", currency: "USD" },
+              shippingDestination: {
+                "@type": "DefinedRegion",
+                addressCountry: "US",
+              },
+              deliveryTime: {
+                "@type": "ShippingDeliveryTime",
+                handlingTime: {
+                  "@type": "QuantitativeValue",
+                  minValue: 0,
+                  maxValue: 0,
+                  unitCode: "DAY",
+                },
+                transitTime: {
+                  "@type": "QuantitativeValue",
+                  minValue: 0,
+                  maxValue: 0,
+                  unitCode: "DAY",
+                },
+              },
+            },
+            hasMerchantReturnPolicy: {
+              "@type": "MerchantReturnPolicy",
+              applicableCountry: "US",
+              returnPolicyCategory:
+                "https://schema.org/MerchantReturnNotRequired",
+            },
           },
         }
       : null;
