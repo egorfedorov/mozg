@@ -31,8 +31,12 @@ came from. Three things follow from that shape, and none of them is a bug:
 - **it does not know your particular world** — not the decision your team made in March;
 - **it cannot say where it stops** — what it learned and what it is inventing sound identical.
 
+> **It knows what we know.**
+> **It cannot tell you who taught it.**
+
 mozg is the opposite architecture: not one memory that swallows everything, but
-many, each of which still belongs to someone. One mechanism holds it together:
+many, each of which still belongs to someone — examined, honest about its edge,
+and metered. One mechanism holds it together:
 
 > **Knowledge must be measured.**
 
@@ -150,6 +154,29 @@ Next.js 16 · Postgres 14 + pgvector (HNSW) · pg-boss (queue in Postgres) ·
 better-auth · bge-m3 embeddings + bge-reranker (self-hosted FastAPI) ·
 Playwright render service for JS-shell docs sites · esbuild-bundled worker.
 211 tests, CI on every push, [public status page](https://mozg.sh/status).
+
+## The manifesto
+
+This is built by one person from the Sakha Republic — three million square
+kilometres, a million people, and the coldest inhabited places on earth. About
+450,000 people speak Sakha. Ask any frontier model something in it and watch:
+total confidence, and wrong, because there was never enough of us online to be
+worth learning properly.
+
+> Not enough of us to be learned. Enough of us to teach.
+
+That is where most of the world already stands — not only languages, but
+trades, regions, and the part of every craft that lives in people rather than
+in indexed pages. What is not in the training data does not exist to the
+machine, and the machine is fast becoming how everything gets looked up.
+
+> The alternative to being scraped is not being ignored. It is being licensed.
+
+> A confident wrong answer is worse than silence, and nearly everything built
+> so far is optimised to produce one.
+
+**[Read the whole thing →](https://mozg.sh/about)** — what I am actually
+claiming, in five lines, and why a knowledge base should have to sit an exam.
 
 ## Contributing
 
