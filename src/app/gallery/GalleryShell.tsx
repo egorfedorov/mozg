@@ -39,9 +39,12 @@ export default function GalleryShell({ children }: { children: React.ReactNode }
           </span>
           <Link
             className="mono"
-            href="https://mozg.sh/styles"
+            href="https://gallery.mozg.sh/mine"
             style={{ marginLeft: "auto", fontSize: ".8125rem" }}
           >
+            your images
+          </Link>
+          <Link className="mono" href="https://mozg.sh/styles" style={{ fontSize: ".8125rem" }}>
             sell your style
           </Link>
           <Link className="mono" href="https://mozg.sh" style={{ fontSize: ".8125rem" }}>

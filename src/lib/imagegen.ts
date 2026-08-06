@@ -20,6 +20,8 @@ export interface GeneratedImage {
   bytes: Buffer;
   mime: string;
   taskId: string;
+  /** What the provider says this one actually cost, in cents. */
+  costCents: number;
 }
 
 /** Only apimart exposes this shape. Anywhere else, the feature is off. */
@@ -27,16 +29,18 @@ export function imageGenReady(): boolean {
   return Boolean(env.ANTHROPIC_API_KEY && env.ANTHROPIC_BASE_URL?.includes("apimart"));
 }
 
-/**
- * The model, and what it costs us.
- *
- * Kept together because they lie in exactly one place otherwise: a model
- * swapped for a cheaper one leaves the recorded cost describing the old bill
- * forever, and the margin on /gallery silently becomes fiction. Measured at
- * 1K — the size the gallery renders — not at the model's maximum.
- */
 const MODEL = "gemini-3.1-flash-image-preview";
-export const MODEL_COST_CENTS = 3;
+
+/**
+ * What a generation costs us when the provider does not say.
+ *
+ * It almost always does — the task carries a `cost` in dollars — and that
+ * measured number is what gets recorded, because a hardcoded one describes
+ * whatever the model charged on the day it was written and then quietly
+ * becomes fiction the first time the price moves. This is only the fallback
+ * for a response that omitted it.
+ */
+export const MODEL_COST_CENTS = 2;
 
 const API = (path: string) => `${env.ANTHROPIC_BASE_URL}/v1${path}`;
 
@@ -75,7 +79,12 @@ async function api<T>(method: "GET" | "POST", path: string, body?: unknown): Pro
  */
 export async function generateImage(
   prompt: string,
-  opts: { aspect?: string; timeoutMs?: number } = {},
+  opts: {
+    aspect?: string;
+    timeoutMs?: number;
+    /** Called with the task id as soon as the provider accepts the job. */
+    onSubmitted?: (taskId: string) => Promise<void> | void;
+  } = {},
 ): Promise<GeneratedImage> {
   if (!imageGenReady()) throw new Error("image generation is not configured");
 
@@ -95,8 +104,11 @@ export async function generateImage(
   const taskId = first?.task_id;
   if (!taskId) throw new Error("image api accepted the job without a task id");
 
+  await opts.onSubmitted?.(taskId);
+
   const deadline = Date.now() + (opts.timeoutMs ?? 240_000);
   let url: string | null = null;
+  let cost = MODEL_COST_CENTS;
 
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 3000));
@@ -104,21 +116,29 @@ export async function generateImage(
     // A poll that fails is not a job that failed: the provider documents
     // transient stalls on this endpoint, and re-submitting would buy the same
     // picture twice. Only a terminal status ends the loop.
-    const task = await api<{
-      data?: { status?: string; fail_reason?: string; results?: { url?: string }[]; url?: string };
-      status?: string;
-      results?: { url?: string }[];
-    }>("GET", `/tasks/${taskId}?language=en`).catch(() => null);
+    const task = await api<{ data?: Record<string, unknown> }>(
+      "GET",
+      `/tasks/${taskId}?language=en`,
+    ).catch(() => null);
     if (!task) continue;
 
-    const d = task.data ?? task;
-    const status = (d as { status?: string }).status ?? "";
-    if (status === "failed" || status === "cancelled") {
-      throw new Error((d as { fail_reason?: string }).fail_reason ?? `image job ${status}`);
+    const d = (task.data ?? task) as Record<string, unknown>;
+    const status = String(d.status ?? "");
+
+    if (status === "failed" || status === "cancelled" || status === "error") {
+      throw new Error(String(d.fail_reason ?? d.error ?? `image job ${status}`));
     }
 
-    const results = (d as { results?: { url?: string }[] }).results;
-    const found = results?.[0]?.url ?? (d as { url?: string }).url;
+    // Measured against the live API rather than guessed: the task reports
+    // "completed", and the picture is at data.result.images[0].url — where
+    // that url is itself an ARRAY. Both details cost a full timeout each
+    // before they were read off a real response.
+    const result = d.result as { images?: { url?: string | string[] }[] } | undefined;
+    const raw = result?.images?.[0]?.url;
+    const found = Array.isArray(raw) ? raw[0] : raw;
+
+    if (typeof d.cost === "number") cost = Math.max(1, Math.round(d.cost * 100));
+
     if (found) {
       url = found;
       break;
@@ -136,5 +156,6 @@ export async function generateImage(
     bytes,
     mime: img.headers.get("content-type")?.split(";")[0] ?? "image/png",
     taskId,
+    costCents: cost,
   };
 }

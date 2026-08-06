@@ -20,6 +20,8 @@ const KIND_LABEL: Record<string, string> = {
   payout: "Withdrawal",
   refund: "Refund",
   adjustment: "Adjustment",
+  plan: "Plan",
+  generation: "Generated an image",
 };
 
 export default async function BalancePage() {

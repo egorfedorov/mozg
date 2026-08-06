@@ -47,6 +47,13 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.nextUrl), 308);
     }
 
+    // The buyer's own images.
+    if (pathname === "/mine") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/gallery/mine";
+      return NextResponse.rewrite(url);
+    }
+
     // A style's own room: gallery.mozg.sh/egorfdrv/riso-style serves what
     // /gallery/egorfdrv/riso-style holds. Same trick as learn's rewrite, and
     // the reason this host is no longer a single page.

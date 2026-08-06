@@ -1,7 +1,7 @@
 import { one, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { compilePrompt, settleGeneration } from "@/lib/generate";
-import { generateImage, MODEL_COST_CENTS } from "@/lib/imagegen";
+import { generateImage } from "@/lib/imagegen";
 import { storage, storageKey } from "@/lib/storage";
 
 /**
@@ -33,14 +33,20 @@ export async function runGeneration(id: string): Promise<void> {
   const full = await compilePrompt(brain, gen.prompt);
   await query(`update generations set full_prompt = $2 where id = $1`, [id, full]);
 
-  const image = await generateImage(full, { aspect: "1:1" });
+  const image = await generateImage(full, {
+    aspect: "1:1",
+    // Written the moment the provider hands one over, not after the picture
+    // arrives: a run that then times out is only chaseable by its task id, and
+    // the first timeout in production had none recorded to chase.
+    onSubmitted: (taskId) =>
+      query(`update generations set task_id = $2 where id = $1`, [id, taskId]).then(() => {}),
+  });
 
   const ext = image.mime.includes("webp") ? "webp" : image.mime.includes("jpeg") ? "jpg" : "png";
   const key = storageKey(brain.id, `generated.${ext}`);
   await storage.put(key, image.bytes, image.mime);
 
-  await query(`update generations set task_id = $2 where id = $1`, [id, image.taskId]);
-
-  // Pays the artist and marks the row done, in one transaction.
-  await settleGeneration(id, key, MODEL_COST_CENTS);
+  // Pays the artist and marks the row done, in one transaction. The cost is
+  // the provider's own figure for this job, not an average.
+  await settleGeneration(id, key, image.costCents);
 }
