@@ -372,7 +372,21 @@ export default async function PublicBrainPage({
             margin: "0 0 2.5rem",
           }}
         >
-          <div style={{ flex: "3 1 340px", minWidth: 0 }}>
+          {/* A column, not a bare div: it holds the terminal (or the buy box)
+              AND the pack strip under it. The terminal asks for height:100% to
+              match the panel beside it, which with a sibling below meant 100%
+              PLUS the strip — so the strip spilled out of the row and landed
+              on top of the reviews. flex-column gives the terminal the leftover
+              instead of the whole thing. */}
+          <div
+            style={{
+              flex: "3 1 340px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+            }}
+          >
             {preview ? (
               <BuyBrain
                 handle={handle}
@@ -384,7 +398,7 @@ export default async function PublicBrainPage({
                 cryptoReady={anyCryptoReady}
               />
             ) : (
-              <section className="term" style={{ fontSize: ".9375rem", height: "100%" }}>
+              <section className="term" style={{ fontSize: ".9375rem", flex: 1 }}>
                 <div className="term-bar">
                   <span className="term-dot" />
                   <span className="term-dot" />
@@ -440,14 +454,12 @@ export default async function PublicBrainPage({
                 to the same material; unlocked, it is where the rest of what
                 this reader holds actually lives. */}
             {pack && (
-              <div style={{ marginTop: "1rem" }}>
-                <InPack
-                  pack={pack}
-                  brains={packBrains.length}
-                  held={packHeld}
-                  singleCents={gate?.priceCents ?? brain.price_cents}
-                />
-              </div>
+              <InPack
+                pack={pack}
+                brains={packBrains.length}
+                held={packHeld}
+                singleCents={gate?.priceCents ?? brain.price_cents}
+              />
             )}
           </div>
 
