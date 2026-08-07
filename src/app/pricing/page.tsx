@@ -163,8 +163,13 @@ export default async function PricingPage() {
                 >
                   <li>
                     {p.brains === 0
-                      ? "— building needs Pro"
-                      : `${p.brains} brain${p.brains === 1 ? "" : "s"} of your own`}
+                      ? t("— building needs Pro")
+                      : markup(
+                          p.brains === 1
+                            ? t("<0/> brain of your own")
+                            : t("<0/> brains of your own"),
+                          [p.brains],
+                        )}
                   </li>
                   {/* True on every plan, and stated on every plan: the point is
                       that the free column is not a crippled version. What free
@@ -173,29 +178,33 @@ export default async function PricingPage() {
                   <li>{t("✓ teach from your CLI — unlimited notes")}</li>
                   <li>
                     {p.monthlyExtractCents >= 1000
-                      ? `✓ our AI reads for you — $${(p.monthlyExtractCents / 100).toFixed(0)} of inference a month`
-                      : `our AI: $${(p.monthlyExtractCents / 100).toFixed(2)} a month — one trial brain, once`}
+                      ? markup(t("✓ our AI reads for you — <0/> of inference a month"), [
+                          `$${(p.monthlyExtractCents / 100).toFixed(0)}`,
+                        ])
+                      : markup(t("our AI: <0/> a month — one trial brain, once"), [
+                          `$${(p.monthlyExtractCents / 100).toFixed(2)}`,
+                        ])}
                   </li>
                   <li>
                     {p.monthlyExtractCents >= 1000
-                      ? "✓ or your own key, and the budget stops applying"
-                      : "✓ your own API key — unlimited, you pay the model"}
+                      ? t("✓ or your own key, and the budget stops applying")
+                      : t("✓ your own API key — unlimited, you pay the model")}
                   </li>
                   <li>
                     {p.sources === 0
-                      ? "catalogue + purchased brains"
-                      : `${p.sources.toLocaleString()} sources per brain`}
+                      ? t("catalogue + purchased brains")
+                      : markup(t("<0/> sources per brain"), [p.sources.toLocaleString()])}
                   </li>
                   <li>{markup(t("<0/> agent searches / month"), [
                     p.calls.toLocaleString(),
                   ])}</li>
                   <li>
                     {Number.isFinite(p.examSittings)
-                      ? `${p.examSittings} exam sittings, then a key or a plan`
-                      : "✓ exams re-sat as often as the brain changes"}
+                      ? markup(t("<0/> exam sittings, then a key or a plan"), [p.examSittings])
+                      : t("✓ exams re-sat as often as the brain changes")}
                   </li>
-                  <li>{p.write ? "✓ agents write lessons back" : "— agents read only"}</li>
-                  <li>{p.exports ? "✓ export as CLAUDE.md / Skill" : "— no export"}</li>
+                  <li>{p.write ? t("✓ agents write lessons back") : t("— agents read only")}</li>
+                  <li>{p.exports ? t("✓ export as CLAUDE.md / Skill") : t("— no export")}</li>
                 </ul>
 
                 {/* A price with no way to act on it is a poster. Both buttons land
@@ -205,7 +214,7 @@ export default async function PricingPage() {
                 <div style={{ marginTop: "1.1rem" }}>
                   {p.key === "free" ? (
                     <Link className="btn btn-ghost" href={user ? "/brains" : "/sign-in?next=/start"}>
-                      {user ? "Your brains" : "Start free"}
+                      {user ? t("Your brains") : t("Start free")}
                     </Link>
                   ) : (
                     <Link
