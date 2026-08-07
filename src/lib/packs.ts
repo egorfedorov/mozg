@@ -59,11 +59,14 @@ export const PACKS: Pack[] = [
     slug: "igaming",
     priceCents: 9900,
     seats: 3,
-    // $69 a family, $39 a brain, $99 the lot: two families alone come to $138,
-    // and three brains to $117, so the pack wins for anybody whose work spans
-    // more than one corner of this trade — which is everybody who ships a game.
-    familyPriceCents: 6900,
-    memberPriceCents: 3900,
+    // $29 a family, $19 a brain, $99 the lot. The member price is set from the
+    // pack rather than the other way round: at $19 the pack pays for itself at
+    // five of them, so somebody holding eighteen has paid for a third of what
+    // they got. The first prices were twice this and read as a wall — a brain
+    // is worth less than an afternoon of the work it saves, and the sale we
+    // want is the pack.
+    familyPriceCents: 2900,
+    memberPriceCents: 1900,
     title: "Slot studios",
     eyebrow: "For slot studios",
     headline: ["A failed submission", "costs more than a year of this."],
