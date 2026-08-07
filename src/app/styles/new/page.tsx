@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -25,19 +26,16 @@ export default async function NewStylePage() {
       <Contents active="/styles" />
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">
-          <Link href="/styles">style brains</Link> / new
-        </p>
+          {markup(t("<0>style brains</0> / new"), [
+          <Link href="/styles" key="s0" />,
+        ])}</p>
         <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
           {t("Put your style into words once.")}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Two ways in, use either or both. <strong>Drop your works</strong>:
-          create the brain with just a name, then upload 5–15 of your pieces on
-          the next screen — mozg reads them and writes the palette, light and
-          line rules it actually sees. <strong>Or write the rules yourself</strong>{" "}
-          below: exact values beat adjectives — “warm red” examines terribly,
-          “vermilion #e34a33, never on skin” examines well. The exam then
-          proves the style is learnable, and that score is what buyers see.
-        </p>
+          {markup(t("Two ways in, use either or both. <0>Drop your works</0>: create the brain with just a name, then upload 5–15 of your pieces on the next screen — mozg reads them and writes the palette, light and line rules it actually sees. <1>Or write the rules yourself</1> below: exact values beat adjectives — “warm red” examines terribly, “vermilion #e34a33, never on skin” examines well. The exam then proves the style is learnable, and that score is what buyers see."), [
+          <strong key="s0" />,
+          <strong key="s1" />,
+        ])}</p>
         <div style={{ marginTop: "2rem" }}>
           <StyleForm />
         </div>

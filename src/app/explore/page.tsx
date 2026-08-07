@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -143,10 +144,9 @@ export default async function ExplorePage({
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">{t("Catalogue · connect any of these in one command")}</p>
         <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
-          Brains other people
-          <br />
-          already built.
-        </h1>
+          {markup(t("Brains other people <0/> already built."), [
+          <br key="s0" />,
+        ])}</h1>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
           {t("Every one states what it is for and how much of that it can actually answer — the score comes from an exam it sat, not from the author's description. Paid brains are bought once from your balance and stay yours.")}</p>
 
@@ -296,14 +296,10 @@ export default async function ExplorePage({
             <h2 className="h2">
               {t("Sell what you already know.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              Publish a brain, set a price, keep {100 - PLATFORM_FEE_PERCENT}% of
-              every sale. Buyers get read access through their agent — the licence
-              forbids reselling it. And if the brain you need is missing:{" "}
-              <a href="/chat">
-                name it
-              </a>{" "}
-              — good requests get built within days.
-            </p>
+              {markup(t("Publish a brain, set a price, keep <0/>% of every sale. Buyers get read access through their agent — the licence forbids reselling it. And if the brain you need is missing: <1>name it</1> — good requests get built within days."), [
+              100 - PLATFORM_FEE_PERCENT,
+              <a href="/chat" key="s1" />,
+            ])}</p>
           </div>
           <Link className="btn" href="/guide">
             How to build one

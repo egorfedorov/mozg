@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -72,14 +73,9 @@ export default async function GlobalChangesPage() {
         <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
           {t("What the brains learned.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
-          <Link href="/changelog" style={{ textDecoration: "underline" }}>
-            /changelog
-          </Link>{" "}
-          is what we shipped; this is what the knowledge did. Every row is a
-          fact from the machinery — an exam re-sat and diffed against the
-          sitting before it, or a source whose content hash actually moved.
-          Nobody writes this page; it happens.
-        </p>
+          {markup(t("<0>/changelog</0> is what we shipped; this is what the knowledge did. Every row is a fact from the machinery — an exam re-sat and diffed against the sitting before it, or a source whose content hash actually moved. Nobody writes this page; it happens."), [
+          <Link href="/changelog" style={{ textDecoration: "underline" }} key="s0" />,
+        ])}</p>
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">

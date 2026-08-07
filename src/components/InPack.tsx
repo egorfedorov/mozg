@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { formatCents } from "@/lib/money-math";
 import type { Pack } from "@/lib/packs";
@@ -14,7 +16,7 @@ import type { Pack } from "@/lib/packs";
  * When the reader already holds it, the same strip says so instead: the useful
  * fact then is "you have this", not an offer.
  */
-export default function InPack({
+export default async function InPack({
   pack,
   brains,
   held,
@@ -27,6 +29,8 @@ export default function InPack({
   /** What this brain alone costs, for the comparison. */
   singleCents: number;
 }) {
+  const t = await translator();
+
   return (
     <section
       className="panel"
@@ -36,10 +40,10 @@ export default function InPack({
 
       {held ? (
         <p style={{ margin: ".4rem 0 .75rem" }}>
-          This brain is part of <strong>{pack.title}</strong>, which you already
-          hold — nothing more to buy, and the other {brains - 1} brains in it
-          are yours too.
-        </p>
+          {markup(t("This brain is part of <0/>, which you already hold — nothing more to buy, and the other <1/> brains in it are yours too."), [
+          <strong key="s0">{pack.title}</strong>,
+          brains - 1,
+        ])}</p>
       ) : (
         <p style={{ margin: ".4rem 0 .75rem" }}>
           <strong>{pack.title}</strong> is this brain and {brains - 1} others

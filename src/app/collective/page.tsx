@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -43,10 +44,9 @@ export default async function CollectivePage({
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">{t("The collective mind")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}>
-          Every question anyone asks
-          <br />
-          makes it smarter.
-        </h1>
+          {markup(t("Every question anyone asks <0/> makes it smarter."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
           {t("A file you write alone stays exactly as smart as you were the day you wrote it. A brain is used by many agents — and everything they do with it, including failing to get an answer, is a signal it learns from. Here is the loop, mechanism by mechanism. Nothing on this page is a roadmap; all of it runs today.")}</p>
 
@@ -98,20 +98,19 @@ export default async function CollectivePage({
             <div style={{ marginTop: "1.5rem", maxWidth: 720 }}>
               {results.length === 0 ? (
                 <p style={{ color: "var(--ink-2)" }}>
-                  No public brain answers that yet
-                  {topic ? ` in ${topicLabel(topic)}` : ""}. The catalogue
-                  grows one miss at a time —{" "}
-                  <Link href="/explore" style={{ textDecoration: "underline" }}>
-                    browse what is already learning
-                  </Link>
-                  , or <Link href="/make" style={{ textDecoration: "underline" }}>start the brain that should have known</Link>.
-                </p>
+                  {markup(t("No public brain answers that yet <0/>. The catalogue grows one miss at a time — <1>browse what is already learning</1> , or <2>start the brain that should have known</2>."), [
+                  topic ? ` in ${topicLabel(topic)}` : "",
+                  <Link href="/explore" style={{ textDecoration: "underline" }} key="s1" />,
+                  <Link href="/make" style={{ textDecoration: "underline" }} key="s2" />,
+                ])}</p>
               ) : (
                 <>
                   <p className="eyebrow" style={{ marginBottom: ".75rem" }}>
-                    {results.length} brain{results.length === 1 ? "" : "s"} answer
-                    {topic ? ` · ${topicLabel(topic)}` : ""}
-                  </p>
+                    {markup(t("<0/> brain<1/> answer <2/>"), [
+                    results.length,
+                    results.length === 1 ? "" : "s",
+                    topic ? ` · ${topicLabel(topic)}` : "",
+                  ])}</p>
                   <div className="rows">
                     {results.map((r) => (
                       <Link key={r.slug} className="row" href={`/b/${r.handle}/${r.slug}`}>
@@ -154,15 +153,9 @@ export default async function CollectivePage({
             <text x="597" y="106" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("that could answer it")}</text>
           </svg>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", marginTop: "1rem" }}>
-            When any connected agent searches a brain and gets nothing back,
-            that query is recorded. Before the next exam, the most-asked recent
-            misses are added as real exam questions — in their own category,
-            <span className="mono"> asked in real use</span>. From there the
-            standard machinery takes over: the failed question steers the next
-            focused re-read of the sources, and the brain fetches unread pages
-            whose paths match what was asked. Nobody wrote a ticket. The gap
-            was reported by the act of hitting it.
-          </p>
+            {markup(t("When any connected agent searches a brain and gets nothing back, that query is recorded. Before the next exam, the most-asked recent misses are added as real exam questions — in their own category, <0>asked in real use</0>. From there the standard machinery takes over: the failed question steers the next focused re-read of the sources, and the brain fetches unread pages whose paths match what was asked. Nobody wrote a ticket. The gap was reported by the act of hitting it."), [
+            <span className="mono" key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── 2: corrections ────────────────────────────────────────────── */}
@@ -171,17 +164,9 @@ export default async function CollectivePage({
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("Agents file corrections while they work.")}</h2>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)" }}>
-            Every connected agent has a <span className="mono">brain_feedback</span>{" "}
-            tool: &ldquo;this note is wrong, here is what the API actually
-            returned.&rdquo; The correction lands in the owner&apos;s review
-            queue with the caller&apos;s evidence attached. One approval turns
-            it into a note; the old note is superseded, not edited in place.
-            The gate matters as much as the door — no stranger writes into a
-            brain directly, so one confused (or hostile) caller cannot poison
-            what a thousand others rely on. Moderated, evidence-first,
-            attributable: the same reason Wikipedia outlived the wikis that
-            let anyone type anything.
-          </p>
+            {markup(t("Every connected agent has a <0>brain_feedback</0> tool: “this note is wrong, here is what the API actually returned.” The correction lands in the owner's review queue with the caller's evidence attached. One approval turns it into a note; the old note is superseded, not edited in place. The gate matters as much as the door — no stranger writes into a brain directly, so one confused (or hostile) caller cannot poison what a thousand others rely on. Moderated, evidence-first, attributable: the same reason Wikipedia outlived the wikis that let anyone type anything."), [
+            <span className="mono" key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── 3: versions ───────────────────────────────────────────────── */}

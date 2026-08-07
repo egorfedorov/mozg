@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -33,26 +34,24 @@ export default async function TermsPage() {
         <h1 className="display" style={{ fontSize: "clamp(1.9rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
           {t("Terms of Service")}</h1>
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
-          Last updated {UPDATED} · mozg is in beta, and these terms change with it.
-        </p>
+          {markup(t("Last updated <0/> · mozg is in beta, and these terms change with it."), [
+          UPDATED,
+        ])}</p>
 
         <h2 className="h2">{t("1. What this is")}</h2>
         <p>
           {t("mozg (“we”, “the service”) lets you build knowledge brains from pages, files and screenshots, and connect them to AI agents over MCP. Using mozg.sh, learn.mozg.sh, the API or the MCP server means you accept these terms. If you do not, do not use the service.")}</p>
         <p>
-          The service is operated from Europe by the individual reachable at{" "}
-          <a href={`mailto:${contact}`}>{contact}</a>. It is in beta: features move,
-          endpoints change, and occasionally something breaks. The{" "}
-          <Link href="/status">status page</Link> says what is broken right now.
-        </p>
+          {markup(t("The service is operated from Europe by the individual reachable at <0/>. It is in beta: features move, endpoints change, and occasionally something breaks. The <1>status page</1> says what is broken right now."), [
+          <a key="s0" href={`mailto:${contact}`}>{contact}</a>,
+          <Link href="/status" key="s1" />,
+        ])}</p>
 
         <h2 className="h2">{t("2. Your account")}</h2>
         <p>
-          You need an account to build brains. You are responsible for what happens under
-          it, including what your API tokens and connected agents do — a token is a key,
-          and a leaked key is your leak. Revoke tokens from{" "}
-          <Link href="/settings/tokens">settings</Link> the moment one goes missing.
-        </p>
+          {markup(t("You need an account to build brains. You are responsible for what happens under it, including what your API tokens and connected agents do — a token is a key, and a leaked key is your leak. Revoke tokens from <0>settings</0> the moment one goes missing."), [
+          <Link href="/settings/tokens" key="s0" />,
+        ])}</p>
         <p>
           {t("One human per account. You must be old enough to enter a contract where you live. We may suspend an account that is being used to abuse the service, and we will say why.")}</p>
 
@@ -70,10 +69,9 @@ export default async function TermsPage() {
 
         <h2 className="h2">{t("5. Money")}</h2>
         <p>
-          Free accounts get a monthly allowance of AI reading. Paid plans buy more; the
-          numbers are on <Link href="/pricing">pricing</Link>. Balance is credit for use
-          inside mozg, not a deposit account and not e-money.
-        </p>
+          {markup(t("Free accounts get a monthly allowance of AI reading. Paid plans buy more; the numbers are on <0>pricing</0>. Balance is credit for use inside mozg, not a deposit account and not e-money."), [
+          <Link href="/pricing" key="s0" />,
+        ])}</p>
         <p>
           {t("Top-ups are made in cryptocurrency through our payment provider and are final once confirmed on-chain — we cannot reverse a blockchain transaction. If you bought something the service then failed to deliver, write to us and we will make it right. Reading your own material with your own API key (bring-your-own-key) is unmetered by us because that spend was never ours.")}</p>
 
@@ -99,25 +97,22 @@ export default async function TermsPage() {
 
         <h2 className="h2">{t("9. Ending it")}</h2>
         <p>
-          Delete your account whenever you like; write to{" "}
-          <a href={`mailto:${contact}`}>{contact}</a> and we will remove your content within
-          30 days, except what we must keep for accounting. We may close an account that
-          breaks these terms, and will refund unused balance where the law requires it.
-        </p>
+          {markup(t("Delete your account whenever you like; write to <0/> and we will remove your content within 30 days, except what we must keep for accounting. We may close an account that breaks these terms, and will refund unused balance where the law requires it."), [
+          <a key="s0" href={`mailto:${contact}`}>{contact}</a>,
+        ])}</p>
 
         <h2 className="h2">{t("10. Changes, and the law that applies")}</h2>
         <p>
-          We will post material changes on the <Link href="/changelog">changelog</Link>{" "}
-          before they take effect. Continuing to use the service after that is acceptance.
-          These terms are governed by the laws of the operator&apos;s country of residence, and
-          if you are a consumer you keep the protections your own country gives you.
-        </p>
+          {markup(t("We will post material changes on the <0>changelog</0> before they take effect. Continuing to use the service after that is acceptance. These terms are governed by the laws of the operator's country of residence, and if you are a consumer you keep the protections your own country gives you."), [
+          <Link href="/changelog" key="s0" />,
+        ])}</p>
 
         <p style={{ color: "var(--ink-3)", fontSize: ".9375rem", marginTop: "2.5rem" }}>
-          Questions about any of this: <a href={`mailto:${contact}`}>{contact}</a>. See also
-          the <Link href="/privacy">Privacy Policy</Link> and the{" "}
-          <Link href="/cookies">Cookie Policy</Link>.
-        </p>
+          {markup(t("Questions about any of this: <0/>. See also the <1>Privacy Policy</1> and the <2>Cookie Policy</2>."), [
+          <a key="s0" href={`mailto:${contact}`}>{contact}</a>,
+          <Link href="/privacy" key="s1" />,
+          <Link href="/cookies" key="s2" />,
+        ])}</p>
       </main>
 
       <SiteFooter />

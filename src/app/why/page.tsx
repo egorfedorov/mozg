@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -30,12 +31,10 @@ export default async function WhyPage() {
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
         >
-          You have explained
-          <br />
-          the same thing
-          <br />
-          forty times.
-        </h1>
+          {markup(t("You have explained <0/> the same thing <1/> forty times."), [
+          <br key="s0" />,
+          <br key="s1" />,
+        ])}</h1>
         <p
           style={{
             fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
@@ -54,18 +53,18 @@ export default async function WhyPage() {
             {[
               {
                 n: "01",
-                title: "Memory is locked to one vendor",
-                body: "Built-in agent memory belongs to whoever made the agent. Teach Claude something and Codex still knows nothing about it. You are not building knowledge, you are building it once per tool.",
+                title: msg("Memory is locked to one vendor"),
+                body: msg("Built-in agent memory belongs to whoever made the agent. Teach Claude something and Codex still knows nothing about it. You are not building knowledge, you are building it once per tool."),
               },
               {
                 n: "02",
-                title: "Your context lives in screenshots",
-                body: "The things an agent most needs — how the product actually looks, what the docs actually say, what the team actually decided — exist as images, PDFs and pages. None of it is in a form an agent can search.",
+                title: msg("Your context lives in screenshots"),
+                body: msg("The things an agent most needs — how the product actually looks, what the docs actually say, what the team actually decided — exist as images, PDFs and pages. None of it is in a form an agent can search."),
               },
               {
                 n: "03",
-                title: "Nobody can tell you what it does not know",
-                body: "Every knowledge base is a black box. Answers come back confident whether the material is there or not, and you find the hole when an agent confidently gets something wrong in front of someone else.",
+                title: msg("Nobody can tell you what it does not know"),
+                body: msg("Every knowledge base is a black box. Answers come back confident whether the material is there or not, and you find the hole when an agent confidently gets something wrong in front of someone else."),
               },
             ].map((item) => (
               <article
@@ -86,9 +85,9 @@ export default async function WhyPage() {
                 </span>
                 <div>
                   <h3 className="h2" style={{ marginBottom: ".4rem" }}>
-                    {item.title}
+                    {t(item.title)}
                   </h3>
-                  <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "60ch" }}>{item.body}</p>
+                  <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "60ch" }}>{t(item.body)}</p>
                 </div>
               </article>
             ))}
@@ -102,16 +101,13 @@ export default async function WhyPage() {
             className="display"
             style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".6rem 0 1.25rem" }}
           >
-            A brain that can be
-            <br />
-            wrong on purpose.
-          </h2>
+            {markup(t("A brain that can be <0/> wrong on purpose."), [
+            <br key="s0" />,
+          ])}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0, fontSize: "1.0625rem" }}>
-            You write what the brain is <em>for</em>. That goal becomes an exam —
-            including questions about material you have not uploaded. The brain sits
-            it after every change and reports which categories it cannot answer.
-            Failing is the feature: those failures are the list of what to add next.
-          </p>
+            {markup(t("You write what the brain is <0>for</0>. That goal becomes an exam — including questions about material you have not uploaded. The brain sits it after every change and reports which categories it cannot answer. Failing is the feature: those failures are the list of what to add next."), [
+            <em key="s0" />,
+          ])}</p>
 
           <div
             className="panel"

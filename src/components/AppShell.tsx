@@ -1,3 +1,4 @@
+import { translator, msg } from "@/lib/t";
 import Link from "next/link";
 import SignOutLink from "@/components/SignOutLink";
 import { currentUser } from "@/lib/session";
@@ -19,25 +20,25 @@ const GROUPS: {
   items: { href: string; label: string; hint?: string; badge?: number }[];
 }[] = [
   {
-    title: "Work",
+    title: msg("Work"),
     items: [
-      { href: "/brains", label: "Overview" },
-      { href: "/mind", label: "Your mind" },
-      { href: "/brains/new", label: "New brain" },
-      { href: "/connect", label: "Connect an agent" },
-      { href: "/achievements", label: "Achievements" },
-      { href: "/chat", label: "chatmozg" },
+      { href: "/brains", label: msg("Overview") },
+      { href: "/mind", label: msg("Your mind") },
+      { href: "/brains/new", label: msg("New brain") },
+      { href: "/connect", label: msg("Connect an agent") },
+      { href: "/achievements", label: msg("Achievements") },
+      { href: "/chat", label: msg("chatmozg") },
     ],
   },
   {
-    title: "Account",
+    title: msg("Account"),
     items: [
-      { href: "/settings/balance", label: "Balance" },
-      { href: "/settings/purchases", label: "Library" },
-      { href: "/settings/tokens", label: "Tokens" },
-      { href: "/settings/usage", label: "Usage" },
-      { href: "/settings/packs", label: "Packs & people" },
-      { href: "/settings", label: "Plan & profile" },
+      { href: "/settings/balance", label: msg("Balance") },
+      { href: "/settings/purchases", label: msg("Library") },
+      { href: "/settings/tokens", label: msg("Tokens") },
+      { href: "/settings/usage", label: msg("Usage") },
+      { href: "/settings/packs", label: msg("Packs & people") },
+      { href: "/settings", label: msg("Plan & profile") },
     ],
   },
 ];
@@ -59,6 +60,8 @@ export default async function AppShell({
   narrow?: boolean;
   children: React.ReactNode;
 }) {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) return null; // callers redirect; this is belt and braces
 
@@ -149,10 +152,10 @@ export default async function AppShell({
           <nav className="app-nav">
             {groups.map((g) => (
               <div key={g.title}>
-                <p className="eyebrow app-nav-title">{g.title}</p>
+                <p className="eyebrow app-nav-title">{t(g.title)}</p>
                 {g.items.map((i) => (
                   <Link key={i.href} href={i.href} data-active={i.href === active}>
-                    {i.label}
+                    {t(i.label)}
                     {(i.badge ?? 0) > 0 && <span className="nav-badge">{i.badge}</span>}
                   </Link>
                 ))}
@@ -160,7 +163,7 @@ export default async function AppShell({
             ))}
 
             <div>
-              <p className="eyebrow app-nav-title">Elsewhere</p>
+              <p className="eyebrow app-nav-title">{t("Elsewhere")}</p>
               <Link href="/explore">Catalogue</Link>
               <Link href="/guide">Guide</Link>
               <SignOutLink />

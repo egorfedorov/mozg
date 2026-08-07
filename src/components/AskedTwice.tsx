@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 /**
  * The same request, answered twice.
  *
@@ -10,7 +11,7 @@
  * Shared rather than repeated: it appears in the stories and in the argument
  * pages, and two copies would drift in styling and in tone.
  */
-export default function AskedTwice({
+export default async function AskedTwice({
   ask,
   without,
   withBrain,
@@ -22,6 +23,8 @@ export default function AskedTwice({
   withBrain: string;
   accent?: string;
 }) {
+  const t = await translator();
+
   return (
     <div style={{ marginTop: "1.75rem", maxWidth: "62ch" }}>
       <p
@@ -50,16 +53,14 @@ export default function AskedTwice({
       >
         <div style={{ background: "var(--paper-2)", padding: "1rem" }}>
           <p className="eyebrow" style={{ margin: "0 0 .5rem", color: "var(--color-riso-red)" }}>
-            Without a brain
-          </p>
+            {t("Without a brain")}</p>
           <p style={{ margin: 0, fontSize: ".9375rem", color: "var(--ink-2)", lineHeight: 1.55 }}>
             {without}
           </p>
         </div>
         <div style={{ background: "var(--paper)", padding: "1rem" }}>
           <p className="eyebrow" style={{ margin: "0 0 .5rem", color: "var(--color-riso-green)" }}>
-            With the brain
-          </p>
+            {t("With the brain")}</p>
           <p style={{ margin: 0, fontSize: ".9375rem", color: "var(--ink)", lineHeight: 1.55 }}>
             {withBrain}
           </p>

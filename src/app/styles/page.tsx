@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -45,13 +46,10 @@ export default async function StylesPage() {
         <h1 className="display" style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".5rem 0 1rem", maxWidth: "20ch" }}>
           {t("Your style is being scraped anyway. Sell it instead.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
-          Cloaking tools promised to make styles untrainable — and each one has
-          been broken within months. mozg takes the opposite road: your style
-          becomes a <strong>brain</strong> — palette values, light rules, the
-          hard nevers — that buyers&apos; AI agents follow when they generate.
-          Licensed and attributed, <strong>95% of the price yours</strong>, and
-          unlike a fine-tune, access can be revoked.
-        </p>
+          {markup(t("Cloaking tools promised to make styles untrainable — and each one has been broken within months. mozg takes the opposite road: your style becomes a <0>brain</0> — palette values, light rules, the hard nevers — that buyers' AI agents follow when they generate. Licensed and attributed, <1>95% of the price yours</1>, and unlike a fine-tune, access can be revoked."), [
+          <strong key="s0" />,
+          <strong key="s1" />,
+        ])}</p>
 
         {/* The whole argument in two images: same subject, same model, the
             only difference is whether the agent read the style brain. */}
@@ -135,13 +133,9 @@ export default async function StylesPage() {
           <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
             {t("People generate in your style without leaving the site, and you earn on every image.")}</h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
-            A buyer types what they want on your style&apos;s page in the gallery.
-            Your rules — palette, line, shading, the nevers — are compiled in front
-            of their sentence, so what comes back follows you rather than the
-            model&apos;s idea of your name. 25¢ an image, <strong>10¢ of it
-            yours</strong>, every time. Their own agents can still read the brain
-            over MCP; this is for everyone who does not use one.
-          </p>
+            {markup(t("A buyer types what they want on your style's page in the gallery. Your rules — palette, line, shading, the nevers — are compiled in front of their sentence, so what comes back follows you rather than the model's idea of your name. 25¢ an image, <0>10¢ of it yours</0>, every time. Their own agents can still read the brain over MCP; this is for everyone who does not use one."), [
+            <strong key="s0" />,
+          ])}</p>
           <Link className="btn" href="https://gallery.mozg.sh">
             See it in the gallery
           </Link>

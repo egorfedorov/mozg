@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -78,10 +79,9 @@ export default async function StatusPage() {
         </h1>
 
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Measured, not declared. Every line below is a live count taken when
-          you loaded this page.{" "}
-          <AutoRefresh active intervalMs={60_000} label="live" />
-        </p>
+          {markup(t("Measured, not declared. Every line below is a live count taken when you loaded this page. <0/>"), [
+          <AutoRefresh key="s0" active intervalMs={60_000} label="live" />,
+        ])}</p>
 
         <div className="rows" style={{ maxWidth: "48rem", marginTop: "1.5rem" }}>
           {status.services.map((s) => (
@@ -116,12 +116,9 @@ export default async function StatusPage() {
           <div className="rows">
             {shipped.length === 0 ? (
               <p className="row-empty">
-                Nothing announced yet — the{" "}
-                <Link href="/changelog" style={{ textDecoration: "underline" }}>
-                  changelog
-                </Link>{" "}
-                has the full history.
-              </p>
+                {markup(t("Nothing announced yet — the <0>changelog</0> has the full history."), [
+                <Link href="/changelog" style={{ textDecoration: "underline" }} key="s0" />,
+              ])}</p>
             ) : (
               shipped.map((s, i) => (
                 <div
@@ -143,20 +140,14 @@ export default async function StatusPage() {
         </section>
 
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginTop: "2rem" }}>
-          Machine-readable:{" "}
-          <a href="/api/health" style={{ textDecoration: "underline" }}>
-            /api/health
-          </a>{" "}
-          — 200 while serving, 503 when it is not. Point a monitor at it.
-        </p>
+          {markup(t("Machine-readable: <0>/api/health</0> — 200 while serving, 503 when it is not. Point a monitor at it."), [
+          <a href="/api/health" style={{ textDecoration: "underline" }} key="s0" />,
+        ])}</p>
 
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch" }}>
-          Something broken that this page calls operational?{" "}
-          <Link href="/chat" style={{ textDecoration: "underline" }}>
-            Tell us in chat
-          </Link>{" "}
-          — a lane nobody measures is exactly the one that fails quietly.
-        </p>
+          {markup(t("Something broken that this page calls operational? <0>Tell us in chat</0> — a lane nobody measures is exactly the one that fails quietly."), [
+          <Link href="/chat" style={{ textDecoration: "underline" }} key="s0" />,
+        ])}</p>
       </main>
 
       <SiteFooter />

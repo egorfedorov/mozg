@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -79,10 +80,9 @@ export default async function VsPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">{t("A brain and a file")}</p>
         <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
-          Both are just text
-          <br />
-          an agent reads.
-        </h1>
+          {markup(t("Both are just text <0/> an agent reads."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede" style={{ fontSize: "1.0625rem" }}>
           {t("The difference is not format. It is what happens to them over the next three months, while you are busy.")}</p>
 
@@ -154,10 +154,10 @@ export default async function VsPage() {
               <p>
                 {t("Search earns its keep somewhere past a hundred notes. Below that, putting the whole thing in context is simpler and cheaper.")}</p>
               <p>
-                Any brain exports to <code className="mono">CLAUDE.md</code>, a
-                Skill or <code className="mono">AGENTS.md</code> — take the
-                snapshot and go.
-              </p>
+                {markup(t("Any brain exports to <0>CLAUDE.md</0>, a Skill or <1>AGENTS.md</1> — take the snapshot and go."), [
+                <code className="mono" key="s0" />,
+                <code className="mono" key="s1" />,
+              ])}</p>
             </Panel>
           </div>
         </section>

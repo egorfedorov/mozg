@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -87,12 +88,10 @@ export default async function BasicsPage() {
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
         >
-          Never heard of
-          <br />
-          any of this?
-          <br />
-          Good. Start here.
-        </h1>
+          {markup(t("Never heard of <0/> any of this? <1/> Good. Start here."), [
+          <br key="s0" />,
+          <br key="s1" />,
+        ])}</h1>
         <p
           style={{
             fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
@@ -111,19 +110,13 @@ export default async function BasicsPage() {
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             {t("Imagine hiring someone who has read almost everything ever published — every manual, every forum, every tutorial — and can write code, edit your files and run commands. That is an AI agent: Claude Code, Cursor, Codex. Genuinely useful, and strange in two specific ways.")}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
-            <strong style={{ color: "var(--ink)" }}>It stopped reading on a date.</strong>{" "}
-            Its knowledge was fixed when it was trained. Anything published after
-            that — a new version of the tool you use, an option that got renamed,
-            the API that changed last Tuesday — it has never seen, and it does not
-            know that it has not seen it. So it answers from what it remembers,
-            with total confidence, and sometimes that answer is a year out of date.
-          </p>
+            {markup(t("<0>It stopped reading on a date.</0> Its knowledge was fixed when it was trained. Anything published after that — a new version of the tool you use, an option that got renamed, the API that changed last Tuesday — it has never seen, and it does not know that it has not seen it. So it answers from what it remembers, with total confidence, and sometimes that answer is a year out of date."), [
+            <strong style={{ color: "var(--ink)" }} key="s0" />,
+          ])}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
-            <strong style={{ color: "var(--ink)" }}>It forgets everything between conversations.</strong>{" "}
-            Explain your project&apos;s rules today and tomorrow it starts blank.
-            Everything it knows about your work has to be handed to it again, every
-            single session — and every word of that costs money to read.
-          </p>
+            {markup(t("<0>It forgets everything between conversations.</0> Explain your project's rules today and tomorrow it starts blank. Everything it knows about your work has to be handed to it again, every single session — and every word of that costs money to read."), [
+            <strong style={{ color: "var(--ink)" }} key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── 2. why that hurts ─────────────────────────────────────────── */}
@@ -132,14 +125,10 @@ export default async function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
             {t("Which is why the answers look right and are not.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
-            Two kinds of knowledge are missing, and they fail differently.
-            <strong> Public knowledge that moved</strong> — the documentation of
-            whatever you are building with, which changed after the model stopped
-            reading. And <strong>knowledge that was never public at all</strong> —
-            your project&apos;s conventions, your company&apos;s internal system,
-            the way your studio does things. No model has ever seen that, so
-            everything it says about it is invention.
-          </p>
+            {markup(t("Two kinds of knowledge are missing, and they fail differently. <0>Public knowledge that moved</0> — the documentation of whatever you are building with, which changed after the model stopped reading. And <1>knowledge that was never public at all</1> — your project's conventions, your company's internal system, the way your studio does things. No model has ever seen that, so everything it says about it is invention."), [
+            <strong key="s0" />,
+            <strong key="s1" />,
+          ])}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             {t("The usual fix is to paste it all in — a long file of instructions the agent reads every session. That works until it does not: the file grows past what fits, you pay for all of it whether today's task needed it or not, and worst of all it cannot tell you when it went stale. A document is silent about its own age.")}</p>
         </section>
@@ -232,14 +221,9 @@ export default async function BasicsPage() {
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
             {t("We keep the knowledge, and we measure it.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
-            A <strong>brain</strong>{" "}
-            is a small library about one subject —
-            SvelteKit, your company&apos;s billing service, the way your studio
-            builds games. Inside it are notes: one fact each, written to stand
-            alone. Your agent connects once and then asks the brain whenever a
-            question depends on that subject, getting back the two or three notes
-            that answer instead of a document it has to read whole.
-          </p>
+            {markup(t("A <0>brain</0> is a small library about one subject — SvelteKit, your company's billing service, the way your studio builds games. Inside it are notes: one fact each, written to stand alone. Your agent connects once and then asks the brain whenever a question depends on that subject, getting back the two or three notes that answer instead of a document it has to read whole."), [
+            <strong key="s0" />,
+          ])}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             {t("The part nobody else does is the exam. Every brain is given questions drawn from what it claims to cover, made to answer them, and marked — so it carries a percentage, and a public list of the questions it fails. That is the difference between “here is a document, good luck” and “this knows 84% of its subject, and here is exactly where it does not”. An agent that is told where knowledge ends can say “I don't know” instead of inventing.")}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
@@ -274,37 +258,25 @@ export default async function BasicsPage() {
             {t("Three steps, about ten minutes.")}</h2>
           <ol style={{ paddingLeft: "1.25rem", display: "grid", gap: ".9rem", fontSize: "1.0625rem", lineHeight: 1.6 }}>
             <li>
-              <strong>Take a brain.</strong> Open the{" "}
-              <Link className="linkish" href="/explore">
-                catalogue
-              </Link>{" "}
-              and find the tool you are working with. Free, no card, and you can
-              read what it knows before deciding.
-            </li>
+              {markup(t("<0>Take a brain.</0> Open the <1>catalogue</1> and find the tool you are working with. Free, no card, and you can read what it knows before deciding."), [
+              <strong key="s0" />,
+              <Link className="linkish" href="/explore" key="s1" />,
+            ])}</li>
             <li>
-              <strong>Connect your agent.</strong> One command, copied from{" "}
-              <Link className="linkish" href="/connect">
-                the connect page
-              </Link>
-              . It works with Claude Code, Cursor, Codex and anything else that
-              speaks MCP — this is where that socket earns its keep.
-            </li>
+              {markup(t("<0>Connect your agent.</0> One command, copied from <1>the connect page</1> . It works with Claude Code, Cursor, Codex and anything else that speaks MCP — this is where that socket earns its keep."), [
+              <strong key="s0" />,
+              <Link className="linkish" href="/connect" key="s1" />,
+            ])}</li>
             <li>
-              <strong>Ask normally.</strong> You do not change how you talk to your
-              agent. It searches the brain when a question touches that subject,
-              and tells you when the brain does not know.
-            </li>
+              {markup(t("<0>Ask normally.</0> You do not change how you talk to your agent. It searches the brain when a question touches that subject, and tells you when the brain does not know."), [
+              <strong key="s0" />,
+            ])}</li>
           </ol>
           <p style={{ color: "var(--ink-2)", marginTop: "1.25rem" }}>
-            Reading and connecting is free, forever, and so is the whole catalogue.
-            Money only appears when you want <em>our</em> AI to read documentation
-            for you — and even then you can point your own agent at it instead and
-            pay us nothing. The{" "}
-            <Link className="linkish" href="/pricing">
-              pricing page
-            </Link>{" "}
-            says exactly which is which.
-          </p>
+            {markup(t("Reading and connecting is free, forever, and so is the whole catalogue. Money only appears when you want <0>our</0> AI to read documentation for you — and even then you can point your own agent at it instead and pay us nothing. The <1>pricing page</1> says exactly which is which."), [
+            <em key="s0" />,
+            <Link className="linkish" href="/pricing" key="s1" />,
+          ])}</p>
         </section>
 
         {/* ── glossary ────────────────────────────────────────────────── */}
@@ -336,14 +308,9 @@ export default async function BasicsPage() {
         >
           <h2 className="h2">{t("Still not sure this is for you?")}</h2>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", fontSize: "1.0625rem", lineHeight: 1.65 }}>
-            Fair. Read{" "}
-            <Link className="linkish" href="/stories">
-              how people actually use it
-            </Link>{" "}
-            — an artist selling his method, a company teaching the AI its own
-            software, a game studio, a maintainer, an agency. One of them is
-            probably closer to your situation than anything on this page.
-          </p>
+            {markup(t("Fair. Read <0>how people actually use it</0> — an artist selling his method, a company teaching the AI its own software, a game studio, a maintainer, an agency. One of them is probably closer to your situation than anything on this page."), [
+            <Link className="linkish" href="/stories" key="s0" />,
+          ])}</p>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
             <Link className="btn" href="/explore">
               Look at the catalogue

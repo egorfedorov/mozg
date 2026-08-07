@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -104,8 +105,9 @@ export default async function ExamBadgePage({
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)", maxWidth: 760 }}>
         <p className="eyebrow">
-          <Link href={`/b/${handle}/${slug}`}>{brain.title}</Link> / exam badge
-        </p>
+          {markup(t("<0/> / exam badge"), [
+          <Link key="s0" href={`/b/${handle}/${slug}`}>{brain.title}</Link>,
+        ])}</p>
 
         <div
           style={{
@@ -137,39 +139,52 @@ export default async function ExamBadgePage({
                 <span style={{ fontSize: ".4em" }}>%</span>
               </h1>
               <p className="lede" style={{ margin: "0 0 1.5rem" }}>
-                An AI agent running on <strong>{brain.title}</strong> scored{" "}
-                {exam.score}% on the brain&apos;s own exam.
-              </p>
+                {markup(t("An AI agent running on <0/> scored <1/>% on the brain's own exam."), [
+                <strong key="s0">{brain.title}</strong>,
+                exam.score,
+              ])}</p>
+              {/* The anti-bluff line is its own sentence and only sometimes
+                  there, so it is translated as one rather than glued to the
+                  end of the sentence above out of fragments. */}
               <p style={{ color: "var(--ink-2)", maxWidth: "52ch" }}>
-                {exam.questions} questions written from the brain&apos;s stated
-                goal, answered through search over its notes, graded by an
-                independent judge — the score is measured, not claimed.
+                {markup(
+                  t(
+                    "<0/> questions written from the brain's stated goal, answered through search over its notes, graded by an independent judge — the score is measured, not claimed.",
+                  ),
+                  [exam.questions],
+                )}
                 {exam.neg_total > 0 && (
                   <>
-                    {" "}Anti-bluff: the agent refused{" "}
-                    <strong>
-                      {exam.neg_passed} of {exam.neg_total}
-                    </strong>{" "}
-                    deliberately out-of-scope probes, where the only correct
-                    answer is &ldquo;I don&apos;t know&rdquo;.
+                    {" "}
+                    {markup(
+                      t(
+                        "Anti-bluff: the agent refused <0/> deliberately out-of-scope probes, where the only correct answer is “I don't know”.",
+                      ),
+                      [
+                        // "3 of 5" is its own little unit — a pattern rather
+                        // than a sentence, and one a translator can reorder
+                        // without touching the sentence around it.
+                        <strong key="s0">
+                          {markup(t("<0/> of <1/>"), [exam.neg_passed, exam.neg_total])}
+                        </strong>,
+                      ],
+                    )}
                   </>
                 )}
               </p>
               <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginBottom: 0 }}>
-                sat {isoDate(exam.sat_at)} ·{" "}
-                <Link href={`/b/${handle}/${slug}`} style={{ textDecoration: "underline" }}>
-                  inspect the brain
-                </Link>
-              </p>
+                {markup(t("sat <0/> · <1>inspect the brain</1>"), [
+                isoDate(exam.sat_at),
+                <Link href={`/b/${handle}/${slug}`} style={{ textDecoration: "underline" }} key="s1" />,
+              ])}</p>
             </>
           ) : (
             <>
               <h1 className="h1" style={{ margin: "1rem 0" }}>{t("Not examined yet.")}</h1>
               <p className="lede">
-                <strong>{brain.title}</strong> has not sat its exam, so there is
-                no score to badge. The exam is generated from the brain&apos;s
-                goal once there is material to test.
-              </p>
+                {markup(t("<0/> has not sat its exam, so there is no score to badge. The exam is generated from the brain's goal once there is material to test."), [
+                <strong key="s0">{brain.title}</strong>,
+              ])}</p>
               <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginBottom: 0 }}>
                 <Link href={`/b/${handle}/${slug}`} style={{ textDecoration: "underline" }}>
                   back to the brain

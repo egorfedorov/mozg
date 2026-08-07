@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -30,12 +31,9 @@ export default async function AuditPage() {
         <h1 className="display" style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".5rem 0 1rem", maxWidth: "20ch" }}>
           {t("Your knowledge base claims. Ours examines.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
-          Every RAG and memory tool quotes benchmarks nobody can reproduce.
-          mozg&apos;s exam is its own machinery — the same one that grades every
-          brain in the catalogue, in public — and it will happily grade{" "}
-          <strong>yours</strong>: send the corpus, get a dated report of what it
-          actually knows.
-        </p>
+          {markup(t("Every RAG and memory tool quotes benchmarks nobody can reproduce. mozg's exam is its own machinery — the same one that grades every brain in the catalogue, in public — and it will happily grade <0>yours</0>: send the corpus, get a dated report of what it actually knows."), [
+          <strong key="s0" />,
+        ])}</p>
 
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
@@ -82,10 +80,9 @@ export default async function AuditPage() {
         </section>
 
         <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: "2rem" }}>
-          methodology: the same exam every mozg brain sits — question generation
-          from goal + corpus, retrieval-only answering, {env.JUDGE_VOTES ?? 3}-vote judging.
-          Nothing bespoke, which is the point.
-        </p>
+          {markup(t("methodology: the same exam every mozg brain sits — question generation from goal + corpus, retrieval-only answering, <0/>-vote judging. Nothing bespoke, which is the point."), [
+          env.JUDGE_VOTES ?? 3,
+        ])}</p>
       </main>
       <SiteFooter />
     </>

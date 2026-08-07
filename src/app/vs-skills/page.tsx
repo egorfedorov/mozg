@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -28,10 +29,9 @@ export default async function VsSkillsPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">{t("Skills & context files vs a brain")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}>
-          The most expensive answer
-          <br />
-          is the confident wrong one.
-        </h1>
+          {markup(t("The most expensive answer <0/> is the confident wrong one."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
           {t("You gave your agent skills, CLAUDE.md files, a folder of carefully written knowledge. It reads them and answers with total confidence — and three months later half of those answers are quietly wrong. Here is exactly where that pain comes from, error by error.")}</p>
 
@@ -63,14 +63,9 @@ export default async function VsSkillsPage() {
             </defs>
           </svg>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1rem" }}>
-            A skill or context file loads front to back into the window whether
-            today&apos;s task needs one line of it or none — and the folder only
-            grows. Past a point it physically cannot fit, so people start
-            deleting knowledge to make room, which is exactly backwards.
-            <strong> A brain is searched:</strong> the agent asks, gets the
-            three notes that answer, and the other seven hundred cost nothing.
-            Knowledge scales; the bill does not.
-          </p>
+            {markup(t("A skill or context file loads front to back into the window whether today's task needs one line of it or none — and the folder only grows. Past a point it physically cannot fit, so people start deleting knowledge to make room, which is exactly backwards. <0>A brain is searched:</0> the agent asks, gets the three notes that answer, and the other seven hundred cost nothing. Knowledge scales; the bill does not."), [
+            <strong key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── error 2: silent rot ───────────────────────────────────────── */}
@@ -92,13 +87,9 @@ export default async function VsSkillsPage() {
             </g>
           </svg>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1rem" }}>
-            Nothing in a file tells you it went stale — it keeps answering
-            in yesterday&apos;s shapes, confidently, and you find out from a broken
-            build. A brain re-reads its sources on a schedule, supersedes what
-            changed, re-sits an exam generated from its stated goal — and any
-            agent using it mid-task can <em>flag a note</em> the moment reality
-            disagrees. Files decay silently; a brain files a complaint.
-          </p>
+            {markup(t("Nothing in a file tells you it went stale — it keeps answering in yesterday's shapes, confidently, and you find out from a broken build. A brain re-reads its sources on a schedule, supersedes what changed, re-sits an exam generated from its stated goal — and any agent using it mid-task can <0>flag a note</0> the moment reality disagrees. Files decay silently; a brain files a complaint."), [
+            <em key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── error 3: unmeasurable knowledge ───────────────────────────── */}
@@ -141,13 +132,9 @@ export default async function VsSkillsPage() {
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("You corrected the agent yesterday. It forgot by this morning.")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-            The hardest-won knowledge — the pitfall that cost an afternoon, the
-            convention you explained for the fifth time — lives and dies inside
-            one conversation. With a brain, the agent <em>writes the lesson
-            back</em>: you approve it once, and every future session of every
-            agent starts already knowing it. Corrections compound instead of
-            evaporating.
-          </p>
+            {markup(t("The hardest-won knowledge — the pitfall that cost an afternoon, the convention you explained for the fifth time — lives and dies inside one conversation. With a brain, the agent <0>writes the lesson back</0>: you approve it once, and every future session of every agent starts already knowing it. Corrections compound instead of evaporating."), [
+            <em key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── the honest part ───────────────────────────────────────────── */}
@@ -169,16 +156,10 @@ export default async function VsSkillsPage() {
             accent="var(--color-riso-green)"
           />
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1rem" }}>
-            The person asking had never heard the word and got what a veteran
-            would have specified. A skill could have carried that convention too —
-            if somebody had thought to write it down, and if it were still true
-            this month. The brain was <em>asked</em>, and it can tell you when it
-            does not know.{" "}
-            <Link href="/stories#shipping-a-game" className="linkish">
-              The full story, and the others
-            </Link>
-            .
-          </p>
+            {markup(t("The person asking had never heard the word and got what a veteran would have specified. A skill could have carried that convention too — if somebody had thought to write it down, and if it were still true this month. The brain was <0>asked</0>, and it can tell you when it does not know. <1>The full story, and the others</1> ."), [
+            <em key="s0" />,
+            <Link href="/stories#shipping-a-game" className="linkish" key="s1" />,
+          ])}</p>
         </section>
 
         <section
@@ -187,13 +168,10 @@ export default async function VsSkillsPage() {
         >
           <p className="eyebrow">{t("Where skills genuinely win")}</p>
           <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0", maxWidth: "62ch" }}>
-            A skill that <em>runs things</em> — shell scripts, deploy gates,
-            asset pipelines — is a tool, and a brain does not replace tools.
-            The honest rule: <strong>procedures with code stay skills;
-            knowledge becomes a brain.</strong> If your skill is mostly prose
-            about how something works, it is a brain wearing the wrong
-            container — and paying the token tax for it.
-          </p>
+            {markup(t("A skill that <0>runs things</0> — shell scripts, deploy gates, asset pipelines — is a tool, and a brain does not replace tools. The honest rule: <1>procedures with code stay skills; knowledge becomes a brain.</1> If your skill is mostly prose about how something works, it is a brain wearing the wrong container — and paying the token tax for it."), [
+            <em key="s0" />,
+            <strong key="s1" />,
+          ])}</p>
         </section>
 
         {/* ── the table ─────────────────────────────────────────────────── */}

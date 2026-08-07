@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 
 /**
@@ -110,7 +112,9 @@ function Face() {
   return <img src="/brand/mascot.webp" alt="" width={72} height={72} style={{ flex: "0 0 auto" }} />;
 }
 
-export default function BrainMascot({ facts, slug }: { facts: MascotFacts; slug: string }) {
+export default async function BrainMascot({ facts, slug }: { facts: MascotFacts; slug: string }) {
+  const t = await translator();
+
   const said = lines(facts);
 
   return (
@@ -123,8 +127,9 @@ export default function BrainMascot({ facts, slug }: { facts: MascotFacts; slug:
         <Face />
         <div style={{ minWidth: 0 }}>
           <p className="eyebrow" style={{ margin: "0 0 .4rem" }}>
-            {facts.title} says
-          </p>
+            {markup(t("<0/> says"), [
+            facts.title,
+          ])}</p>
           <div style={{ display: "grid", gap: ".45rem" }}>
             {said.map((l, i) => (
               <p
@@ -160,11 +165,9 @@ export default function BrainMascot({ facts, slug }: { facts: MascotFacts; slug:
 
       {/* Every claim above is checkable from this page, and this is where. */}
       <p className="mono" style={{ margin: 0, fontSize: ".75rem", color: "var(--ink-3)" }}>
-        every line above is from this brain&apos;s own exam and metering —{" "}
-        <Link className="linkish" href={`/brains/${slug}/board`}>
-          see the working
-        </Link>
-      </p>
+        {markup(t("every line above is from this brain's own exam and metering — <0>see the working</0>"), [
+        <Link className="linkish" href={`/brains/${slug}/board`} key="s0" />,
+      ])}</p>
     </section>
   );
 }

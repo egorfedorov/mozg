@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator, msg } from "@/lib/t";
 
 /**
  * The contents strip.
@@ -32,55 +33,59 @@ interface Page {
 
 const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
   {
-    label: "Start",
-    summary: "get an agent thinking",
+    label: msg("Start"),
+    summary: msg("get an agent thinking"),
     pages: [
       // First, because the person who needs it does not know the words the other
       // pages use — including the word in the group label above it.
-      { href: "/basics", label: "Never heard of MCP?", note: "start from zero, no jargon" },
-      { href: "/connect", label: "Connect a client", note: "your CLI, one command" },
-      { href: "/make", label: "Make a brain", note: "six panels" },
-      { href: "/guide", label: "The long guide", note: "every detail, in order" },
+      { href: "/basics", label: msg("Never heard of MCP?"), note: msg("start from zero, no jargon") },
+      { href: "/connect", label: msg("Connect a client"), note: msg("your CLI, one command") },
+      { href: "/make", label: msg("Make a brain"), note: msg("six panels") },
+      { href: "/guide", label: msg("The long guide"), note: msg("every detail, in order") },
     ],
   },
   {
-    label: "About",
-    summary: "what this is, and why",
+    label: msg("About"),
+    summary: msg("what this is, and why"),
     pages: [
-      { href: "/about", label: "The manifesto", note: "what this is for, and who by" },
-      { href: "/why", label: "Why it exists", note: "the problem this solves" },
-      { href: "/vs", label: "Brain or file", note: "and when a file wins" },
-      { href: "/vs-skills", label: "Skills vs brain", note: "the confident wrong answer" },
-      { href: "/collective", label: "The collective mind", note: "every user makes it smarter" },
+      { href: "/about", label: msg("The manifesto"), note: msg("what this is for, and who by") },
+      { href: "/why", label: msg("Why it exists"), note: msg("the problem this solves") },
+      { href: "/vs", label: msg("Brain or file"), note: msg("and when a file wins") },
+      { href: "/vs-skills", label: msg("Skills vs brain"), note: msg("the confident wrong answer") },
+      { href: "/collective", label: msg("The collective mind"), note: msg("every user makes it smarter") },
     ],
   },
   {
-    label: "Uses",
-    summary: "what people do with it",
+    label: msg("Uses"),
+    summary: msg("what people do with it"),
     pages: [
-      { href: "/stories", label: "How people use it", note: "an artist, a company, a game studio" },
-      { href: "/packs", label: "Packs", note: "a trade's brains, sold together" },
-      { href: "https://gallery.mozg.sh", label: "Style gallery", note: "buy the way someone works", external: true },
-      { href: "/styles", label: "Sell your style", note: "the answer to scraping that pays you" },
-      { href: "/audit", label: "Audit a knowledge base", note: "exam-as-a-service, dated" },
-      { href: "https://learn.mozg.sh", label: "Learn as a human", note: "the same brain, as a course", external: true },
+      { href: "/stories", label: msg("How people use it"), note: msg("an artist, a company, a game studio") },
+      { href: "/packs", label: msg("Packs"), note: msg("a trade's brains, sold together") },
+      { href: "https://gallery.mozg.sh", label: msg("Style gallery"), note: msg("buy the way someone works"), external: true },
+      { href: "/styles", label: msg("Sell your style"), note: msg("the answer to scraping that pays you") },
+      { href: "/audit", label: msg("Audit a knowledge base"), note: msg("exam-as-a-service, dated") },
+      { href: "https://learn.mozg.sh", label: msg("Learn as a human"), note: msg("the same brain, as a course"), external: true },
     ],
   },
   {
     // Not "Money". Nobody clicks a tab called Money, and the page behind it is
     // mostly an argument that most of this is free — the label should say that.
-    label: "The deal",
-    summary: "free, paid, and what's new",
+    label: msg("The deal"),
+    summary: msg("free, paid, and what's new"),
     pages: [
-      { href: "/pricing", label: "Pricing", note: "your inference is free, ours is the plan" },
-      { href: "/changelog", label: "News & changelog", note: "what shipped, dated" },
-      { href: "/changes", label: "What the brains learned", note: "knowledge deltas, verified by re-sits" },
-      { href: "/roadmap", label: "Roadmap", note: "what is next, with its gate" },
+      { href: "/pricing", label: msg("Pricing"), note: msg("your inference is free, ours is the plan") },
+      { href: "/changelog", label: msg("News & changelog"), note: msg("what shipped, dated") },
+      { href: "/changes", label: msg("What the brains learned"), note: msg("knowledge deltas, verified by re-sits") },
+      { href: "/roadmap", label: msg("Roadmap"), note: msg("what is next, with its gate") },
     ],
   },
 ];
 
-function PageLink({ page, active }: { page: Page; active?: string }) {
+/** The translator, threaded rather than re-derived: it is one await at the
+ *  top of the nav, and these helpers are synchronous by design. */
+type T = (english: string) => string;
+
+function PageLink({ page, active, t }: { page: Page; active?: string; t: T }) {
   return (
     <Link
       href={page.href}
@@ -89,16 +94,16 @@ function PageLink({ page, active }: { page: Page; active?: string }) {
       {...(page.external ? { target: "_blank", rel: "noreferrer" } : {})}
     >
       <span className="nav-item-label">
-        {page.label}
+        {t(page.label)}
         {page.external ? " ↗" : ""}
       </span>
-      <span className="nav-item-note">{page.note}</span>
+      <span className="nav-item-note">{t(page.note)}</span>
     </Link>
   );
 }
 
-const START = { href: "/start", label: "Start here", note: "~10 min to a thinking agent" };
-const CATALOGUE = { href: "/explore", label: "Catalogue", note: "ready brains, free to add" };
+const START = { href: "/start", label: msg("Start here"), note: msg("~10 min to a thinking agent") };
+const CATALOGUE = { href: "/explore", label: msg("Catalogue"), note: msg("ready brains, free to add") };
 
 function StartIcon() {
   return (
@@ -121,7 +126,7 @@ function StartIcon() {
  * dropdown never had. Still a <details>: no JavaScript, closes on navigation
  * because the key carries the active page.
  */
-function Sheet({ active }: { active?: string }) {
+function Sheet({ active, t }: { active?: string; t: T }) {
   const here =
     [START, CATALOGUE].find((p) => p.href === active)?.label ??
     GROUPS.find((g) => g.pages.some((p) => p.href === active))?.label;
@@ -134,29 +139,29 @@ function Sheet({ active }: { active?: string }) {
           <span />
           <span />
         </span>
-        <span className="nav-sheet-title">Menu</span>
-        {here ? <span className="nav-sheet-where">{here}</span> : null}
+        <span className="nav-sheet-title">{t("Menu")}</span>
+        {here ? <span className="nav-sheet-where">{t(here)}</span> : null}
       </summary>
 
       <div className="nav-sheet-body">
         <Link href={START.href} className="nav-sheet-start" data-active={START.href === active}>
           <StartIcon />
           <span>
-            <span className="nav-start-label">{START.label}</span>
-            <span className="nav-start-note">{START.note}</span>
+            <span className="nav-start-label">{t(START.label)}</span>
+            <span className="nav-start-note">{t(START.note)}</span>
           </span>
         </Link>
 
-        <PageLink page={CATALOGUE} active={active} />
+        <PageLink page={CATALOGUE} active={active} t={t} />
 
         {GROUPS.map((g) => (
           <section key={g.label} className="nav-sheet-group">
             <h2 className="nav-sheet-label">
-              {g.label}
-              <span className="nav-sheet-summary">{g.summary}</span>
+              {t(g.label)}
+              <span className="nav-sheet-summary">{t(g.summary)}</span>
             </h2>
             {g.pages.map((p) => (
-              <PageLink key={p.href} page={p} active={active} />
+              <PageLink key={p.href} page={p} active={active} t={t} />
             ))}
           </section>
         ))}
@@ -165,10 +170,12 @@ function Sheet({ active }: { active?: string }) {
   );
 }
 
-export default function Contents({ active }: { active?: string }) {
+export default async function Contents({ active }: { active?: string }) {
+  const t = await translator();
+
   return (
     <nav className="contents" aria-label="Pages">
-      <Sheet active={active} />
+      <Sheet active={active} t={t} />
       <div className="shell contents-inner">
         {/* Out of the dropdown and into the bar. Of everything in this nav, one
             link is what a first-time visitor is looking for, and it was two
@@ -178,8 +185,8 @@ export default function Contents({ active }: { active?: string }) {
         <Link href={START.href} className="nav-start" data-active={START.href === active}>
           <StartIcon />
           <span>
-            <span className="nav-start-label">{START.label}</span>
-            <span className="nav-start-note">{START.note}</span>
+            <span className="nav-start-label">{t(START.label)}</span>
+            <span className="nav-start-note">{t(START.note)}</span>
           </span>
         </Link>
 
@@ -196,12 +203,12 @@ export default function Contents({ active }: { active?: string }) {
               data-here={here}
             >
               <summary className="nav-summary">
-                <span className="nav-label">{g.label}</span>
-                <span className="nav-summary-note">{g.summary}</span>
+                <span className="nav-label">{t(g.label)}</span>
+                <span className="nav-summary-note">{t(g.summary)}</span>
               </summary>
               <div className="nav-panel">
                 {g.pages.map((p) => (
-                  <PageLink key={p.href} page={p} active={active} />
+                  <PageLink key={p.href} page={p} active={active} t={t} />
                 ))}
               </div>
             </details>

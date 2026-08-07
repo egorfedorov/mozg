@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -55,8 +56,9 @@ export default async function CookiePolicyPage() {
         <h1 className="display" style={{ fontSize: "clamp(1.9rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
           {t("Cookie Policy")}</h1>
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
-          Last updated {UPDATED}
-        </p>
+          {markup(t("Last updated <0/>"), [
+          UPDATED,
+        ])}</p>
 
         <p className="lede">
           {t("Two cookies are needed to run the site. Everything else is off until you turn it on, and stays off if you never answer.")}</p>
@@ -69,18 +71,17 @@ export default async function CookiePolicyPage() {
         <h2 className="h2">{t("The three groups")}</h2>
         <ul>
           <li>
-            <strong>Essential</strong> — the session that keeps you signed in, and the record
-            of your cookie choice. Not optional, because without them there is no working
-            site. No consent needed for these, and none asked.
-          </li>
+            {markup(t("<0>Essential</0> — the session that keeps you signed in, and the record of your cookie choice. Not optional, because without them there is no working site. No consent needed for these, and none asked."), [
+            <strong key="s0" />,
+          ])}</li>
           <li>
-            <strong>Analytics</strong> — PostHog, aggregate, off by default. It tells us
-            which pages are read and where people give up. Declining costs you nothing.
-          </li>
+            {markup(t("<0>Analytics</0> — PostHog, aggregate, off by default. It tells us which pages are read and where people give up. Declining costs you nothing."), [
+            <strong key="s0" />,
+          ])}</li>
           <li>
-            <strong>Functional</strong> — remembered conveniences like a dismissed banner.
-            Off by default; the site works either way.
-          </li>
+            {markup(t("<0>Functional</0> — remembered conveniences like a dismissed banner. Off by default; the site works either way."), [
+            <strong key="s0" />,
+          ])}</li>
         </ul>
 
         <h2 className="h2">{t("Every cookie, by name")}</h2>
@@ -100,21 +101,20 @@ export default async function CookiePolicyPage() {
 
         <h2 className="h2">{t("What we do not do")}</h2>
         <p>
-          No advertising cookies, no third-party trackers riding along with an embed, no
-          fingerprinting, and no selling anything to a data broker. If that ever changes it
-          will be on the <Link href="/changelog">changelog</Link> before it is on your
-          machine.
-        </p>
+          {markup(t("No advertising cookies, no third-party trackers riding along with an embed, no fingerprinting, and no selling anything to a data broker. If that ever changes it will be on the <0>changelog</0> before it is on your machine."), [
+          <Link href="/changelog" key="s0" />,
+        ])}</p>
 
         <h2 className="h2">{t("Blocking them yourself")}</h2>
         <p>
           {t("Every browser can block or delete cookies. Blocking the essential ones will sign you out and keep you out — that is not us being difficult, it is what a session cookie does.")}</p>
 
         <p style={{ color: "var(--ink-3)", fontSize: ".9375rem", marginTop: "2.5rem" }}>
-          Questions: <a href={`mailto:${contact}`}>{contact}</a>. See also the{" "}
-          <Link href="/privacy">Privacy Policy</Link> and the{" "}
-          <Link href="/terms">Terms of Service</Link>.
-        </p>
+          {markup(t("Questions: <0/>. See also the <1>Privacy Policy</1> and the <2>Terms of Service</2>."), [
+          <a key="s0" href={`mailto:${contact}`}>{contact}</a>,
+          <Link href="/privacy" key="s1" />,
+          <Link href="/terms" key="s2" />,
+        ])}</p>
       </main>
 
       <SiteFooter />

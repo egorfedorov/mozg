@@ -1,5 +1,5 @@
 import TopBar from "@/components/TopBar";
-import { translator } from "@/lib/t";
+import { translator, msg } from "@/lib/t";
 import { newsArchive } from "@/lib/announcements";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -27,68 +27,73 @@ export const metadata = {
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
     date: "2026-08-07",
-    title: "Where two brains in a pack disagree, both sides show",
-    body: "The brains in a pack are read as one, so a conflict between two of them used to reach you as one confident answer with the argument invisible. Every night they are now read against each other; a real conflict is published on the pack page and flagged inside brain_search, naming both claims and the brain each came from. Nothing is merged and nothing is quietly picked — an agent that meets one is told to report both.",
+    title: msg("Where two brains in a pack disagree, both sides show"),
+    body: msg("The brains in a pack are read as one, so a conflict between two of them used to reach you as one confident answer with the argument invisible. Every night they are now read against each other; a real conflict is published on the pack page and flagged inside brain_search, naming both claims and the brain each came from. Nothing is merged and nothing is quietly picked — an agent that meets one is told to report both."),
+  },
+  {
+    date: "2026-08-07",
+    title: msg("The sentences with links in them speak eleven languages too"),
+    body: msg("A hundred and fifty-nine paragraphs stayed English after the first pass — every one of them a sentence with a link, a bold run or a number in the middle. Splitting those into fragments is what makes translated pages read like assembly instructions, so instead the whole sentence now travels with its markup marked in it, and the translator is free to put the link wherever the grammar wants it. Nothing on a public page is English by accident any more."),
   },
   {
     date: "2026-08-06",
-    title: "The site reads in eleven languages",
-    body: "Every public page now speaks Arabic, Chinese (both scripts), French, Hindi, Japanese, Portuguese, Russian, Spanish, Thai and Urdu — picked from your browser, changeable from the footer, right-to-left where it belongs. The brains themselves stay English on purpose: a translated note is a note nobody examined, and retrieval is already cross-lingual, so asking in your own language works today.",
+    title: msg("The site reads in eleven languages"),
+    body: msg("Every public page now speaks Arabic, Chinese (both scripts), French, Hindi, Japanese, Portuguese, Russian, Spanish, Thai and Urdu — picked from your browser, changeable from the footer, right-to-left where it belongs. The brains themselves stay English on purpose: a translated note is a note nobody examined, and retrieval is already cross-lingual, so asking in your own language works today."),
   },
   {
     date: "2026-08-04",
-    title: "The questions you ask become the exam",
-    body: "When any agent searches a brain and gets nothing back, that query is now added to the brain's exam automatically — and the next re-read of the sources chases it. Hitting a gap is the bug report. The whole loop is written up on /collective.",
+    title: msg("The questions you ask become the exam"),
+    body: msg("When any agent searches a brain and gets nothing back, that query is now added to the brain's exam automatically — and the next re-read of the sources chases it. Hitting a gap is the bug report. The whole loop is written up on /collective."),
   },
   {
     date: "2026-08-04",
-    title: "Umbrella brains sit fair exams",
-    body: "A family's parent brain used to generate its exam blind to what the children hold, so it failed questions its own family could answer. Generation now sees the family — the same scope the exam searches. Scores jumped accordingly.",
+    title: msg("Umbrella brains sit fair exams"),
+    body: msg("A family's parent brain used to generate its exam blind to what the children hold, so it failed questions its own family could answer. Generation now sees the family — the same scope the exam searches. Scores jumped accordingly."),
   },
   {
     date: "2026-08-04",
-    title: "Pay in crypto, straight to the author",
-    body: "Top-ups and purchases now settle over our own checkout: USDT, USDC and BTC across four chains, a QR on the payment page, round amounts. No processor between you and the balance.",
+    title: msg("Pay in crypto, straight to the author"),
+    body: msg("Top-ups and purchases now settle over our own checkout: USDT, USDC and BTC across four chains, a QR on the payment page, round amounts. No processor between you and the balance."),
   },
   {
     date: "2026-08-04",
-    title: "Talk to the developer, in the product",
-    body: "hi@mozg.sh is gone. Every page that pointed at email now opens /chat — a direct thread to the person who builds this, answered from the same screen the beta reports arrive on.",
+    title: msg("Talk to the developer, in the product"),
+    body: msg("hi@mozg.sh is gone. Every page that pointed at email now opens /chat — a direct thread to the person who builds this, answered from the same screen the beta reports arrive on."),
   },
   {
     date: "2026-08-04",
-    title: "Agents become the QA",
-    body: "A new brain_feedback tool lets any agent flag a note that reality contradicted — the report lands on the owner's dashboard, the note keeps answering until a human decides. Plus: the plugin now sniffs your repo at session start and points the agent at matching brains.",
+    title: msg("Agents become the QA"),
+    body: msg("A new brain_feedback tool lets any agent flag a note that reality contradicted — the report lands on the owner's dashboard, the note keeps answering until a human decides. Plus: the plugin now sniffs your repo at session start and points the agent at matching brains."),
   },
   {
     date: "2026-08-04",
-    title: "Paid brains demo themselves",
-    body: "Five real queries into any paid brain, free, straight from your agent — then it asks to be bought. Storefronts show the questions a brain passed on its own exam, and /pricing finally says out loud what costs money and what never will.",
+    title: msg("Paid brains demo themselves"),
+    body: msg("Five real queries into any paid brain, free, straight from your agent — then it asks to be bought. Storefronts show the questions a brain passed on its own exam, and /pricing finally says out loud what costs money and what never will."),
   },
   {
     date: "2026-08-04",
-    title: "The catalogue triples",
-    body: "Svelte 5, Tailwind v4, Vercel AI SDK, OWASP cheat sheets and ASVS 5.0, Anthropic's prompt-engineering tutorial — free. Slot Studio, Slot Animation Craft and Slot Art Direction — a working studio's paid knowledge, $19–29 once.",
+    title: msg("The catalogue triples"),
+    body: msg("Svelte 5, Tailwind v4, Vercel AI SDK, OWASP cheat sheets and ASVS 5.0, Anthropic's prompt-engineering tutorial — free. Slot Studio, Slot Animation Craft and Slot Art Direction — a working studio's paid knowledge, $19–29 once."),
   },
   {
     date: "2026-08-04",
-    title: "Learning got fast and cheap",
-    body: "Extraction moved to a faster model after an A/B on the same exam showed no quality loss, big pages extract their segments in parallel, identical text is never paid for twice, and interactive uploads jump the queue ahead of background refreshes.",
+    title: msg("Learning got fast and cheap"),
+    body: msg("Extraction moved to a faster model after an A/B on the same exam showed no quality loss, big pages extract their segments in parallel, identical text is never paid for twice, and interactive uploads jump the queue ahead of background refreshes."),
   },
   {
     date: "2026-08-04",
-    title: "Teach it from one link",
-    body: "Paste a documentation URL — the whole site is discovered (GitHub tree, llms.txt, sitemap, or a link walk), read into notes, a goal is drafted from the material, and the exam runs itself. JS-only sites fall back to their source repository.",
+    title: msg("Teach it from one link"),
+    body: msg("Paste a documentation URL — the whole site is discovered (GitHub tree, llms.txt, sitemap, or a link walk), read into notes, a goal is drafted from the material, and the exam runs itself. JS-only sites fall back to their source repository."),
   },
   {
     date: "2026-08-04",
-    title: "The exam stopped being noisy",
-    body: "Every check is judged three times, majority wins — two re-sits on unchanged material now agree. The scorecard names what stands between a brain and 100%, tagged add-material or deepen-notes.",
+    title: msg("The exam stopped being noisy"),
+    body: msg("Every check is judged three times, majority wins — two re-sits on unchanged material now agree. The scorecard names what stands between a brain and 100%, tagged add-material or deepen-notes."),
   },
   {
     date: "2026-08-03",
-    title: "Money moves",
-    body: "Balance top-ups (crypto now, cards on the way), one-time brain purchases with 95% to the author, and a price field at creation for both the web form and agents over MCP.",
+    title: msg("Money moves"),
+    body: msg("Balance top-ups (crypto now, cards on the way), one-time brain purchases with 95% to the author, and a price field at creation for both the web form and agents over MCP."),
   },
 ];
 
@@ -141,9 +146,9 @@ export default async function ChangelogPage() {
                 {e.date}
               </p>
               <h2 className="h3" style={{ margin: ".25rem 0 .4rem" }}>
-                {e.title}
+                {t(e.title)}
               </h2>
-              <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{e.body}</p>
+              <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{t(e.body)}</p>
             </article>
           ))}
         </div>

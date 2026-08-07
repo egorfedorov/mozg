@@ -1,4 +1,5 @@
 import { currentUser } from "@/lib/session";
+import { translator, msg } from "@/lib/t";
 import { query } from "@/db";
 import WelcomeFlow, { type StepState } from "./WelcomeFlow";
 
@@ -20,39 +21,40 @@ export const metadata = {
 const STEPS = [
   {
     n: "01",
-    title: "Make a brain",
-    body: "A brain is a container for one subject — your product, your stack, your rules. Empty at birth, like all of us.",
+    title: msg("Make a brain"),
+    body: msg("A brain is a container for one subject — your product, your stack, your rules. Empty at birth, like all of us."),
     href: "/brains/new",
-    ctaLabel: "New brain",
+    ctaLabel: msg("New brain"),
     key: "brains",
   },
   {
     n: "02",
-    title: "Feed it something you know",
-    body: "Paste a docs link, drop screenshots or files. mozg reads them, distills notes — then sits an exam on itself, so the score is graded, not claimed.",
+    title: msg("Feed it something you know"),
+    body: msg("Paste a docs link, drop screenshots or files. mozg reads them, distills notes — then sits an exam on itself, so the score is graded, not claimed."),
     href: "/brains",
-    ctaLabel: "Add a source",
+    ctaLabel: msg("Add a source"),
     key: "sources",
   },
   {
     n: "03",
-    title: "Connect your agent, once",
-    body: "One command in your CLI (Claude Code, Codex, Cursor — anything that speaks MCP). A token is the only setup there is.",
+    title: msg("Connect your agent, once"),
+    body: msg("One command in your CLI (Claude Code, Codex, Cursor — anything that speaks MCP). A token is the only setup there is."),
     href: "/connect",
-    ctaLabel: "Connect an agent",
+    ctaLabel: msg("Connect an agent"),
     key: "tokens",
   },
   {
     n: "04",
-    title: "Ask — and watch it learn",
-    body: "Every agent you have now answers from the same brain. Questions it can't answer join its exam; corrections come back as notes.",
+    title: msg("Ask — and watch it learn"),
+    body: msg("Every agent you have now answers from the same brain. Questions it can't answer join its exam; corrections come back as notes."),
     href: "/mind",
-    ctaLabel: "Your mind",
+    ctaLabel: msg("Your mind"),
     key: "calls",
   },
 ] as const;
 
 export default async function WelcomePage() {
+  const t = await translator();
   const user = await currentUser();
 
   const done = user
@@ -70,10 +72,10 @@ export default async function WelcomePage() {
 
   const steps: StepState[] = STEPS.map((s) => ({
     n: s.n,
-    title: s.title,
-    body: s.body,
+    title: t(s.title),
+    body: t(s.body),
     href: s.href,
-    ctaLabel: s.ctaLabel,
+    ctaLabel: t(s.ctaLabel),
     done: Boolean(done && done[s.key] > 0),
   }));
 

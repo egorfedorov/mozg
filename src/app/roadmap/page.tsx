@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import path from "node:path";
 import Link from "next/link";
@@ -117,24 +118,16 @@ export default async function RoadmapPage() {
           className="display"
           style={{ fontSize: "clamp(2rem, 5.5vw, 3.4rem)", margin: ".4rem 0 1rem" }}
         >
-          Dated, gated,
-          <br />
-          and checkable.
-        </h1>
+          {markup(t("Dated, gated, <0/> and checkable."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede">
-          Every month carries three items and a gate that has to hold before the
-          next month starts. This is the same file the repository keeps — if the
-          two ever disagree, this page is the one that is wrong, and you can{" "}
-          <Link
-            className="linkish"
+          {markup(t("Every month carries three items and a gate that has to hold before the next month starts. This is the same file the repository keeps — if the two ever disagree, this page is the one that is wrong, and you can <0>read it there</0> ."), [
+          <Link className="linkish"
             href="https://github.com/egorfedorov/mozg/blob/main/docs/ROADMAP.md"
             target="_blank"
-            rel="noreferrer"
-          >
-            read it there
-          </Link>
-          .
-        </p>
+            rel="noreferrer" key="s0" />,
+        ])}</p>
 
         {md ? (
           <div
@@ -144,17 +137,12 @@ export default async function RoadmapPage() {
           />
         ) : (
           <p className="lede" style={{ marginTop: "2rem" }}>
-            The plan lives in the repository and this page could not read it —{" "}
-            <Link
-              className="linkish"
+            {markup(t("The plan lives in the repository and this page could not read it — <0>docs/ROADMAP.md</0> is the original."), [
+            <Link className="linkish"
               href="https://github.com/egorfedorov/mozg/blob/main/docs/ROADMAP.md"
               target="_blank"
-              rel="noreferrer"
-            >
-              docs/ROADMAP.md
-            </Link>{" "}
-            is the original.
-          </p>
+              rel="noreferrer" key="s0" />,
+          ])}</p>
         )}
       </main>
       <SiteFooter />

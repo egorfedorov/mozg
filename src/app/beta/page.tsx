@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -38,10 +39,9 @@ export default async function BetaPage() {
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">{t("Open beta")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
-          It works.
-          <br />
-          Now help us find where it doesn&apos;t.
-        </h1>
+          {markup(t("It works. <0/> Now help us find where it doesn't."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
           {t("mozg is young and honest about it. The core loop — one link in, a trained and exam-scored brain out, connected to your agents over MCP — runs in production every day. The edges are still being sanded, and the fastest sandpaper is you hitting them.")}</p>
 
@@ -81,9 +81,15 @@ export default async function BetaPage() {
               <p className="eyebrow" style={{ margin: 0 }}>
                 {t("Right now")}</p>
               <ul className="mono" style={{ listStyle: "none", margin: ".75rem 0 0", padding: 0, fontSize: ".8125rem", color: "var(--ink-2)", display: "grid", gap: ".45rem" }}>
-                <li>{stats.brains} public brains</li>
-                <li>{stats.notes.toLocaleString()} notes inside them</li>
-                <li>{stats.calls.toLocaleString()} agent calls this week</li>
+                <li>{markup(t("<0/> public brains"), [
+                  stats.brains,
+                ])}</li>
+                <li>{markup(t("<0/> notes inside them"), [
+                  stats.notes.toLocaleString(),
+                ])}</li>
+                <li>{markup(t("<0/> agent calls this week"), [
+                  stats.calls.toLocaleString(),
+                ])}</li>
                 <li>{t("uptime watched every 5 minutes")}</li>
                 <li>{t("backups in two places, restore-tested")}</li>
               </ul>
@@ -158,15 +164,9 @@ export default async function BetaPage() {
         >
           <p className="eyebrow">{t("Beta testers are remembered")}</p>
           <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0", maxWidth: "62ch" }}>
-            Report a real bug or a real gap during the beta — one we act on —
-            and your account gets a year of Pro, free, when plans go live. Not
-            as a promo trick: the people who helped sand the edges shouldn&apos;t
-            pay for the polished thing. Say so in{" "}
-            <a href="/chat" style={{ textDecoration: "underline" }}>
-              chatmozg
-            </a>{" "}
-            and it is noted the same day.
-          </p>
+            {markup(t("Report a real bug or a real gap during the beta — one we act on — and your account gets a year of Pro, free, when plans go live. Not as a promo trick: the people who helped sand the edges shouldn't pay for the polished thing. Say so in <0>chatmozg</0> and it is noted the same day."), [
+            <a href="/chat" style={{ textDecoration: "underline" }} key="s0" />,
+          ])}</p>
         </section>
 
         <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "2rem" }}>

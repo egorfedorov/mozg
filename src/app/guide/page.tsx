@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -17,82 +18,82 @@ export const metadata = {
 const STEPS = [
   {
     n: "01",
-    title: "Pick one job, not one topic",
-    body: "A brain about “our frontend” produces a vague goal, a vague exam and answers nobody trusts. A brain about “match our design system exactly” has a boundary, so it can be checked. When you catch yourself writing “and also”, that is the second brain asking to exist.",
-    aside: "Rule of thumb: if two people would draw the boundary differently, it is two brains.",
+    title: msg("Pick one job, not one topic"),
+    body: msg("A brain about “our frontend” produces a vague goal, a vague exam and answers nobody trusts. A brain about “match our design system exactly” has a boundary, so it can be checked. When you catch yourself writing “and also”, that is the second brain asking to exist."),
+    aside: msg("Rule of thumb: if two people would draw the boundary differently, it is two brains."),
   },
   {
     n: "02",
-    title: "Write the goal as an outcome, not a subject",
-    body: "The goal is not a label — it becomes the exam. “Design system” generates nothing testable. “Match our design system exactly: colour, type scale, spacing, component rules, and the empty and error states we actually ship” generates thirty concrete questions, including ones about material you have not uploaded yet. Those failures are the point.",
-    aside: "Name the specifics you care about. Every noun in the goal turns into checks.",
+    title: msg("Write the goal as an outcome, not a subject"),
+    body: msg("The goal is not a label — it becomes the exam. “Design system” generates nothing testable. “Match our design system exactly: colour, type scale, spacing, component rules, and the empty and error states we actually ship” generates thirty concrete questions, including ones about material you have not uploaded yet. Those failures are the point."),
+    aside: msg("Name the specifics you care about. Every noun in the goal turns into checks."),
   },
   {
     n: "03",
-    title: "Feed it primary material",
-    body: "Screenshots of the real screens, the actual docs pages, the actual config file. Not your summary of them — a summary has already thrown away the exact pixel value, the exact wording, the ordering. Extraction is asked for concrete values, and it can only find what you gave it.",
-    aside: "Screenshots, PDFs, Markdown, and docs pages by URL. Paste twenty links at once.",
+    title: msg("Feed it primary material"),
+    body: msg("Screenshots of the real screens, the actual docs pages, the actual config file. Not your summary of them — a summary has already thrown away the exact pixel value, the exact wording, the ordering. Extraction is asked for concrete values, and it can only find what you gave it."),
+    aside: msg("Screenshots, PDFs, Markdown, and docs pages by URL. Paste twenty links at once."),
   },
   {
     n: "04",
-    title: "Let the exam tell you what is missing",
-    body: "After the first upload the brain sits its exam and shows a score per category. Ignore the number and read the failures: they name the material you have not added. “No source covers this” is a shopping list, not a criticism.",
-    aside: "This is the loop. Upload, read the gaps, upload what they name, repeat.",
+    title: msg("Let the exam tell you what is missing"),
+    body: msg("After the first upload the brain sits its exam and shows a score per category. Ignore the number and read the failures: they name the material you have not added. “No source covers this” is a shopping list, not a criticism."),
+    aside: msg("This is the loop. Upload, read the gaps, upload what they name, repeat."),
   },
   {
     n: "05",
-    title: "Connect it before it is finished",
-    body: "A half-trained brain is already more useful than none, and using it is how you find out which gaps actually hurt. The exam ranks by coverage; your work ranks by what you keep having to explain twice.",
-    aside: "One command. See the connect page for your client.",
+    title: msg("Connect it before it is finished"),
+    body: msg("A half-trained brain is already more useful than none, and using it is how you find out which gaps actually hurt. The exam ranks by coverage; your work ranks by what you keep having to explain twice."),
+    aside: msg("One command. See the connect page for your client."),
   },
   {
     n: "06",
-    title: "Let agents write back, then review",
-    body: "When an agent works out a convention or hits a pitfall, it can save it. Those notes wait in a review queue rather than going straight into search — which is what keeps a brain sharpening instead of drifting. Approving takes a second; the alternative is a brain full of half-true things nobody checked.",
-    aside: "Review is on by default. Turn it off per brain once you trust the source.",
+    title: msg("Let agents write back, then review"),
+    body: msg("When an agent works out a convention or hits a pitfall, it can save it. Those notes wait in a review queue rather than going straight into search — which is what keeps a brain sharpening instead of drifting. Approving takes a second; the alternative is a brain full of half-true things nobody checked."),
+    aside: msg("Review is on by default. Turn it off per brain once you trust the source."),
   },
 ];
 
 const SELLING = [
   {
     step: "01",
-    title: "Make it public and pick a field",
-    body: "Both live on the brain's sharing page. The field is how someone browsing the catalogue finds you.",
+    title: msg("Make it public and pick a field"),
+    body: msg("Both live on the brain's sharing page. The field is how someone browsing the catalogue finds you."),
   },
   {
     step: "02",
-    title: "Keep the licence at CC BY-NC-SA",
-    body: "Buyers may use and adapt it; reselling it is not allowed. MIT would let them resell, so a priced brain refuses that combination.",
+    title: msg("Keep the licence at CC BY-NC-SA"),
+    body: msg("Buyers may use and adapt it; reselling it is not allowed. MIT would let them resell, so a priced brain refuses that combination."),
   },
   {
     step: "03",
-    title: "Set a price",
-    body: "Paid once, not per month — buyers keep access as you keep adding to it. You receive 70% of each sale on your balance.",
+    title: msg("Set a price"),
+    body: msg("Paid once, not per month — buyers keep access as you keep adding to it. You receive 70% of each sale on your balance."),
   },
   {
     step: "04",
-    title: "Withdraw when you want",
-    body: "Earnings sit on your balance. Ask for a withdrawal from the balance page; payouts are sent in crypto by hand.",
+    title: msg("Withdraw when you want"),
+    body: msg("Earnings sit on your balance. Ask for a withdrawal from the balance page; payouts are sent in crypto by hand."),
   },
 ];
 
 const MISTAKES = [
   {
-    wrong: "“Everything about our product”",
-    right: "One brain per thing an agent keeps getting wrong.",
+    wrong: msg("“Everything about our product”"),
+    right: msg("One brain per thing an agent keeps getting wrong."),
   },
   {
-    wrong: "Uploading your own notes about the docs",
-    right: "Upload the docs. The model extracts better than you summarise.",
+    wrong: msg("Uploading your own notes about the docs"),
+    right: msg("Upload the docs. The model extracts better than you summarise."),
   },
   {
-    wrong: "Waiting until the brain is “ready”",
-    right: "Connect it at 30%. The gaps that matter reveal themselves in use.",
+    wrong: msg("Waiting until the brain is “ready”"),
+    right: msg("Connect it at 30%. The gaps that matter reveal themselves in use."),
   },
   {
-    wrong: "Chasing 100%",
+    wrong: msg("Chasing 100%"),
     right:
-      "The exam includes questions about material you may never need. A stable 70% on the categories you actually use beats a padded 95%.",
+      msg("The exam includes questions about material you may never need. A stable 70% on the categories you actually use beats a padded 95%."),
   },
 ];
 
@@ -111,10 +112,9 @@ export default async function GuidePage() {
         <h1
           className="h1" style={{ margin: ".4rem 0 1rem" }}
         >
-          How to build a brain
-          <br />
-          worth connecting.
-        </h1>
+          {markup(t("How to build a brain <0/> worth connecting."), [
+          <br key="s0" />,
+        ])}</h1>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0, fontSize: "1.0625rem" }}>
           {t("The difference between a brain an agent reads and a folder of screenshots is almost entirely in the first two steps. The rest is a loop.")}</p>
 
@@ -139,16 +139,16 @@ export default async function GuidePage() {
               </span>
               <div>
                 <h2 className="h2" style={{ marginBottom: ".6rem" }}>
-                  {step.title}
+                  {t(step.title)}
                 </h2>
                 <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem", maxWidth: "62ch" }}>
-                  {step.body}
+                  {t(step.body)}
                 </p>
                 <p
                   className="mono"
                   style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: 0 }}
                 >
-                  {step.aside}
+                  {t(step.aside)}
                 </p>
               </div>
             </li>
@@ -212,8 +212,8 @@ export default async function GuidePage() {
                   alignItems: "baseline",
                 }}
               >
-                <span style={{ color: "var(--color-riso-red)" }}>{m.wrong}</span>
-                <span style={{ color: "var(--ink-2)", fontSize: ".9375rem" }}>{m.right}</span>
+                <span style={{ color: "var(--color-riso-red)" }}>{t(m.wrong)}</span>
+                <span style={{ color: "var(--ink-2)", fontSize: ".9375rem" }}>{t(m.right)}</span>
               </div>
             ))}
           </div>
@@ -231,11 +231,9 @@ export default async function GuidePage() {
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
             {t("The exam is a measurement, not training. Your goal is turned into control questions with expected answers. After every change the brain searches itself for each one, a judge is shown the five passages that came back, and decides whether they answer it. The score is the share it got right.")}</p>
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
-            So it measures <strong style={{ color: "var(--ink)" }}>what an agent
-            actually gets when it asks</strong> — not how much you uploaded. A
-            brain with two hundred notes and a bad goal scores worse than one with
-            twenty and a sharp one.
-          </p>
+            {markup(t("So it measures <0>what an agent actually gets when it asks</0> — not how much you uploaded. A brain with two hundred notes and a bad goal scores worse than one with twenty and a sharp one."), [
+            <strong style={{ color: "var(--ink)" }} key="s0" />,
+          ])}</p>
           <p style={{ color: "var(--ink-2)", margin: 0 }}>
             {t("Two ways to raise it, and they are the only two: give it the material the failures name, or write a goal that describes what the material can actually support. Chasing the number itself is how you get a padded brain that still cannot answer.")}</p>
         </section>
@@ -281,9 +279,9 @@ export default async function GuidePage() {
                   {s.step}
                 </span>
                 <span>
-                  <strong>{s.title}</strong>
+                  <strong>{t(s.title)}</strong>
                   <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-                    {s.body}
+                    {t(s.body)}
                   </span>
                 </span>
               </div>

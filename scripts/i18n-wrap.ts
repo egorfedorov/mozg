@@ -9,15 +9,25 @@
  * edited is JSX and a regex that thinks it understands JSX will eventually eat
  * a `>` inside an attribute.
  *
- * It is deliberately conservative, and the rule is one line: only text that is
- * the ONLY child of its element gets wrapped. A paragraph containing a <strong>
- * or a <Link> is left alone, because wrapping its fragments would hand the
- * translator three pieces of a sentence and get three pieces back that do not
- * agree with each other — the same failure the split headline had. Those are
- * reported at the end and are a hand job.
+ * Text that is the only child of its element becomes t("…").
+ *
+ * A sentence with a <Link> or a <strong> in the middle of it becomes one
+ * string too — never fragments. The markup is carried in the sentence as
+ * numbered slots and put back by markup() at render time:
+ *
+ *   <p>Open the <Link href="/explore">catalogue</Link> and pick a tool.</p>
+ *   → {markup(t("Open the <0>catalogue</0> and pick a tool."), [<Link href="/explore" />])}
+ *
+ * Splitting those into three t() calls was the alternative, and it is the same
+ * failure the split headline had: three pieces come back that do not agree
+ * about case or order, and in half these languages the link belongs at the
+ * other end of the clause.
  *
  * What it will not touch: client components (no await there), files with no
- * default-exported component, and anything already wrapped.
+ * default-exported component, anything already wrapped, and a sentence whose
+ * markup is nested more than one deep — those are still reported for hand
+ * work, because a slot inside a slot needs a person to decide what the
+ * sentence actually is.
  */
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -71,18 +81,163 @@ const ENTITIES: Record<string, string> = {
   "&amp;": "&",
 };
 
-function literal(raw: string): string {
-  let text = raw.trim().replace(/\s+/g, " ");
+function decode(raw: string): string {
+  let text = raw;
   for (const [entity, char] of Object.entries(ENTITIES)) {
     text = text.split(entity).join(char);
   }
+  return text;
+}
+
+function escape(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function literal(raw: string): string {
+  return escape(decode(raw.trim().replace(/\s+/g, " ")));
+}
+
+/**
+ * One sentence built out of a paragraph's mixed children, plus the slots.
+ *
+ * Interior whitespace is collapsed but NOT trimmed — the single space either
+ * side of a link is part of the sentence, and trimming each piece is how
+ * "Open the<0>catalogue</0>and pick" happens.
+ */
+interface Woven {
+  sentence: string;
+  slots: string[];
+}
+
+/**
+ * A slot element carries its own key.
+ *
+ * markup() sets one anyway when it clones, so this is not React's requirement
+ * being met twice — it is eslint's react/jsx-key, which sees literal JSX
+ * inside an array and cannot know what happens to it afterwards. A hundred and
+ * fifty suppressions would have been the other way to answer that, and the
+ * rule is right often enough not to teach it to stay quiet.
+ */
+function keyed(element: string, index: number): string {
+  // Straight after the tag name, which is the one position that works for a
+  // self-closing tag and a tag with children alike. Attribute order is free.
+  return element.replace(/^<([A-Za-z][\w.]*)/, `<$1 key="s${index}"`);
+}
+
+/** Does this expression carry a sentence of its own inside some JSX? */
+function hidesProse(node: ts.Node): boolean {
+  let found = false;
+  const walk = (n: ts.Node) => {
+    if (found) return;
+    if (ts.isJsxText(n) && isProse(n.text)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(node);
+  return found;
+}
+
+function weave(node: ts.JsxElement, sf: ts.SourceFile): Woven | null {
+  let sentence = "";
+  const slots: string[] = [];
+
+  const add = (text: string) => {
+    // Never two spaces where a {" "} sits next to text that already ends in
+    // one — the key is a hash of this string, and a stray space is a different
+    // sentence that no translation will ever match.
+    sentence += sentence.endsWith(" ") ? text.replace(/^ +/, "") : text;
+  };
+
+  for (const child of node.children) {
+    if (ts.isJsxText(child)) {
+      if (!child.text.trim()) {
+        // Whitespace between two elements is still a word boundary.
+        if (/\s/.test(child.text)) add(" ");
+        continue;
+      }
+      add(decode(child.text.replace(/\s+/g, " ")));
+      continue;
+    }
+
+    if (ts.isJsxSelfClosingElement(child)) {
+      slots.push(keyed(child.getText(sf), slots.length));
+      add(`<${slots.length - 1}/>`);
+      continue;
+    }
+
+    if (ts.isJsxElement(child)) {
+      const tag = child.openingElement.tagName.getText(sf);
+      if (!INLINE.has(tag)) return null;
+      const inner = child.children;
+      if (inner.length !== 1 || !ts.isJsxText(inner[0])) {
+        // Not one run of text inside. If there are no words in there either —
+        // `<a href={…}>{contact}</a>`, a link whose label is a value — the
+        // whole element drops in as an opaque slot and the sentence around it
+        // still gets translated. If there ARE words (a link wrapped round an
+        // <em>), a person decides: burying them in a slot would take a
+        // translatable phrase off the page.
+        if (hidesProse(child)) return null;
+        slots.push(keyed(child.getText(sf).replace(/\s+/g, " "), slots.length));
+        add(`<${slots.length - 1}/>`);
+        continue;
+      }
+      const attrs = child.openingElement.attributes.getText(sf).trim();
+      slots.push(`<${tag}${attrs ? ` ${attrs}` : ""} key="s${slots.length}" />`);
+      add(`<${slots.length - 1}>${decode(inner[0].text.replace(/\s+/g, " ")).trim()}</${slots.length - 1}>`);
+      continue;
+    }
+
+    if (ts.isJsxExpression(child)) {
+      const expr = child.expression;
+      if (!expr) continue;
+      // {" "} is a space the layout needed, not a value.
+      if (ts.isStringLiteral(expr) && !expr.text.trim()) {
+        add(" ");
+        continue;
+      }
+      // An expression that contains prose of its own — a conditional fragment
+      // with a whole sentence in it — must not become a slot: the sentence
+      // would vanish inside an argument and stop being translatable at all,
+      // which is worse than the paragraph nobody had wrapped yet. Hand work.
+      if (hidesProse(expr)) return null;
+      slots.push(expr.getText(sf));
+      add(`<${slots.length - 1}/>`);
+      continue;
+    }
+
+    return null;
+  }
+
+  sentence = sentence.replace(/\s+/g, " ").trim();
+  // A sentence that is only slots has no words to translate; leaving it as JSX
+  // is both cheaper and more honest than a t() call over "<0/> · <1/>".
+  if (!isProse(sentence.replace(/<\/?\d+\/?>/g, " "))) return null;
+  return { sentence: escape(sentence), slots };
 }
 
 function transform(source: string, file: string): { output: string; wrapped: number; skipped: string[] } {
   const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const edits: Edit[] = [];
   const skipped: string[] = [];
+
+  /**
+   * Only the default-exported component is rewritten.
+   *
+   * `t` is bound by one `await translator()` at the top of that function, and
+   * a page's little helper components below it (a Step, a Row) are plain
+   * synchronous functions that cannot see it — wrapping their text compiles to
+   * "Cannot find name 't'". Handing every helper its own translator is a
+   * bigger change than these labels are worth; they stay English until someone
+   * decides otherwise.
+   */
+  const root = sf.statements.find(
+    (s): s is ts.FunctionDeclaration =>
+      ts.isFunctionDeclaration(s) &&
+      Boolean(s.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)),
+  );
+  if (!root?.body) return { output: source, wrapped: 0, skipped };
 
   function visit(node: ts.Node) {
     if (ts.isJsxElement(node)) {
@@ -106,6 +261,22 @@ function transform(source: string, file: string): { output: string; wrapped: num
         });
       } else if (prose.length) {
         // Mixed content — a sentence with a link or a <strong> inside it.
+        const woven = weave(node, sf);
+        if (woven) {
+          // Indent the slot list under the element it came from, or a page of
+          // these reads like the codemod resented being asked.
+          const { character } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+          const pad = " ".repeat(character);
+          const slots = woven.slots.map((s) => `\n${pad}  ${s},`).join("");
+          edits.push({
+            start: node.children[0].getStart(sf),
+            end: node.children[node.children.length - 1].getEnd(),
+            text: `{markup(t("${woven.sentence}"), [${slots}\n${pad}])}`,
+          });
+          // Its children are now inside a string; walking into them would
+          // wrap the same words a second time.
+          return;
+        }
         const sample = prose
           .map((c) => (c as ts.JsxText).text.trim().replace(/\s+/g, " "))
           .join(" … ")
@@ -116,7 +287,7 @@ function transform(source: string, file: string): { output: string; wrapped: num
     }
     ts.forEachChild(node, visit);
   }
-  visit(sf);
+  visit(root.body);
 
   if (!edits.length) return { output: source, wrapped: 0, skipped };
 
@@ -125,21 +296,41 @@ function transform(source: string, file: string): { output: string; wrapped: num
     output = output.slice(0, edit.start) + edit.text + output.slice(edit.end);
   }
 
-  // The import, and the one call that binds t for the component. Both are
-  // added only if missing, so re-running is a no-op rather than a mess.
-  if (!/from "@\/lib\/t"/.test(output)) {
-    output = output.replace(/^(import .*?;\n)/s, `$1import { translator } from "@/lib/t";\n`);
-  }
+  // Bind t for the component, and make it async if it was not.
+  //
+  // By position, from the AST, and BEFORE the imports go in at the top of the
+  // file — every offset here was measured against the original source, and an
+  // import line added first shifts them all by its own length. That is how a
+  // `const t = await translator();` ended up spliced through the middle of a
+  // props type. The regex this replaced could not see past a parameter list
+  // containing a `)` at all, which is most components.
   if (!/\bconst t = await translator\(\)/.test(output)) {
-    // Make the default export async first — a server component may await, and
-    // most of these already do; the ones that do not have to start.
-    output = output.replace(
-      /export default (async )?function (\w+)\(([^)]*)\)\s*\{/,
-      (_m, _isAsync, name, params) =>
-        `export default async function ${name}(${params}) {\n  const t = await translator();\n`,
-    );
+    const bodyOpen = root.body.getStart(sf) + 1;
+    output = output.slice(0, bodyOpen) + "\n  const t = await translator();\n" + output.slice(bodyOpen);
 
+    // A server component that now awaits has to say so. One rendered from a
+    // client component cannot become async — those files are out of scope
+    // here, and the build failing is the honest way to find one.
+    if (!root.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) {
+      const kw = output.indexOf("function", root.getStart(sf));
+      output = output.slice(0, kw) + "async " + output.slice(kw);
+    }
   }
+
+  // Added only if missing, so re-running is a no-op rather than a mess.
+  //
+  // In front of the first import, found on the AST rather than by anchoring a
+  // regex at position 0 — half these files open with a block comment
+  // explaining themselves, and the anchored version simply never matched
+  // there, leaving a component calling a translator it had not imported.
+  const firstImport = sf.statements.find(ts.isImportDeclaration);
+  const at = firstImport ? firstImport.getStart(sf) : 0;
+  const lines =
+    (/from "@\/lib\/t"/.test(output) ? "" : `import { translator } from "@/lib/t";\n`) +
+    (/\bmarkup\(/.test(output) && !/from "@\/lib\/markup"/.test(output)
+      ? `import { markup } from "@/lib/markup";\n`
+      : "");
+  if (lines) output = output.slice(0, at) + lines + output.slice(at);
 
   return { output, wrapped: edits.length, skipped };
 }

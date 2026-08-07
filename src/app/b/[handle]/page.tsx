@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -172,11 +173,13 @@ export default async function ProfilePage({
           {who.handle}
         </h1>
         <p className="lede" style={{ maxWidth: "56ch", marginTop: 0 }}>
-          {who.name ? `${who.name} · ` : ""}on mozg since {who.joined}.{" "}
-          {published.length > 0
+          {markup(t("<0/>on mozg since <1/>. <2/>"), [
+          who.name ? `${who.name} · ` : "",
+          who.joined,
+          published.length > 0
             ? `${published.length} brain${published.length === 1 ? "" : "s"} in the catalogue.`
-            : "Nothing published yet."}
-        </p>
+            : "Nothing published yet.",
+        ])}</p>
 
         <Stats>
           <Stat label="Published" value={String(stats.public_brains)} note="in the catalogue" />
@@ -222,9 +225,10 @@ export default async function ProfilePage({
                     className="mono"
                     style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}
                   >
-                    {b.note_count} notes
-                    {b.score != null ? ` · exam ${b.score}%` : " · unexamined"}
-                  </p>
+                    {markup(t("<0/> notes <1/>"), [
+                    b.note_count,
+                    b.score != null ? ` · exam ${b.score}%` : " · unexamined",
+                  ])}</p>
                 </Link>
               ))}
             </div>
@@ -241,12 +245,9 @@ export default async function ProfilePage({
               <div className="rows" style={{ maxWidth: "52rem" }}>
                 {shelf.length === 0 ? (
                   <p className="row-empty">
-                    Nothing on the shelf yet — take one from the{" "}
-                    <Link href="/explore" style={{ textDecoration: "underline" }}>
-                      catalogue
-                    </Link>
-                    .
-                  </p>
+                    {markup(t("Nothing on the shelf yet — take one from the <0>catalogue</0> ."), [
+                    <Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />,
+                  ])}</p>
                 ) : (
                   shelf.map((b) => (
                     <Link
@@ -370,20 +371,17 @@ export default async function ProfilePage({
               {done.length} of {CATALOG.length} earned
             </span>
           </div>
+          {/* Two whole sentences, and the branch picks the second one — never
+              a sentence assembled from a shared opening and two endings, which
+              is the fragment problem wearing a different hat. */}
           {done.length === 0 ? (
             <p className="lede">
-              None yet.{" "}
-              {isMe ? (
-                <>
-                  The{" "}
-                  <Link href="/achievements" style={{ textDecoration: "underline" }}>
-                    full ladder
-                  </Link>{" "}
-                  shows what earns each one.
-                </>
-              ) : (
-                "Nothing earned on this account so far."
-              )}
+              {t("None yet.")}{" "}
+              {isMe
+                ? markup(t("The <0>full ladder</0> shows what earns each one."), [
+                    <Link href="/achievements" style={{ textDecoration: "underline" }} key="s0" />,
+                  ])
+                : t("Nothing earned on this account so far.")}
             </p>
           ) : (
             <div className="ach-grid">

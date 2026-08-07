@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
+import { translator, msg } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
@@ -33,16 +34,16 @@ import { isoDate } from "@/lib/dates";
 
 const LICENSE: Record<string, { label: string; detail: string }> = {
   nc: {
-    label: "CC BY-NC-SA 4.0",
-    detail: "Use it, copy it, build on it, with credit. Selling it is not allowed.",
+    label: msg("CC BY-NC-SA 4.0"),
+    detail: msg("Use it, copy it, build on it, with credit. Selling it is not allowed."),
   },
   mit: {
-    label: "MIT",
-    detail: "Do anything, including reselling or shipping it inside a paid product.",
+    label: msg("MIT"),
+    detail: msg("Do anything, including reselling or shipping it inside a paid product."),
   },
   proprietary: {
-    label: "Closed",
-    detail: "Readable through MCP only. No export, no copying.",
+    label: msg("Closed"),
+    detail: msg("Readable through MCP only. No export, no copying."),
   },
 };
 
@@ -337,27 +338,32 @@ export default async function PublicBrainPage({
               className="mono"
               style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}
             >
-              {/* A parent's own count is 0 by design — its children hold the
-                  notes, and asking the parent searches all of them, so the
-                  storefront states the family's size. */}
-              {(brain.note_count + children.reduce((n, c) => n + c.note_count, 0)).toLocaleString()}{" "}
-              notes{children.length > 0 ? ` across ${children.length + 1} brains` : ""} · updated{" "}
-              {isoDate(brain.updated_at)} ·{" "}
-              {brain.score === null ? "not examined" : `trained ${brain.score}%`}
-              {rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`}
-            </p>
+              {markup(t("<0/> notes<1/> · updated <2/> · <3/> <4/>"), [
+              (brain.note_count + children.reduce((n, c) => n + c.note_count, 0)).toLocaleString(),
+              children.length > 0 ? ` across ${children.length + 1} brains` : "",
+              isoDate(brain.updated_at),
+              brain.score === null ? "not examined" : `trained ${brain.score}%`,
+              rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`,
+            ])}</p>
             {(examDiff.gained > 0 || examDiff.lost > 0) && (
               <p className="mono" style={{ fontSize: ".75rem", marginTop: ".35rem" }}>
                 <span style={{ color: "var(--color-riso-green)" }}>
-                  since last sitting: +{examDiff.gained} newly passed
+                  {markup(t("since last sitting: +<0/> newly passed"), [examDiff.gained])}
                 </span>
                 {examDiff.lost > 0 && (
-                  <span style={{ color: "var(--color-riso-red)" }}> · −{examDiff.lost} lost</span>
+                  <span style={{ color: "var(--color-riso-red)" }}>
+                    {" "}
+                    {markup(t("· −<0/> lost"), [examDiff.lost])}
+                  </span>
                 )}
-                {" "}— this brain is learning ·{" "}
-                <Link href={`/b/${handle}/${brain.slug}/changes`} style={{ textDecoration: "underline" }}>
-                  the verified changelog →
-                </Link>
+                {" "}
+                {markup(t("— this brain is learning · <0>the verified changelog →</0>"), [
+                  <Link
+                    href={`/b/${handle}/${brain.slug}/changes`}
+                    style={{ textDecoration: "underline" }}
+                    key="s0"
+                  />,
+                ])}
               </p>
             )}
           </div>
@@ -412,13 +418,17 @@ export default async function PublicBrainPage({
                   {user ? "# your token from /settings/tokens" : "# sign in to get a token"}
                 </div>
                 <div style={{ wordBreak: "break-all" }}>
-                  <span className="c">$</span> claude mcp add --transport http mozg \
-                </div>
+                  {markup(t("<0>$</0> claude mcp add --transport http mozg \\"), [
+                  <span className="c" key="s0" />,
+                ])}</div>
                 <div style={{ wordBreak: "break-all", paddingLeft: "1.5rem" }}>
                   {t("https://mozg.sh/mcp --header \"Authorization: Bearer …\"")}</div>
                 <div style={{ marginTop: ".9rem" }}>
-                  <span className="u">&gt;</span> use {handle}/{brain.slug} — …
-                </div>
+                  {markup(t("<0>&gt;</0> use <1/>/<2/> — …"), [
+                  <span className="u" key="s0" />,
+                  handle,
+                  brain.slug,
+                ])}</div>
                 <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
                   {user ? (
                     <CopyMcpCommand
@@ -690,9 +700,9 @@ export default async function PublicBrainPage({
             <h2 className="h2" style={{ marginBottom: "1rem" }}>
               {t("Licence")}</h2>
             <p className="tag" style={{ display: "inline-block", marginBottom: ".75rem" }}>
-              {licence.label}
+              {t(licence.label)}
             </p>
-            <p style={{ color: "var(--ink-2)", margin: 0 }}>{licence.detail}</p>
+            <p style={{ color: "var(--ink-2)", margin: 0 }}>{t(licence.detail)}</p>
           </div>
         </section>
       </main>

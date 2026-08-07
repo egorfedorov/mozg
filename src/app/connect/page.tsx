@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import AppShell from "@/components/AppShell";
@@ -37,13 +38,9 @@ export default async function ConnectPage() {
           <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
             {t("First, the thing everyone asks")}</p>
           <p style={{ margin: 0, color: "var(--ink-2)" }}>
-            <strong style={{ color: "var(--ink)" }}>MCP is a client feature, not a
-            model feature.</strong>{" "}
-            Kimi, DeepSeek, GLM and Qwen are models. You run them inside one of the
-            clients on this page, and the brain connects to the client. Asking
-            whether mozg &quot;supports DeepSeek&quot; is really asking which client
-            you run DeepSeek in.
-          </p>
+            {markup(t("<0>MCP is a client feature, not a model feature.</0> Kimi, DeepSeek, GLM and Qwen are models. You run them inside one of the clients on this page, and the brain connects to the client. Asking whether mozg \"supports DeepSeek\" is really asking which client you run DeepSeek in."), [
+            <strong style={{ color: "var(--ink)" }} key="s0" />,
+          ])}</p>
         </aside>
 
         {/* The shortest path first. Everything below it is the manual way. */}
@@ -68,16 +65,15 @@ export default async function ConnectPage() {
 export MOZG_TOKEN=mzg_...`}
           </pre>
           <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>
-            It brings the MCP connection and seven commands:{" "}
-            <code className="mono">/mozg:brains</code> for the map,{" "}
-            <code className="mono">/mozg:add</code> to shelve a catalogue brain,{" "}
-            <code className="mono">/mozg:sync</code> to write your shelf into the project so
-            every session starts knowing it, <code className="mono">/mozg:update</code> to
-            re-read a brain against its sources, and{" "}
-            <code className="mono">/mozg:train</code>, <code className="mono">/mozg:teach</code>,{" "}
-            <code className="mono">/mozg:learn</code> for teaching. Make the token below — the
-            button fills it into the command.
-          </p>
+            {markup(t("It brings the MCP connection and seven commands: <0>/mozg:brains</0> for the map, <1>/mozg:add</1> to shelve a catalogue brain, <2>/mozg:sync</2> to write your shelf into the project so every session starts knowing it, <3>/mozg:update</3> to re-read a brain against its sources, and <4>/mozg:train</4>, <5>/mozg:teach</5>, <6>/mozg:learn</6> for teaching. Make the token below — the button fills it into the command."), [
+            <code className="mono" key="s0" />,
+            <code className="mono" key="s1" />,
+            <code className="mono" key="s2" />,
+            <code className="mono" key="s3" />,
+            <code className="mono" key="s4" />,
+            <code className="mono" key="s5" />,
+            <code className="mono" key="s6" />,
+          ])}</p>
         </section>
 
         <ClientList
@@ -126,11 +122,9 @@ export MOZG_TOKEN=mzg_...`}
           <h2 className="h2" style={{ marginBottom: ".75rem" }}>
             {t("What the agent gets")}</h2>
           <p className="lede">
-            Seven tools, the same in every client on this page — a brain is not a
-            Claude feature. The descriptions tell the agent <em>when</em> to reach
-            for each one, which is the difference between a brain that gets used
-            and one that sits there.
-          </p>
+            {markup(t("Seven tools, the same in every client on this page — a brain is not a Claude feature. The descriptions tell the agent <0>when</0> to reach for each one, which is the difference between a brain that gets used and one that sits there."), [
+            <em key="s0" />,
+          ])}</p>
 
           <div className="panel" style={{ padding: 0, marginTop: "1.25rem" }}>
             {[
@@ -166,12 +160,9 @@ export MOZG_TOKEN=mzg_...`}
           <h2 className="h2" style={{ marginBottom: ".75rem" }}>
             {t("Teach it to ask first — the AGENTS.md pack")}</h2>
           <p className="lede">
-            Connecting gives the agent the tools; this snippet gives it the
-            habit. Claude Code users get it from the plugin automatically —
-            for Codex, Kimi CLI, Qwen Code and everything else that reads an
-            instructions file, paste this into your <code>AGENTS.md</code>{" "}
-            (or CLAUDE.md, or the system prompt):
-          </p>
+            {markup(t("Connecting gives the agent the tools; this snippet gives it the habit. Claude Code users get it from the plugin automatically — for Codex, Kimi CLI, Qwen Code and everything else that reads an instructions file, paste this into your <0>AGENTS.md</0> (or CLAUDE.md, or the system prompt):"), [
+            <code key="s0" />,
+          ])}</p>
           <pre
             className="mono"
             style={{
@@ -239,10 +230,9 @@ answering anything stack- or project-specific, search them:
         <h1
           className="h1" style={{ margin: ".4rem 0 1rem" }}
         >
-          Connect a brain to
-          <br />
-          whatever you code in.
-        </h1>
+          {markup(t("Connect a brain to <0/> whatever you code in."), [
+          <br key="s0" />,
+        ])}</h1>
         {body}
       </main>
       <SiteFooter />

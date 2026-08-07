@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import TopBar from "@/components/TopBar";
@@ -80,16 +81,24 @@ export default async function PackPage({
         <p className="lede" style={{ maxWidth: "58ch" }}>
           {pack.lede}
         </p>
+        {/* Two sentences, and the second only exists once something has been
+            scored. Written as two whole strings rather than one with a hole in
+            it: a conditional clause spliced into the middle of a sentence is
+            the fragment problem wearing a different hat. */}
         <p style={{ maxWidth: "58ch", marginTop: "1rem" }}>
-          These are {brains.length} brains your agents query over MCP instead of
-          guessing: {pack.covers}. {notes.toLocaleString("en-US")} notes.{" "}
-          {median !== null && (
-            <>
-              Median exam score <strong>{median}</strong> — and every failed
-              question is listed publicly, so the agent is told the gaps before
-              it searches.
-            </>
-          )}
+          {markup(
+            t(
+              "These are <0/> brains your agents query over MCP instead of guessing: <1/>. <2/> notes.",
+            ),
+            [brains.length, pack.covers, notes.toLocaleString("en-US")],
+          )}{" "}
+          {median !== null &&
+            markup(
+              t(
+                "Median exam score <0/> — and every failed question is listed publicly, so the agent is told the gaps before it searches.",
+              ),
+              [<strong key="s0">{median}</strong>],
+            )}
         </p>
 
         <p style={{ marginTop: "1.5rem", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
@@ -176,19 +185,19 @@ export default async function PackPage({
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="h2">Bought once, shared {pack.seats} ways</h2>
+          <h2 className="h2">{markup(t("Bought once, shared <0/> ways"), [
+            pack.seats,
+          ])}</h2>
           <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>
-            {formatCents(pack.priceCents)}, one time — {formatCents(perSeat)} a
-            head. It does not renew and it does not expire, and when a brain in
-            the pack learns something new you have it without paying again.
-          </p>
+            {markup(t("<0/>, one time — <1/> a head. It does not renew and it does not expire, and when a brain in the pack learns something new you have it without paying again."), [
+            formatCents(pack.priceCents),
+            formatCents(perSeat),
+          ])}</p>
           <p style={{ maxWidth: "58ch", margin: "0 0 1rem" }}>
-            {pack.team}. The seat shares the reading, not the allowance: how
-            much each of you can teach and how many calls you may make is still
-            your own plan, so a colleague who works this hard ends up on their
-            own <Link href="/pricing">pro</Link> rather than quietly spending
-            yours.
-          </p>
+            {markup(t("<0/>. The seat shares the reading, not the allowance: how much each of you can teach and how many calls you may make is still your own plan, so a colleague who works this hard ends up on their own <1>pro</1> rather than quietly spending yours."), [
+            pack.team,
+            <Link href="/pricing" key="s1" />,
+          ])}</p>
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>

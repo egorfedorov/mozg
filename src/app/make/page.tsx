@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { translator } from "@/lib/t";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -31,63 +31,63 @@ const BEATS: {
 }[] = [
   {
     n: "01",
-    title: "Pick one job",
+    title: msg("Pick one job"),
     tint: "var(--color-riso-red)",
     body: [
-      "Not one topic. “Our frontend” produces a vague goal, a vague exam, and answers nobody trusts.",
-      "“Match our design system exactly” has an edge, so it can be checked.",
+      msg("Not one topic. “Our frontend” produces a vague goal, a vague exam, and answers nobody trusts."),
+      msg("“Match our design system exactly” has an edge, so it can be checked."),
     ],
-    aside: "Caught yourself writing “and also”? That is the second brain asking to exist.",
+    aside: msg("Caught yourself writing “and also”? That is the second brain asking to exist."),
   },
   {
     n: "02",
-    title: "Write the goal as an outcome",
+    title: msg("Write the goal as an outcome"),
     tint: "var(--color-riso-orange)",
     body: [
-      "The goal is not a label. It becomes the exam, so every noun in it turns into questions.",
-      "“Design system” tests nothing. “Colour, type scale, spacing, and the empty and error states we actually ship” generates thirty, including about material you have not uploaded.",
+      msg("The goal is not a label. It becomes the exam, so every noun in it turns into questions."),
+      msg("“Design system” tests nothing. “Colour, type scale, spacing, and the empty and error states we actually ship” generates thirty, including about material you have not uploaded."),
     ],
-    aside: "Those failures are the point. They are the shopping list.",
+    aside: msg("Those failures are the point. They are the shopping list."),
   },
   {
     n: "03",
-    title: "Feed it the real thing",
+    title: msg("Feed it the real thing"),
     tint: "var(--color-riso-violet)",
     body: [
-      "The actual screens, the actual docs page, the actual config. Not your summary — a summary has already thrown away the exact value, the exact wording, the ordering.",
-      "Screenshots, PDFs, Markdown, and pages by URL. Paste twenty links at once.",
+      msg("The actual screens, the actual docs page, the actual config. Not your summary — a summary has already thrown away the exact value, the exact wording, the ordering."),
+      msg("Screenshots, PDFs, Markdown, and pages by URL. Paste twenty links at once."),
     ],
-    aside: "A docs site that ships a JavaScript shell reads as “Loading”. Feed its repository instead.",
+    aside: msg("A docs site that ships a JavaScript shell reads as “Loading”. Feed its repository instead."),
   },
   {
     n: "04",
-    title: "Read the failures, not the number",
+    title: msg("Read the failures, not the number"),
     tint: "var(--color-riso-green)",
     body: [
-      "The score is a measurement, not a grade. What matters is which categories it cannot answer, and why.",
-      "Three different reasons look identical in the number: the note is thin, the answer ranked too low, or the material is simply absent. The diagnosis separates them.",
+      msg("The score is a measurement, not a grade. What matters is which categories it cannot answer, and why."),
+      msg("Three different reasons look identical in the number: the note is thin, the answer ranked too low, or the material is simply absent. The diagnosis separates them."),
     ],
-    aside: "“Not in the documentation” is a correct answer. Do not chase it away with filler.",
+    aside: msg("“Not in the documentation” is a correct answer. Do not chase it away with filler."),
   },
   {
     n: "05",
-    title: "Connect it before it is finished",
+    title: msg("Connect it before it is finished"),
     tint: "var(--color-riso-blue)",
     body: [
-      "A half-built brain beats none, and using it is how you find out which gaps actually hurt.",
-      "The exam ranks by coverage. Your work ranks by what you keep explaining twice.",
+      msg("A half-built brain beats none, and using it is how you find out which gaps actually hurt."),
+      msg("The exam ranks by coverage. Your work ranks by what you keep explaining twice."),
     ],
-    aside: "One command. It is on the connect page for your client.",
+    aside: msg("One command. It is on the connect page for your client."),
   },
   {
     n: "06",
-    title: "Let agents correct it",
+    title: msg("Let agents correct it"),
     tint: "var(--graphite)",
     body: [
-      "When an agent works something out — a convention, a pitfall, a thing the docs got wrong — it writes it back.",
-      "The note waits for you. Approving is what makes it searchable, which is what keeps a brain sharpening instead of drifting.",
+      msg("When an agent works something out — a convention, a pitfall, a thing the docs got wrong — it writes it back."),
+      msg("The note waits for you. Approving is what makes it searchable, which is what keeps a brain sharpening instead of drifting."),
     ],
-    aside: "Never save a credential. The scanner refuses them, but that is a backstop, not a licence.",
+    aside: msg("Never save a credential. The scanner refuses them, but that is a backstop, not a licence."),
   },
 ];
 
@@ -118,9 +118,9 @@ export default async function MakePage() {
               of a row points at nothing. The numbers carry the order. */}
           {BEATS.map((b) => (
             <li key={b.n}>
-              <Panel n={b.n} title={b.title} tint={b.tint} aside={b.aside}>
+              <Panel n={b.n} title={t(b.title)} tint={b.tint} aside={t(b.aside)}>
                 {b.body.map((p) => (
-                  <p key={p}>{p}</p>
+                  <p key={p}>{t(p)}</p>
                 ))}
               </Panel>
             </li>

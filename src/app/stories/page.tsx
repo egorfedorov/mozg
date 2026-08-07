@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -44,12 +45,10 @@ export default async function StoriesPage() {
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
         >
-          Somebody knows
-          <br />
-          something.
-          <br />
-          Now the agent does.
-        </h1>
+          {markup(t("Somebody knows <0/> something. <1/> Now the agent does."), [
+          <br key="s0" />,
+          <br key="s1" />,
+        ])}</h1>
         <p
           style={{
             fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
@@ -240,8 +239,9 @@ export default async function StoriesPage() {
             </p>
 
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: "1rem" }}>
-              share this one: mozg.sh/stories#{s.id}
-            </p>
+              {markup(t("share this one: mozg.sh/stories#<0/>"), [
+              s.id,
+            ])}</p>
           </article>
         ))}
 

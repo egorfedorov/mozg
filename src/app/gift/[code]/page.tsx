@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import TopBar from "@/components/TopBar";
@@ -109,11 +110,12 @@ export default async function GiftPage({
               {gift!.title}
             </h1>
             <p className="lede">
-              {state === "ok"
+              {markup(t("<0/> It shows up in <1>brain_list</1> automatically."), [
+              state === "ok"
                 ? "The author gifted you read access — your agents can search it the moment your address is verified."
-                : "This gift was already redeemed on your account — nothing to do."}{" "}
-              It shows up in <code className="mono">brain_list</code> automatically.
-            </p>
+                : "This gift was already redeemed on your account — nothing to do.",
+              <code className="mono" key="s1" />,
+            ])}</p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
               <Link className="btn" href={brainHref}>
                 Open the brain
@@ -139,12 +141,9 @@ export default async function GiftPage({
                 : "This link doesn't point at anything."}
             </h1>
             <p className="lede">
-              Ask the person who sent it for a fresh one, or browse the{" "}
-              <Link href="/explore" style={{ textDecoration: "underline" }}>
-                catalogue
-              </Link>
-              .
-            </p>
+              {markup(t("Ask the person who sent it for a fresh one, or browse the <0>catalogue</0> ."), [
+              <Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />,
+            ])}</p>
           </>
         )}
       </main>

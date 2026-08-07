@@ -1,3 +1,4 @@
+import { translator, msg } from "@/lib/t";
 import Link from "next/link";
 import StatusDot from "@/components/StatusDot";
 import CookieSettingsLink from "@/components/CookieSettingsLink";
@@ -13,49 +14,51 @@ import CookieSettingsLink from "@/components/CookieSettingsLink";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
-    title: "Product",
+    title: msg("Product"),
     links: [
-      { href: "/about", label: "The manifesto" },
-      { href: "/why", label: "Why mozg" },
-      { href: "/vs", label: "A brain and a Skill file" },
-      { href: "/explore", label: "Catalogue" },
-      { href: "https://gallery.mozg.sh", label: "Style gallery" },
-      { href: "/explore?price=free", label: "Free brains (all official)" },
-      { href: "/explore?price=paid", label: "Marketplace" },
-      { href: "/roadmap", label: "Roadmap — dated and gated" },
+      { href: "/about", label: msg("The manifesto") },
+      { href: "/why", label: msg("Why mozg") },
+      { href: "/vs", label: msg("A brain and a Skill file") },
+      { href: "/explore", label: msg("Catalogue") },
+      { href: "https://gallery.mozg.sh", label: msg("Style gallery") },
+      { href: "/explore?price=free", label: msg("Free brains (all official)") },
+      { href: "/explore?price=paid", label: msg("Marketplace") },
+      { href: "/roadmap", label: msg("Roadmap — dated and gated") },
     ],
   },
   {
-    title: "Guides",
+    title: msg("Guides"),
     links: [
-      { href: "/make", label: "Make one, in six panels" },
-      { href: "/guide", label: "The long version" },
-      { href: "/connect", label: "Connect an agent" },
-      { href: "/connect#models", label: "Models that work" },
-      { href: "/guide#selling", label: "Sell a brain" },
+      { href: "/make", label: msg("Make one, in six panels") },
+      { href: "/guide", label: msg("The long version") },
+      { href: "/connect", label: msg("Connect an agent") },
+      { href: "/connect#models", label: msg("Models that work") },
+      { href: "/guide#selling", label: msg("Sell a brain") },
     ],
   },
   {
-    title: "Account",
+    title: msg("Account"),
     links: [
-      { href: "/brains", label: "Your brains" },
-      { href: "/settings", label: "Account" },
-      { href: "/settings/balance", label: "Balance" },
-      { href: "/settings/tokens", label: "Tokens" },
+      { href: "/brains", label: msg("Your brains") },
+      { href: "/settings", label: msg("Account") },
+      { href: "/settings/balance", label: msg("Balance") },
+      { href: "/settings/tokens", label: msg("Tokens") },
     ],
   },
   {
-    title: "Legal",
+    title: msg("Legal"),
     links: [
-      { href: "/terms", label: "Terms of Service" },
-      { href: "/privacy", label: "Privacy Policy" },
-      { href: "/cookies", label: "Cookie Policy" },
-      { href: "/status", label: "Status" },
+      { href: "/terms", label: msg("Terms of Service") },
+      { href: "/privacy", label: msg("Privacy Policy") },
+      { href: "/cookies", label: msg("Cookie Policy") },
+      { href: "/status", label: msg("Status") },
     ],
   },
 ];
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  const t = await translator();
+
   return (
     <footer style={{ borderTop: "1.5px solid var(--ink)", marginTop: "clamp(4rem, 9vw, 6rem)" }}>
       <div
@@ -79,14 +82,13 @@ export default function SiteFooter() {
               maxWidth: "26ch",
             }}
           >
-            Teach it once. Every agent knows.
-          </p>
+            {t("Teach it once. Every agent knows.")}</p>
         </div>
 
         {COLUMNS.map((col) => (
-          <nav key={col.title} aria-label={col.title}>
+          <nav key={col.title} aria-label={t(col.title)}>
             <p className="eyebrow" style={{ margin: "0 0 .6rem" }}>
-              {col.title}
+              {t(col.title)}
             </p>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: ".4rem" }}>
               {col.links.map((l) => (
@@ -95,7 +97,7 @@ export default function SiteFooter() {
                     href={l.href}
                     style={{ color: "var(--ink-2)", fontSize: ".9375rem" }}
                   >
-                    {l.label}
+                    {t(l.label)}
                   </Link>
                 </li>
               ))}

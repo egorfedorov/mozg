@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -74,12 +75,9 @@ export default async function PricingPage() {
             <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
               {t("Your CLI teaches · free, always")}</p>
             <p style={{ color: "var(--ink-2)", margin: 0, lineHeight: 1.6 }}>
-              Install the plugin, run <code className="mono">/mozg:train</code> —
-              the agent on the Claude or Kimi subscription you already pay for
-              reads the material and writes the notes in. Or set your own API
-              key and paste URLs. No plan, no bill from us, no cap on how much
-              you teach.
-            </p>
+              {markup(t("Install the plugin, run <0>/mozg:train</0> — the agent on the Claude or Kimi subscription you already pay for reads the material and writes the notes in. Or set your own API key and paste URLs. No plan, no bill from us, no cap on how much you teach."), [
+              <code className="mono" key="s0" />,
+            ])}</p>
           </div>
           <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-red)" }}>
             <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
@@ -184,7 +182,9 @@ export default async function PricingPage() {
                       ? "catalogue + purchased brains"
                       : `${p.sources.toLocaleString()} sources per brain`}
                   </li>
-                  <li>{p.calls.toLocaleString()} agent searches / month</li>
+                  <li>{markup(t("<0/> agent searches / month"), [
+                    p.calls.toLocaleString(),
+                  ])}</li>
                   <li>
                     {Number.isFinite(p.examSittings)
                       ? `${p.examSittings} exam sittings, then a key or a plan`
@@ -218,10 +218,9 @@ export default async function PricingPage() {
           </div>
 
           <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)", marginTop: ".9rem" }}>
-            Subscribing pays a month from your balance — top it up with crypto, or
-            ask for an invoice by hand within a day at <a href="/chat">chatmozg</a>.
-            Card checkout is not wired up yet; the limits and the balance are.
-          </p>
+            {markup(t("Subscribing pays a month from your balance — top it up with crypto, or ask for an invoice by hand within a day at <0>chatmozg</0>. Card checkout is not wired up yet; the limits and the balance are."), [
+            <a href="/chat" key="s0" />,
+          ])}</p>
         </section>
 
         {/* ── catalogue ─────────────────────────────────────────────────── */}
@@ -239,13 +238,10 @@ export default async function PricingPage() {
             }}
           >
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "48ch" }}>
-              Every official brain is free — the catalogue is the commons.
-              Outside authors publishing their own expertise may charge; a
-              paid brain is bought once, from your balance, and keeps working
-              as its author updates it. {100 - PLATFORM_FEE_PERCENT}% of the
-              price goes to the author; {PLATFORM_FEE_PERCENT}% keeps this
-              running.
-            </p>
+              {markup(t("Every official brain is free — the catalogue is the commons. Outside authors publishing their own expertise may charge; a paid brain is bought once, from your balance, and keeps working as its author updates it. <0/>% of the price goes to the author; <1/>% keeps this running."), [
+              100 - PLATFORM_FEE_PERCENT,
+              PLATFORM_FEE_PERCENT,
+            ])}</p>
             <div className="panel">
               <p className="eyebrow" style={{ marginBottom: ".6rem" }}>
                 {t("Before you pay, you can check")}</p>
@@ -296,7 +292,10 @@ export default async function PricingPage() {
               >
                 <li>{t("top up → balance · crypto, no card needed")}</li>
                 <li>{t("buy a brain once → it stays yours, updates included")}</li>
-                <li>{100 - PLATFORM_FEE_PERCENT}% → the author · {PLATFORM_FEE_PERCENT}% keeps this running</li>
+                <li>{markup(t("<0/>% → the author · <1/>% keeps this running"), [
+                  100 - PLATFORM_FEE_PERCENT,
+                  PLATFORM_FEE_PERCENT,
+                ])}</li>
                 <li>{t("authors withdraw → same balance, one ledger page")}</li>
               </ul>
             </div>

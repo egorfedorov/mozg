@@ -45,7 +45,14 @@ async function sourceFiles(dir: string): Promise<string[]> {
 }
 
 /**
- * Pull the argument of every `t("…")` / `t('…')` call.
+ * Pull the argument of every `t("…")` and every `msg("…")`.
+ *
+ * Two callers, one shape. `t()` translates a literal where it stands; `msg()`
+ * marks a literal that lives in a data array — a footer column, a menu entry,
+ * a card — and is translated later by `t(card.title)`, which this cannot see
+ * because it collects literals rather than variables. Without msg() in here,
+ * every word that is not inside a paragraph stays English on eleven
+ * translated pages and looks like an oversight, because it is one.
  *
  * Deliberately a regex and not a parser: the call is always a bare literal by
  * convention (a translated string built at runtime cannot be translated ahead
@@ -58,7 +65,7 @@ export function stringsIn(source: string): string[] {
   // longer than the line into `t(\n  "…",\n)`, and without `,?` here every
   // long paragraph on every page is silently not translatable — which is
   // exactly the strings that most need translating.
-  const re = /\bt\(\s*(["'])((?:\\.|(?!\1)[^\\])*)\1\s*,?\s*\)/g;
+  const re = /\b(?:t|msg)\(\s*(["'])((?:\\.|(?!\1)[^\\])*)\1\s*,?\s*\)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(source))) {
     const text = m[2].replace(/\\n/g, "\n").replace(/\\(["'])/g, "$1");
@@ -109,6 +116,15 @@ Rules:
 - A string containing "\n" is one sentence broken across lines by the layout.
   Translate it as one sentence and keep exactly one "\n", placed where the
   break falls naturally in your language.
+- Numbered slots like <0>…</0> and <1/> are markup: a link, a bold run, a
+  price. Keep every one of them, exactly once, with its number unchanged.
+  TRANSLATE the text inside <0>…</0> — it is part of the sentence — and move
+  the whole slot to wherever your grammar wants it. Never renumber a slot,
+  never add one, never leave one out, and never translate the digits. This
+  holds even when the text inside a slot is one of the product nouns above
+  that must stay in Latin script: <0>brain</0> keeps its slot and keeps the
+  word, because the slot is a link or a bold run and dropping it silently
+  loses the markup.
 - Keep the register informal-but-precise. Address the reader directly if your
   language has that choice.
 - Preserve any leading or trailing whitespace, and any punctuation that ends
@@ -122,6 +138,17 @@ Rules:
 - Do not add explanations, do not expand abbreviations, do not "improve" the
   meaning. If a sentence is blunt in English it stays blunt.
 - Return every key you were given, exactly once, with the key unchanged.`;
+
+/**
+ * The markup slots in a sentence, order-independent.
+ *
+ * Sorted because moving `<0>` behind `<1>` is exactly what a translator is
+ * supposed to do when the grammar needs it — only losing, gaining or
+ * renumbering one is a fault.
+ */
+function slots(text: string): string {
+  return (text.match(/<\d+>|<\/\d+>|<\d+\/>/g) ?? []).sort().join(",");
+}
 
 /**
  * The tool argument, whichever shape it arrived in.
@@ -185,7 +212,15 @@ async function translateBatch(
       ],
     });
     for (const t of asList(data.translations)) {
-      if (t.key && t.text) out[t.key] = t.text;
+      if (!t.key || !t.text) continue;
+      // A translation that lost, added or renumbered a markup slot is not a
+      // translation of this sentence: markup() drops the slot it cannot find,
+      // so a link or a bold run silently disappears from that language only.
+      // Refusing it here feeds it back into the retry below, and if it never
+      // comes back right the English prints — which is visible.
+      const source = slice.find((s) => s.key === t.key);
+      if (source && slots(source.text) !== slots(t.text)) continue;
+      out[t.key] = t.text;
     }
 
     const dropped = slice.filter((s) => !out[s.key]);

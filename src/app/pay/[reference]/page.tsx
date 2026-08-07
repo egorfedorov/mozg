@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
@@ -86,11 +87,12 @@ export default async function PayPage({
         {paid ? (
           <>
             <p className="lede">
-              {formatCents(invoice.amount_cents)} landed
-              {invoice.purpose === "buy" && invoice.buy_title
+              {markup(t("<0/> landed <1/>"), [
+              formatCents(invoice.amount_cents),
+              invoice.purpose === "buy" && invoice.buy_title
                 ? ` and “${invoice.buy_title}” is unlocked for your agents.`
-                : " on your balance."}
-            </p>
+                : " on your balance.",
+            ])}</p>
             <div style={{ display: "flex", gap: ".75rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
               <Link className="btn" href={invoice.purpose === "buy" ? "/brains" : "/settings/balance"}>
                 {invoice.purpose === "buy" ? "Open your brains" : "See the balance"}
@@ -115,8 +117,10 @@ export default async function PayPage({
                   </div>
                   <div>
                     <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
-                      To this address · {coin.label} · {coin.network}
-                    </p>
+                      {markup(t("To this address · <0/> · <1/>"), [
+                      coin.label,
+                      coin.network,
+                    ])}</p>
                     <code className="mono" style={{ fontSize: ".9375rem", userSelect: "all", overflowWrap: "anywhere" }}>
                       {invoice.pay_address}
                     </code>
@@ -141,12 +145,9 @@ export default async function PayPage({
           </>
         ) : (
           <p className="lede">
-            Nothing was received in time. Nothing was charged —{" "}
-            <Link href="/settings/topup" style={{ textDecoration: "underline" }}>
-              start a fresh one
-            </Link>
-            .
-          </p>
+            {markup(t("Nothing was received in time. Nothing was charged — <0>start a fresh one</0> ."), [
+            <Link href="/settings/topup" style={{ textDecoration: "underline" }} key="s0" />,
+          ])}</p>
         )}
       </main>
       <SiteFooter />

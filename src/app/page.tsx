@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -20,28 +21,28 @@ const CLIENT_NAMES = ["Claude Code", "Codex", "Cursor", "Cline", "Kimi CLI", "Qw
 
 const USES: { field: string; tint: string; title: string; body: string }[] = [
   {
-    field: "Design systems",
+    field: msg("Design systems"),
     tint: "violet",
-    title: "Our components, not Tailwind's",
-    body: "Exact spacing, the states you actually ship, and the three rules everyone breaks.",
+    title: msg("Our components, not Tailwind's"),
+    body: msg("Exact spacing, the states you actually ship, and the three rules everyone breaks."),
   },
   {
-    field: "Backend & APIs",
+    field: msg("Backend & APIs"),
     tint: "blue",
-    title: "The integration as it really runs",
-    body: "Your retries, your idempotency keys, the webhook order — not the vendor's happy path.",
+    title: msg("The integration as it really runs"),
+    body: msg("Your retries, your idempotency keys, the webhook order — not the vendor's happy path."),
   },
   {
-    field: "Game development",
+    field: msg("Game development"),
     tint: "red",
-    title: "Engine conventions and math",
-    body: "How a mechanic is wired, what the pipeline expects, which numbers are load-bearing.",
+    title: msg("Engine conventions and math"),
+    body: msg("How a mechanic is wired, what the pipeline expects, which numbers are load-bearing."),
   },
   {
-    field: "Product & process",
+    field: msg("Product & process"),
     tint: "orange",
-    title: "What nobody wrote down",
-    body: "Naming, review rules, the deploy sequence — the folklore a new agent never gets.",
+    title: msg("What nobody wrote down"),
+    body: msg("Naming, review rules, the deploy sequence — the folklore a new agent never gets."),
   },
 ];
 
@@ -132,10 +133,9 @@ export default async function Home() {
           className="display"
           style={{ fontSize: "clamp(2.6rem, 8.5vw, 5.5rem)", margin: ".75rem 0 1rem" }}
         >
-          Teach it once.
-          <br />
-          Every agent knows.
-        </h1>
+          {markup(t("Teach it once. <0/> Every agent knows."), [
+          <br key="s0" />,
+        ])}</h1>
 
         <p
           style={{
@@ -180,21 +180,19 @@ export default async function Home() {
             <span style={{ marginLeft: ".5rem" }}>claude code</span>
           </div>
           <div>
-            <span className="c">$</span> claude mcp add --transport http mozg
-            https://mozg.sh/mcp
-          </div>
+            {markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp"), [
+            <span className="c" key="s0" />,
+          ])}</div>
           <div className="t">{t("✓ connected · 3 brains available")}</div>
           <div style={{ height: ".9rem" }} />
           <div>
-            <span className="u">&gt;</span> build the pricing page — make it match our
-            design system
-          </div>
+            {markup(t("<0>&gt;</0> build the pricing page — make it match our design system"), [
+            <span className="u" key="s0" />,
+          ])}</div>
           <div style={{ height: ".9rem" }} />
           <div className="k">
-            {" "}
-            brain_search(brain: &quot;design&quot;, query: &quot;card, spacing, price
-            type&quot;)
-          </div>
+            {markup(t("brain_search(brain: \"design\", query: \"card, spacing, price type\")"), [
+          ])}</div>
           <div className="c"> {t("→ 6 notes · 128 ms")}</div>
           <div style={{ height: ".9rem" }} />
           <div> {t("Cards: 1px #E4E4E7 border, no shadow at rest, 8px radius, 24px pad.")}</div>
@@ -229,10 +227,9 @@ export default async function Home() {
         <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
           <p className="eyebrow">{t("What actually happens")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
-            Nothing is stuffed
-            <br />
-            into the context.
-          </h2>
+            {markup(t("Nothing is stuffed <0/> into the context."), [
+            <br key="s0" />,
+          ])}</h2>
           <Pipeline />
           <p className="lede" style={{ marginTop: "1.25rem" }}>
             {t("A page is read once into notes that keep the exact values. The agent searches those and takes the handful it needs — which is why a brain can hold seven hundred notes and still cost a paragraph to use.")}</p>
@@ -258,12 +255,12 @@ export default async function Home() {
             {USES.map((u) => (
               <div key={u.title} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
                 <p className="eyebrow" style={{ margin: 0, color: `var(--color-riso-${u.tint})` }}>
-                  {u.field}
+                  {t(u.field)}
                 </p>
                 <h3 className="h3" style={{ margin: ".4rem 0 .5rem" }}>
-                  {u.title}
+                  {t(u.title)}
                 </h3>
-                <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{u.body}</p>
+                <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{t(u.body)}</p>
               </div>
             ))}
           </div>
@@ -286,11 +283,9 @@ export default async function Home() {
             }}
           >
             <p style={{ fontSize: "1.0625rem", color: "var(--ink-2)", maxWidth: "44ch" }}>
-              You write what the brain is <em>for</em>. mozg turns that into control
-              questions and runs them after every upload. So you get a number you can
-              trust — and a list of exactly which material is missing, instead of
-              guessing why your agent still gives bad answers.
-            </p>
+              {markup(t("You write what the brain is <0>for</0>. mozg turns that into control questions and runs them after every upload. So you get a number you can trust — and a list of exactly which material is missing, instead of guessing why your agent still gives bad answers."), [
+              <em key="s0" />,
+            ])}</p>
 
             <div className="scorecard">
               <div className="score-head">
@@ -365,40 +360,26 @@ export default async function Home() {
         <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
           <p className="eyebrow">{t("Why not just write a file")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
-            Because of what
-            <br />
-            happens next.
-          </h2>
+            {markup(t("Because of what <0/> happens next."), [
+            <br key="s0" />,
+          ])}</h2>
           <Divergence />
           <p className="lede" style={{ marginTop: "1.25rem" }}>
-            A file is the same three months later. A brain has been re-read,
-            corrected by the agents using it, and measured against what it claims
-            to know.{" "}
-            <Link href="/vs" style={{ textDecoration: "underline" }}>
-              The honest comparison, including when a file wins
-            </Link>
-            .
-          </p>
+            {markup(t("A file is the same three months later. A brain has been re-read, corrected by the agents using it, and measured against what it claims to know. <0>The honest comparison, including when a file wins</0> ."), [
+            <Link href="/vs" style={{ textDecoration: "underline" }} key="s0" />,
+          ])}</p>
         </section>
 
         <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
           <p className="eyebrow">{t("The collective mind")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1rem" }}>
-            Every question anyone asks
-            <br />
-            makes it smarter.
-          </h2>
+            {markup(t("Every question anyone asks <0/> makes it smarter."), [
+            <br key="s0" />,
+          ])}</h2>
           <p className="lede" style={{ maxWidth: "58ch" }}>
-            When any agent asks a brain something it can&apos;t answer, that
-            question joins the brain&apos;s exam — and the next re-read chases
-            it. Corrections arrive as reviewed, attributed notes. Every version
-            is kept, with a score. The tenth user gets a better brain than the
-            first.{" "}
-            <Link href="/collective" style={{ textDecoration: "underline" }}>
-              How the loop works
-            </Link>
-            .
-          </p>
+            {markup(t("When any agent asks a brain something it can't answer, that question joins the brain's exam — and the next re-read chases it. Corrections arrive as reviewed, attributed notes. Every version is kept, with a score. The tenth user gets a better brain than the first. <0>How the loop works</0> ."), [
+            <Link href="/collective" style={{ textDecoration: "underline" }} key="s0" />,
+          ])}</p>
 
           {learning.length > 0 && (
             <div className="rows" style={{ marginTop: "1.5rem", maxWidth: "44rem" }}>
@@ -435,8 +416,9 @@ export default async function Home() {
         >
           <div style={{ flex: 1, minWidth: 260 }}>
             <p className="eyebrow" style={{ margin: 0 }}>
-              Free course · learn<span style={{ color: "var(--color-riso-green)" }}>.</span>
-            </p>
+              {markup(t("Free course · learn<0>.</0>"), [
+              <span style={{ color: "var(--color-riso-green)" }} key="s0" />,
+            ])}</p>
             <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
               {t("Learn prompt engineering from the brain your agent uses.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
@@ -462,18 +444,15 @@ export default async function Home() {
         >
           <div style={{ flex: 1, minWidth: 260 }}>
             <p className="eyebrow" style={{ margin: 0 }}>
-              For artists · gallery<span style={{ color: "var(--color-riso-red)" }}>.</span>
-            </p>
+              {markup(t("For artists · gallery<0>.</0>"), [
+              <span style={{ color: "var(--color-riso-red)" }} key="s0" />,
+            ])}</p>
             <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
               {t("Your style, licensed — not scraped.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
-              A style brain holds the way you work: palette with values, line
-              weight, how shading is made, the hard nevers. Buyers&apos; agents
-              follow it over MCP, or they generate right in the gallery — and
-              you are paid <strong>on every image</strong>, not once when a
-              crawler passed through. Unlike a fine-tune on someone&apos;s disk,
-              access can be revoked.
-            </p>
+              {markup(t("A style brain holds the way you work: palette with values, line weight, how shading is made, the hard nevers. Buyers' agents follow it over MCP, or they generate right in the gallery — and you are paid <0>on every image</0>, not once when a crawler passed through. Unlike a fine-tune on someone's disk, access can be revoked."), [
+              <strong key="s0" />,
+            ])}</p>
           </div>
           <Link className="btn" href="https://gallery.mozg.sh">
             Open the gallery
