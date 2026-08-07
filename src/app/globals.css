@@ -2692,7 +2692,9 @@ a.row:hover {
    the mascot dock across the page and borrowing its frame — 1.5px ink and a
    4px hard shadow — so the two corners read as one pair of controls rather
    than two unrelated widgets. Centred at the foot it cut the last line of
-   every page in half; a corner owns its own space.
+   every page in half; a corner owns its own space, and icons rather than
+   words keep it from being a slab in the reader's eye — the labels live in
+   aria-label and the tooltip.
 
    The sheet it opens covers the page rather than replacing it, so switching
    back lands the reader exactly where they were reading. Both stay under the
@@ -2739,18 +2741,16 @@ a.row:hover {
 }
 
 .machine-switch button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  /* 44px tall at the smallest step: a touch target, not a link. */
-  min-height: 44px;
-  padding: 0 0.7rem;
+  display: grid;
+  place-items: center;
+  /* Square, and 44px because that is the touch minimum — the label lives in
+     aria-label and the tooltip, not on the page. */
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--ink-2);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -2787,18 +2787,6 @@ a.row:hover {
   stroke: var(--color-riso-orange);
 }
 
-/* On a phone the labels go and the icons carry it: two squares in the corner,
-   the same footprint as the mascot opposite. */
-@media (max-width: 560px) {
-  .machine-switch button {
-    width: 44px;
-    padding: 0;
-  }
-
-  .machine-label {
-    display: none;
-  }
-}
 
 /* ─── usage chart ───────────────────────────────────────────────────────────
    Calls per hour or per day on /settings/usage. Divs, not a charting library:

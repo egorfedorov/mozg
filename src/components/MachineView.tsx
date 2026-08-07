@@ -59,7 +59,6 @@ export default function MachineView({ doc }: { doc: string }) {
           onClick={() => setMachine(false)}
         >
           <HumanIcon />
-          <span className="machine-label">Human</span>
         </button>
         <button
           type="button"
@@ -69,18 +68,18 @@ export default function MachineView({ doc }: { doc: string }) {
           onClick={() => setMachine(true)}
         >
           <MachineIcon />
-          <span className="machine-label">Machine</span>
         </button>
       </div>
     </>
   );
 }
 
-/* The two icons carry the whole switch on a phone, where the labels are gone,
-   so they have to differ in silhouette and not only in detail: a round head
-   against a square screen. Drawn on the same 1.5px ink stroke as every border
-   on the site rather than imported, which keeps them in the print style and
-   costs no bytes. */
+/* The icons carry the switch alone — the words were a two-inch slab in the
+   corner of a reading page, and the aria-label and tooltip still say them for
+   anyone who needs them said. So the two have to differ in silhouette and not
+   only in detail: a round head against a square screen. Drawn on the same
+   1.5px ink stroke as every border on the site rather than imported, which
+   keeps them in the print style and costs no bytes. */
 
 function HumanIcon() {
   return (
