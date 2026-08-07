@@ -51,15 +51,51 @@ export default function MachineView({ doc }: { doc: string }) {
       </div>
 
       <div className="machine-switch" role="group" aria-label="How to read this page">
-        <button type="button" aria-pressed={!machine} onClick={() => setMachine(false)}>
-          <span className="machine-dot" aria-hidden />
-          Human
+        <button
+          type="button"
+          aria-pressed={!machine}
+          aria-label="Human — the designed page"
+          title="Human — the designed page"
+          onClick={() => setMachine(false)}
+        >
+          <HumanIcon />
+          <span className="machine-label">Human</span>
         </button>
-        <button type="button" aria-pressed={machine} onClick={() => setMachine(true)}>
-          <span className="machine-dot" aria-hidden />
-          Machine
+        <button
+          type="button"
+          aria-pressed={machine}
+          aria-label="Machine — the fact sheet an agent reads"
+          title="Machine — the fact sheet an agent reads"
+          onClick={() => setMachine(true)}
+        >
+          <MachineIcon />
+          <span className="machine-label">Machine</span>
         </button>
       </div>
     </>
+  );
+}
+
+/* The two icons carry the whole switch on a phone, where the labels are gone,
+   so they have to differ in silhouette and not only in detail: a round head
+   against a square screen. Drawn on the same 1.5px ink stroke as every border
+   on the site rather than imported, which keeps them in the print style and
+   costs no bytes. */
+
+function HumanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4.5 21c0-4.1 3.4-6.5 7.5-6.5s7.5 2.4 7.5 6.5" />
+    </svg>
+  );
+}
+
+function MachineIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+      <rect x="2.5" y="4.5" width="19" height="15" />
+      <path d="M6.5 10l2.5 2-2.5 2M12 14h5" />
+    </svg>
   );
 }

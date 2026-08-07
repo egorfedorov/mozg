@@ -2688,11 +2688,15 @@ a.row:hover {
 }
 
 /* ─── human / machine ───────────────────────────────────────────────────────
-   The switch sits centred at the foot of every public page, clear of the
-   mascot in the right-hand corner, and the sheet it opens covers the page
-   rather than replacing it — so switching back lands the reader exactly where
-   they were reading. Both stay under the cookie bar (z 60): a consent choice
-   must never end up behind anything. */
+   The switch sits in the bottom-LEFT corner of every public page, mirroring
+   the mascot dock across the page and borrowing its frame — 1.5px ink and a
+   4px hard shadow — so the two corners read as one pair of controls rather
+   than two unrelated widgets. Centred at the foot it cut the last line of
+   every page in half; a corner owns its own space.
+
+   The sheet it opens covers the page rather than replacing it, so switching
+   back lands the reader exactly where they were reading. Both stay under the
+   cookie bar (z 60): a consent choice must never end up behind anything. */
 
 .machine-sheet {
   position: fixed;
@@ -2724,9 +2728,9 @@ a.row:hover {
 
 .machine-switch {
   position: fixed;
-  left: 50%;
+  /* Same insets as .dock-button, opposite side — the mirror is the point. */
+  left: clamp(0.75rem, 2vw, 1.5rem);
   bottom: clamp(0.75rem, 2vw, 1.5rem);
-  transform: translateX(-50%);
   z-index: 55;
   display: flex;
   border: 1.5px solid var(--ink);
@@ -2737,8 +2741,11 @@ a.row:hover {
 .machine-switch button {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.45rem 0.85rem;
+  justify-content: center;
+  gap: 0.4rem;
+  /* 44px tall at the smallest step: a touch target, not a link. */
+  min-height: 44px;
+  padding: 0 0.7rem;
   border: 0;
   background: transparent;
   color: var(--ink-2);
@@ -2747,20 +2754,48 @@ a.row:hover {
   cursor: pointer;
 }
 
+/* The seam between the two halves, drawn once rather than as two borders that
+   would double up into 3px. */
+.machine-switch button + button {
+  border-left: 1.5px solid var(--ink);
+}
+
+.machine-switch button:hover:not([aria-pressed="true"]) {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
 .machine-switch button[aria-pressed="true"] {
   background: var(--ink);
   color: var(--paper);
 }
 
-.machine-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.35;
+.machine-switch svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.machine-switch button[aria-pressed="true"] .machine-dot {
-  background: var(--color-riso-orange);
-  opacity: 1;
+/* The riso accent the old dot carried, moved onto the icon of the side that is
+   live — the one spot of colour in either corner. */
+.machine-switch button[aria-pressed="true"] svg {
+  stroke: var(--color-riso-orange);
+}
+
+/* On a phone the labels go and the icons carry it: two squares in the corner,
+   the same footprint as the mascot opposite. */
+@media (max-width: 560px) {
+  .machine-switch button {
+    width: 44px;
+    padding: 0;
+  }
+
+  .machine-label {
+    display: none;
+  }
 }
