@@ -52,9 +52,13 @@ async function sourceFiles(dir: string): Promise<string[]> {
  * of time anyway), and a TypeScript parse of the whole app to find them would
  * be a dependency for no extra correctness.
  */
-function stringsIn(source: string): string[] {
+export function stringsIn(source: string): string[] {
   const out: string[] = [];
-  const re = /\bt\(\s*(["'])((?:\\.|(?!\1)[^\\])*)\1\s*\)/g;
+  // The trailing comma matters: prettier wraps any call whose argument is
+  // longer than the line into `t(\n  "…",\n)`, and without `,?` here every
+  // long paragraph on every page is silently not translatable — which is
+  // exactly the strings that most need translating.
+  const re = /\bt\(\s*(["'])((?:\\.|(?!\1)[^\\])*)\1\s*,?\s*\)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(source))) {
     const text = m[2].replace(/\\n/g, "\n").replace(/\\(["'])/g, "$1");
@@ -229,9 +233,12 @@ async function main() {
   }
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
+// Only when run as a script — the extraction above is imported by its test.
+if (process.argv[1]?.endsWith("translate.ts") || process.argv[1]?.endsWith("translate.mjs")) {
+  main()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+}

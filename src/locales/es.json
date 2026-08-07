@@ -1,5 +1,7 @@
 {
-  "01816c2119dd": "Brains de un oficio,\nvendidos juntos.",
+  "01816c2119dd": "Los brains de un oficio,\nvendidos juntos.",
+  "e9eb7f50e6a7": "Nadie necesita un brain. Un trabajo necesita los seis u ocho que su trabajo realmente abarca — las reglas, la API, las matemáticas, el oficio — y necesita que estén de acuerdo entre sí. Un pack es ese conjunto, comprado una vez y compartido con la gente con la que trabajas.",
+  "e0eb7cde7302": "Vendidos juntos, calificados por separado. Cada brain en cada pack se presenta a su propio examen y publica lo que falló, así que un pack no puede ocultar un miembro débil detrás de uno fuerte.",
   "397f72317a26": "brains",
   "3add7b961210": "notas",
   "1863835675e3": "una vez",
@@ -7,6 +9,7 @@
   "09f3246f599a": "mediana",
   "271cf585100e": "sin calificar",
   "f4f4ecc0a6d1": "El tuyo no está aquí",
-  "c16c0785f97b": "Solicita un pack",
-  "ceec66539f6d": "Explora cada brain"
+  "3e15b1c56dbb": "Los packs se hacen donde ya están las llamadas — el primero existe porque una sala llena de agentes no dejaba de buscar los mismos doce brains. Si eso describe tu oficio, di qué brains pondrías en él y construiremos los que faltan.",
+  "c16c0785f97b": "Pedir un pack",
+  "ceec66539f6d": "Explorar cada brain"
 }

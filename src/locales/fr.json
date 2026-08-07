@@ -1,5 +1,7 @@
 {
-  "01816c2119dd": "Des brains d'un métier,\nvendus ensemble.",
+  "01816c2119dd": "Les brains d'un métier,\nvendus ensemble.",
+  "e9eb7f50e6a7": "Personne n'a besoin d'un seul brain. Un métier a besoin des six ou huit sur lesquels son travail s'étend vraiment — les règles, l'API, les maths, le savoir-faire — et a besoin qu'ils s'accordent les uns avec les autres. Un pack, c'est cet ensemble, acheté une fois et partagé avec les gens avec qui tu travailles.",
+  "e0eb7cde7302": "Vendus ensemble, notés séparément. Chaque brain dans chaque pack passe son propre examen et publie ce qu'il a échoué, donc un pack ne peut pas cacher un membre faible derrière un member fort.",
   "397f72317a26": "brains",
   "3add7b961210": "notes",
   "1863835675e3": "une fois",
@@ -7,6 +9,7 @@
   "09f3246f599a": "médiane",
   "271cf585100e": "non noté",
   "f4f4ecc0a6d1": "Le tien n'est pas ici",
-  "c16c0785f97b": "Demande un pack",
+  "3e15b1c56dbb": "Les packs se font là où les appels sont déjà — le premier existe parce qu'une salle pleine d'agents cherchaient toujours les mêmes douze brains. Si ça te décrit, dis quels brains tu y mettrais et on construira ceux qui manquent.",
+  "c16c0785f97b": "Demander un pack",
   "ceec66539f6d": "Parcourir tous les brains"
 }
