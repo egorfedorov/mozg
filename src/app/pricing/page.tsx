@@ -321,39 +321,39 @@ export default async function PricingPage() {
           <div className="rows">
             {[
               [
-                "Why pay at all, when the model already knows things?",
-                "You pay for what the model gets wrong: docs newer than its training, specs precise enough that a paraphrase is a bug, and your own conventions nobody published. A brain's exam score tells you exactly whether that gap is real before you spend anything.",
+                msg("Why pay at all, when the model already knows things?"),
+                msg("You pay for what the model gets wrong: docs newer than its training, specs precise enough that a paraphrase is a bug, and your own conventions nobody published. A brain's exam score tells you exactly whether that gap is real before you spend anything."),
               ],
               [
-                "If teaching from my CLI is free, what does Pro actually buy?",
-                "Whose AI does the reading. Teaching from your CLI spends the subscription you already pay Anthropic or Moonshot for: your agent opens the docs, distils the notes and writes them in — we only store and index them, which costs us a self-hosted embedding, so we charge nothing. Pro is our inference doing that work: you paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week. Nothing runs on your machine, no API key gets wired up anywhere, and a docs site of five hundred pages is a URL rather than an evening.",
+                msg("If teaching from my CLI is free, what does Pro actually buy?"),
+                msg("Whose AI does the reading. Teaching from your CLI spends the subscription you already pay Anthropic or Moonshot for: your agent opens the docs, distils the notes and writes them in — we only store and index them, which costs us a self-hosted embedding, so we charge nothing. Pro is our inference doing that work: you paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week. Nothing runs on your machine, no API key gets wired up anywhere, and a docs site of five hundred pages is a URL rather than an evening."),
               ],
               [
-                "So the free plan is not a crippled version?",
-                "No, and it says so on the card above: teaching from your own CLI is unlimited on every plan, including free. What free gives you of our AI is a trial brain — enough to feel the difference between an exam-scored corpus built in an afternoon and one you assembled by hand. The plans differ in how much of our inference you can spend per day, how many brains you keep, and how many agent calls a month you make.",
+                msg("So the free plan is not a crippled version?"),
+                msg("No, and it says so on the card above: teaching from your own CLI is unlimited on every plan, including free. What free gives you of our AI is a trial brain — enough to feel the difference between an exam-scored corpus built in an afternoon and one you assembled by hand. The plans differ in how much of our inference you can spend per day, how many brains you keep, and how many agent calls a month you make."),
               ],
               [
-                "Can I use my own API key instead of a plan?",
-                "Yes — settings → train on your own key, with Anthropic or anything OpenAI-compatible (OpenAI, Kimi, DeepSeek, Qwen, GLM). Then our daily ceiling steps aside entirely, because the spend is yours on your key. A plan is for people who would rather not hold a key at all.",
+                msg("Can I use my own API key instead of a plan?"),
+                msg("Yes — settings → train on your own key, with Anthropic or anything OpenAI-compatible (OpenAI, Kimi, DeepSeek, Qwen, GLM). Then our daily ceiling steps aside entirely, because the spend is yours on your key. A plan is for people who would rather not hold a key at all."),
               ],
               [
-                "Does using a brain burn my API tokens?",
-                "No. Searching a brain is a database lookup on our side — your agent spends only the handful of tokens it takes to read the few notes it asked for. Money is spent once, when a brain is built, not when it is used.",
+                msg("Does using a brain burn my API tokens?"),
+                msg("No. Searching a brain is a database lookup on our side — your agent spends only the handful of tokens it takes to read the few notes it asked for. Money is spent once, when a brain is built, not when it is used."),
               ],
               [
-                "What if I stop paying?",
-                "Bought brains stay bought. Your own brains export as CLAUDE.md, a Claude Skill or AGENTS.md — files that keep working with no server and no subscription. Leaving is cheap by design; that is why staying has to be worth it.",
+                msg("What if I stop paying?"),
+                msg("Bought brains stay bought. Your own brains export as CLAUDE.md, a Claude Skill or AGENTS.md — files that keep working with no server and no subscription. Leaving is cheap by design; that is why staying has to be worth it."),
               ],
               [
-                "Refunds?",
-                "A brain can be copied the moment it is readable, so there are no refunds after the first read. Everything a buyer needs to decide — score, passed questions, note titles — is public before paying.",
+                msg("Refunds?"),
+                msg("A brain can be copied the moment it is readable, so there are no refunds after the first read. Everything a buyer needs to decide — score, passed questions, note titles — is public before paying."),
               ],
             ].map(([q, a]) => (
               <div key={q} className="row">
                 <span style={{ minWidth: 0 }}>
-                  <strong>{q}</strong>
+                  <strong>{t(q)}</strong>
                   <span className="row-sub" style={{ maxWidth: "70ch" }}>
-                    {a}
+                    {t(a)}
                   </span>
                 </span>
               </div>
