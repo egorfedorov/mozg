@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
@@ -58,6 +59,8 @@ export default async function ProfilePage({
 }: {
   params: Promise<{ handle: string }>;
 }) {
+  const t = await translator();
+
   const { handle } = await params;
   const who = await profileFor(handle);
   if (!who) notFound();
@@ -198,7 +201,7 @@ export default async function ProfilePage({
         {published.length > 0 && (
           <section style={{ marginTop: "2.5rem" }}>
             <div className="section-head">
-              <h2 className="h2">Published brains</h2>
+              <h2 className="h2">{t("Published brains")}</h2>
               <span className="eyebrow">anyone can add these</span>
             </div>
             <div className="grid-brains">
@@ -232,7 +235,7 @@ export default async function ProfilePage({
           <>
             <section style={{ marginTop: "2.5rem" }}>
               <div className="section-head">
-                <h2 className="h2">Connected to your agents</h2>
+                <h2 className="h2">{t("Connected to your agents")}</h2>
                 <span className="eyebrow">only you can see this list</span>
               </div>
               <div className="rows" style={{ maxWidth: "52rem" }}>
@@ -282,16 +285,14 @@ export default async function ProfilePage({
             {proposals.length > 0 && (
               <section style={{ marginTop: "2.5rem" }}>
                 <div className="section-head">
-                  <h2 className="h2">Notes you proposed</h2>
+                  <h2 className="h2">{t("Notes you proposed")}</h2>
                   <span className="eyebrow">
                     {proposals.filter((p) => p.status === "active").length} taken ·{" "}
                     {proposals.filter((p) => p.status === "pending").length} waiting
                   </span>
                 </div>
                 <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
-                  Your agent learned these while reading someone else&apos;s brain and sent
-                  them to its owner. They answer nobody until the owner takes them.
-                </p>
+                  {t("Your agent learned these while reading someone else's brain and sent them to its owner. They answer nobody until the owner takes them.")}</p>
                 <div className="rows" style={{ maxWidth: "52rem" }}>
                   {proposals.map((p, i) => (
                     <Link
@@ -328,7 +329,7 @@ export default async function ProfilePage({
             {studying.length > 0 && (
               <section style={{ marginTop: "2.5rem" }}>
                 <div className="section-head">
-                  <h2 className="h2">Courses in flight</h2>
+                  <h2 className="h2">{t("Courses in flight")}</h2>
                   <span className="eyebrow">pick up where you left off</span>
                 </div>
                 <div className="rows" style={{ maxWidth: "52rem" }}>
@@ -364,7 +365,7 @@ export default async function ProfilePage({
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Achievements</h2>
+            <h2 className="h2">{t("Achievements")}</h2>
             <span className="eyebrow">
               {done.length} of {CATALOG.length} earned
             </span>

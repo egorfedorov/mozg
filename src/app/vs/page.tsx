@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -65,6 +66,8 @@ const DIFFERENCES: {
 ];
 
 export default async function VsPage() {
+  const t = await translator();
+
   const user = await currentUser();
 
   return (
@@ -74,16 +77,14 @@ export default async function VsPage() {
       <Contents active="/vs" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">A brain and a file</p>
+        <p className="eyebrow">{t("A brain and a file")}</p>
         <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
           Both are just text
           <br />
           an agent reads.
         </h1>
         <p className="lede" style={{ fontSize: "1.0625rem" }}>
-          The difference is not format. It is what happens to them over the next
-          three months, while you are busy.
-        </p>
+          {t("The difference is not format. It is what happens to them over the next three months, while you are busy.")}</p>
 
         {/* The signature. Time is the axis because time is the actual
             difference — a table of ticks would have said less. */}
@@ -98,9 +99,7 @@ export default async function VsPage() {
               maxWidth: "56ch",
             }}
           >
-            The crosses are re-reads: a page changed, the notes taken from it
-            were replaced. Nobody typed anything on those days.
-          </figcaption>
+            {t("The crosses are re-reads: a page changed, the notes taken from it were replaced. Nobody typed anything on those days.")}</figcaption>
         </figure>
 
         <div style={{ margin: "clamp(2.5rem, 6vw, 3.5rem) 0" }}>
@@ -109,8 +108,7 @@ export default async function VsPage() {
 
         <section>
           <h2 className="h2" style={{ marginBottom: "1.25rem" }}>
-            Five questions, answered twice
-          </h2>
+            {t("Five questions, answered twice")}</h2>
 
           <div className="vs-grid">
             {/* The labels ride the same grid as the answers, so they line up
@@ -139,31 +137,22 @@ export default async function VsPage() {
         {/* The half that makes the rest believable. */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            When a file is the right answer
-          </h2>
+            {t("When a file is the right answer")}</h2>
           <p className="lede" style={{ marginBottom: "1.25rem" }}>
-            Often. A brain is a service, and a service is a dependency.
-          </p>
+            {t("Often. A brain is a service, and a service is a dependency.")}</p>
 
           <div className="sk-strip">
             <Panel n="—" title="It never changes" tint="var(--ink-2)">
               <p>
-                Your commit conventions, your directory layout, the three rules
-                everyone breaks. Written once, true for years. Re-reading a source
-                that has no source is machinery for nothing.
-              </p>
+                {t("Your commit conventions, your directory layout, the three rules everyone breaks. Written once, true for years. Re-reading a source that has no source is machinery for nothing.")}</p>
             </Panel>
             <Panel n="—" title="You work offline" tint="var(--ink-2)">
               <p>
-                A brain needs the network and an account. A file needs neither, and
-                on a plane that is the whole argument.
-              </p>
+                {t("A brain needs the network and an account. A file needs neither, and on a plane that is the whole argument.")}</p>
             </Panel>
             <Panel n="—" title="It is three paragraphs" tint="var(--ink-2)">
               <p>
-                Search earns its keep somewhere past a hundred notes. Below that,
-                putting the whole thing in context is simpler and cheaper.
-              </p>
+                {t("Search earns its keep somewhere past a hundred notes. Below that, putting the whole thing in context is simpler and cheaper.")}</p>
               <p>
                 Any brain exports to <code className="mono">CLAUDE.md</code>, a
                 Skill or <code className="mono">AGENTS.md</code> — take the
@@ -186,13 +175,9 @@ export default async function VsPage() {
         >
           <div style={{ flex: "1 1 32ch" }}>
             <h2 className="h2" style={{ margin: 0 }}>
-              Use both.
-            </h2>
+              {t("Use both.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              A file for what you decided and will not revisit. A brain for
-              anything with a source that keeps moving — an SDK, an API, a design
-              system, a platform someone else maintains.
-            </p>
+              {t("A file for what you decided and will not revisit. A brain for anything with a source that keeps moving — an SDK, an API, a design system, a platform someone else maintains.")}</p>
           </div>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
@@ -20,6 +21,8 @@ export const metadata = {
  * the marketplace — pointed at a new audience.
  */
 export default async function StylesPage() {
+  const t = await translator();
+
   const user = await currentUser();
 
   // Two numbers, not the grid: the directory has its own storefront now, and
@@ -38,10 +41,9 @@ export default async function StylesPage() {
       <Contents active="/styles" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Style brains · for illustrators and artists</p>
+        <p className="eyebrow">{t("Style brains · for illustrators and artists")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".5rem 0 1rem", maxWidth: "20ch" }}>
-          Your style is being scraped anyway. Sell it instead.
-        </h1>
+          {t("Your style is being scraped anyway. Sell it instead.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
           Cloaking tools promised to make styles untrainable — and each one has
           been broken within months. mozg takes the opposite road: your style
@@ -55,7 +57,7 @@ export default async function StylesPage() {
             only difference is whether the agent read the style brain. */}
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
-            <h2 className="h2">One prompt, with and without the brain</h2>
+            <h2 className="h2">{t("One prompt, with and without the brain")}</h2>
             <span className="eyebrow">same image model, nothing else changed</span>
           </div>
           <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", maxWidth: "60rem" }}>
@@ -79,15 +81,13 @@ export default async function StylesPage() {
             ))}
           </div>
           <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>
-            prompt: “a sticker illustration of a fox sitting and reading a small
-            book” — the right one adds only what the brain teaches.
-          </p>
+            {t("prompt: “a sticker illustration of a fox sitting and reading a small book” — the right one adds only what the brain teaches.")}</p>
         </section>
 
         {/* How it works, artist-side. Four steps, each one real machinery. */}
         <section style={{ marginTop: "3.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">How an artist sells a style</h2>
+            <h2 className="h2">{t("How an artist sells a style")}</h2>
             <span className="eyebrow">every step already works today</span>
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
@@ -114,16 +114,14 @@ export default async function StylesPage() {
             the argument and the machinery, and a grid of other people's work in
             the middle of it was two pages fighting for one scroll. */}
         <section style={{ marginTop: "3.5rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "clamp(1.25rem, 4vw, 2rem)", maxWidth: "56rem" }}>
-          <p className="eyebrow" style={{ margin: 0 }}>The styles themselves</p>
+          <p className="eyebrow" style={{ margin: 0 }}>{t("The styles themselves")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
             {styleCount > 0
               ? `${styleCount} style${styleCount === 1 ? "" : "s"} on the shelf, by ${artistCount} artist${artistCount === 1 ? "" : "s"}.`
               : "The first styles are being written right now."}
           </h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
-            Browse them by artist, see what each one teaches and what it scored,
-            and take one to your agent.
-          </p>
+            {t("Browse them by artist, see what each one teaches and what it scored, and take one to your agent.")}</p>
           <Link className="btn" href="https://gallery.mozg.sh">
             Open the gallery
           </Link>
@@ -133,11 +131,9 @@ export default async function StylesPage() {
             says so — a roadmap item left standing after it is built reads as a
             product that never delivers. */}
         <section style={{ marginTop: "3.5rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "clamp(1.25rem, 4vw, 2rem)", maxWidth: "56rem" }}>
-          <p className="eyebrow" style={{ margin: 0 }}>Live now</p>
+          <p className="eyebrow" style={{ margin: 0 }}>{t("Live now")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
-            People generate in your style without leaving the site, and you earn
-            on every image.
-          </h2>
+            {t("People generate in your style without leaving the site, and you earn on every image.")}</h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
             A buyer types what they want on your style&apos;s page in the gallery.
             Your rules — palette, line, shading, the nevers — are compiled in front

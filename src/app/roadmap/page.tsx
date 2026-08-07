@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { translator } from "@/lib/t";
 import path from "node:path";
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
@@ -98,6 +99,8 @@ function render(md: string): string {
 }
 
 export default async function RoadmapPage() {
+  const t = await translator();
+
   // Read at request time from the deployed image: the file ships with the app, so
   // this is always the plan the running version was built from.
   const file = path.join(process.cwd(), "docs", "ROADMAP.md");
@@ -109,7 +112,7 @@ export default async function RoadmapPage() {
       <Contents active="/roadmap" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Roadmap</p>
+        <p className="eyebrow">{t("Roadmap")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2rem, 5.5vw, 3.4rem)", margin: ".4rem 0 1rem" }}

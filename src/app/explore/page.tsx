@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -48,6 +49,8 @@ export default async function ExplorePage({
 }: {
   searchParams: Promise<{ price?: string; sort?: string; topic?: string }>;
 }) {
+  const t = await translator();
+
   const params = await searchParams;
   const price = (PRICES.find((p) => p.key === params.price)?.key ?? "all") as Price;
   const sort = SORTS.find((s) => s.key === params.sort) ?? SORTS[0];
@@ -138,17 +141,14 @@ export default async function ExplorePage({
       <Contents active="/explore" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Catalogue · connect any of these in one command</p>
+        <p className="eyebrow">{t("Catalogue · connect any of these in one command")}</p>
         <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
           Brains other people
           <br />
           already built.
         </h1>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
-          Every one states what it is for and how much of that it can actually
-          answer — the score comes from an exam it sat, not from the author&apos;s
-          description. Paid brains are bought once from your balance and stay yours.
-        </p>
+          {t("Every one states what it is for and how much of that it can actually answer — the score comes from an exam it sat, not from the author's description. Paid brains are bought once from your balance and stay yours.")}</p>
 
         {/* One filter language: chips. This row used to carry three. */}
         <div className="stack-tight" style={{ marginTop: "2rem" }}>
@@ -174,8 +174,7 @@ export default async function ExplorePage({
               "nothing here yet" is a better answer than a missing option. */}
           <div className="chips">
             <Chip href={href({ topic: null })} on={topic === null}>
-              All fields
-            </Chip>
+              {t("All fields")}</Chip>
             {TOPICS.map((t) => (
               <Chip
                 key={t.key}
@@ -205,10 +204,7 @@ export default async function ExplorePage({
               {topic || price !== "all" ? "Try the whole catalogue." : "Be the first."}
             </h2>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
-              Publishing a brain makes it readable by anyone and gives it a page
-              search engines can find. Set a price and it earns every time someone
-              buys it.
-            </p>
+              {t("Publishing a brain makes it readable by anyone and gives it a page search engines can find. Set a price and it earns every time someone buys it.")}</p>
             <div style={{ display: "flex", gap: ".75rem", marginTop: "1rem", flexWrap: "wrap" }}>
               <Link className="btn" href="/brains">
                 Go to your brains
@@ -298,8 +294,7 @@ export default async function ExplorePage({
         >
           <div style={{ flex: "1 1 30ch" }}>
             <h2 className="h2">
-              Sell what you already know.
-            </h2>
+              {t("Sell what you already know.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
               Publish a brain, set a price, keep {100 - PLATFORM_FEE_PERCENT}% of
               every sale. Buyers get read access through their agent — the licence

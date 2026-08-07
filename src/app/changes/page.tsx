@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
@@ -18,6 +19,8 @@ export const metadata = {
  * page a team living on a framework checks on Monday.
  */
 export default async function GlobalChangesPage() {
+  const t = await translator();
+
   const sittings = await query<{
     handle: string;
     slug: string;
@@ -65,10 +68,9 @@ export default async function GlobalChangesPage() {
       <TopBar />
       <Contents active="/changes" />
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">The verified changelog · every public brain</p>
+        <p className="eyebrow">{t("The verified changelog · every public brain")}</p>
         <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
-          What the brains learned.
-        </h1>
+          {t("What the brains learned.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
           <Link href="/changelog" style={{ textDecoration: "underline" }}>
             /changelog
@@ -81,11 +83,11 @@ export default async function GlobalChangesPage() {
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Recent sittings</h2>
+            <h2 className="h2">{t("Recent sittings")}</h2>
             <span className="eyebrow">each diffed against its predecessor</span>
           </div>
           {sittings.length === 0 ? (
-            <p className="lede">The first public sitting will land here.</p>
+            <p className="lede">{t("The first public sitting will land here.")}</p>
           ) : (
             <div className="rows" style={{ maxWidth: "56rem" }}>
               {sittings.map((s, i) => (
@@ -113,11 +115,11 @@ export default async function GlobalChangesPage() {
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Sources that moved</h2>
+            <h2 className="h2">{t("Sources that moved")}</h2>
             <span className="eyebrow">hash-detected, re-read, then re-examined</span>
           </div>
           {moved.length === 0 ? (
-            <p className="lede">Quiet — the watched documentation is as it was.</p>
+            <p className="lede">{t("Quiet — the watched documentation is as it was.")}</p>
           ) : (
             <div className="rows" style={{ maxWidth: "56rem" }}>
               {moved.map((m, i) => (

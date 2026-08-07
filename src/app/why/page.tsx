@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -13,6 +14,8 @@ export const metadata = {
 };
 
 export default async function WhyPage() {
+  const t = await translator();
+
   const user = await currentUser();
 
   return (
@@ -22,7 +25,7 @@ export default async function WhyPage() {
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         {/* Open on the problem, in the reader's own words. */}
-        <p className="eyebrow">Why this exists</p>
+        <p className="eyebrow">{t("Why this exists")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
@@ -41,15 +44,11 @@ export default async function WhyPage() {
             marginTop: 0,
           }}
         >
-          Every session starts from zero. You paste the same conventions, correct the
-          same assumptions, and watch the agent produce something that looks nothing
-          like your product. Tomorrow, again.
-        </p>
+          {t("Every session starts from zero. You paste the same conventions, correct the same assumptions, and watch the agent produce something that looks nothing like your product. Tomorrow, again.")}</p>
 
         <section style={{ marginTop: "clamp(3rem, 8vw, 5rem)" }}>
           <h2 className="h2" style={{ marginBottom: "1.5rem" }}>
-            Three things are broken.
-          </h2>
+            {t("Three things are broken.")}</h2>
 
           <div style={{ display: "grid", gap: "1.25rem" }}>
             {[
@@ -98,7 +97,7 @@ export default async function WhyPage() {
 
         {/* The differentiator gets the loudest moment on the page. */}
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 6rem)" }}>
-          <p className="eyebrow">What we do about the third one</p>
+          <p className="eyebrow">{t("What we do about the third one")}</p>
           <h2
             className="display"
             style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".6rem 0 1.25rem" }}
@@ -119,17 +118,13 @@ export default async function WhyPage() {
             style={{ marginTop: "1.75rem", maxWidth: "62ch", borderLeft: "4px solid var(--color-riso-green)" }}
           >
             <p style={{ margin: 0, color: "var(--ink-2)" }}>
-              Every other knowledge product reports what it holds. This one reports
-              what it is missing, and that is the number that changes what you do
-              tomorrow morning.
-            </p>
+              {t("Every other knowledge product reports what it holds. This one reports what it is missing, and that is the number that changes what you do tomorrow morning.")}</p>
           </div>
         </section>
 
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 5rem)" }}>
           <h2 className="h2" style={{ marginBottom: "1.5rem" }}>
-            The rest of it
-          </h2>
+            {t("The rest of it")}</h2>
 
           <div
             style={{
@@ -168,23 +163,21 @@ export default async function WhyPage() {
           >
             <div>
               <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>
-                Worth it when
-              </p>
+                {t("Worth it when")}</p>
               <ul style={{ margin: ".75rem 0 0", paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".4rem" }}>
-                <li>You explain the same context to an agent every week</li>
-                <li>The knowledge lives in screenshots, docs and people&apos;s heads</li>
-                <li>You use more than one agent, or switch between them</li>
-                <li>Getting it wrong is expensive — design, math, contracts, protocol</li>
+                <li>{t("You explain the same context to an agent every week")}</li>
+                <li>{t("The knowledge lives in screenshots, docs and people's heads")}</li>
+                <li>{t("You use more than one agent, or switch between them")}</li>
+                <li>{t("Getting it wrong is expensive — design, math, contracts, protocol")}</li>
               </ul>
             </div>
             <div>
               <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>
-                Not worth it when
-              </p>
+                {t("Not worth it when")}</p>
               <ul style={{ margin: ".75rem 0 0", paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".4rem" }}>
-                <li>The knowledge is already in your repo — the agent can read it</li>
-                <li>A CLAUDE.md file covers it and never changes</li>
-                <li>You work alone in one tool on one project, forever</li>
+                <li>{t("The knowledge is already in your repo — the agent can read it")}</li>
+                <li>{t("A CLAUDE.md file covers it and never changes")}</li>
+                <li>{t("You work alone in one tool on one project, forever")}</li>
               </ul>
             </div>
           </div>
@@ -192,8 +185,7 @@ export default async function WhyPage() {
 
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 5rem)", textAlign: "center" }}>
           <h2 className="h1" style={{ marginBottom: "1.25rem" }}>
-            Teach it once.
-          </h2>
+            {t("Teach it once.")}</h2>
           <div style={{ display: "flex", gap: ".75rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>
               Build a brain

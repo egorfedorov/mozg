@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -16,32 +17,29 @@ export const metadata = {
  * honest at the end about where skills legitimately win — credibility is the
  * whole persuasion budget.
  */
-export default function VsSkillsPage() {
+export default async function VsSkillsPage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
       <Contents active="/vs-skills" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Skills &amp; context files vs a brain</p>
+        <p className="eyebrow">{t("Skills & context files vs a brain")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}>
           The most expensive answer
           <br />
           is the confident wrong one.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          You gave your agent skills, CLAUDE.md files, a folder of carefully
-          written knowledge. It reads them and answers with total confidence —
-          and three months later half of those answers are quietly wrong.
-          Here is exactly where that pain comes from, error by error.
-        </p>
+          {t("You gave your agent skills, CLAUDE.md files, a folder of carefully written knowledge. It reads them and answers with total confidence — and three months later half of those answers are quietly wrong. Here is exactly where that pain comes from, error by error.")}</p>
 
         {/* ── error 1: the token tax ────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 1</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 1")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            You pay for every word, every session — needed or not.
-          </h2>
+            {t("You pay for every word, every session — needed or not.")}</h2>
           <svg viewBox="0 0 720 200" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A file dumps whole into context; a brain returns three notes">
             <rect x="30" y="30" width="120" height="140" fill="none" stroke="#14161a" strokeWidth="2" />
             {Array.from({ length: 9 }).map((_, i) => (
@@ -49,15 +47,15 @@ export default function VsSkillsPage() {
             ))}
             <path d="M 160 100 L 240 100" stroke="#f15060" strokeWidth="3" markerEnd="url(#a1)" />
             <rect x="250" y="20" width="90" height="160" fill="#f15060" opacity="0.18" stroke="#f15060" strokeWidth="2" />
-            <text x="295" y="105" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#14161a">context</text>
-            <text x="90" y="190" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">the whole file, every session</text>
+            <text x="295" y="105" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#14161a">{t("context")}</text>
+            <text x="90" y="190" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("the whole file, every session")}</text>
             <circle cx="470" cy="100" r="46" fill="#f15060" />
             <circle cx="478" cy="92" r="46" fill="#14161a" opacity="0.12" />
             <path d="M 525 100 L 600 100" stroke="#3ec300" strokeWidth="3" />
             <rect x="610" y="70" width="80" height="16" fill="none" stroke="#14161a" strokeWidth="1.5" />
             <rect x="610" y="92" width="80" height="16" fill="none" stroke="#14161a" strokeWidth="1.5" />
             <rect x="610" y="114" width="80" height="16" fill="none" stroke="#14161a" strokeWidth="1.5" />
-            <text x="470" y="190" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">brain — only the 3 notes the task needed</text>
+            <text x="470" y="190" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("brain — only the 3 notes the task needed")}</text>
             <defs>
               <marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
                 <path d="M0,0 L8,4 L0,8 z" fill="#f15060" />
@@ -77,21 +75,20 @@ export default function VsSkillsPage() {
 
         {/* ── error 2: silent rot ───────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 2</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 2")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            The docs changed on Tuesday. Your agent finds out never.
-          </h2>
+            {t("The docs changed on Tuesday. Your agent finds out never.")}</h2>
           <svg viewBox="0 0 720 170" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A file stays flat while docs change; a brain re-reads and re-examines">
             <path d="M 40 60 L 320 60" stroke="#14161a" strokeWidth="2" strokeDasharray="6 5" />
-            <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">file: same bytes, month after month</text>
+            <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("file: same bytes, month after month")}</text>
             <path d="M 40 130 C 120 128, 140 100, 200 104 C 260 108, 280 80, 340 78" stroke="#3ec300" strokeWidth="3" fill="none" />
-            <text x="180" y="160" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">brain: re-read, re-examined, corrected</text>
+            <text x="180" y="160" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("brain: re-read, re-examined, corrected")}</text>
             <g>
               <rect x="420" y="30" width="260" height="110" fill="none" stroke="#14161a" strokeWidth="2" />
-              <text x="550" y="55" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#14161a">the API changed on Tuesday</text>
-              <text x="550" y="80" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#f15060">file: kept teaching the old shape</text>
-              <text x="550" y="105" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#3ec300">brain: re-read it Tuesday night,</text>
-              <text x="550" y="122" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#3ec300">re-sat its exam, score moved</text>
+              <text x="550" y="55" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#14161a">{t("the API changed on Tuesday")}</text>
+              <text x="550" y="80" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#f15060">{t("file: kept teaching the old shape")}</text>
+              <text x="550" y="105" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#3ec300">{t("brain: re-read it Tuesday night,")}</text>
+              <text x="550" y="122" textAnchor="middle" fontSize="12" fontFamily="monospace" fill="#3ec300">{t("re-sat its exam, score moved")}</text>
             </g>
           </svg>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1rem" }}>
@@ -106,29 +103,22 @@ export default function VsSkillsPage() {
 
         {/* ── error 3: unmeasurable knowledge ───────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 3</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 3")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            Nobody can answer &quot;what does it actually know?&quot;
-          </h2>
+            {t("Nobody can answer \"what does it actually know?\"")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-            Ask whether your knowledge folder covers the error codes of one
-            endpoint and the honest answer is a shrug and a grep — so agents
-            improvise, and improvisation reads exactly like knowledge until it
-            ships. A brain answers with a number: an exam built from its goal,
-            re-sat after every change, with the failures naming exactly which
-            material is missing. Not a vibe — a score you can watch move.
-          </p>
+            {t("Ask whether your knowledge folder covers the error codes of one endpoint and the honest answer is a shrug and a grep — so agents improvise, and improvisation reads exactly like knowledge until it ships. A brain answers with a number: an exam built from its goal, re-sat after every change, with the failures naming exactly which material is missing. Not a vibe — a score you can watch move.")}</p>
           <div className="scorecard" style={{ maxWidth: 480, marginTop: "1.25rem" }}>
             <div className="score-head">
               <div>
-                <p className="eyebrow" style={{ marginBottom: ".35rem" }}>a folder of files</p>
+                <p className="eyebrow" style={{ marginBottom: ".35rem" }}>{t("a folder of files")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>coverage</span>
               </div>
               <div className="score-big">?<sup>%</sup></div>
             </div>
             <div className="score-head" style={{ borderTop: "1.5px solid var(--ink)" }}>
               <div>
-                <p className="eyebrow" style={{ marginBottom: ".35rem" }}>the same knowledge, as a brain</p>
+                <p className="eyebrow" style={{ marginBottom: ".35rem" }}>{t("the same knowledge, as a brain")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>measured, re-sat after every change</span>
               </div>
               <div className="score-big">92<sup>%</sup></div>
@@ -138,26 +128,18 @@ export default function VsSkillsPage() {
 
         {/* ── error 4: copies drift ─────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 4</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 4")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            Every teammate has a copy. Every copy is different.
-          </h2>
+            {t("Every teammate has a copy. Every copy is different.")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-            Hand someone a file and you have forked your knowledge: their copy
-            and yours drift from that day on, and a correction lands in one of
-            them. A brain is one URL — every agent on the team reads the same
-            living thing, a fix approved once reaches every reader instantly,
-            and it plugs into Claude Code, Codex, Cursor and whatever ships
-            next month, because MCP is the socket.
-          </p>
+            {t("Hand someone a file and you have forked your knowledge: their copy and yours drift from that day on, and a correction lands in one of them. A brain is one URL — every agent on the team reads the same living thing, a fix approved once reaches every reader instantly, and it plugs into Claude Code, Codex, Cursor and whatever ships next month, because MCP is the socket.")}</p>
         </section>
 
         {/* ── error 5: lessons evaporate ────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 5</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 5")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            You corrected the agent yesterday. It forgot by this morning.
-          </h2>
+            {t("You corrected the agent yesterday. It forgot by this morning.")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
             The hardest-won knowledge — the pitfall that cost an afternoon, the
             convention you explained for the fifth time — lives and dies inside
@@ -171,17 +153,11 @@ export default function VsSkillsPage() {
         {/* ── the honest part ───────────────────────────────────────────── */}
         {/* ── error 6: it cannot propose what you did not ask for ───────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Error № 6</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 6")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
-            A file answers the question you knew how to ask.
-          </h2>
+            {t("A file answers the question you knew how to ask.")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
-            This is the error nobody notices, because nothing looks wrong. You
-            describe what you want in the words you have; the agent does exactly
-            that and nothing more. The thing a professional would have proposed —
-            the convention with a name you have never heard — never comes up,
-            because neither of you knew it was missing.
-          </p>
+            {t("This is the error nobody notices, because nothing looks wrong. You describe what you want in the words you have; the agent does exactly that and nothing more. The thing a professional would have proposed — the convention with a name you have never heard — never comes up, because neither of you knew it was missing.")}</p>
           <AskedTwice
             ask={"\u201cWhen two scatters land, the spin should feel more exciting. I do not know how these games do that \u2014 make it good.\u201d"}
             without={
@@ -209,7 +185,7 @@ export default function VsSkillsPage() {
           className="panel"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", borderLeft: "4px solid var(--color-riso-orange)" }}
         >
-          <p className="eyebrow">Where skills genuinely win</p>
+          <p className="eyebrow">{t("Where skills genuinely win")}</p>
           <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0", maxWidth: "62ch" }}>
             A skill that <em>runs things</em> — shell scripts, deploy gates,
             asset pipelines — is a tool, and a brain does not replace tools.
@@ -242,8 +218,7 @@ export default function VsSkillsPage() {
             ))}
           </div>
           <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".5rem" }}>
-            columns: — · as a file · as a brain
-          </p>
+            {t("columns: — · as a file · as a brain")}</p>
         </section>
 
         <section style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "2.5rem" }}>

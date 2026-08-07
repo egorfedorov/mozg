@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -19,6 +20,8 @@ export default async function GiftPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
+  const t = await translator();
+
   const { code } = await params;
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(`/gift/${code}`)}`);
@@ -122,11 +125,10 @@ export default async function GiftPage({
           </>
         ) : state === "own" ? (
           <>
-            <p className="eyebrow">This one is yours</p>
+            <p className="eyebrow">{t("This one is yours")}</p>
             <h1 className="h1" style={{ margin: ".5rem 0 1rem" }}>
-              You made this gift link.
-            </h1>
-            <p className="lede">Send it to someone else — redeeming your own brain does nothing.</p>
+              {t("You made this gift link.")}</h1>
+            <p className="lede">{t("Send it to someone else — redeeming your own brain does nothing.")}</p>
           </>
         ) : (
           <>

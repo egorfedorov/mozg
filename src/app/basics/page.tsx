@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -72,14 +73,16 @@ const GLOSSARY: { term: string; plain: string }[] = [
   },
 ];
 
-export default function BasicsPage() {
+export default async function BasicsPage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
       <Contents active="/basics" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Start from zero</p>
+        <p className="eyebrow">{t("Start from zero")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
@@ -98,25 +101,15 @@ export default function BasicsPage() {
             marginTop: 0,
           }}
         >
-          No jargon, one idea at a time. By the end of this page you will know
-          what an AI agent is, why it gets confident things wrong, what MCP means,
-          and what this service actually does about it. If a word here needs
-          explaining, it gets explained — and there is a list of them at the
-          bottom.
-        </p>
+          {t("No jargon, one idea at a time. By the end of this page you will know what an AI agent is, why it gets confident things wrong, what MCP means, and what this service actually does about it. If a word here needs explaining, it gets explained — and there is a list of them at the bottom.")}</p>
 
         {/* ── 1. what an agent is ───────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)", maxWidth: "62ch" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>One</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("One")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
-            An AI agent is a colleague with two odd properties.
-          </h2>
+            {t("An AI agent is a colleague with two odd properties.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
-            Imagine hiring someone who has read almost everything ever published —
-            every manual, every forum, every tutorial — and can write code, edit
-            your files and run commands. That is an AI agent: Claude Code, Cursor,
-            Codex. Genuinely useful, and strange in two specific ways.
-          </p>
+            {t("Imagine hiring someone who has read almost everything ever published — every manual, every forum, every tutorial — and can write code, edit your files and run commands. That is an AI agent: Claude Code, Cursor, Codex. Genuinely useful, and strange in two specific ways.")}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
             <strong style={{ color: "var(--ink)" }}>It stopped reading on a date.</strong>{" "}
             Its knowledge was fixed when it was trained. Anything published after
@@ -135,10 +128,9 @@ export default function BasicsPage() {
 
         {/* ── 2. why that hurts ─────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)", maxWidth: "62ch" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Two</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Two")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
-            Which is why the answers look right and are not.
-          </h2>
+            {t("Which is why the answers look right and are not.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             Two kinds of knowledge are missing, and they fail differently.
             <strong> Public knowledge that moved</strong> — the documentation of
@@ -149,28 +141,16 @@ export default function BasicsPage() {
             everything it says about it is invention.
           </p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
-            The usual fix is to paste it all in — a long file of instructions the
-            agent reads every session. That works until it does not: the file grows
-            past what fits, you pay for all of it whether today&apos;s task needed
-            it or not, and worst of all it cannot tell you when it went stale. A
-            document is silent about its own age.
-          </p>
+            {t("The usual fix is to paste it all in — a long file of instructions the agent reads every session. That works until it does not: the file grows past what fits, you pay for all of it whether today's task needed it or not, and worst of all it cannot tell you when it went stale. A document is silent about its own age.")}</p>
         </section>
 
         {/* ── 3. what MCP is ───────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>Three</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Three")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem", maxWidth: "62ch" }}>
-            MCP is a socket. That is genuinely all it is.
-          </h2>
+            {t("MCP is a socket. That is genuinely all it is.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch", margin: "0 0 1rem" }}>
-            Agents need to reach things outside themselves — your files, a
-            database, a service. Every agent used to do that its own way, so every
-            service had to be built once per agent. MCP (Model Context Protocol) is
-            the agreed shape of that connection: build the service once, and any
-            agent with the socket can use it. Like USB, and about as interesting —
-            what matters is what you plug in.
-          </p>
+            {t("Agents need to reach things outside themselves — your files, a database, a service. Every agent used to do that its own way, so every service had to be built once per agent. MCP (Model Context Protocol) is the agreed shape of that connection: build the service once, and any agent with the socket can use it. Like USB, and about as interesting — what matters is what you plug in.")}</p>
 
           <figure style={{ margin: "1.5rem 0 0", maxWidth: "62ch" }}>
             <div
@@ -216,13 +196,11 @@ export default function BasicsPage() {
                 ))}
                 <rect x="168" y="58" width="34" height="34" fill="var(--color-riso-red)" opacity="0.85" />
                 <text x="185" y="112" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-                  MCP
-                </text>
+                  {t("MCP")}</text>
                 <path d="M208 75 L244 75" stroke="currentColor" strokeWidth="2" markerEnd="url(#basics-arrow)" />
                 <rect x="250" y="48" width="72" height="54" fill="none" stroke="currentColor" strokeWidth="2.5" />
                 <text x="286" y="70" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-                  brain
-                </text>
+                  {t("brain")}</text>
                 <text x="286" y="86" textAnchor="middle" className="mono" fontSize="11" fill="var(--color-riso-green)">
                   84%
                 </text>
@@ -240,22 +218,19 @@ export default function BasicsPage() {
                   />
                 ))}
                 <text x="383" y="112" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-                  3 notes
-                </text>
+                  {t("3 notes")}</text>
               </svg>
             </div>
             <figcaption className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".5rem" }}>
-              One connection, any agent, and only the few notes the question needed
-            </figcaption>
+              {t("One connection, any agent, and only the few notes the question needed")}</figcaption>
           </figure>
         </section>
 
         {/* ── 4. what we do ────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)", maxWidth: "62ch" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>Four</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>{t("Four")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
-            We keep the knowledge, and we measure it.
-          </h2>
+            {t("We keep the knowledge, and we measure it.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, margin: "0 0 1rem" }}>
             A <strong>brain</strong>{" "}
             is a small library about one subject —
@@ -266,33 +241,18 @@ export default function BasicsPage() {
             that answer instead of a document it has to read whole.
           </p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
-            The part nobody else does is the exam. Every brain is given questions
-            drawn from what it claims to cover, made to answer them, and marked —
-            so it carries a percentage, and a public list of the questions it
-            fails. That is the difference between &ldquo;here is a document,
-            good luck&rdquo; and &ldquo;this knows 84% of its subject, and here is
-            exactly where it does not&rdquo;. An agent that is told where knowledge
-            ends can say &ldquo;I don&apos;t know&rdquo; instead of inventing.
-          </p>
+            {t("The part nobody else does is the exam. Every brain is given questions drawn from what it claims to cover, made to answer them, and marked — so it carries a percentage, and a public list of the questions it fails. That is the difference between “here is a document, good luck” and “this knows 84% of its subject, and here is exactly where it does not”. An agent that is told where knowledge ends can say “I don't know” instead of inventing.")}</p>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, color: "var(--ink-2)", margin: "0 0 1rem" }}>
-            Where do brains come from? Some are made already — the catalogue holds
-            the documentation of a hundred popular tools, free to use, kept
-            current. Some you make: paste a documentation link and it gets read for
-            you, or point your own agent at your own files and let it write the
-            notes. And some people sell theirs.
-          </p>
+            {t("Where do brains come from? Some are made already — the catalogue holds the documentation of a hundred popular tools, free to use, kept current. Some you make: paste a documentation link and it gets read for you, or point your own agent at your own files and let it write the notes. And some people sell theirs.")}</p>
         </section>
 
         {/* ── 5. the concrete difference ───────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>Five</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>{t("Five")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem", maxWidth: "62ch" }}>
-            What it looks like in a real morning.
-          </h2>
+            {t("What it looks like in a real morning.")}</h2>
           <p style={{ fontSize: "1.0625rem", lineHeight: 1.65, maxWidth: "62ch", margin: "0 0 1rem" }}>
-            You do not have to know the right word for what you want. That is the
-            whole point of asking something that actually knows the subject.
-          </p>
+            {t("You do not have to know the right word for what you want. That is the whole point of asking something that actually knows the subject.")}</p>
           <AskedTwice
             ask={
               "“Make the spin feel more exciting when two of the special symbols land. I have no idea how these games do that.”"
@@ -309,10 +269,9 @@ export default function BasicsPage() {
 
         {/* ── 6. what to do ───────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 7vw, 4rem)", maxWidth: "62ch" }}>
-          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>Six</p>
+          <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>{t("Six")}</p>
           <h2 className="h2" style={{ margin: ".3rem 0 1rem" }}>
-            Three steps, about ten minutes.
-          </h2>
+            {t("Three steps, about ten minutes.")}</h2>
           <ol style={{ paddingLeft: "1.25rem", display: "grid", gap: ".9rem", fontSize: "1.0625rem", lineHeight: 1.6 }}>
             <li>
               <strong>Take a brain.</strong> Open the{" "}
@@ -351,7 +310,7 @@ export default function BasicsPage() {
         {/* ── glossary ────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 8vw, 5rem)" }}>
           <div className="section-head">
-            <h2 className="h2">Words you will run into</h2>
+            <h2 className="h2">{t("Words you will run into")}</h2>
             <span className="eyebrow">in plain language</span>
           </div>
           <div className="rows">
@@ -375,7 +334,7 @@ export default function BasicsPage() {
             borderTop: "1.5px solid var(--ink)",
           }}
         >
-          <h2 className="h2">Still not sure this is for you?</h2>
+          <h2 className="h2">{t("Still not sure this is for you?")}</h2>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", fontSize: "1.0625rem", lineHeight: 1.65 }}>
             Fair. Read{" "}
             <Link className="linkish" href="/stories">

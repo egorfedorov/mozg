@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -40,6 +41,8 @@ export default async function PackPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const t = await translator();
+
   const pack = packBySlug((await params).slug);
   if (!pack) notFound();
 
@@ -92,11 +95,9 @@ export default async function PackPage({
         </p>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="h2">What your agents get to read</h2>
+          <h2 className="h2">{t("What your agents get to read")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "58ch", margin: ".5rem 0 1.25rem" }}>
-            Scores are read live from the catalogue when this page renders. They
-            move — that is the point of having them.
-          </p>
+            {t("Scores are read live from the catalogue when this page renders. They move — that is the point of having them.")}</p>
 
           <div className="rows">
             {brains.map((b) => (
@@ -136,13 +137,10 @@ export default async function PackPage({
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="h2">What this is not</h2>
+          <h2 className="h2">{t("What this is not")}</h2>
           <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>{pack.caveat}</p>
           <p style={{ maxWidth: "58ch" }}>
-            What it removes is the other failure: an agent that answers with
-            total confidence and no source, because something in its training
-            data sounded close enough.
-          </p>
+            {t("What it removes is the other failure: an agent that answers with total confidence and no source, because something in its training data sounded close enough.")}</p>
         </section>
 
         <p style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -91,6 +92,8 @@ const BEATS: {
 ];
 
 export default async function MakePage() {
+  const t = await translator();
+
   const user = await currentUser();
 
   return (
@@ -100,14 +103,11 @@ export default async function MakePage() {
       <Contents active="/make" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">For people making brains</p>
+        <p className="eyebrow">{t("For people making brains")}</p>
         <h1 className="h1" style={{ margin: ".4rem 0 1rem" }}>
-          Six panels, in order.
-        </h1>
+          {t("Six panels, in order.")}</h1>
         <p className="lede" style={{ fontSize: "1.0625rem" }}>
-          Almost everything that makes a brain useless happens in the first two.
-          The rest is a loop you run until it stops telling you anything new.
-        </p>
+          {t("Almost everything that makes a brain useless happens in the first two. The rest is a loop you run until it stops telling you anything new.")}</p>
 
         <div style={{ margin: "2rem 0 clamp(2rem, 5vw, 3rem)" }}>
           <Scribble />
@@ -140,13 +140,9 @@ export default async function MakePage() {
         >
           <div style={{ flex: "1 1 30ch" }}>
             <h2 className="h2" style={{ margin: 0 }}>
-              Start with one folder.
-            </h2>
+              {t("Start with one folder.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              Something you explain to an agent over and over. Twenty minutes to
-              the first score, and the first score will be low — that is the tool
-              working.
-            </p>
+              {t("Something you explain to an agent over and over. Twenty minutes to the first score, and the first score will be low — that is the tool working.")}</p>
           </div>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>

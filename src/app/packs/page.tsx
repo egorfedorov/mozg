@@ -35,7 +35,7 @@ export default async function PacksPage() {
       <Contents active="/packs" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Packs</p>
+        <p className="eyebrow">{t("Packs")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}

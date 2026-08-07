@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
@@ -15,7 +16,9 @@ export const metadata = {
  * Each field becomes a properly-shaped note; the artist never needs to
  * learn what a note is.
  */
-export default function NewStylePage() {
+export default async function NewStylePage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
@@ -25,8 +28,7 @@ export default function NewStylePage() {
           <Link href="/styles">style brains</Link> / new
         </p>
         <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
-          Put your style into words once.
-        </h1>
+          {t("Put your style into words once.")}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
           Two ways in, use either or both. <strong>Drop your works</strong>:
           create the brain with just a name, then upload 5–15 of your pieces on

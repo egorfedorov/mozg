@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -39,7 +40,9 @@ const COOKIES: { name: string; group: string; life: string; what: string }[] = [
   },
 ];
 
-export default function CookiePolicyPage() {
+export default async function CookiePolicyPage() {
+  const t = await translator();
+
   const contact = env.OPERATOR_EMAIL;
 
   return (
@@ -48,25 +51,22 @@ export default function CookiePolicyPage() {
       <Contents active="/cookies" />
 
       <main className="shell legal" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: "44rem" }}>
-        <p className="eyebrow">Legal</p>
+        <p className="eyebrow">{t("Legal")}</p>
         <h1 className="display" style={{ fontSize: "clamp(1.9rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
-          Cookie Policy
-        </h1>
+          {t("Cookie Policy")}</h1>
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
           Last updated {UPDATED}
         </p>
 
         <p className="lede">
-          Two cookies are needed to run the site. Everything else is off until you turn it
-          on, and stays off if you never answer.
-        </p>
+          {t("Two cookies are needed to run the site. Everything else is off until you turn it on, and stays off if you never answer.")}</p>
 
         <p>
           <CookieSettingsLink />{" "}
           <span style={{ color: "var(--ink-3)" }}>— change your choice, from any page.</span>
         </p>
 
-        <h2 className="h2">The three groups</h2>
+        <h2 className="h2">{t("The three groups")}</h2>
         <ul>
           <li>
             <strong>Essential</strong> — the session that keeps you signed in, and the record
@@ -83,7 +83,7 @@ export default function CookiePolicyPage() {
           </li>
         </ul>
 
-        <h2 className="h2">Every cookie, by name</h2>
+        <h2 className="h2">{t("Every cookie, by name")}</h2>
         <div className="rows" style={{ marginTop: ".75rem" }}>
           {COOKIES.map((c) => (
             <div key={c.name} className="row">
@@ -98,7 +98,7 @@ export default function CookiePolicyPage() {
           ))}
         </div>
 
-        <h2 className="h2">What we do not do</h2>
+        <h2 className="h2">{t("What we do not do")}</h2>
         <p>
           No advertising cookies, no third-party trackers riding along with an embed, no
           fingerprinting, and no selling anything to a data broker. If that ever changes it
@@ -106,12 +106,9 @@ export default function CookiePolicyPage() {
           machine.
         </p>
 
-        <h2 className="h2">Blocking them yourself</h2>
+        <h2 className="h2">{t("Blocking them yourself")}</h2>
         <p>
-          Every browser can block or delete cookies. Blocking the essential ones will sign
-          you out and keep you out — that is not us being difficult, it is what a session
-          cookie does.
-        </p>
+          {t("Every browser can block or delete cookies. Blocking the essential ones will sign you out and keep you out — that is not us being difficult, it is what a session cookie does.")}</p>
 
         <p style={{ color: "var(--ink-3)", fontSize: ".9375rem", marginTop: "2.5rem" }}>
           Questions: <a href={`mailto:${contact}`}>{contact}</a>. See also the{" "}

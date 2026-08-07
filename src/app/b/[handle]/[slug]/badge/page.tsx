@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
@@ -89,6 +90,8 @@ export default async function ExamBadgePage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const resolved = await resolve(handle, slug);
   if (!resolved) notFound();
@@ -126,7 +129,7 @@ export default async function ExamBadgePage({
               boxShadow: "3px -3px 0 rgba(20,22,26,.18)",
             }}
           />
-          <p className="eyebrow" style={{ margin: 0 }}>mozg exam badge</p>
+          <p className="eyebrow" style={{ margin: 0 }}>{t("mozg exam badge")}</p>
           {exam ? (
             <>
               <h1 className="display" style={{ fontSize: "clamp(2.5rem, 8vw, 4.5rem)", margin: "1rem 0 .25rem" }}>
@@ -161,7 +164,7 @@ export default async function ExamBadgePage({
             </>
           ) : (
             <>
-              <h1 className="h1" style={{ margin: "1rem 0" }}>Not examined yet.</h1>
+              <h1 className="h1" style={{ margin: "1rem 0" }}>{t("Not examined yet.")}</h1>
               <p className="lede">
                 <strong>{brain.title}</strong> has not sat its exam, so there is
                 no score to badge. The exam is generated from the brain&apos;s

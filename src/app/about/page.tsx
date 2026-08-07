@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -37,7 +38,9 @@ function Plate({ src, alt, caption }: { src: string; alt: string; caption: strin
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
@@ -46,18 +49,13 @@ export default function AboutPage() {
       <main className="longread">
         <header className="lr-hero">
           <div>
-            <p className="eyebrow">Manifesto</p>
+            <p className="eyebrow">{t("Manifesto")}</p>
             <h1 className="display lr-title">
-              Everything we know is going into one memory that belongs to nobody.
-            </h1>
+              {t("Everything we know is going into one memory that belongs to nobody.")}</h1>
             <p className="lr-lede">
-              I am building the opposite: many minds, each owned by the person who
-              filled it, each examined, each able to say where it stops — and every
-              one of them paid when a machine uses it.
-            </p>
+              {t("I am building the opposite: many minds, each owned by the person who filled it, each examined, each able to say where it stops — and every one of them paid when a machine uses it.")}</p>
             <p className="mono lr-byline">
-              Egor Fedorov · Uraanghay Saqa · Sakha Republic
-            </p>
+              {t("Egor Fedorov · Uraanghay Saqa · Sakha Republic")}</p>
           </div>
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +69,7 @@ export default function AboutPage() {
         </header>
 
         <section className="lr-body">
-          <h2 className="h2">Who is writing this</h2>
+          <h2 className="h2">{t("Who is writing this")}</h2>
           <p>
             My name is Egor Fedorov. I am Sakha —{" "}
             <a href="https://egorfedorov.github.io/Saqa/index.en.html" target="_blank" rel="noreferrer">
@@ -86,18 +84,11 @@ export default function AboutPage() {
             noticing it is true of everything.
           </p>
           <p>
-            I build software, lately with AI agents every day. And every morning
-            they began again from nothing, because everything I taught them the day
-            before was gone.
-          </p>
+            {t("I build software, lately with AI agents every day. And every morning they began again from nothing, because everything I taught them the day before was gone.")}</p>
 
-          <h2 className="h2">The shape of the mistake</h2>
+          <h2 className="h2">{t("The shape of the mistake")}</h2>
           <p>
-            We are building one memory for the whole species. Everything anyone ever
-            wrote down goes in; what comes out is fluent, instant, and detached from
-            every person it came from. Three things follow from that shape. None of
-            them is a bug — they are what the shape produces.
-          </p>
+            {t("We are building one memory for the whole species. Everything anyone ever wrote down goes in; what comes out is fluent, instant, and detached from every person it came from. Three things follow from that shape. None of them is a bug — they are what the shape produces.")}</p>
 
           <p className="lr-quote">
             It knows what we know.
@@ -143,7 +134,7 @@ export default function AboutPage() {
             guesses.
           </p>
 
-          <h2 className="h2">A different shape</h2>
+          <h2 className="h2">{t("A different shape")}</h2>
           <p>
             The fix is not a bigger model or a better crawler. It is a different
             architecture: <strong>not one memory that swallows everything, but many,
@@ -160,12 +151,9 @@ export default function AboutPage() {
             an author, a licence, a price if you want one, and a meter.
           </p>
           <p>
-            Every part of that is a refusal of one of the three consequences above.
-            The author stays attached. The knowledge is yours and particular. The
-            edge is stated out loud.
-          </p>
+            {t("Every part of that is a refusal of one of the three consequences above. The author stays attached. The knowledge is yours and particular. The edge is stated out loud.")}</p>
 
-          <h2 className="h2">One place to ask. Many minds behind it.</h2>
+          <h2 className="h2">{t("One place to ask. Many minds behind it.")}</h2>
           <p>
             Here is what I want mozg to be: <strong>the place every agent asks
             first</strong> — one address, one protocol, whatever tool you happen to
@@ -173,14 +161,7 @@ export default function AboutPage() {
             still belong to whoever filled them.
           </p>
           <p>
-            Ask about slot mathematics and you reach the studio that actually ships
-            them. Ask about a drug interaction and you reach the pharmacist who
-            curates that brain and stakes their name on its score. Ask in Sakha and
-            you reach people who speak it. Every answer arrives with its source, its
-            exam result, and the name of whoever is answerable for it. No blending,
-            no averaging, nobody&apos;s life&apos;s work quietly folded into a grey
-            median.
-          </p>
+            {t("Ask about slot mathematics and you reach the studio that actually ships them. Ask about a drug interaction and you reach the pharmacist who curates that brain and stakes their name on its score. Ask in Sakha and you reach people who speak it. Every answer arrives with its source, its exam result, and the name of whoever is answerable for it. No blending, no averaging, nobody's life's work quietly folded into a grey median.")}</p>
           <p>
             And using it improves it. Ask a brain something it cannot answer and the
             miss is recorded — the brain now knows its own gap, and so does its
@@ -198,12 +179,9 @@ export default function AboutPage() {
             caption="Everyone who asks makes it sharper. Everyone who teaches keeps their name on it."
           />
 
-          <h2 className="h2">And it has to pay</h2>
+          <h2 className="h2">{t("And it has to pay")}</h2>
           <p>
-            A collective mind running on donated expertise is a collective mind that
-            gets abandoned. The meter is not an afterthought here — it is the
-            load-bearing wall.
-          </p>
+            {t("A collective mind running on donated expertise is a collective mind that gets abandoned. The meter is not an afterthought here — it is the load-bearing wall.")}</p>
           <p>
             Take the clearest case. An illustrator spends fifteen years arriving at a
             line nobody else draws. Today that line is free training data and the
@@ -215,13 +193,7 @@ export default function AboutPage() {
             passed through. Every time.
           </p>
           <p>
-            The same mechanism, unchanged, pays a composer for their voicings, a
-            colourist for their grade, an editor for their pacing, a surveyor for
-            forty years of knowing which ground moves, a studio for its house rules,
-            a translator for an ear no corpus contains. The craft was never the
-            problem. The problem was that a machine could only use it by swallowing
-            it.
-          </p>
+            {t("The same mechanism, unchanged, pays a composer for their voicings, a colourist for their grade, an editor for their pacing, a surveyor for forty years of knowing which ground moves, a studio for its house rules, a translator for an ear no corpus contains. The craft was never the problem. The problem was that a machine could only use it by swallowing it.")}</p>
 
           <Plate
             src="/about/paid.webp"
@@ -230,19 +202,11 @@ export default function AboutPage() {
           />
 
           <p>
-            This part already runs. Brains carry prices, sales, balances and payouts;
-            someone&apos;s agent asks and the author earns. It is small, and it is
-            honestly labelled a beta. But it is not a proposal — it is a thing you
-            can use this afternoon.
-          </p>
+            {t("This part already runs. Brains carry prices, sales, balances and payouts; someone's agent asks and the author earns. It is small, and it is honestly labelled a beta. But it is not a proposal — it is a thing you can use this afternoon.")}</p>
 
-          <h2 className="h2">Why this is being built from Yakutia</h2>
+          <h2 className="h2">{t("Why this is being built from Yakutia")}</h2>
           <p>
-            About four hundred and fifty thousand people speak Sakha. Ask any
-            frontier model something in it and watch what happens: total confidence,
-            and wrong, because there was never enough of us online to be worth
-            learning properly. We are a rounding error in the training set.
-          </p>
+            {t("About four hundred and fifty thousand people speak Sakha. Ask any frontier model something in it and watch what happens: total confidence, and wrong, because there was never enough of us online to be worth learning properly. We are a rounding error in the training set.")}</p>
           <p>
             Try it with something real. Ask about the <em>Olonkho</em> — an epic sung
             across two consecutive nights — or about the nine commandments of the{" "}
@@ -257,21 +221,9 @@ export default function AboutPage() {
             pages for the vat to bother learning.
           </p>
           <p>
-            That is where most of the world already stands. Not only languages —
-            trades, regions, small disciplines, and the part of every craft that lives
-            in people rather than in indexed pages. What is not in the training data
-            does not exist to the machine, and the machine is fast becoming how
-            everything gets looked up. One memory for the species turns out to mean
-            one memory belonging to whoever wrote the most English.
-          </p>
+            {t("That is where most of the world already stands. Not only languages — trades, regions, small disciplines, and the part of every craft that lives in people rather than in indexed pages. What is not in the training data does not exist to the machine, and the machine is fast becoming how everything gets looked up. One memory for the species turns out to mean one memory belonging to whoever wrote the most English.")}</p>
           <p>
-            We are not going to out-shout the internet, and we do not have to. A brain
-            does not need a billion pages. It needs the right four hundred, from
-            people who actually know, kept current, and scored so a stranger can tell
-            whether it is any good. Five people can build that in a month — for a
-            language, a trade, a village, a studio. And it does not have to be given
-            away to be worth having.
-          </p>
+            {t("We are not going to out-shout the internet, and we do not have to. A brain does not need a billion pages. It needs the right four hundred, from people who actually know, kept current, and scored so a stranger can tell whether it is any good. Five people can build that in a month — for a language, a trade, a village, a studio. And it does not have to be given away to be worth having.")}</p>
 
           <Plate
             src="/about/sakha.webp"
@@ -279,7 +231,7 @@ export default function AboutPage() {
             caption="Uraanghay Saqa. Not enough of us to be learned. Enough of us to teach."
           />
 
-          <h2 className="h2">What I am actually claiming</h2>
+          <h2 className="h2">{t("What I am actually claiming")}</h2>
           <ol className="lr-claims">
             <li>
               <strong>Knowledge should keep its author.</strong> If a machine uses
@@ -306,7 +258,7 @@ export default function AboutPage() {
             </li>
           </ol>
 
-          <h2 className="h2">Come and build it</h2>
+          <h2 className="h2">{t("Come and build it")}</h2>
           <p>
             I am one person from a cold place, shipping in the open, in beta, with the
             failures on a public <Link href="/status">status page</Link> and the

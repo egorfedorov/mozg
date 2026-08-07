@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -37,6 +38,8 @@ const PLAN_PITCH: Record<string, string> = {
 };
 
 export default async function PricingPage() {
+  const t = await translator();
+
   const user = await currentUser();
   const spots = await foundingSpotsLeft();
   const shown = (["free", "pro", "team"] as const).map((k) => ({
@@ -50,15 +53,11 @@ export default async function PricingPage() {
       <Contents active="/pricing" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Pricing</p>
+        <p className="eyebrow">{t("Pricing")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)", margin: ".5rem 0 1rem", maxWidth: "18ch" }}>
-          Your agent teaches free. Our AI teaching costs.
-        </h1>
+          {t("Your agent teaches free. Our AI teaching costs.")}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Two ways to fill a brain — the difference is whose inference reads the
-          material. Everything else is free either way: the code (AGPL), the
-          whole catalogue, connecting agents, reading, learning.
-        </p>
+          {t("Two ways to fill a brain — the difference is whose inference reads the material. Everything else is free either way: the code (AGPL), the whole catalogue, connecting agents, reading, learning.")}</p>
 
         {/* The two ways, as two cards instead of one wall of prose — this is
             the page's whole argument, and it deserves columns, not commas. */}
@@ -73,8 +72,7 @@ export default async function PricingPage() {
         >
           <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-green)" }}>
             <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
-              Your CLI teaches · free, always
-            </p>
+              {t("Your CLI teaches · free, always")}</p>
             <p style={{ color: "var(--ink-2)", margin: 0, lineHeight: 1.6 }}>
               Install the plugin, run <code className="mono">/mozg:train</code> —
               the agent on the Claude or Kimi subscription you already pay for
@@ -85,15 +83,9 @@ export default async function PricingPage() {
           </div>
           <div className="panel" style={{ borderLeft: "4px solid var(--color-riso-red)" }}>
             <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>
-              Our AI teaches · the plan
-            </p>
+              {t("Our AI teaches · the plan")}</p>
             <p style={{ color: "var(--ink-2)", margin: 0, lineHeight: 1.6 }}>
-              Hand over a documentation URL — our models crawl it, extract the
-              notes, sit the exam and re-read what changed while you sleep. A
-              plan states how much of that inference it includes — $20/mo on
-              Pro, $65 on Team — because a number you can check beats a promise
-              you cannot.
-            </p>
+              {t("Hand over a documentation URL — our models crawl it, extract the notes, sit the exam and re-read what changed while you sleep. A plan states how much of that inference it includes — $20/mo on Pro, $65 on Team — because a number you can check beats a promise you cannot.")}</p>
           </div>
         </div>
 
@@ -131,7 +123,7 @@ export default async function PricingPage() {
         {/* ── plans ─────────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
-            <h2 className="h2">Plans — for building your own</h2>
+            <h2 className="h2">{t("Plans — for building your own")}</h2>
             <span className="eyebrow">cancel anytime, export everything</span>
           </div>
 
@@ -176,7 +168,7 @@ export default async function PricingPage() {
                       that the free column is not a crippled version. What free
                       limits is how many brains and how much of OUR inference,
                       never how much you may teach with your own. */}
-                  <li>✓ teach from your CLI — unlimited notes</li>
+                  <li>{t("✓ teach from your CLI — unlimited notes")}</li>
                   <li>
                     {p.monthlyExtractCents >= 1000
                       ? `✓ our AI reads for you — $${(p.monthlyExtractCents / 100).toFixed(0)} of inference a month`
@@ -235,7 +227,7 @@ export default async function PricingPage() {
         {/* ── catalogue ─────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
-            <h2 className="h2">The catalogue — free; the marketplace — authors&apos; call</h2>
+            <h2 className="h2">{t("The catalogue — free; the marketplace — authors' call")}</h2>
             <span className="eyebrow">official brains cost nothing</span>
           </div>
 
@@ -256,13 +248,12 @@ export default async function PricingPage() {
             </p>
             <div className="panel">
               <p className="eyebrow" style={{ marginBottom: ".6rem" }}>
-                Before you pay, you can check
-              </p>
+                {t("Before you pay, you can check")}</p>
               <ul style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".4rem", fontSize: ".9375rem" }}>
-                <li>the exam score — measured, not claimed by the author</li>
-                <li>which questions it passes, from its own exam</li>
-                <li>every note title — the shop window, never the contents</li>
-                <li>when it was last updated, and how often</li>
+                <li>{t("the exam score — measured, not claimed by the author")}</li>
+                <li>{t("which questions it passes, from its own exam")}</li>
+                <li>{t("every note title — the shop window, never the contents")}</li>
+                <li>{t("when it was last updated, and how often")}</li>
               </ul>
             </div>
           </div>
@@ -271,7 +262,7 @@ export default async function PricingPage() {
         {/* ── balance ───────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
-            <h2 className="h2">Balance — how paying works</h2>
+            <h2 className="h2">{t("Balance — how paying works")}</h2>
             <span className="eyebrow">crypto now · card on the way</span>
           </div>
           <div
@@ -284,11 +275,7 @@ export default async function PricingPage() {
           >
             <div>
               <p style={{ color: "var(--ink-2)", maxWidth: "48ch", marginTop: 0 }}>
-                Purchases come from a balance you top up once — USDT, USDC, BTC
-                and other coins today, cards soon. Selling brains pays into the
-                same balance, and authors withdraw from it. Every movement is
-                listed on one page, nothing hidden.
-              </p>
+                {t("Purchases come from a balance you top up once — USDT, USDC, BTC and other coins today, cards soon. Selling brains pays into the same balance, and authors withdraw from it. Every movement is listed on one page, nothing hidden.")}</p>
               <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
                 <Link className="btn" href={user ? "/settings/topup" : "/sign-in?next=/settings/topup"}>
                   Top up balance
@@ -302,16 +289,15 @@ export default async function PricingPage() {
                 this section stops looking like a layout accident. */}
             <div className="panel">
               <p className="eyebrow" style={{ marginBottom: ".6rem" }}>
-                Where a dollar goes
-              </p>
+                {t("Where a dollar goes")}</p>
               <ul
                 className="mono"
                 style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: ".45rem", fontSize: ".8125rem", color: "var(--ink-2)" }}
               >
-                <li>top up → balance · crypto, no card needed</li>
-                <li>buy a brain once → it stays yours, updates included</li>
+                <li>{t("top up → balance · crypto, no card needed")}</li>
+                <li>{t("buy a brain once → it stays yours, updates included")}</li>
                 <li>{100 - PLATFORM_FEE_PERCENT}% → the author · {PLATFORM_FEE_PERCENT}% keeps this running</li>
-                <li>authors withdraw → same balance, one ledger page</li>
+                <li>{t("authors withdraw → same balance, one ledger page")}</li>
               </ul>
             </div>
           </div>
@@ -320,8 +306,7 @@ export default async function PricingPage() {
         {/* ── the honest questions ──────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <h2 className="h2" style={{ marginBottom: "1rem" }}>
-            The questions people actually ask
-          </h2>
+            {t("The questions people actually ask")}</h2>
           <div className="rows">
             {[
               [

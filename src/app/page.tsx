@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -45,6 +46,8 @@ const USES: { field: string; tint: string; title: string; body: string }[] = [
 ];
 
 export default async function Home() {
+  const t = await translator();
+
   const user = await currentUser();
 
   // Real brains, not mockups. An empty catalogue simply hides the section
@@ -121,7 +124,7 @@ export default async function Home() {
         {/* Hero. The most characteristic thing in this product's world is a
             terminal transcript, so that is the hero — not a headline over a
             gradient. */}
-        <p className="eyebrow">Model Context Protocol · Claude Code · Codex · Cursor</p>
+        <p className="eyebrow">{t("Model Context Protocol · Claude Code · Codex · Cursor")}</p>
 
         {/* The one heading larger than the scale: it is the hero, and the
             scale exists so that this exception reads as deliberate. */}
@@ -142,10 +145,7 @@ export default async function Home() {
             margin: "0 0 2.25rem",
           }}
         >
-          Drop in screenshots and files. mozg turns them into a searchable brain
-          your coding agents read over MCP — and tells you how much it still
-          doesn&apos;t know.
-        </p>
+          {t("Drop in screenshots and files. mozg turns them into a searchable brain your coding agents read over MCP — and tells you how much it still doesn't know.")}</p>
 
         <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", alignItems: "center", marginBottom: "3.5rem" }}>
           {user ? (
@@ -183,7 +183,7 @@ export default async function Home() {
             <span className="c">$</span> claude mcp add --transport http mozg
             https://mozg.sh/mcp
           </div>
-          <div className="t">✓ connected · 3 brains available</div>
+          <div className="t">{t("✓ connected · 3 brains available")}</div>
           <div style={{ height: ".9rem" }} />
           <div>
             <span className="u">&gt;</span> build the pricing page — make it match our
@@ -195,11 +195,11 @@ export default async function Home() {
             brain_search(brain: &quot;design&quot;, query: &quot;card, spacing, price
             type&quot;)
           </div>
-          <div className="c"> → 6 notes · 128 ms</div>
+          <div className="c"> {t("→ 6 notes · 128 ms")}</div>
           <div style={{ height: ".9rem" }} />
-          <div> Cards: 1px #E4E4E7 border, no shadow at rest, 8px radius, 24px pad.</div>
-          <div> Section gap is 32px — 24px is the inner scale, never between sections.</div>
-          <div> Price is 40/44 with tabular-nums. Primary CTA fills only on mobile.</div>
+          <div> {t("Cards: 1px #E4E4E7 border, no shadow at rest, 8px radius, 24px pad.")}</div>
+          <div> {t("Section gap is 32px — 24px is the inner scale, never between sections.")}</div>
+          <div> {t("Price is 40/44 with tabular-nums. Primary CTA fills only on mobile.")}</div>
         </div>
 
         {/* Breadth, stated as a fact rather than as a wall of logos we do not
@@ -227,7 +227,7 @@ export default async function Home() {
         </div>
 
         <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
-          <p className="eyebrow">What actually happens</p>
+          <p className="eyebrow">{t("What actually happens")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
             Nothing is stuffed
             <br />
@@ -235,20 +235,16 @@ export default async function Home() {
           </h2>
           <Pipeline />
           <p className="lede" style={{ marginTop: "1.25rem" }}>
-            A page is read once into notes that keep the exact values. The agent
-            searches those and takes the handful it needs — which is why a brain
-            can hold seven hundred notes and still cost a paragraph to use.
-          </p>
+            {t("A page is read once into notes that keep the exact values. The agent searches those and takes the handful it needs — which is why a brain can hold seven hundred notes and still cost a paragraph to use.")}</p>
         </section>
 
         {/* The pitch is abstract until you see what goes in one. */}
         <section style={{ marginTop: "clamp(4rem, 10vw, 6rem)" }}>
-          <p className="eyebrow">What people put in one</p>
+          <p className="eyebrow">{t("What people put in one")}</p>
           <h2
             className="h1" style={{ margin: ".6rem 0 1.5rem" }}
           >
-            The things you explain twice a week.
-          </h2>
+            {t("The things you explain twice a week.")}</h2>
 
           <div
             style={{
@@ -275,12 +271,11 @@ export default async function Home() {
 
         {/* The differentiator gets its own beat. */}
         <section style={{ marginTop: "clamp(4rem, 10vw, 7rem)" }}>
-          <p className="eyebrow">What nobody else does</p>
+          <p className="eyebrow">{t("What nobody else does")}</p>
           <h2
             className="h1" style={{ margin: ".6rem 0 1.5rem" }}
           >
-            Every brain sits an exam.
-          </h2>
+            {t("Every brain sits an exam.")}</h2>
 
           <div
             style={{
@@ -301,8 +296,7 @@ export default async function Home() {
               <div className="score-head">
                 <div>
                   <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
-                    Brain · Design system
-                  </p>
+                    {t("Brain · Design system")}</p>
                   <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
                     32 checks · 4 categories
                   </span>
@@ -352,32 +346,24 @@ export default async function Home() {
           }}
         >
           <div>
-            <p className="eyebrow">One brain, every agent</p>
+            <p className="eyebrow">{t("One brain, every agent")}</p>
             <p style={{ marginTop: ".5rem", color: "var(--ink-2)" }}>
-              Claude learns it on Monday, Codex knows it on Tuesday. Built-in agent
-              memory stays locked to one vendor; a brain does not.
-            </p>
+              {t("Claude learns it on Monday, Codex knows it on Tuesday. Built-in agent memory stays locked to one vendor; a brain does not.")}</p>
           </div>
           <div>
-            <p className="eyebrow">Agents write back</p>
+            <p className="eyebrow">{t("Agents write back")}</p>
             <p style={{ marginTop: ".5rem", color: "var(--ink-2)" }}>
-              An agent that works out a convention saves it. On a brain you only
-              read it arrives as a proposal for its owner — pending, attributed,
-              answering nobody until they take it. Contribution that cannot
-              corrupt.
-            </p>
+              {t("An agent that works out a convention saves it. On a brain you only read it arrives as a proposal for its owner — pending, attributed, answering nobody until they take it. Contribution that cannot corrupt.")}</p>
           </div>
           <div>
-            <p className="eyebrow">Yours to take</p>
+            <p className="eyebrow">{t("Yours to take")}</p>
             <p style={{ marginTop: ".5rem", color: "var(--ink-2)" }}>
-              Export any brain as CLAUDE.md, a Claude Skill or AGENTS.md. It keeps
-              working if you stop paying us.
-            </p>
+              {t("Export any brain as CLAUDE.md, a Claude Skill or AGENTS.md. It keeps working if you stop paying us.")}</p>
           </div>
         </section>
 
         <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
-          <p className="eyebrow">Why not just write a file</p>
+          <p className="eyebrow">{t("Why not just write a file")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1.5rem" }}>
             Because of what
             <br />
@@ -396,7 +382,7 @@ export default async function Home() {
         </section>
 
         <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
-          <p className="eyebrow">The collective mind</p>
+          <p className="eyebrow">{t("The collective mind")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1rem" }}>
             Every question anyone asks
             <br />
@@ -428,8 +414,7 @@ export default async function Home() {
                 </Link>
               ))}
               <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0, padding: ".5rem 1.25rem" }}>
-                live from the grader — these numbers change as the brains re-sit
-              </p>
+                {t("live from the grader — these numbers change as the brains re-sit")}</p>
             </div>
           )}
         </section>
@@ -453,14 +438,9 @@ export default async function Home() {
               Free course · learn<span style={{ color: "var(--color-riso-green)" }}>.</span>
             </p>
             <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
-              Learn prompt engineering from the brain your agent uses.
-            </h2>
+              {t("Learn prompt engineering from the brain your agent uses.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
-              Anthropic&apos;s prompt-engineering material as a spaced-repetition
-              course: read, recall, quiz — with the brain&apos;s own exam as the
-              final. Free, no card, and your agent can query the same brain
-              while you study it.
-            </p>
+              {t("Anthropic's prompt-engineering material as a spaced-repetition course: read, recall, quiz — with the brain's own exam as the final. Free, no card, and your agent can query the same brain while you study it.")}</p>
           </div>
           <Link className="btn" href="https://learn.mozg.sh/mozg/prompt-engineering">
             Start the course
@@ -485,8 +465,7 @@ export default async function Home() {
               For artists · gallery<span style={{ color: "var(--color-riso-red)" }}>.</span>
             </p>
             <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
-              Your style, licensed — not scraped.
-            </h2>
+              {t("Your style, licensed — not scraped.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: 0, maxWidth: "58ch" }}>
               A style brain holds the way you work: palette with values, line
               weight, how shading is made, the hard nevers. Buyers&apos; agents
@@ -505,7 +484,7 @@ export default async function Home() {
             (Remotion), so the type stays razor sharp; muted autoplay makes it
             a living poster, the controls carry the sound for whoever asks. */}
         <section style={{ marginTop: "clamp(4rem, 9vw, 6rem)" }}>
-          <p className="eyebrow">The whole idea · 28 seconds</p>
+          <p className="eyebrow">{t("The whole idea · 28 seconds")}</p>
           <video
             autoPlay
             muted
@@ -531,13 +510,12 @@ export default async function Home() {
 
         {/* Where to go next, in the order someone actually needs it. */}
         <section>
-          <p className="eyebrow">Start here</p>
+          <p className="eyebrow">{t("Start here")}</p>
           <h2
             className="display"
             style={{ fontSize: "clamp(1.6rem, 4vw, 2.25rem)", margin: ".4rem 0 1.5rem" }}
           >
-            One guided path, then you&apos;re running.
-          </h2>
+            {t("One guided path, then you're running.")}</h2>
 
           <div
             style={{
@@ -594,8 +572,7 @@ export default async function Home() {
               }}
             >
               <h2 className="h2">
-                In the catalogue now
-              </h2>
+                {t("In the catalogue now")}</h2>
               <Link className="mono" href="/explore" style={{ fontSize: ".8125rem" }}>
                 all brains →
               </Link>
@@ -689,23 +666,16 @@ export default async function Home() {
           />
           <div style={{ minWidth: 0 }}>
             <p className="eyebrow" style={{ margin: 0 }}>
-              The manifesto
-            </p>
+              {t("The manifesto")}</p>
             <p className="lp-manifesto-quote">
-              Everything we know is being poured into one memory that belongs to
-              nobody. I am building the opposite.
-            </p>
+              {t("Everything we know is being poured into one memory that belongs to nobody. I am building the opposite.")}</p>
             <p style={{ color: "var(--ink-2)", margin: ".6rem 0 1rem", maxWidth: "54ch" }}>
-              Why knowledge should keep its author, why a thing that claims to know
-              should sit an exam, and what a language spoken by 450,000 people has
-              to do with any of it.
-            </p>
+              {t("Why knowledge should keep its author, why a thing that claims to know should sit an exam, and what a language spoken by 450,000 people has to do with any of it.")}</p>
             <Link className="btn btn-ghost" href="/about">
               Read it
             </Link>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0" }}>
-              Egor Fedorov · Uraanghay Saqa · Sakha Republic
-            </p>
+              {t("Egor Fedorov · Uraanghay Saqa · Sakha Republic")}</p>
           </div>
         </section>
 
@@ -723,13 +693,9 @@ export default async function Home() {
         >
           <div style={{ flex: "1 1 32ch" }}>
             <h2 className="h2" style={{ margin: 0 }}>
-              Stop explaining the same thing.
-            </h2>
+              {t("Stop explaining the same thing.")}</h2>
             <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0" }}>
-              Open source, and the whole catalogue is free — connect your
-              agents in a minute. Build your own on our inference, or bring
-              your own API key and pay nobody.
-            </p>
+              {t("Open source, and the whole catalogue is free — connect your agents in a minute. Build your own on our inference, or bring your own API key and pay nobody.")}</p>
           </div>
           <Link className="btn" href={user ? "/brains" : "/sign-in"}>
             {user ? "Open your brains" : "Build a brain"}

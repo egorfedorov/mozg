@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -33,6 +34,8 @@ export default async function ChangesPage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const user = await currentUser();
   const found = await accessForSlug(handle, slug, user?.id ?? null);
@@ -85,21 +88,17 @@ export default async function ChangesPage({
           <Link href={`/b/${handle}/${slug}`}>← {brain.title}</Link>
         </p>
         <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
-          What changed, verified.
-        </h1>
+          {t("What changed, verified.")}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Changelogs are claims; this is receipts. Every source re-read when its
-          content actually moved, every exam re-sat after — the deltas below are
-          signed by the grader, not written by anyone.
-        </p>
+          {t("Changelogs are claims; this is receipts. Every source re-read when its content actually moved, every exam re-sat after — the deltas below are signed by the grader, not written by anyone.")}</p>
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Exam sittings</h2>
+            <h2 className="h2">{t("Exam sittings")}</h2>
             <span className="eyebrow">each diffed against the one before</span>
           </div>
           {runs.length === 0 ? (
-            <p className="lede">No completed sittings yet.</p>
+            <p className="lede">{t("No completed sittings yet.")}</p>
           ) : (
             <div className="rows" style={{ maxWidth: "48rem" }}>
               {runs.map((r) => (
@@ -128,11 +127,11 @@ export default async function ChangesPage({
 
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
-            <h2 className="h2">Sources whose content moved</h2>
+            <h2 className="h2">{t("Sources whose content moved")}</h2>
             <span className="eyebrow">hash-detected, then re-read</span>
           </div>
           {sources.length === 0 ? (
-            <p className="lede">No detected content changes yet — the sources are as they were ingested.</p>
+            <p className="lede">{t("No detected content changes yet — the sources are as they were ingested.")}</p>
           ) : (
             <div className="rows" style={{ maxWidth: "48rem" }}>
               {sources.map((s, i) => (

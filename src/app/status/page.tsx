@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -33,6 +34,8 @@ const WORD: Record<string, string> = {
  * depths, never how many brains or people exist.
  */
 export default async function StatusPage() {
+  const t = await translator();
+
   const status = await systemStatus();
 
   // Deploys are the honest incident history of a small product: almost every
@@ -53,7 +56,7 @@ export default async function StatusPage() {
       <Contents active="/status" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">Status</p>
+        <p className="eyebrow">{t("Status")}</p>
 
         <h1
           className="display"
@@ -107,7 +110,7 @@ export default async function StatusPage() {
 
         <section style={{ marginTop: "2.5rem", maxWidth: "48rem" }}>
           <div className="section-head">
-            <h2 className="h2">Notices &amp; deploys</h2>
+            <h2 className="h2">{t("Notices & deploys")}</h2>
             <span className="eyebrow">most wobbles start as one</span>
           </div>
           <div className="rows">

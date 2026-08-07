@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -76,7 +77,9 @@ function Term({ lines }: { lines: React.ReactNode[] }) {
   );
 }
 
-export default function StartPage() {
+export default async function StartPage() {
+  const t = await translator();
+
   return (
     <>
       <SketchDefs />
@@ -84,33 +87,25 @@ export default function StartPage() {
       <Contents active="/start" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Start here · ~10 minutes to a thinking agent</p>
+        <p className="eyebrow">{t("Start here · ~10 minutes to a thinking agent")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}>
           From zero to an agent
           <br />
           that actually knows.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          This page is the whole journey: what mozg is and why it exists, then
-          every step — take a brain, connect your agent, prove it works, build
-          your own. Each step shows the screen you&apos;ll be looking at.
-        </p>
+          {t("This page is the whole journey: what mozg is and why it exists, then every step — take a brain, connect your agent, prove it works, build your own. Each step shows the screen you'll be looking at.")}</p>
 
         {/* ── the why, before any buttons ─────────────────────────────── */}
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <p className="eyebrow">First, the problem</p>
+          <p className="eyebrow">{t("First, the problem")}</p>
           <h2 className="h1" style={{ margin: ".5rem 0 1rem" }}>
             Your agent answers from memory.
             <br />
             Memory has a date on it.
           </h2>
           <p className="lede" style={{ maxWidth: "62ch" }}>
-            Models are trained months ago; your stack moved last week. So the
-            agent answers about the old version — with the same confidence
-            either way. The usual fix is pasting docs into context files,
-            which are expensive (you pay for every word, every session), rot
-            silently, and can&apos;t tell you what they actually cover.
-          </p>
+            {t("Models are trained months ago; your stack moved last week. So the agent answers about the old version — with the same confidence either way. The usual fix is pasting docs into context files, which are expensive (you pay for every word, every session), rot silently, and can't tell you what they actually cover.")}</p>
           <p className="lede" style={{ maxWidth: "62ch" }}>
             mozg does three things differently: knowledge lives in a{" "}
             <strong>brain</strong> the agent searches over MCP (only the notes
@@ -142,15 +137,14 @@ export default function StartPage() {
             v4, the MCP spec. Every card shows the same three honest numbers:
           </p>
           <div style={{ marginTop: ".75rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", maxWidth: 460, padding: "1rem 1.25rem", boxShadow: "4px 4px 0 var(--ink)" }}>
-            <p className="eyebrow" style={{ margin: 0 }}>web · mozg</p>
-            <p style={{ fontWeight: 800, fontSize: "1.2rem", margin: ".25rem 0" }}>Next.js App Router</p>
+            <p className="eyebrow" style={{ margin: 0 }}>{t("web · mozg")}</p>
+            <p style={{ fontWeight: 800, fontSize: "1.2rem", margin: ".25rem 0" }}>{t("Next.js App Router")}</p>
             <p className="mono" style={{ fontSize: ".8125rem", margin: 0 }}>
               <span style={{ color: "var(--color-riso-green)" }}>trained 84%</span>
               {" · 1,213 notes · free"}
             </p>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".5rem 0 0" }}>
-              still learning: middleware edge cases · turbopack config
-            </p>
+              {t("still learning: middleware edge cases · turbopack config")}</p>
           </div>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: ".75rem" }}>
             That <strong>&ldquo;still learning&rdquo;</strong> line is the point of the whole
@@ -184,8 +178,7 @@ export default function StartPage() {
 
         <Step n="4" title="Prove it works" why="never trust wiring you haven't seen carry current.">
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
-            Ask your agent something spec-level from the brain you added:
-          </p>
+            {t("Ask your agent something spec-level from the brain you added:")}</p>
           <Term
             lines={[
               <span key="1"><span className="u">&gt;</span> what does a route handler have to export for streaming?</span>,
@@ -212,7 +205,7 @@ export default function StartPage() {
             happens:
           </p>
           <div style={{ marginTop: ".75rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", maxWidth: 460, padding: "1rem 1.25rem" }}>
-            <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>exam · sat automatically</p>
+            <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>{t("exam · sat automatically")}</p>
             <p className="mono" style={{ fontSize: ".9375rem", margin: 0 }}>
               <span style={{ color: "var(--color-riso-green)" }}>✓ 19 passed</span>
               {"  ·  "}
@@ -223,8 +216,7 @@ export default function StartPage() {
               <div style={{ height: "100%", width: "73%", background: "var(--color-riso-green)" }} />
             </div>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: 0 }}>
-              failed: webhook retry order · rate limit headers · sandbox auth…
-            </p>
+              {t("failed: webhook retry order · rate limit headers · sandbox auth…")}</p>
           </div>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: ".75rem" }}>
             The failures are not a bug report — they are a shopping list. Feed

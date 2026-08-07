@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -96,6 +97,8 @@ const MISTAKES = [
 ];
 
 export default async function GuidePage() {
+  const t = await translator();
+
   const user = await currentUser();
 
   return (
@@ -104,7 +107,7 @@ export default async function GuidePage() {
       <Contents active="/guide" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">For people building brains</p>
+        <p className="eyebrow">{t("For people building brains")}</p>
         <h1
           className="h1" style={{ margin: ".4rem 0 1rem" }}
         >
@@ -113,9 +116,7 @@ export default async function GuidePage() {
           worth connecting.
         </h1>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0, fontSize: "1.0625rem" }}>
-          The difference between a brain an agent reads and a folder of screenshots
-          is almost entirely in the first two steps. The rest is a loop.
-        </p>
+          {t("The difference between a brain an agent reads and a folder of screenshots is almost entirely in the first two steps. The rest is a loop.")}</p>
 
         <ol style={{ listStyle: "none", padding: 0, margin: "clamp(2.5rem, 6vw, 4rem) 0 0" }}>
           {STEPS.map((step) => (
@@ -157,18 +158,15 @@ export default async function GuidePage() {
         {/* A real run, so the numbers are not aspirational. */}
         <section style={{ marginTop: "1rem" }}>
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            What this looks like in practice
-          </h2>
+            {t("What this looks like in practice")}</h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            A design-system brain with eight notes in it, after its first exam:
-          </p>
+            {t("A design-system brain with eight notes in it, after its first exam:")}</p>
 
           <div className="scorecard" style={{ marginTop: "1.25rem", maxWidth: 620 }}>
             <div className="score-head">
               <div>
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
-                  30 checks · 7 categories
-                </p>
+                  {t("30 checks · 7 categories")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
                   8 notes
                 </span>
@@ -195,17 +193,12 @@ export default async function GuidePage() {
           </div>
 
           <p style={{ color: "var(--ink-2)", marginTop: "1.25rem", maxWidth: "62ch" }}>
-            37% is not a bad brain — it is eight notes measured against a goal that
-            asks for far more. The value is the right-hand column: it says exactly
-            which screenshots to take next. Nothing else in this product tells you
-            that.
-          </p>
+            {t("37% is not a bad brain — it is eight notes measured against a goal that asks for far more. The value is the right-hand column: it says exactly which screenshots to take next. Nothing else in this product tells you that.")}</p>
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
           <h2 className="h2" style={{ marginBottom: "1rem" }}>
-            Four ways it goes wrong
-          </h2>
+            {t("Four ways it goes wrong")}</h2>
           <div className="panel" style={{ padding: 0 }}>
             {MISTAKES.map((m) => (
               <div
@@ -232,17 +225,11 @@ export default async function GuidePage() {
           className="panel"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", maxWidth: "64ch", scrollMarginTop: "5rem" }}
         >
-          <p className="eyebrow">What the exam is, and is not</p>
+          <p className="eyebrow">{t("What the exam is, and is not")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
-            It does not teach the brain anything.
-          </h2>
+            {t("It does not teach the brain anything.")}</h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
-            The exam is a measurement, not training. Your goal is turned into
-            control questions with expected answers. After every change the brain
-            searches itself for each one, a judge is shown the five passages that
-            came back, and decides whether they answer it. The score is the share
-            it got right.
-          </p>
+            {t("The exam is a measurement, not training. Your goal is turned into control questions with expected answers. After every change the brain searches itself for each one, a judge is shown the five passages that came back, and decides whether they answer it. The score is the share it got right.")}</p>
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
             So it measures <strong style={{ color: "var(--ink)" }}>what an agent
             actually gets when it asks</strong> — not how much you uploaded. A
@@ -250,11 +237,7 @@ export default async function GuidePage() {
             twenty and a sharp one.
           </p>
           <p style={{ color: "var(--ink-2)", margin: 0 }}>
-            Two ways to raise it, and they are the only two: give it the material
-            the failures name, or write a goal that describes what the material can
-            actually support. Chasing the number itself is how you get a padded
-            brain that still cannot answer.
-          </p>
+            {t("Two ways to raise it, and they are the only two: give it the material the failures name, or write a goal that describes what the material can actually support. Chasing the number itself is how you get a padded brain that still cannot answer.")}</p>
         </section>
 
         <section
@@ -262,27 +245,15 @@ export default async function GuidePage() {
           className="panel"
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", maxWidth: "64ch", scrollMarginTop: "5rem" }}
         >
-          <p className="eyebrow">For artists and designers</p>
+          <p className="eyebrow">{t("For artists and designers")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
-            A brain can hold your style. It cannot draw it.
-          </h2>
+            {t("A brain can hold your style. It cannot draw it.")}</h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
-            Upload your own work and the extraction reads it into rules: the
-            palette you actually use, how you compose, the motifs that recur,
-            the things you never do. An agent writing a brief, a prompt or a
-            spec then follows them instead of guessing.
-          </p>
+            {t("Upload your own work and the extraction reads it into rules: the palette you actually use, how you compose, the motifs that recur, the things you never do. An agent writing a brief, a prompt or a spec then follows them instead of guessing.")}</p>
           <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
-            What a buyer gets is that guidance in words — mozg does not generate
-            images, and a brain sold as if it did would be a promise the product
-            cannot keep. Say what yours contains and people will know what they
-            are paying for.
-          </p>
+            {t("What a buyer gets is that guidance in words — mozg does not generate images, and a brain sold as if it did would be a promise the product cannot keep. Say what yours contains and people will know what they are paying for.")}</p>
           <p style={{ color: "var(--ink-2)", margin: 0 }}>
-            Only your own work, or work you hold a licence for. A brain built
-            from someone else&apos;s pictures is taken down, and selling one is
-            theft with extra steps.
-          </p>
+            {t("Only your own work, or work you hold a licence for. A brain built from someone else's pictures is taken down, and selling one is theft with extra steps.")}</p>
         </section>
 
         <section
@@ -290,15 +261,9 @@ export default async function GuidePage() {
           style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", scrollMarginTop: "5rem" }}
         >
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            Selling one
-          </h2>
+            {t("Selling one")}</h2>
           <p style={{ color: "var(--ink-2)", maxWidth: "64ch", marginTop: 0 }}>
-            A brain is worth money when it holds something a buyer cannot read off a
-            docs site: the shape of a real integration, a pipeline that took a month
-            to get right, conventions nobody wrote down. Publishing costs nothing and
-            the exam does the selling — a buyer sees the goal, the score, and every
-            note title before paying.
-          </p>
+            {t("A brain is worth money when it holds something a buyer cannot read off a docs site: the shape of a real integration, a pipeline that took a month to get right, conventions nobody wrote down. Publishing costs nothing and the exam does the selling — a buyer sees the goal, the score, and every note title before paying.")}</p>
 
           <div className="panel" style={{ padding: 0, maxWidth: "64ch" }}>
             {SELLING.map((s) => (
@@ -327,17 +292,11 @@ export default async function GuidePage() {
         </section>
 
         <section className="panel" style={{ marginTop: "clamp(3rem, 7vw, 4rem)", maxWidth: "64ch" }}>
-          <p className="eyebrow">One thing never to do</p>
+          <p className="eyebrow">{t("One thing never to do")}</p>
           <h2 className="h2" style={{ margin: ".5rem 0 .75rem" }}>
-            Do not feed it secrets.
-          </h2>
+            {t("Do not feed it secrets.")}</h2>
           <p style={{ color: "var(--ink-2)", margin: 0 }}>
-            Screenshots of terminals and editors are full of tokens. Every source is
-            scanned before anything is stored, and again on whatever an agent writes
-            back — a brain that trips the scanner cannot be shared or published at
-            all. Treat that as a backstop, not a licence: it is a filter, not a
-            guarantee.
-          </p>
+            {t("Screenshots of terminals and editors are full of tokens. Every source is scanned before anything is stored, and again on whatever an agent writes back — a brain that trips the scanner cannot be shared or published at all. Treat that as a backstop, not a licence: it is a filter, not a guarantee.")}</p>
         </section>
 
         <div style={{ display: "flex", gap: ".75rem", marginTop: "2.5rem", flexWrap: "wrap" }}>

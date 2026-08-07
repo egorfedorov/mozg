@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -29,14 +30,16 @@ export const metadata = {
  * Each story is its own anchor, so a link can point at the one that fits the
  * person being sent it — which is how anything on this page ever gets read.
  */
-export default function StoriesPage() {
+export default async function StoriesPage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
       <Contents active="/stories" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">How people use it</p>
+        <p className="eyebrow">{t("How people use it")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", margin: ".4rem 0 1.25rem" }}
@@ -55,20 +58,11 @@ export default function StoriesPage() {
             marginTop: 0,
           }}
         >
-          A brain is a small, measured body of knowledge that agents can search
-          and people can sell, share or keep private. That sentence means nothing
-          until you see it used, so here are the people using it — an artist, a
-          company, a game studio, a maintainer, an agency, a first-time founder,
-          an engineer with three agents open. Every one starts from something they
-          already have.
-        </p>
+          {t("A brain is a small, measured body of knowledge that agents can search and people can sell, share or keep private. That sentence means nothing until you see it used, so here are the people using it — an artist, a company, a game studio, a maintainer, an agency, a first-time founder, an engineer with three agents open. Every one starts from something they already have.")}</p>
 
         {/* The index, so a reader picks their own story instead of reading five. */}
         <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: "1rem" }}>
-          The people below are composites, and the portraits are drawn — not
-          customers, and not photographs pretending to be. The situations and the
-          mechanics are real.
-        </p>
+          {t("The people below are composites, and the portraits are drawn — not customers, and not photographs pretending to be. The situations and the mechanics are real.")}</p>
 
         <nav
           aria-label="The stories"
@@ -219,8 +213,7 @@ export default function StoriesPage() {
                 className="eyebrow"
                 style={{ margin: "0 0 .75rem", color: "var(--ink-3)" }}
               >
-                How it is actually done
-              </p>
+                {t("How it is actually done")}</p>
               <ol style={{ margin: 0, paddingLeft: "1.25rem", display: "grid", gap: ".5rem" }}>
                 {s.steps.map((step, n) => (
                   <li key={n} style={{ fontSize: ".9375rem", color: "var(--ink-2)" }}>
@@ -259,15 +252,9 @@ export default function StoriesPage() {
             borderTop: "1.5px solid var(--ink)",
           }}
         >
-          <h2 className="h2">The part they all share</h2>
+          <h2 className="h2">{t("The part they all share")}</h2>
           <p style={{ maxWidth: "62ch", color: "var(--ink-2)", fontSize: "1.0625rem", lineHeight: 1.65 }}>
-            None of them wrote a context file. Each one took knowledge that
-            already existed — a method, a manual, a platform&apos;s docs, a
-            client&apos;s conventions — and made it something an agent can search
-            and a person can measure. The measurement is the part that matters:
-            every brain here can tell you its score and list the questions it
-            still fails, which is the one thing a pasted document will never do.
-          </p>
+            {t("None of them wrote a context file. Each one took knowledge that already existed — a method, a manual, a platform's docs, a client's conventions — and made it something an agent can search and a person can measure. The measurement is the part that matters: every brain here can tell you its score and list the questions it still fails, which is the one thing a pasted document will never do.")}</p>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
             <Link className="btn" href="/start">
               Start here

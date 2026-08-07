@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -17,7 +18,9 @@ const UPDATED = "6 August 2026";
  * in the shortest sentence that is still true — a term nobody understands is a
  * term nobody agreed to, whatever the checkbox says.
  */
-export default function TermsPage() {
+export default async function TermsPage() {
+  const t = await translator();
+
   const contact = env.OPERATOR_EMAIL;
 
   return (
@@ -26,21 +29,16 @@ export default function TermsPage() {
       <Contents active="/terms" />
 
       <main className="shell legal" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: "44rem" }}>
-        <p className="eyebrow">Legal</p>
+        <p className="eyebrow">{t("Legal")}</p>
         <h1 className="display" style={{ fontSize: "clamp(1.9rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
-          Terms of Service
-        </h1>
+          {t("Terms of Service")}</h1>
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
           Last updated {UPDATED} · mozg is in beta, and these terms change with it.
         </p>
 
-        <h2 className="h2">1. What this is</h2>
+        <h2 className="h2">{t("1. What this is")}</h2>
         <p>
-          mozg (&ldquo;we&rdquo;, &ldquo;the service&rdquo;) lets you build knowledge brains from
-          pages, files and screenshots, and connect them to AI agents over MCP. Using
-          mozg.sh, learn.mozg.sh, the API or the MCP server means you accept these terms.
-          If you do not, do not use the service.
-        </p>
+          {t("mozg (“we”, “the service”) lets you build knowledge brains from pages, files and screenshots, and connect them to AI agents over MCP. Using mozg.sh, learn.mozg.sh, the API or the MCP server means you accept these terms. If you do not, do not use the service.")}</p>
         <p>
           The service is operated from Europe by the individual reachable at{" "}
           <a href={`mailto:${contact}`}>{contact}</a>. It is in beta: features move,
@@ -48,7 +46,7 @@ export default function TermsPage() {
           <Link href="/status">status page</Link> says what is broken right now.
         </p>
 
-        <h2 className="h2">2. Your account</h2>
+        <h2 className="h2">{t("2. Your account")}</h2>
         <p>
           You need an account to build brains. You are responsible for what happens under
           it, including what your API tokens and connected agents do — a token is a key,
@@ -56,87 +54,50 @@ export default function TermsPage() {
           <Link href="/settings/tokens">settings</Link> the moment one goes missing.
         </p>
         <p>
-          One human per account. You must be old enough to enter a contract where you
-          live. We may suspend an account that is being used to abuse the service, and we
-          will say why.
-        </p>
+          {t("One human per account. You must be old enough to enter a contract where you live. We may suspend an account that is being used to abuse the service, and we will say why.")}</p>
 
-        <h2 className="h2">3. Your content stays yours</h2>
+        <h2 className="h2">{t("3. Your content stays yours")}</h2>
         <p>
-          Sources you upload, notes your brains distil, and everything you write remain
-          yours. You grant us the licence we need to actually run the service: to store
-          your content, to send it to the AI providers that read it for you, to index it
-          for search, and — for brains you publish — to show and distribute them under the
-          licence you picked.
-        </p>
+          {t("Sources you upload, notes your brains distil, and everything you write remain yours. You grant us the licence we need to actually run the service: to store your content, to send it to the AI providers that read it for you, to index it for search, and — for brains you publish — to show and distribute them under the licence you picked.")}</p>
         <p>
-          You promise you have the right to upload what you upload. Feeding a brain
-          material you may not copy is your call and your liability, not ours.
-        </p>
+          {t("You promise you have the right to upload what you upload. Feeding a brain material you may not copy is your call and your liability, not ours.")}</p>
 
-        <h2 className="h2">4. Publishing and selling</h2>
+        <h2 className="h2">{t("4. Publishing and selling")}</h2>
         <p>
-          A brain you publish carries the licence you choose — CC BY-NC-SA by default, MIT,
-          or closed. Published brains are readable by others through the catalogue and over
-          MCP under those terms. You can unpublish at any time; that stops new access, and
-          people who already bought keep what they bought.
-        </p>
+          {t("A brain you publish carries the licence you choose — CC BY-NC-SA by default, MIT, or closed. Published brains are readable by others through the catalogue and over MCP under those terms. You can unpublish at any time; that stops new access, and people who already bought keep what they bought.")}</p>
         <p>
-          Selling a brain means you keep the seller&apos;s share of each sale as credit on your
-          balance, and we keep the platform&apos;s share. Payouts go to the address you give us.
-          You may not sell material you do not have the right to sell, and you may not
-          resell someone else&apos;s brain — the default licence forbids it, and so do we.
-        </p>
+          {t("Selling a brain means you keep the seller's share of each sale as credit on your balance, and we keep the platform's share. Payouts go to the address you give us. You may not sell material you do not have the right to sell, and you may not resell someone else's brain — the default licence forbids it, and so do we.")}</p>
 
-        <h2 className="h2">5. Money</h2>
+        <h2 className="h2">{t("5. Money")}</h2>
         <p>
           Free accounts get a monthly allowance of AI reading. Paid plans buy more; the
           numbers are on <Link href="/pricing">pricing</Link>. Balance is credit for use
           inside mozg, not a deposit account and not e-money.
         </p>
         <p>
-          Top-ups are made in cryptocurrency through our payment provider and are final
-          once confirmed on-chain — we cannot reverse a blockchain transaction. If you
-          bought something the service then failed to deliver, write to us and we will make
-          it right. Reading your own material with your own API key (bring-your-own-key) is
-          unmetered by us because that spend was never ours.
-        </p>
+          {t("Top-ups are made in cryptocurrency through our payment provider and are final once confirmed on-chain — we cannot reverse a blockchain transaction. If you bought something the service then failed to deliver, write to us and we will make it right. Reading your own material with your own API key (bring-your-own-key) is unmetered by us because that spend was never ours.")}</p>
 
-        <h2 className="h2">6. What you may not do</h2>
+        <h2 className="h2">{t("6. What you may not do")}</h2>
         <ul>
-          <li>Upload other people&apos;s secrets, credentials or personal data as brain material.</li>
-          <li>Use the service to build knowledge bases for illegal purposes.</li>
-          <li>Attack the service — scraping the catalogue at load, bypassing budgets, hammering the API.</li>
-          <li>Resell access to the service itself, or sell brains you have no rights to.</li>
+          <li>{t("Upload other people's secrets, credentials or personal data as brain material.")}</li>
+          <li>{t("Use the service to build knowledge bases for illegal purposes.")}</li>
+          <li>{t("Attack the service — scraping the catalogue at load, bypassing budgets, hammering the API.")}</li>
+          <li>{t("Resell access to the service itself, or sell brains you have no rights to.")}</li>
         </ul>
         <p>
-          We scan uploads for secrets and redact what we find in public pages. That check is
-          a safety net, not a promise: assume anything you upload to a public brain is
-          public.
-        </p>
+          {t("We scan uploads for secrets and redact what we find in public pages. That check is a safety net, not a promise: assume anything you upload to a public brain is public.")}</p>
 
-        <h2 className="h2">7. AI, and being wrong</h2>
+        <h2 className="h2">{t("7. AI, and being wrong")}</h2>
         <p>
-          Brains are built by models reading sources, and graded by models sitting an exam.
-          Both can be wrong. The score on a brain is evidence, not a warranty. Do not use a
-          brain as the only basis for a decision that matters — medical, legal, financial or
-          safety-critical — without checking the source it came from.
-        </p>
+          {t("Brains are built by models reading sources, and graded by models sitting an exam. Both can be wrong. The score on a brain is evidence, not a warranty. Do not use a brain as the only basis for a decision that matters — medical, legal, financial or safety-critical — without checking the source it came from.")}</p>
 
-        <h2 className="h2">8. Availability and liability</h2>
+        <h2 className="h2">{t("8. Availability and liability")}</h2>
         <p>
-          The service is provided as-is, without warranties. We aim for it to be up and we
-          publish its health openly, but we do not promise an uptime figure, and beta means
-          data loss is possible — keep your own copy of anything you cannot lose.
-        </p>
+          {t("The service is provided as-is, without warranties. We aim for it to be up and we publish its health openly, but we do not promise an uptime figure, and beta means data loss is possible — keep your own copy of anything you cannot lose.")}</p>
         <p>
-          To the extent the law allows, our total liability to you is limited to what you
-          paid us in the twelve months before the claim. Nothing here limits liability that
-          cannot be limited, including for fraud or for death or personal injury caused by
-          negligence.
-        </p>
+          {t("To the extent the law allows, our total liability to you is limited to what you paid us in the twelve months before the claim. Nothing here limits liability that cannot be limited, including for fraud or for death or personal injury caused by negligence.")}</p>
 
-        <h2 className="h2">9. Ending it</h2>
+        <h2 className="h2">{t("9. Ending it")}</h2>
         <p>
           Delete your account whenever you like; write to{" "}
           <a href={`mailto:${contact}`}>{contact}</a> and we will remove your content within
@@ -144,7 +105,7 @@ export default function TermsPage() {
           breaks these terms, and will refund unused balance where the law requires it.
         </p>
 
-        <h2 className="h2">10. Changes, and the law that applies</h2>
+        <h2 className="h2">{t("10. Changes, and the law that applies")}</h2>
         <p>
           We will post material changes on the <Link href="/changelog">changelog</Link>{" "}
           before they take effect. Continuing to use the service after that is acceptance.

@@ -29,6 +29,7 @@
     "price-pack": "tsx --env-file-if-exists=.env scripts/price-pack.ts",
     "translate": "tsx --env-file-if-exists=.env scripts/translate.ts",
     "gift-pack": "tsx --env-file-if-exists=.env scripts/gift-pack.ts",
+    "i18n:wrap": "tsx scripts/i18n-wrap.ts",
     "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts",
     "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts",
     "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts",

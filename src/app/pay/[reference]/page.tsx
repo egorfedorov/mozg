@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { COINS } from "@/lib/mozgpay-chains";
@@ -23,6 +24,8 @@ export default async function PayPage({
 }: {
   params: Promise<{ reference: string }>;
 }) {
+  const t = await translator();
+
   const { reference } = await params;
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(`/pay/${reference}`)}`);
@@ -101,16 +104,13 @@ export default async function PayPage({
                 <div style={{ flex: "1 1 260px", display: "grid", gap: "1rem" }}>
                   <div>
                     <p className="eyebrow" style={{ margin: "0 0 .3rem" }}>
-                      Amount — send exactly this
-                    </p>
+                      {t("Amount — send exactly this")}</p>
                     <code className="mono" style={{ fontSize: "1.5rem", userSelect: "all" }}>
                       {shownAmount} {symbol}
                     </code>
                     {hasFingerprint && (
                       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".35rem 0 0" }}>
-                        the decimals are how this payment is recognised — a
-                        rounded amount will not match
-                      </p>
+                        {t("the decimals are how this payment is recognised — a rounded amount will not match")}</p>
                     )}
                   </div>
                   <div>
@@ -137,9 +137,7 @@ export default async function PayPage({
               />
             </div>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>
-              The invoice stays open for 3 hours. Paid straight to the author&apos;s
-              wallet — no processor in the middle.
-            </p>
+              {t("The invoice stays open for 3 hours. Paid straight to the author's wallet — no processor in the middle.")}</p>
           </>
         ) : (
           <p className="lede">

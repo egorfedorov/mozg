@@ -1,4 +1,5 @@
 import TopBar from "@/components/TopBar";
+import { translator } from "@/lib/t";
 import { newsArchive } from "@/lib/announcements";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -82,6 +83,8 @@ const ENTRIES: { date: string; title: string; body: string }[] = [
 ];
 
 export default async function ChangelogPage() {
+  const t = await translator();
+
   const news = await newsArchive(20);
   return (
     <>
@@ -89,14 +92,11 @@ export default async function ChangelogPage() {
       <Contents active="/changelog" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Changelog</p>
+        <p className="eyebrow">{t("Changelog")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
-          Shipped, dated, felt.
-        </h1>
+          {t("Shipped, dated, felt.")}</h1>
         <p className="lede" style={{ maxWidth: "56ch" }}>
-          Only things a user can notice make this list. The pace is the point —
-          this is what beta means here.
-        </p>
+          {t("Only things a user can notice make this list. The pace is the point — this is what beta means here.")}</p>
 
         <div style={{ marginTop: "2.5rem", display: "grid", gap: "1.5rem", maxWidth: "72ch" }}>
           {news.map((n) => (

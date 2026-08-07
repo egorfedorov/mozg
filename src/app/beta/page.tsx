@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -19,6 +20,8 @@ export const metadata = {
  * disclaimer; this one is an invitation.
  */
 export default async function BetaPage() {
+  const t = await translator();
+
   // Live numbers, not marketing copy — the same honesty the exam enforces.
   const [stats] = await query<{ brains: number; notes: number; calls: number }>(
     `select
@@ -33,18 +36,14 @@ export default async function BetaPage() {
       <Contents active="/beta" />
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Open beta</p>
+        <p className="eyebrow">{t("Open beta")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6vw, 3.5rem)", margin: ".5rem 0 1rem" }}>
           It works.
           <br />
           Now help us find where it doesn&apos;t.
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          mozg is young and honest about it. The core loop — one link in, a
-          trained and exam-scored brain out, connected to your agents over MCP —
-          runs in production every day. The edges are still being sanded, and
-          the fastest sandpaper is you hitting them.
-        </p>
+          {t("mozg is young and honest about it. The core loop — one link in, a trained and exam-scored brain out, connected to your agents over MCP — runs in production every day. The edges are still being sanded, and the fastest sandpaper is you hitting them.")}</p>
 
         {/* ── the honest state ──────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
@@ -59,37 +58,34 @@ export default async function BetaPage() {
           >
             <div style={{ background: "var(--paper-2)", padding: "1.5rem" }}>
               <p className="eyebrow" style={{ margin: 0, color: "var(--color-riso-green)" }}>
-                Solid — used daily
-              </p>
+                {t("Solid — used daily")}</p>
               <ul style={{ margin: ".75rem 0 0", paddingLeft: "1.1rem", color: "var(--ink-2)", fontSize: ".9375rem", display: "grid", gap: ".4rem" }}>
-                <li>teach-from-one-link: GitHub, llms.txt, sitemap, link walk</li>
-                <li>the exam: measured scores, majority-vote judging</li>
-                <li>MCP for Claude Code, Codex, Cursor and friends</li>
-                <li>marketplace with 5 free queries into any paid brain</li>
-                <li>exports that outlive the subscription</li>
+                <li>{t("teach-from-one-link: GitHub, llms.txt, sitemap, link walk")}</li>
+                <li>{t("the exam: measured scores, majority-vote judging")}</li>
+                <li>{t("MCP for Claude Code, Codex, Cursor and friends")}</li>
+                <li>{t("marketplace with 5 free queries into any paid brain")}</li>
+                <li>{t("exports that outlive the subscription")}</li>
               </ul>
             </div>
             <div style={{ background: "var(--paper-2)", padding: "1.5rem" }}>
               <p className="eyebrow" style={{ margin: 0, color: "var(--color-riso-orange)" }}>
-                Rough — known, being sanded
-              </p>
+                {t("Rough — known, being sanded")}</p>
               <ul style={{ margin: ".75rem 0 0", paddingLeft: "1.1rem", color: "var(--ink-2)", fontSize: ".9375rem", display: "grid", gap: ".4rem" }}>
-                <li>card payments — crypto works, cards are mocked</li>
-                <li>JS-only docs sites need their GitHub repo link</li>
-                <li>exam scores move as young brains keep learning</li>
-                <li>OAuth for MCP — today it is a bearer token</li>
+                <li>{t("card payments — crypto works, cards are mocked")}</li>
+                <li>{t("JS-only docs sites need their GitHub repo link")}</li>
+                <li>{t("exam scores move as young brains keep learning")}</li>
+                <li>{t("OAuth for MCP — today it is a bearer token")}</li>
               </ul>
             </div>
             <div style={{ background: "var(--paper-2)", padding: "1.5rem" }}>
               <p className="eyebrow" style={{ margin: 0 }}>
-                Right now
-              </p>
+                {t("Right now")}</p>
               <ul className="mono" style={{ listStyle: "none", margin: ".75rem 0 0", padding: 0, fontSize: ".8125rem", color: "var(--ink-2)", display: "grid", gap: ".45rem" }}>
                 <li>{stats.brains} public brains</li>
                 <li>{stats.notes.toLocaleString()} notes inside them</li>
                 <li>{stats.calls.toLocaleString()} agent calls this week</li>
-                <li>uptime watched every 5 minutes</li>
-                <li>backups in two places, restore-tested</li>
+                <li>{t("uptime watched every 5 minutes")}</li>
+                <li>{t("backups in two places, restore-tested")}</li>
               </ul>
             </div>
           </div>
@@ -98,8 +94,7 @@ export default async function BetaPage() {
         {/* ── the ask ───────────────────────────────────────────────────── */}
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <h2 className="h2" style={{ marginBottom: "1rem" }}>
-            Three ways to make this better
-          </h2>
+            {t("Three ways to make this better")}</h2>
 
           <div className="rows">
             <div className="row">
@@ -161,7 +156,7 @@ export default async function BetaPage() {
             borderLeft: "4px solid var(--color-riso-red)",
           }}
         >
-          <p className="eyebrow">Beta testers are remembered</p>
+          <p className="eyebrow">{t("Beta testers are remembered")}</p>
           <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0", maxWidth: "62ch" }}>
             Report a real bug or a real gap during the beta — one we act on —
             and your account gets a year of Pro, free, when plans go live. Not

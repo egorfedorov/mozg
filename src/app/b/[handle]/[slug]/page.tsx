@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
@@ -83,6 +84,8 @@ export default async function PublicBrainPage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const user = await currentUser();
   const found = await accessForSlug(handle, slug, user?.id ?? null);
@@ -412,8 +415,7 @@ export default async function PublicBrainPage({
                   <span className="c">$</span> claude mcp add --transport http mozg \
                 </div>
                 <div style={{ wordBreak: "break-all", paddingLeft: "1.5rem" }}>
-                  https://mozg.sh/mcp --header &quot;Authorization: Bearer …&quot;
-                </div>
+                  {t("https://mozg.sh/mcp --header \"Authorization: Bearer …\"")}</div>
                 <div style={{ marginTop: ".9rem" }}>
                   <span className="u">&gt;</span> use {handle}/{brain.slug} — …
                 </div>
@@ -443,9 +445,7 @@ export default async function PublicBrainPage({
                   // context: one sentence, no jargon, says exactly what
                   // signing in buys them.
                   <p style={{ margin: ".75rem 0 0", color: "#9aa1ab", fontSize: ".8125rem", fontFamily: "inherit" }}>
-                    New here? Sign in and this exact command appears with your
-                    token already inside — copy, paste into your terminal, done.
-                  </p>
+                    {t("New here? Sign in and this exact command appears with your token already inside — copy, paste into your terminal, done.")}</p>
                 )}
               </section>
             )}
@@ -480,7 +480,7 @@ export default async function PublicBrainPage({
             {latestReviews.length > 0 && (
               <>
                 <div className="section-head">
-                  <h2 className="h2">From buyers</h2>
+                  <h2 className="h2">{t("From buyers")}</h2>
                   <span className="eyebrow">★ {rating.avg} · {rating.n} rating{rating.n === 1 ? "" : "s"}</span>
                 </div>
                 <div className="rows" style={{ marginBottom: "1rem" }}>
@@ -505,7 +505,7 @@ export default async function PublicBrainPage({
         {passedChecks.length > 0 && (
           <section style={{ margin: "0 0 2.5rem" }}>
             <div className="section-head">
-              <h2 className="h2">Ask it things like</h2>
+              <h2 className="h2">{t("Ask it things like")}</h2>
               <span className="eyebrow">
                 {examTotals && examTotals.pos_total > 0
                   ? `answers ${examTotals.pos_passed}/${examTotals.pos_total} on its latest exam` +
@@ -534,7 +534,7 @@ export default async function PublicBrainPage({
         {taught.length > 0 && (
           <section style={{ margin: "0 0 2.5rem" }}>
             <div className="section-head">
-              <h2 className="h2">Taught by agents</h2>
+              <h2 className="h2">{t("Taught by agents")}</h2>
               <span className="eyebrow">attribution from the grader, not copy</span>
             </div>
             <div className="rows" style={{ maxWidth: "44rem" }}>
@@ -562,7 +562,7 @@ export default async function PublicBrainPage({
         {children.length > 0 && (
           <section style={{ margin: "0 0 2.5rem" }}>
             <div className="section-head">
-              <h2 className="h2">What is inside</h2>
+              <h2 className="h2">{t("What is inside")}</h2>
               <span className="eyebrow">
                 asking this brain searches all {children.length}
               </span>
@@ -596,8 +596,7 @@ export default async function PublicBrainPage({
             <div className="score-head">
               <div>
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
-                  What it can answer
-                </p>
+                  {t("What it can answer")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
                   {categories.length
                     ? `${categories.reduce((n, c) => n + c.total, 0)} checks`
@@ -614,8 +613,7 @@ export default async function PublicBrainPage({
 
             {categories.length === 0 ? (
               <p style={{ padding: "1.25rem", margin: 0, color: "var(--ink-2)" }}>
-                This brain has not sat its exam yet, so its coverage is unverified.
-              </p>
+                {t("This brain has not sat its exam yet, so its coverage is unverified.")}</p>
             ) : (
               categories.map((c) => (
                 <div key={c.category} className="score-row" data-state={c.state}>
@@ -641,7 +639,7 @@ export default async function PublicBrainPage({
         {redteam.length > 0 && (
           <section style={{ marginTop: "2.5rem" }}>
             <div className="section-head">
-              <h2 className="h2">Attacks survived</h2>
+              <h2 className="h2">{t("Attacks survived")}</h2>
               <span className="eyebrow">re-run weekly · {redteam[0].ran}</span>
             </div>
             <div className="rows" style={{ maxWidth: "52rem" }}>
@@ -660,8 +658,7 @@ export default async function PublicBrainPage({
               ))}
             </div>
             <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", marginTop: ".5rem" }}>
-              heuristic scans against known attack classes — measured and dated, not a promise of unpoisonability
-            </p>
+              {t("heuristic scans against known attack classes — measured and dated, not a promise of unpoisonability")}</p>
           </section>
         )}
 
@@ -672,9 +669,7 @@ export default async function PublicBrainPage({
             </h2>
             {preview && (
               <p style={{ color: "var(--ink-2)", marginTop: 0, fontSize: ".9375rem" }}>
-                Note titles, so you can judge before you buy. The contents unlock
-                on purchase.
-              </p>
+                {t("Note titles, so you can judge before you buy. The contents unlock on purchase.")}</p>
             )}
             <ul style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".35rem" }}>
               {samples.map((s) => (
@@ -693,8 +688,7 @@ export default async function PublicBrainPage({
 
           <div>
             <h2 className="h2" style={{ marginBottom: "1rem" }}>
-              Licence
-            </h2>
+              {t("Licence")}</h2>
             <p className="tag" style={{ display: "inline-block", marginBottom: ".75rem" }}>
               {licence.label}
             </p>

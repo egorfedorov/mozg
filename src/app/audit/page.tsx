@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
@@ -17,16 +18,17 @@ export const metadata = {
  * exists (import → exam → report), the intake is a conversation until the
  * demand shape is known — a form would just be a slower conversation.
  */
-export default function AuditPage() {
+export default async function AuditPage() {
+  const t = await translator();
+
   return (
     <>
       <TopBar />
       <Contents active="/audit" />
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">Knowledge audit · exam-as-a-service</p>
+        <p className="eyebrow">{t("Knowledge audit · exam-as-a-service")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 5.5vw, 3.5rem)", margin: ".5rem 0 1rem", maxWidth: "20ch" }}>
-          Your knowledge base claims. Ours examines.
-        </h1>
+          {t("Your knowledge base claims. Ours examines.")}</h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
           Every RAG and memory tool quotes benchmarks nobody can reproduce.
           mozg&apos;s exam is its own machinery — the same one that grades every
@@ -37,7 +39,7 @@ export default function AuditPage() {
 
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
-            <h2 className="h2">What the report says</h2>
+            <h2 className="h2">{t("What the report says")}</h2>
             <span className="eyebrow">measured, dated, reproducible</span>
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
@@ -60,29 +62,18 @@ export default function AuditPage() {
 
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
-            <h2 className="h2">How it runs</h2>
+            <h2 className="h2">{t("How it runs")}</h2>
             <span className="eyebrow">your data stays yours</span>
           </div>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: 0 }}>
-            You export your corpus (JSONL, markdown, or an API dump — we adapt),
-            it is imported as a private brain nobody else can reach, the exam
-            runs, the report is delivered, and the imported copy is deleted on
-            request. The first audits are hands-on with us in the loop — that is
-            deliberate, not a beta apology: the report format is being shaped by
-            real corpora.
-          </p>
+            {t("You export your corpus (JSONL, markdown, or an API dump — we adapt), it is imported as a private brain nobody else can reach, the exam runs, the report is delivered, and the imported copy is deleted on request. The first audits are hands-on with us in the loop — that is deliberate, not a beta apology: the report format is being shaped by real corpora.")}</p>
         </section>
 
         <section style={{ marginTop: "3rem", border: "1.5px solid var(--ink)", background: "var(--color-riso-yellow)", boxShadow: "4px 4px 0 var(--ink)", padding: "clamp(1.25rem, 4vw, 2rem)", maxWidth: "56rem" }}>
           <h2 className="h2" style={{ margin: "0 0 .5rem" }}>
-            First three audits — free, in exchange for a public result.
-          </h2>
+            {t("First three audits — free, in exchange for a public result.")}</h2>
           <p style={{ margin: 0, maxWidth: "58ch" }}>
-            Your tool&apos;s exam score, published with your sign-off, methodology
-            attached. You get an independent number to cite; we get the proof
-            the exam grades anything. Write what your base is and roughly how
-            big — a person answers, usually same day.
-          </p>
+            {t("Your tool's exam score, published with your sign-off, methodology attached. You get an independent number to cite; we get the proof the exam grades anything. Write what your base is and roughly how big — a person answers, usually same day.")}</p>
           <div style={{ marginTop: "1rem" }}>
             <Link className="btn" href="/chat">
               Start the conversation
