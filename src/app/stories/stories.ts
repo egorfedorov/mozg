@@ -67,14 +67,14 @@ export const STORIES: Story[] = [
     title: msg("He sold the method, not the paintings"),
     person: {
       name: "Íris",
-      role: "illustrator and art director, twenty years of it",
+      role: msg("illustrator and art director, twenty years of it"),
       problem:
         msg("\u201cI can teach my method to one apprentice at a time, and I have run out of time. Every generator gives me the average of everyone, which is exactly what my clients pay me not to be.\u201d"),
       resolution:
         msg("\u201cThe method is a brain now. It scored 84%, which told me which of my own rules I had never actually written down. People buy it, their agents work the way I work, and I keep 95%.\u201d"),
       portrait: "/stories/artist.webp",
     },
-    oneLine: "A style becomes a brain, and the brain earns while he sleeps",
+    oneLine: msg("A style becomes a brain, and the brain earns while he sleeps"),
     accent: "var(--color-riso-red)",
     art: "style",
     body: [
@@ -105,14 +105,14 @@ export const STORIES: Story[] = [
     title: msg("They taught the AI their own program, and it never left the building"),
     person: {
       name: "Marek",
-      role: "platform lead at a 200-person insurer",
+      role: msg("platform lead at a 200-person insurer"),
       problem:
         msg("\u201cOur billing service was never on the internet, so every answer the AI gives about it is invented \u2014 confidently. Three people know how it really works and they spend their day being a helpdesk.\u201d"),
       resolution:
         msg("\u201cThe manual, the runbooks and the ticket decisions are one private brain, taught from our own machines. Forty people ask it instead of asking them. Nothing raw left the building.\u201d"),
       portrait: "/stories/company.webp",
     },
-    oneLine: "Internal documentation as a private brain, on their own key",
+    oneLine: msg("Internal documentation as a private brain, on their own key"),
     accent: "var(--color-riso-blue)",
     art: "closed",
     body: [
@@ -144,14 +144,14 @@ export const STORIES: Story[] = [
     title: msg("The platform changed its API. The brain noticed; the model did not"),
     person: {
       name: "Dima",
-      role: "slot developer, two-person studio",
+      role: msg("slot developer, two-person studio"),
       problem:
         msg("\u201cThe platform's docs move weekly and the model answers from last year. I found out during submission, which is the most expensive place to find out.\u201d"),
       resolution:
         msg("\u201cPlatform brain from the catalogue, studio brain of our own. The agent asks before it guesses \u2014 and it proposed anticipation on the third reel before I knew the word.\u201d"),
       portrait: "/stories/studio.webp",
     },
-    oneLine: "Platform docs plus house conventions, both scored, both current",
+    oneLine: msg("Platform docs plus house conventions, both scored, both current"),
     accent: "var(--color-riso-green)",
     art: "platform",
     body: [
@@ -182,14 +182,14 @@ export const STORIES: Story[] = [
     title: msg("Every question her docs could not answer arrived as a list"),
     person: {
       name: "Ada",
-      role: "maintainer of a mid-sized open-source library",
+      role: msg("maintainer of a mid-sized open-source library"),
       problem:
         msg("\u201cI cannot see which page confused a reader, and most of my readers are agents now. They invent an answer, then open an issue that costs me an hour.\u201d"),
       resolution:
         msg("\u201cThe brain sits an exam on my docs and classifies every failure. Searches that found nothing become questions. My roadmap arrives as a list instead of as issues.\u201d"),
       portrait: "/stories/maintainer.webp",
     },
-    oneLine: "The exam turns real agent searches into a documentation roadmap",
+    oneLine: msg("The exam turns real agent searches into a documentation roadmap"),
     // Not yellow: #ffe800 as text on paper is invisible, and this accent is used
     // for an eyebrow and a quote rule, not a fill.
     accent: "var(--ink)",
@@ -222,14 +222,14 @@ export const STORIES: Story[] = [
     title: msg("Twelve projects, twelve brains, no more onboarding by shoulder-tap"),
     person: {
       name: "Noor",
-      role: "technical lead at a twelve-client agency",
+      role: msg("technical lead at a twelve-client agency"),
       problem:
         msg("\u201cOur real product is context, and it lives in people's heads. Every new developer learns it by tapping a shoulder, and every agent session starts as a stranger.\u201d"),
       resolution:
         msg("\u201cOne brain per project, filled as the work happens. A dormant project comes back with its reasoning intact, and a finished one leaves as a file the client keeps.\u201d"),
       portrait: "/stories/agency.webp",
     },
-    oneLine: "Conventions that outlive staff turnover and every context reset",
+    oneLine: msg("Conventions that outlive staff turnover and every context reset"),
     accent: "var(--color-riso-red)",
     art: "agency",
     body: [
@@ -257,12 +257,12 @@ export const STORIES: Story[] = [
     id: "the-solo-builder",
     who: msg("Somebody building software without being a developer"),
     title: msg("She could not tell when the AI was lying to her"),
-    oneLine: "A beginner gets a professional's answer, and can check it",
+    oneLine: msg("A beginner gets a professional's answer, and can check it"),
     accent: "var(--color-riso-blue)",
     art: "solo",
     person: {
       name: "Kat",
-      role: "founder, first product, no engineering background",
+      role: msg("founder, first product, no engineering background"),
       problem:
         msg("\u201cThe agent writes code faster than I can read it. When it is wrong I find out days later, and I have no way to tell the difference \u2014 it sounds equally sure both times.\u201d"),
       resolution:
@@ -294,12 +294,12 @@ export const STORIES: Story[] = [
     id: "every-agent",
     who: msg("Anyone who uses more than one agent, or changes agent"),
     title: msg("She taught it once, and switched tools without losing it"),
-    oneLine: "Knowledge that is not locked to whoever made your agent",
+    oneLine: msg("Knowledge that is not locked to whoever made your agent"),
     accent: "var(--ink)",
     art: "everywhere",
     person: {
       name: "Mira",
-      role: "senior engineer, three agents open on any given day",
+      role: msg("senior engineer, three agents open on any given day"),
       problem:
         msg("\u201cI taught Claude our conventions, then the team moved to a different tool and it knew nothing. Built-in memory belongs to whoever built the agent, not to me.\u201d"),
       resolution:

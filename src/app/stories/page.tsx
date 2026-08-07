@@ -93,7 +93,7 @@ export default async function StoriesPage() {
               </span>
               <span style={{ minWidth: 0 }}>
                 <strong>{t(s.title)}</strong>
-                <span className="row-sub">{s.oneLine}</span>
+                <span className="row-sub">{t(s.oneLine)}</span>
               </span>
             </a>
           ))}
@@ -136,7 +136,7 @@ export default async function StoriesPage() {
                   loader to a page that is otherwise all text. */}
               <img
                 src={s.person.portrait}
-                alt={`Illustrated portrait of ${s.person.name}, ${s.person.role}`}
+                alt={`${t("Illustrated portrait of")} ${s.person.name}, ${t(s.person.role)}`}
                 width={104}
                 height={104}
                 style={{
@@ -154,7 +154,7 @@ export default async function StoriesPage() {
                   className="mono"
                   style={{ margin: ".1rem 0 .6rem", fontSize: ".8125rem", color: "var(--ink-3)" }}
                 >
-                  {s.person.role}
+                  {t(s.person.role)}
                 </p>
                 <p
                   style={{
