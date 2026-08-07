@@ -29,7 +29,7 @@ export const PAGES: { path: string; what: string }[] = [
   { path: "/collective", what: "how every reader makes a brain smarter" },
   { path: "/pricing", what: "plans and what each one includes" },
   { path: "/stories", what: "what people built and what it cost them" },
-  { path: "/studios", what: "the iGaming brains and the five-seat studio plan" },
+  { path: "/packs", what: "packs: a trade's brains sold together on shared seats" },
   { path: "/changelog", what: "what shipped, when" },
   { path: "/roadmap", what: "what is being built next" },
   { path: "/status", what: "live health of the service" },

@@ -26,20 +26,9 @@
  * not verified theirs keeps reading only once they do.
  */
 import { query } from "../src/db";
-
-/** Named sets, so the thing being grandfathered is reviewable in a diff. */
-const PACKS: Record<string, { parents: string[]; loose: string[] }> = {
-  igaming: {
-    parents: ["stake-engine", "slot-studio"],
-    loose: [
-      "slot-studio-compliance",
-      "slot-animation-craft",
-      "slot-art-direction",
-      "pixijs-casino",
-      "spine-2d-animation",
-    ],
-  },
-};
+// The same list the offer page renders. A second copy here is how a brain ends
+// up sold in a pack and missing from its grandfathering.
+import { PACKS, packBySlug } from "../src/lib/packs";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -48,9 +37,9 @@ function arg(name: string): string | undefined {
 
 async function main() {
   const packName = arg("pack") ?? "igaming";
-  const pack = PACKS[packName];
+  const pack = packBySlug(packName);
   if (!pack) {
-    console.error(`unknown pack "${packName}". Known: ${Object.keys(PACKS).join(", ")}`);
+    console.error(`unknown pack "${packName}". Known: ${PACKS.map((p) => p.slug).join(", ")}`);
     process.exit(1);
   }
   const write = process.argv.includes("--write");
@@ -68,7 +57,7 @@ async function main() {
     [pack.parents, pack.loose],
   );
   if (!brains.length) {
-    console.error("no brains matched — check the slugs in PACKS");
+    console.error("no brains matched — check the slugs in src/lib/packs.ts");
     process.exit(1);
   }
   const brainIds = brains.map((b) => b.id);
