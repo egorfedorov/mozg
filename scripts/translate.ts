@@ -127,8 +127,13 @@ async function translateBatch(
   // one bad response does not cost the whole language.
   const BATCH = 20;
 
-  for (let i = 0; i < items.length; i += BATCH) {
-    const slice = items.slice(i, i + BATCH);
+  // A batch is asked for again, smaller, when the model returns fewer keys
+  // than it was given. It does that silently and deterministically: the same
+  // forty strings went missing from Simplified Chinese on four consecutive
+  // runs, because the same slice failed the same way every time and the run
+  // kept whatever came back. Halving the slice breaks the pattern; a single
+  // string on its own is the floor.
+  const ask = async (slice: { key: string; text: string }[], depth = 0): Promise<void> => {
     const { data } = await structured<{ translations: { key: string; text: string }[] }>({
       model: env.MODEL_TRANSLATE ?? env.MODEL_JUDGE,
       // Generous, and it has to be: a language whose script costs several
@@ -150,6 +155,17 @@ async function translateBatch(
     for (const t of data.translations ?? []) {
       if (t.key && t.text) out[t.key] = t.text;
     }
+
+    const dropped = slice.filter((s) => !out[s.key]);
+    if (dropped.length && depth < 4 && slice.length > 1) {
+      const half = Math.ceil(dropped.length / 2);
+      await ask(dropped.slice(0, half), depth + 1);
+      await ask(dropped.slice(half), depth + 1);
+    }
+  };
+
+  for (let i = 0; i < items.length; i += BATCH) {
+    await ask(items.slice(i, i + BATCH));
     process.stdout.write(`    ${Math.min(i + BATCH, items.length)}/${items.length}\r`);
   }
   return out;
