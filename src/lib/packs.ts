@@ -24,6 +24,19 @@ export interface Pack {
   priceCents: number;
   /** People who may read it on one purchase, the buyer counted. */
   seats: number;
+  /**
+   * What the brains inside cost on their own — the numbers scripts/price-pack.ts
+   * writes onto the rows.
+   *
+   * They exist to make the pack the obvious buy without making a single brain
+   * a bad one. A family costs more than a member because it is several; the
+   * pack costs less than two families, so anyone who needs more than one part
+   * of the trade is better off with all of it. Keeping them here rather than
+   * only in the database means the ratio can be reviewed in a diff instead of
+   * rediscovered from a psql session.
+   */
+  familyPriceCents: number;
+  memberPriceCents: number;
   /** The trade, in the reader's words. */
   title: string;
   eyebrow: string;
@@ -46,6 +59,11 @@ export const PACKS: Pack[] = [
     slug: "igaming",
     priceCents: 9900,
     seats: 3,
+    // $69 a family, $39 a brain, $99 the lot: two families alone come to $138,
+    // and three brains to $117, so the pack wins for anybody whose work spans
+    // more than one corner of this trade — which is everybody who ships a game.
+    familyPriceCents: 6900,
+    memberPriceCents: 3900,
     title: "Slot studios",
     eyebrow: "For slot studios",
     headline: ["A failed submission", "costs more than a year of this."],

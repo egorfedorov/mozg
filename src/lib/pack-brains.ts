@@ -7,6 +7,7 @@ import type { Pack } from "@/lib/packs";
  */
 
 export interface PackBrain {
+  id: string;
   slug: string;
   title: string;
   goal: string | null;
@@ -18,7 +19,7 @@ export interface PackBrain {
 
 export async function brainsIn(pack: Pack): Promise<PackBrain[]> {
   return query<PackBrain>(
-    `select b.slug, b.title, b.goal, b.score, b.note_count, u.handle, p.slug as parent
+    `select b.id, b.slug, b.title, b.goal, b.score, b.note_count, u.handle, p.slug as parent
        from brains b
        left join "user" u on u.id = b.owner_id
        left join brains p on p.id = b.parent_id

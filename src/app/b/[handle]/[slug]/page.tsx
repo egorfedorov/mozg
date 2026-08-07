@@ -18,6 +18,10 @@ import { inLibrary } from "@/lib/library";
 import { accessibleChildren, parentOf } from "@/lib/families";
 import { agentsTaught } from "@/lib/agent-report";
 import { gateFor } from "@/lib/paywall";
+import { packBySlug, packsWith } from "@/lib/packs";
+import { brainsIn } from "@/lib/pack-brains";
+import { holdsAnyPack } from "@/lib/pack-access";
+import InPack from "@/components/InPack";
 import { anyCryptoReady } from "@/lib/payments";
 import { isoDate } from "@/lib/dates";
 
@@ -204,6 +208,15 @@ export default async function PublicBrainPage({
   const owns = brain.owner_id === user?.id;
   const familyAdded = gate ? await inLibrary(user?.id ?? "", gate.brainId) : false;
   const state = preview ? "locked" : owns || added || familyAdded ? "have" : "free";
+
+  // The pack this brain belongs to, if any — named whether the reader has it
+  // or not, because a page that only quotes the single price hides the cheaper
+  // way to the same material.
+  const packSlug = packsWith(brain.slug, parent?.slug ?? null)[0];
+  const pack = packSlug ? packBySlug(packSlug) : undefined;
+  const [packBrains, packHeld] = pack
+    ? await Promise.all([brainsIn(pack), holdsAnyPack(user?.id ?? null, [pack.slug])])
+    : [[], false];
 
   const licence = LICENSE[brain.license];
 
@@ -421,6 +434,20 @@ export default async function PublicBrainPage({
                   </p>
                 )}
               </section>
+            )}
+
+            {/* Shown in both states on purpose. Locked, it is the cheaper way
+                to the same material; unlocked, it is where the rest of what
+                this reader holds actually lives. */}
+            {pack && (
+              <div style={{ marginTop: "1rem" }}>
+                <InPack
+                  pack={pack}
+                  brains={packBrains.length}
+                  held={packHeld}
+                  singleCents={gate?.priceCents ?? brain.price_cents}
+                />
+              </div>
             )}
           </div>
 

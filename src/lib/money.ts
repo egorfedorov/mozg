@@ -293,8 +293,10 @@ export async function purchasePack(opts: {
   pack: string;
   buyerId: string;
   priceCents: number;
+  /** Every brain the pack contains, resolved by the caller from lib/packs.ts. */
+  brainIds: string[];
 }): Promise<PackPurchaseResult> {
-  const { pack, buyerId, priceCents } = opts;
+  const { pack, buyerId, priceCents, brainIds } = opts;
 
   return tx(async (client) => {
     // Lock first. Without it two clicks a millisecond apart both read the old
@@ -318,6 +320,18 @@ export async function purchasePack(opts: {
     await client.query(
       `insert into pack_purchases (pack, buyer_id, price_cents) values ($1, $2, $3)`,
       [pack, buyerId, priceCents],
+    );
+
+    // On the shelf in the same transaction, for the same reason purchaseBrain
+    // does it: buying something and then having to add it separately is a bug
+    // report, not a feature. Without this a bought pack was invisible
+    // everywhere the reader actually looks — /brains, brain_list, the shelf an
+    // agent resolves a bare slug against.
+    await client.query(
+      `insert into library (user_id, brain_id)
+       select $1, id from brains where id = any($2::uuid[])
+       on conflict do nothing`,
+      [buyerId, brainIds],
     );
 
     await move({

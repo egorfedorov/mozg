@@ -8,6 +8,7 @@ import { currentUser } from "@/lib/session";
 import { packBySlug } from "@/lib/packs";
 import { purchasePack } from "@/lib/money";
 import { seatsOn } from "@/lib/pack-access";
+import { brainsIn } from "@/lib/pack-brains";
 
 /**
  * Buying a pack, and giving out the seats that came with it.
@@ -30,6 +31,7 @@ export async function buyPack(_prev: unknown, formData: FormData) {
     pack: pack.slug,
     buyerId: user.id,
     priceCents: pack.priceCents,
+    brainIds: (await brainsIn(pack)).map((b) => b.id),
   });
 
   if (!res.ok) {
@@ -41,7 +43,9 @@ export async function buyPack(_prev: unknown, formData: FormData) {
     };
   }
 
+  // The shelf and the catalogue both change on a purchase.
   revalidatePath("/settings/packs");
+  revalidatePath("/brains");
   return { ok: true as const, pack: pack.title, paidCents: res.paidCents };
 }
 
