@@ -737,9 +737,27 @@ export async function runExam(
       // a small score change readable as a real one. See JUDGE_VOTES in env.
       // A mini probe buys a single vote: it looks for flips, not for a
       // score stable enough to publish.
-      const votes = await Promise.all(
+      // allSettled, not all: votes exist to absorb judge variance, and a vote
+      // the proxy mangled on the way back is variance of the same kind. One
+      // unreadable response used to kill the whole run — and pg-boss then
+      // re-sat the entire exam, paying for every other batch again, three
+      // times over (owasp-cheatsheets, 2026-08-06/07). A lost vote is an
+      // abstention the majority below already knows how to handle; only a
+      // batch where every vote failed is a real failure.
+      const settled = await Promise.allSettled(
         Array.from({ length: mini ? 1 : env.JUDGE_VOTES }, () => judge(batch)),
       );
+      const votes = settled
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => r.value);
+      // Logged before the rethrow, so a batch where all three votes failed
+      // for three different reasons says all three rather than the first.
+      for (const r of settled) {
+        if (r.status === "rejected") {
+          console.warn(`[exam] ${brain.slug}: dropped a judge vote — ${r.reason}`);
+        }
+      }
+      if (!votes.length) throw (settled[0] as PromiseRejectedResult).reason;
       cost += votes.reduce((n, v) => n + v.costCents, 0);
 
       for (const entry of batch) {
@@ -1037,12 +1055,17 @@ async function judge(
   const parsed = verdicts.safeParse(raw);
   if (!parsed.success) {
     // Say what came back. "schema mismatch" alone sends the next person to
-    // read the schema, which is almost never where the problem is.
+    // read the schema, which is almost never where the problem is — and the
+    // zod issue alone ("expected array, received string") does not say which
+    // mangling produced the string, so unstringify cannot be taught to
+    // rescue it. Carry a clipped sample: it is the only evidence that
+    // survives, the value is the judge's own verdicts, and this text lands
+    // in app_errors, which is admin-only.
     throw new Error(
       `the judge answered in a shape we cannot read: ${parsed.error.issues
         .slice(0, 2)
         .map((i) => `${i.path.join(".") || "root"} ${i.message}`)
-        .join("; ")}`,
+        .join("; ")} — got ${JSON.stringify(raw).slice(0, 400)}`,
     );
   }
 
