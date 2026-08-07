@@ -2799,3 +2799,60 @@ a.row:hover {
     display: none;
   }
 }
+
+/* ─── usage chart ───────────────────────────────────────────────────────────
+   Calls per hour or per day on /settings/usage. Divs, not a charting library:
+   one series of counts with no axis to speak of does not justify the
+   dependency, and a bar that is a bar survives having its stylesheet read.
+
+   The column is the hit target and carries the title, so hovering the empty
+   space above a quiet day still says which day it was — a 1px-tall bar you
+   have to hunt for is the usual way these charts lie about zero. */
+
+.usage-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 140px;
+  padding: 0 0 1.25rem;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.usage-col {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.usage-bar {
+  width: 100%;
+  /* Zero has to read as zero, but the column still needs a floor to sit on. */
+  min-height: 2px;
+  background: var(--ink);
+}
+
+.usage-col:hover .usage-bar {
+  background: var(--color-riso-orange);
+}
+
+.usage-tick {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding-top: 0.3rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  color: var(--ink-2);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Past a dozen or so columns the labels collide into a grey smear — keep every
+   third and the row reads as a scale again. */
+.usage-chart:has(.usage-col:nth-child(13)) .usage-col:not(:nth-child(3n + 1)) .usage-tick {
+  display: none;
+}

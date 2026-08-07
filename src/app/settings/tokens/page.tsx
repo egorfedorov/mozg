@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { Section, Rows, Row } from "@/components/ui";
@@ -42,7 +43,8 @@ export default async function TokensPage() {
         <div>
           <p className="lede">
             One token per machine. Each token can reach every brain you own or
-            have been given access to. Revoking one takes effect on the next call.
+            have been given access to. Revoking one takes effect on the next call.{" "}
+            <Link href="/settings/usage">Usage</Link> shows where the calls went.
           </p>
           <TokenForm />
         </div>
