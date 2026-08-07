@@ -1,5 +1,6 @@
 import TopBar from "@/components/TopBar";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 import { newsArchive } from "@/lib/announcements";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";

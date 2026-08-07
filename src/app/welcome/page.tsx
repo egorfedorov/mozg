@@ -1,5 +1,6 @@
 import { currentUser } from "@/lib/session";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 import { query } from "@/db";
 import WelcomeFlow, { type StepState } from "./WelcomeFlow";
 

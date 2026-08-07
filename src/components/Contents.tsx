@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 
 /**
  * The contents strip.

@@ -1,4 +1,4 @@
-import { msg } from "@/lib/t";
+import { msg } from "@/lib/msg";
 /**
  * What field a brain belongs to. Pure data, no DB import — the catalogue, the
  * create form and the admin table all read this one list.

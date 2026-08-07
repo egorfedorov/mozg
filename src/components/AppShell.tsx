@@ -1,5 +1,6 @@
 import { markup } from "@/lib/markup";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 import Link from "next/link";
 import SignOutLink from "@/components/SignOutLink";
 import { currentUser } from "@/lib/session";

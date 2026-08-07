@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";

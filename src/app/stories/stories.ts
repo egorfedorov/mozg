@@ -1,4 +1,4 @@
-import { msg } from "@/lib/t";
+import { msg } from "@/lib/msg";
 /**
  * The five stories, as data.
  *

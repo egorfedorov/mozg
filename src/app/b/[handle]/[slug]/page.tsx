@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
-import { translator, msg } from "@/lib/t";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import TopBar from "@/components/TopBar";
