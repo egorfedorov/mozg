@@ -278,8 +278,16 @@ export default async function PublicBrainPage({
             hasMerchantReturnPolicy: {
               "@type": "MerchantReturnPolicy",
               applicableCountry: "US",
+              // MerchantReturnNotRequired reads like the right sentence and is
+              // not a member of MerchantReturnEnumeration at all — Search
+              // Console flagged it as an invalid enum. The three real values
+              // are FiniteReturnWindow, UnlimitedWindow and NotPermitted; for
+              // something delivered over MCP the second it is bought, with
+              // nothing to send back, the last one is the accurate one. It
+              // does not touch the statutory refunds clause in /terms, which
+              // is law rather than a returns policy.
               returnPolicyCategory:
-                "https://schema.org/MerchantReturnNotRequired",
+                "https://schema.org/MerchantReturnNotPermitted",
             },
           },
         }
