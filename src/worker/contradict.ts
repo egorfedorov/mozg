@@ -37,7 +37,13 @@ const CANDIDATE_DISTANCE = 0.18;
 /** Same reason as consolidation: notes still being corrected are not evidence. */
 const MIN_NOTE_AGE_HOURS = 24;
 
-/** Candidate pairs pulled per pack before the judged ones are dropped. */
+/**
+ * Fresh candidate pairs pulled per pack. Fresh, not total: the judged ones are
+ * excluded inside the query, so this is how much work a run may find, not how
+ * far into the pack it can ever see. The first prod pass made the difference
+ * concrete — 200 candidates against a budget of 40 meant the same 200 came
+ * back every night until all were judged, and the 201st never came at all.
+ */
 const PAIR_LIMIT = 200;
 
 /**
@@ -165,12 +171,11 @@ async function contradictionsInPack(
     maxDistance: CANDIDATE_DISTANCE,
     minAgeHours: MIN_NOTE_AGE_HOURS,
     limit: PAIR_LIMIT,
+    skipPairs: await judgedIn(ids),
   });
   report.candidates = pairs.length;
 
-  const fresh = await unjudged(pairs);
-
-  for (const pair of fresh.slice(0, budget)) {
+  for (const pair of pairs.slice(0, budget)) {
     try {
       const cost = await judge(pair);
       report.judged++;
@@ -190,18 +195,23 @@ async function contradictionsInPack(
   return report;
 }
 
-/** Pairs no run has judged yet, closest first (duplicatePairs' order). */
-async function unjudged(pairs: DuplicatePair[]): Promise<DuplicatePair[]> {
-  if (!pairs.length) return [];
-  const as = pairs.map((p) => p.a.id);
-  const bs = pairs.map((p) => p.b.id);
-  const seen = await query<{ note_a: string; note_b: string }>(
-    `select note_a, note_b from contradictions
-      where (note_a, note_b) in (select * from unnest($1::uuid[], $2::uuid[]))`,
-    [as, bs],
+/**
+ * Every pair already judged for these brains, whatever the verdict.
+ *
+ * Both sides of a stored pair are in the pack by construction, so joining on
+ * one of them is enough. Cheap to send back down as a skip list — a pack that
+ * has been running for a year holds a few thousand of these, against a kNN
+ * that visits every chunk it owns.
+ */
+async function judgedIn(brainIds: string[]): Promise<[string, string][]> {
+  const rows = await query<{ note_a: string; note_b: string }>(
+    `select c.note_a, c.note_b
+       from contradictions c
+       join notes a on a.id = c.note_a
+      where a.brain_id = any($1::uuid[])`,
+    [brainIds],
   );
-  const keys = new Set(seen.map((s) => `${s.note_a}:${s.note_b}`));
-  return pairs.filter((p) => !keys.has(`${p.a.id}:${p.b.id}`));
+  return rows.map((r) => [r.note_a, r.note_b]);
 }
 
 export interface Verdict {

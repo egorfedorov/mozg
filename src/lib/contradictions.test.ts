@@ -66,3 +66,33 @@ test("crossBrain flips the pairing predicate and passes the whole scope", async 
   assert.deepEqual(seen!.params[0], ["b1"]);
   assert.equal(seen!.params[4], false);
 });
+
+test("skipped pairs are excluded before the limit, not after it", async () => {
+  let seen: { text: string; params: unknown[] } | null = null;
+  stubDb((text, params) => {
+    seen = { text, params };
+    return [];
+  });
+
+  await duplicatePairs(["b1", "b2"], {
+    crossBrain: true,
+    skipPairs: [
+      ["n1", "n2"],
+      ["n3", "n4"],
+    ],
+  });
+
+  // Unzipped into two arrays for unnest, order preserved — pairing them up
+  // wrongly would skip pairs nobody judged and re-judge the ones we did.
+  assert.deepEqual(seen!.params[5], ["n1", "n3"]);
+  assert.deepEqual(seen!.params[6], ["n2", "n4"]);
+  // The exclusion has to sit above the limit in the query, or the budget is a
+  // horizon: the same closest N return every run and pair N+1 never arrives.
+  const where = seen!.text.indexOf("not exists");
+  const limit = seen!.text.indexOf("limit $3");
+  assert.ok(where > 0 && where < limit, "skip filter must precede the limit");
+
+  // Callers that skip nothing send empty arrays, so their query is unchanged.
+  await duplicatePairs("b1");
+  assert.deepEqual(seen!.params[5], []);
+});

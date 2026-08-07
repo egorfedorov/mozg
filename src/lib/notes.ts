@@ -129,6 +129,17 @@ export interface DuplicatePairsOptions {
    * would drift from this one on the first fix.
    */
   crossBrain?: boolean;
+  /**
+   * Pairs the caller has already dealt with, dropped before the limit applies.
+   *
+   * Without it `limit` is a horizon rather than a batch size. The nightly
+   * contradiction pass judges a few dozen pairs a run and remembers every
+   * verdict, so on the next run the same closest N arrive, get filtered out
+   * *after* the cut, and the run finds nothing to do — while pair N+1 waits
+   * for a turn that never comes. Skipping inside the query moves the cut past
+   * the judged ones and the queue actually drains.
+   */
+  skipPairs?: readonly (readonly [string, string])[];
 }
 
 /**
@@ -138,7 +149,13 @@ export async function duplicatePairs(
   scope: string | string[],
   opts: DuplicatePairsOptions = {},
 ): Promise<DuplicatePair[]> {
-  const { limit = 20, maxDistance = NEAR, minAgeHours = null, crossBrain = false } = opts;
+  const {
+    limit = 20,
+    maxDistance = NEAR,
+    minAgeHours = null,
+    crossBrain = false,
+    skipPairs = [],
+  } = opts;
   const brainIds = Array.isArray(scope) ? scope : [scope];
   if (!brainIds.length) return [];
   const rows = await query<{
@@ -189,13 +206,21 @@ export async function duplicatePairs(
           and ($4::int is null or xa.created_at < now() - make_interval(hours => $4))
      ),
      pairs as (
-       -- Both directions of the same pair can surface; collapse to one row
-       -- with the smaller id as a, as the old self-join returned.
-       select least(a_id, b_id) as a_id, greatest(a_id, b_id) as b_id,
-              min(distance) as distance
-         from near
-        group by 1, 2
-        order by 3
+       select * from (
+         -- Both directions of the same pair can surface; collapse to one row
+         -- with the smaller id as a, as the old self-join returned.
+         select least(a_id, b_id) as a_id, greatest(a_id, b_id) as b_id,
+                min(distance) as distance
+           from near
+          group by 1, 2
+       ) g
+        -- Empty arrays mean "skip nothing", so callers that pass no skip list
+        -- get exactly the query they always had.
+        where not exists (
+          select 1 from unnest($6::uuid[], $7::uuid[]) as s(a, b)
+           where s.a = g.a_id and s.b = g.b_id
+        )
+        order by distance
         limit $3
      )
      select p.distance,
@@ -209,7 +234,15 @@ export async function duplicatePairs(
        join notes a on a.id = p.a_id
        join notes b on b.id = p.b_id
       order by p.distance`,
-    [brainIds, maxDistance, limit, minAgeHours, crossBrain],
+    [
+      brainIds,
+      maxDistance,
+      limit,
+      minAgeHours,
+      crossBrain,
+      skipPairs.map((p) => p[0]),
+      skipPairs.map((p) => p[1]),
+    ],
   );
 
   return rows.map((r) => ({
