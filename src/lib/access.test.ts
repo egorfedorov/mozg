@@ -64,10 +64,23 @@ function stubAccessDb(opts: {
       );
       return grant ? [{ role: grant.role }] : [];
     }
+    // Two different questions hit `members`. The stub treats a listed seat as
+    // verified and its studio as paid unless the case says otherwise.
+    // seatIn opens with `select m.role`; payingAccountsFor with `select
+    // m.owner_id`. Both mention m.owner_id in their WHERE, so the select list
+    // is what tells them apart.
+    if (/select m\.owner_id/.test(text)) {
+      // payingAccountsFor: every studio this person sits in. One param.
+      return (opts.seats ?? [])
+        .filter((m) => m.user_id === params[0])
+        .map((m) => ({
+          owner_id: m.owner_id,
+          plan: "studio",
+          paid_until: m.lapsed ? new Date(0) : null,
+        }));
+    }
     if (/from members/.test(text)) {
-      // The real query joins the invited address and the owner's plan; the
-      // stub treats a listed seat as verified and its studio as paid unless
-      // the case says otherwise.
+      // seatIn: does this person sit in THAT studio. Two params.
       const seat = (opts.seats ?? []).find(
         (m) => m.owner_id === params[0] && m.user_id === params[1],
       );
@@ -76,9 +89,11 @@ function stubAccessDb(opts: {
         : [];
     }
     if (/from purchases/.test(text)) {
-      const [brainIds, buyerId] = params as [string[], string];
+      // buyer_id is matched against a LIST: a reader's own account plus any
+      // studio whose seat they hold, because a purchase travels to its seats.
+      const [brainIds, buyerIds] = params as [string[], string[]];
       return (opts.purchases ?? []).some(
-        (p) => p.buyer_id === buyerId && brainIds.includes(p.brain_id),
+        (p) => buyerIds.includes(p.buyer_id) && brainIds.includes(p.brain_id),
       )
         ? [{ "?column?": 1 }]
         : [];
@@ -207,4 +222,26 @@ test("a lapsed studio closes: the seat stops opening private brains", async () =
     access: null,
     preview: false,
   });
+});
+
+/**
+ * The shape a pack sale actually has: the brains belong to whoever wrote them,
+ * the studio owns none of them, and the only thing a colleague can inherit is
+ * the receipt. Without this a five-seat plan sold access to nothing.
+ */
+test("a studio's purchase reaches the people holding its seats", async () => {
+  const b = brain({ visibility: "public", price_cents: 24_900 });
+  stubAccessDb({
+    brains: [b],
+    seats: [{ owner_id: "studio", role: "contributor", user_id: "user-colleague" }],
+    purchases: [{ brain_id: b.id, buyer_id: "studio" }],
+  });
+
+  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
+    brain: b,
+    access: "viewer",
+    preview: false,
+  });
+  // Nobody else rides along on it.
+  assert.deepEqual(await accessFor(b.id, STRANGER), { brain: b, access: null, preview: true });
 });

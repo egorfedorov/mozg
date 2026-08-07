@@ -26,6 +26,7 @@ import { isTopic } from "@/lib/topics";
 import { limitsFor } from "@/lib/plans";
 import { captureServer } from "@/lib/analytics";
 import { gateFor, hasPaid } from "@/lib/paywall";
+import { payingAccountsFor, seatIn } from "@/lib/team";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { storage, storageKey } from "@/lib/storage";
 import { enqueueIngest, enqueueCrawl, enqueueSummary } from "@/worker/queue";
@@ -110,13 +111,22 @@ async function resolveBrain(
   );
   if (grant) return { brain, access: grant.role };
 
+  // A studio seat, same as the web app grants one — this path resolves access
+  // itself rather than calling lib/access.ts (it has a teaser to meter), so
+  // every rule the web app enforces has to be repeated here or an agent
+  // becomes the way around it.
+  const seat = await seatIn(brain.owner_id, userId);
+  if (seat) return { brain, access: seat };
+
   if (brain.visibility !== "public") return null;
 
   // A paid brain is not readable over MCP until it is bought, and a price on
   // a parent covers its children — except for the teaser, which is metered
   // here, on the same path that enforces the paywall.
   const gate = await gateFor(brain);
-  if (gate && !(await hasPaid(gate, userId))) {
+  // The studio's receipt counts for its seat holders: a pack is bought once
+  // and read by everyone holding a seat.
+  if (gate && !(await hasPaid(gate, await payingAccountsFor(userId)))) {
     const { used } = await one<{ used: number }>(
       `select count(*)::int as used from calls
         where brain_id = $1 and caller_id = $2

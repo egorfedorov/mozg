@@ -36,7 +36,7 @@ const GROUPS: {
       { href: "/settings/purchases", label: "Library" },
       { href: "/settings/tokens", label: "Tokens" },
       { href: "/settings/usage", label: "Usage" },
-      { href: "/settings/team", label: "Studio" },
+      { href: "/settings/packs", label: "Packs & people" },
       { href: "/settings", label: "Plan & profile" },
     ],
   },

@@ -16,7 +16,7 @@ import { seatsFree } from "@/lib/team";
 
 export async function inviteMember(_prev: unknown, formData: FormData) {
   const user = await currentUser();
-  if (!user) redirect("/sign-in?next=/settings/team");
+  if (!user) redirect("/sign-in?next=/settings/packs");
 
   if (limitsFor(user.plan).seats < 2) {
     return { error: "Seats come with the studio plan. Upgrade at /settings." };
@@ -53,17 +53,17 @@ export async function inviteMember(_prev: unknown, formData: FormData) {
     [user.id, parsed.data.email, parsed.data.role],
   );
 
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/packs");
   return { ok: true as const, email: parsed.data.email };
 }
 
 export async function removeMember(formData: FormData) {
   const user = await currentUser();
-  if (!user) redirect("/sign-in?next=/settings/team");
+  if (!user) redirect("/sign-in?next=/settings/packs");
 
   await query(`delete from members where id = $1 and owner_id = $2`, [
     String(formData.get("id")),
     user.id,
   ]);
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/packs");
 }

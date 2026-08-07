@@ -54,12 +54,23 @@ export async function gateFor(brain: Brain): Promise<Gate | null> {
   return null;
 }
 
-/** Has this reader paid anything that satisfies the gate? */
-export async function hasPaid(gate: Gate, userId: string | null): Promise<boolean> {
-  if (!userId) return false;
+/**
+ * Has this reader paid anything that satisfies the gate?
+ *
+ * Takes accounts rather than an account, because a seat shares a purchase. A
+ * studio buying a pack owns none of its brains — they belong to whoever wrote
+ * them — so the only thing a colleague can inherit is the buyer's receipt. Pass
+ * the reader plus any studio they hold a seat in; see lib/team.ts.
+ */
+export async function hasPaid(
+  gate: Gate,
+  buyers: string | string[] | null,
+): Promise<boolean> {
+  const ids = (typeof buyers === "string" ? [buyers] : (buyers ?? [])).filter(Boolean);
+  if (!ids.length) return false;
   const bought = await maybeOne(
-    `select 1 from purchases where brain_id = any($1::uuid[]) and buyer_id = $2`,
-    [gate.unlockedBy, userId],
+    `select 1 from purchases where brain_id = any($1::uuid[]) and buyer_id = any($2::text[])`,
+    [gate.unlockedBy, ids],
   );
   return Boolean(bought);
 }

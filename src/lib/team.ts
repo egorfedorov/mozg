@@ -85,6 +85,30 @@ export async function seatIn(ownerId: string, userId: string): Promise<GrantRole
   return limitsFor(effectivePlan(row.plan, row.paid_until)).seats > 1 ? row.role : null;
 }
 
+/**
+ * Every account whose receipts this reader may use: themselves, plus any
+ * studio they hold a live seat in.
+ *
+ * All of them, not the one studioFor picks — access is not billing. A person
+ * can sit in two studios and must read what either of them bought, while their
+ * calls can still only come out of one month.
+ */
+export async function payingAccountsFor(userId: string | null): Promise<string[]> {
+  if (!userId) return [];
+  const rows = await query<{ owner_id: string; plan: Plan; paid_until: Date | null }>(
+    `select m.owner_id, o.plan, o.paid_until
+       from members m
+       join "user" me on lower(me.email) = lower(m.email) and me."emailVerified"
+       join "user" o on o.id = m.owner_id
+      where me.id = $1`,
+    [userId],
+  );
+  const studios = rows
+    .filter((r) => limitsFor(effectivePlan(r.plan, r.paid_until)).seats > 1)
+    .map((r) => r.owner_id);
+  return [userId, ...studios];
+}
+
 export interface Billing {
   /** The account this caller's usage is charged to. */
   id: string;

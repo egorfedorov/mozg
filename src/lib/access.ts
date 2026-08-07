@@ -1,7 +1,7 @@
 import { maybeOne } from "@/db";
 import type { Brain, GrantRole } from "@/db/types";
 import { gateFor, hasPaid } from "@/lib/paywall";
-import { seatIn } from "@/lib/team";
+import { payingAccountsFor, seatIn } from "@/lib/team";
 
 /**
  * Who may do what with a brain. Every read path and every MCP tool goes
@@ -80,7 +80,9 @@ async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
   // add the free children instead.
   const gate = await gateFor(brain);
   if (gate) {
-    return (await hasPaid(gate, userId))
+    // The buyer's receipt travels to their seats: a studio buys the pack once
+    // and its five people read it, which is the whole shape of a pack sale.
+    return (await hasPaid(gate, await payingAccountsFor(userId)))
       ? open("viewer")
       : { brain, access: null, preview: true };
   }
