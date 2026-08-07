@@ -1,3 +1,4 @@
+import { msg } from "@/lib/msg";
 /**
  * Packs — a trade's brains, sold together.
  *
@@ -67,17 +68,17 @@ export const PACKS: Pack[] = [
     // want is the pack.
     familyPriceCents: 2900,
     memberPriceCents: 1900,
-    title: "Slot studios",
-    eyebrow: "For slot studios",
-    headline: ["A failed submission", "costs more than a year of this."],
+    title: msg("Slot studios"),
+    eyebrow: msg("For slot studios"),
+    headline: [msg("A failed submission"), msg("costs more than a year of this.")],
     lede:
-      "The rejection arrives with a line number and no context. Somebody re-reads the approval rules, somebody else argues about what the RGS contract actually said, and the build slips a fortnight — again, over something that was written down the whole time.",
+      msg("The rejection arrives with a line number and no context. Somebody re-reads the approval rules, somebody else argues about what the RGS contract actually said, and the build slips a fortnight — again, over something that was written down the whole time."),
     covers:
-      "the approval checklist, the compliance rules per jurisdiction, the RGS lifecycle, the math SDK, the animation and art direction",
+      msg("the approval checklist, the compliance rules per jurisdiction, the RGS lifecycle, the math SDK, the animation and art direction"),
     team:
-      "Your maths person, your frontend, your artist and your producer each connect their own agent with their own token",
+      msg("Your maths person, your frontend, your artist and your producer each connect their own agent with their own token"),
     caveat:
-      "It is not certification, and it is not advice: a brain answers from what it was taught and says so, and the exam measures whether the answer was in there — not whether the regulator agrees. It is not a replacement for reading the contract before you sign it.",
+      msg("It is not certification, and it is not advice: a brain answers from what it was taught and says so, and the exam measures whether the answer was in there — not whether the regulator agrees. It is not a replacement for reading the contract before you sign it."),
     parents: ["stake-engine", "slot-studio"],
     loose: [
       "slot-studio-compliance",

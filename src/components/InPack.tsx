@@ -41,12 +41,12 @@ export default async function InPack({
       {held ? (
         <p style={{ margin: ".4rem 0 .75rem" }}>
           {markup(t("This brain is part of <0/>, which you already hold — nothing more to buy, and the other <1/> brains in it are yours too."), [
-          <strong key="s0">{pack.title}</strong>,
+          <strong key="s0">{t(pack.title)}</strong>,
           brains - 1,
         ])}</p>
       ) : (
         <p style={{ margin: ".4rem 0 .75rem" }}>
-          <strong>{pack.title}</strong> is this brain and {brains - 1} others
+          <strong>{t(pack.title)}</strong> is this brain and {brains - 1} others
           the same job needs — bought once at{" "}
           <strong>{formatCents(pack.priceCents)}</strong>, shared with{" "}
           {pack.seats - 1} colleagues, and it does not expire.
@@ -62,7 +62,7 @@ export default async function InPack({
       )}
 
       <Link className={held ? "btn btn-ghost" : "btn"} href={`/packs/${pack.slug}`}>
-        {held ? `See what else is in ${pack.title}` : `What is in ${pack.title}`}
+        {held ? `${t("See what else is in")} ${t(pack.title)}` : `${t("What is in")} ${t(pack.title)}`}
       </Link>
     </section>
   );

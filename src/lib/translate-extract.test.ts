@@ -13,6 +13,12 @@ import { stringsIn } from "../../scripts/translate";
  */
 test("finds t() calls however prettier has wrapped them", () => {
   assert.deepEqual(stringsIn(`<p>{t("one line")}</p>`), ["one line"]);
+
+  // A curly quote written as an escape is six characters to a regex and one
+  // to the compiler. Hashing the escape produces a key the page never asks
+  // for, so the string is translated into eleven files nothing looks in and
+  // the page stays English while every count reads 100%.
+  assert.deepEqual(stringsIn(`{t("\\u201cquoted\\u201d")}`), ["\u201cquoted\u201d"]);
   assert.deepEqual(stringsIn(`{t(\n  "wrapped, with a trailing comma",\n)}`), [
     "wrapped, with a trailing comma",
   ]);

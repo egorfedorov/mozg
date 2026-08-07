@@ -68,8 +68,8 @@ export default async function PacksPage() {
             {packs.map(({ pack, stats }) => (
               <Link key={pack.slug} className="row" href={`/packs/${pack.slug}`}>
                 <span style={{ minWidth: 0 }}>
-                  <strong>{pack.title}</strong>
-                  <span className="row-sub">{pack.covers}</span>
+                  <strong>{t(pack.title)}</strong>
+                  <span className="row-sub">{t(pack.covers)}</span>
                   <span className="row-meta">
                     {stats.brains} {t("brains")} · {stats.notes.toLocaleString("en-US")}{" "}
                     {t("notes")} · {formatCents(pack.priceCents)} {t("once")} · {pack.seats}{" "}

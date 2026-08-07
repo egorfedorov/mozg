@@ -67,18 +67,18 @@ export default async function PackPage({
         <p className="eyebrow">
           <Link href="/packs" style={{ textDecoration: "underline" }}>
             {t("Packs")}</Link>{" "}
-          · {pack.eyebrow}
+          · {t(pack.eyebrow)}
         </p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}
         >
-          {pack.headline[0]}
+          {t(pack.headline[0])}
           <br />
-          {pack.headline[1]}
+          {t(pack.headline[1])}
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          {pack.lede}
+          {t(pack.lede)}
         </p>
         {/* Two sentences, and the second only exists once something has been
             scored. Written as two whole strings rather than one with a hole in
@@ -89,7 +89,7 @@ export default async function PackPage({
             t(
               "These are <0/> brains your agents query over MCP instead of guessing: <1/>. <2/> notes.",
             ),
-            [brains.length, pack.covers, notes.toLocaleString("en-US")],
+            [brains.length, t(pack.covers), notes.toLocaleString("en-US")],
           )}{" "}
           {median !== null &&
             markup(
@@ -195,14 +195,14 @@ export default async function PackPage({
           ])}</p>
           <p style={{ maxWidth: "58ch", margin: "0 0 1rem" }}>
             {markup(t("<0/>. The seat shares the reading, not the allowance: how much each of you can teach and how many calls you may make is still your own plan, so a colleague who works this hard ends up on their own <1>pro</1> rather than quietly spending yours."), [
-            pack.team,
+            t(pack.team),
             <Link href="/pricing" key="s1" />,
           ])}</p>
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
           <h2 className="h2">{t("What this is not")}</h2>
-          <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>{pack.caveat}</p>
+          <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>{t(pack.caveat)}</p>
           <p style={{ maxWidth: "58ch" }}>
             {t("What it removes is the other failure: an agent that answers with total confidence and no source, because something in its training data sounded close enough.")}</p>
         </section>

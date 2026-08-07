@@ -71,7 +71,16 @@ export function stringsIn(source: string): string[] {
   const re = /\b(?:t|msg)\(\s*(["'])((?:\\.|(?!\1)[^\\])*)\1\s*,?\s*\)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(source))) {
-    const text = m[2].replace(/\\n/g, "\n").replace(/\\(["'])/g, "$1");
+    const text = m[2]
+      .replace(/\\n/g, "\n")
+      // “ is a curly quote to the compiler and six characters to a
+      // regex. Twenty strings in stories.ts are written that way, and the key
+      // computed from the escape never matched the key the page computes from
+      // the character — so they were translated into eleven files that nothing
+      // ever looked in, and the page stayed English with every count saying
+      // 100%.
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/\\(["'])/g, "$1");
     if (text.trim()) out.push(text);
   }
   return out;
