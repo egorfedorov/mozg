@@ -295,7 +295,12 @@ function transform(source: string, file: string): { output: string; wrapped: num
           edits.push({
             start: node.children[0].getStart(sf),
             end: node.children[node.children.length - 1].getEnd(),
-            text: `{markup(t("${woven.sentence}"), [${slots}\n${pad}])}`,
+            // No slots means the "mixed" content was text and whitespace all
+            // along — a plain t() says that, and markup(…, []) only makes the
+            // next reader look for the markup that is not there.
+            text: woven.slots.length
+              ? `{markup(t("${woven.sentence}"), [${slots}\n${pad}])}`
+              : `{t("${woven.sentence}")}`,
           });
           // Its children are now inside a string; walking into them would
           // wrap the same words a second time.

@@ -92,7 +92,7 @@ export default async function StoriesPage() {
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span style={{ minWidth: 0 }}>
-                <strong>{s.title}</strong>
+                <strong>{t(s.title)}</strong>
                 <span className="row-sub">{s.oneLine}</span>
               </span>
             </a>
@@ -109,13 +109,13 @@ export default async function StoriesPage() {
             }}
           >
             <p className="eyebrow" style={{ color: s.accent }}>
-              {String(i + 1).padStart(2, "0")} · {s.who}
+              {String(i + 1).padStart(2, "0")} · {t(s.who)}
             </p>
             <h2
               className="display"
               style={{ fontSize: "clamp(1.6rem, 4vw, 2.6rem)", margin: ".3rem 0 1rem" }}
             >
-              {s.title}
+              {t(s.title)}
             </h2>
 
             {/* The person, before the mechanism. A reader recognises a situation
@@ -165,15 +165,13 @@ export default async function StoriesPage() {
                   }}
                 >
                   <span className="mono" style={{ color: "var(--color-riso-red)" }}>
-                    {markup(t("the problem ·"), [
-                  ])}</span>
-                  {s.person.problem}
+                    {t("the problem ·")}</span>
+                  {t(s.person.problem)}
                 </p>
                 <p style={{ margin: 0, fontSize: ".9375rem", lineHeight: 1.55 }}>
                   <span className="mono" style={{ color: "var(--color-riso-green)" }}>
-                    {markup(t("after ·"), [
-                  ])}</span>
-                  {s.person.resolution}
+                    {t("after ·")}</span>
+                  {t(s.person.resolution)}
                 </p>
               </div>
             </div>
@@ -193,15 +191,15 @@ export default async function StoriesPage() {
                     margin: "0 0 1rem",
                   }}
                 >
-                  {p}
+                  {t(p)}
                 </p>
               ))}
             </div>
 
             <AskedTwice
-              ask={s.moment.ask}
-              without={s.moment.without}
-              withBrain={s.moment.withBrain}
+              ask={t(s.moment.ask)}
+              without={t(s.moment.without)}
+              withBrain={t(s.moment.withBrain)}
               accent={s.accent}
             />
 
@@ -216,7 +214,7 @@ export default async function StoriesPage() {
               <ol style={{ margin: 0, paddingLeft: "1.25rem", display: "grid", gap: ".5rem" }}>
                 {s.steps.map((step, n) => (
                   <li key={n} style={{ fontSize: ".9375rem", color: "var(--ink-2)" }}>
-                    {step}
+                    {t(step)}
                   </li>
                 ))}
               </ol>
@@ -235,7 +233,7 @@ export default async function StoriesPage() {
               }}
             >
               <strong style={{ color: "var(--ink)" }}>{t("Where it stops:")}</strong>
-              {s.limit}
+              {t(s.limit)}
             </p>
 
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: "1rem" }}>
