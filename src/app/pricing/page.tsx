@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
-import { translator } from "@/lib/t";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -31,11 +31,11 @@ const PLAN_PRICES: Record<string, string> = {
 
 const PLAN_PITCH: Record<string, string> = {
   free:
-    "Full access to everything already built: the whole catalogue, every agent you connect, learning. One brain of your own, taught without limit from your CLI on the subscription you already pay for or on your own API key — with room to actually work: three thousand agent searches a month and two hundred sources. Plus a paste-a-URL taste of our AI, so you can see the difference before deciding it is worth $25.",
+    msg("Full access to everything already built: the whole catalogue, every agent you connect, learning. One brain of your own, taught without limit from your CLI on the subscription you already pay for or on your own API key — with room to actually work: three thousand agent searches a month and two hundred sources. Plus a paste-a-URL taste of our AI, so you can see the difference before deciding it is worth $25."),
   pro:
-    "Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference is included every month, which at what a page actually costs us is well over a thousand pages; the other $5 is the servers, the embedder and the exam judge.",
+    msg("Our AI does the reading. Paste a documentation URL and our models crawl it, extract every page, write the exam, grade it and re-read what changed next week — nothing running on your machine, no key to wire up. $20 of that inference is included every month, which at what a page actually costs us is well over a thousand pages; the other $5 is the servers, the embedder and the exam judge."),
   team:
-    "The same at scale: $65 of our inference a month, a hundred brains, and enough agent calls for a room full of them. Higher ceilings rather than seats — shared ownership is still being built, and this card will say so until it exists.",
+    msg("The same at scale: $65 of our inference a month, a hundred brains, and enough agent calls for a room full of them. Higher ceilings rather than seats — shared ownership is still being built, and this card will say so until it exists."),
 };
 
 export default async function PricingPage() {
@@ -146,7 +146,7 @@ export default async function PricingPage() {
                   {PLAN_PRICES[p.key]}
                 </p>
                 <p style={{ color: "var(--ink-2)", fontSize: ".9375rem", margin: "0 0 1rem" }}>
-                  {PLAN_PITCH[p.key]}
+                  {t(PLAN_PITCH[p.key])}
                 </p>
                 <ul
                   className="mono"

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
-import { translator } from "@/lib/t";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -17,9 +17,9 @@ export const metadata = {
 };
 
 const WORD: Record<string, string> = {
-  ok: "All systems operational",
-  degraded: "Partially degraded",
-  down: "Major outage",
+  ok: msg("All systems operational"),
+  degraded: msg("Partially degraded"),
+  down: msg("Major outage"),
 };
 
 /**
@@ -75,7 +75,7 @@ export default async function StatusPage() {
             data-state={status.state === "ok" ? undefined : "down"}
             style={{ width: "1rem", height: "1rem" }}
           />
-          {WORD[status.state]}
+          {t(WORD[status.state])}
         </h1>
 
         <p className="lede" style={{ maxWidth: "58ch" }}>

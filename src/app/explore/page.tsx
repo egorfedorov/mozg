@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
-import { translator } from "@/lib/t";
+import { translator, msg } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
@@ -34,15 +34,15 @@ type Price = "all" | "free" | "paid";
 type Sort = "score" | "new" | "popular";
 
 const PRICES: { key: Price; label: string }[] = [
-  { key: "all", label: "Everything" },
-  { key: "free", label: "Free" },
-  { key: "paid", label: "Paid" },
+  { key: "all", label: msg("Everything") },
+  { key: "free", label: msg("Free") },
+  { key: "paid", label: msg("Paid") },
 ];
 
 const SORTS: { key: Sort; label: string; sql: string }[] = [
-  { key: "score", label: "Best measured", sql: "b.score desc nulls last, b.updated_at desc" },
-  { key: "new", label: "Newest", sql: "b.created_at desc" },
-  { key: "popular", label: "Most bought", sql: "b.sales_count desc, b.score desc nulls last" },
+  { key: "score", label: msg("Best measured"), sql: "b.score desc nulls last, b.updated_at desc" },
+  { key: "new", label: msg("Newest"), sql: "b.created_at desc" },
+  { key: "popular", label: msg("Most bought"), sql: "b.sales_count desc, b.score desc nulls last" },
 ];
 
 export default async function ExplorePage({
@@ -158,14 +158,14 @@ export default async function ExplorePage({
           >
             {PRICES.map((p) => (
               <Chip key={p.key} href={href({ price: p.key })} on={p.key === price}>
-                {p.label}
+                {t(p.label)}
               </Chip>
             ))}
             <span style={{ flex: 1 }} />
             <span className="eyebrow">{t("Sort")}</span>
             {SORTS.map((s) => (
               <Chip key={s.key} href={href({ sort: s.key })} on={s.key === sort.key}>
-                {s.label}
+                {t(s.label)}
               </Chip>
             ))}
           </div>
@@ -175,15 +175,17 @@ export default async function ExplorePage({
           <div className="chips">
             <Chip href={href({ topic: null })} on={topic === null}>
               {t("All fields")}</Chip>
-            {TOPICS.map((t) => (
+            {/* `field`, not `t`: the parameter used to shadow the translator,
+                which is invisible until something inside asks it to translate. */}
+            {TOPICS.map((field) => (
               <Chip
-                key={t.key}
-                href={href({ topic: topic === t.key ? null : t.key })}
-                on={topic === t.key}
-                count={perTopic.get(t.key) ?? 0}
-                title={t.blurb}
+                key={field.key}
+                href={href({ topic: topic === field.key ? null : field.key })}
+                on={topic === field.key}
+                count={perTopic.get(field.key) ?? 0}
+                title={t(field.blurb)}
               >
-                {t.label}
+                {t(field.label)}
               </Chip>
             ))}
           </div>

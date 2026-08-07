@@ -558,7 +558,7 @@ export default async function Home() {
                   data-tint={tintFor(b)}
                 >
                   <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
-                    {topicLabel(b.topic)} · {b.owner_handle}
+                    {t(topicLabel(b.topic))} · {b.owner_handle}
                   </span>
                   <h3 className="card-title">{b.title}</h3>
                   <p className="card-goal">{b.goal ?? "No goal set."}</p>

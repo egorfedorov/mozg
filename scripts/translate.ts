@@ -26,7 +26,10 @@ import { env } from "../src/lib/env";
 import { LOCALES, DEFAULT_LOCALE } from "../src/lib/locales";
 import { key } from "../src/lib/t";
 
-const ROOTS = ["src/app", "src/components"];
+// src/lib too: a few marked strings live beside the data they describe —
+// the field labels in topics.ts, for one. Only t() and msg() calls are
+// collected, so nothing else in there is swept up by being on the list.
+const ROOTS = ["src/app", "src/components", "src/lib"];
 const LOCALES_DIR = "src/locales";
 
 function arg(name: string): string | undefined {
