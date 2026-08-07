@@ -84,8 +84,8 @@ export async function categoryGroups(brainId: string): Promise<CategoryGroup[]> 
 }
 
 export interface DuplicatePair {
-  a: Pick<Note, "id" | "title" | "body" | "category" | "created_at">;
-  b: Pick<Note, "id" | "title" | "body" | "category" | "created_at">;
+  a: Pick<Note, "id" | "brain_id" | "title" | "body" | "category" | "created_at">;
+  b: Pick<Note, "id" | "brain_id" | "title" | "body" | "category" | "created_at">;
   distance: number;
 }
 
@@ -118,20 +118,38 @@ export interface DuplicatePairsOptions {
    * under active work produces a merge that is stale the moment it lands.
    */
   minAgeHours?: number;
+  /**
+   * Pair notes from *different* brains in the scope instead of within one.
+   *
+   * Same lookup, opposite question. Inside a brain a close pair is a
+   * duplicate to merge; across the brains of a pack it is two sources
+   * answering one question, which is either a repetition or a contradiction —
+   * see worker/contradict.ts. Sharing the query is the point: the kNN plan
+   * here took two rounds of tuning to get right, and a second copy of it
+   * would drift from this one on the first fix.
+   */
+  crossBrain?: boolean;
 }
 
+/**
+ * @param scope One brain, or the brains to pair across (with crossBrain).
+ */
 export async function duplicatePairs(
-  brainId: string,
+  scope: string | string[],
   opts: DuplicatePairsOptions = {},
 ): Promise<DuplicatePair[]> {
-  const { limit = 20, maxDistance = NEAR, minAgeHours = null } = opts;
+  const { limit = 20, maxDistance = NEAR, minAgeHours = null, crossBrain = false } = opts;
+  const brainIds = Array.isArray(scope) ? scope : [scope];
+  if (!brainIds.length) return [];
   const rows = await query<{
     a_id: string;
+    a_brain: string;
     a_title: string;
     a_body: string;
     a_category: string | null;
     a_created: string;
     b_id: string;
+    b_brain: string;
     b_title: string;
     b_body: string;
     b_category: string | null;
@@ -150,7 +168,11 @@ export async function duplicatePairs(
            select y.note_id, y.embedding
              from chunks y
              join notes yb on yb.id = y.note_id and yb.status = 'active'
-            where y.brain_id = x.brain_id
+            where y.brain_id = any($1)
+              -- Within one brain, or never within one — the same kNN answers
+              -- both questions, and $5 picks which is being asked.
+              and (case when $5 then y.brain_id <> x.brain_id
+                        else y.brain_id = x.brain_id end)
               and y.note_id <> x.note_id
               -- Without the is-not-null, a brain with five unembedded chunks
               -- would fill every kNN window with NULLs and hide real pairs
@@ -162,7 +184,7 @@ export async function duplicatePairs(
             order by y.embedding <=> x.embedding
             limit 5
          ) y
-        where x.brain_id = $1
+        where x.brain_id = any($1)
           and (x.embedding <=> y.embedding) < $2
           and ($4::int is null or xa.created_at < now() - make_interval(hours => $4))
      ),
@@ -177,23 +199,24 @@ export async function duplicatePairs(
         limit $3
      )
      select p.distance,
-            a.id as a_id, a.title as a_title, a.body as a_body,
+            a.id as a_id, a.brain_id as a_brain, a.title as a_title, a.body as a_body,
             a.category as a_category,
             to_char(a.created_at at time zone 'UTC', 'YYYY-MM-DD') as a_created,
-            b.id as b_id, b.title as b_title, b.body as b_body,
+            b.id as b_id, b.brain_id as b_brain, b.title as b_title, b.body as b_body,
             b.category as b_category,
             to_char(b.created_at at time zone 'UTC', 'YYYY-MM-DD') as b_created
        from pairs p
        join notes a on a.id = p.a_id
        join notes b on b.id = p.b_id
       order by p.distance`,
-    [brainId, maxDistance, limit, minAgeHours],
+    [brainIds, maxDistance, limit, minAgeHours, crossBrain],
   );
 
   return rows.map((r) => ({
     distance: Number(r.distance),
     a: {
       id: r.a_id,
+      brain_id: r.a_brain,
       title: r.a_title,
       body: r.a_body,
       category: r.a_category,
@@ -201,6 +224,7 @@ export async function duplicatePairs(
     },
     b: {
       id: r.b_id,
+      brain_id: r.b_brain,
       title: r.b_title,
       body: r.b_body,
       category: r.b_category,

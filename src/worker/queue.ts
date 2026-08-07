@@ -13,6 +13,7 @@ export const QUEUES = {
   exam: "exam",
   maintenance: "maintenance",
   consolidate: "consolidate",
+  contradict: "contradict",
   digest: "digest",
   mozgpay: "mozgpay",
   lesson: "lesson",
@@ -35,6 +36,15 @@ export const MAINTENANCE_CRON = "17 */6 * * *";
  * maintenance slots.
  */
 export const CONSOLIDATE_CRON = "43 3 * * *";
+
+/**
+ * The contradiction hunt, daily and after consolidation rather than before:
+ * merging first means the pairs it collapsed are never offered to the judge as
+ * cross-brain candidates they were never going to be anyway, and a note that
+ * moved this morning has settled by now. 05:13 UTC keeps all three passes in
+ * their own hour.
+ */
+export const CONTRADICT_CRON = "13 5 * * *";
 
 let boss: PgBoss | null = null;
 let starting: Promise<PgBoss> | null = null;
@@ -145,6 +155,23 @@ export async function scheduleConsolidation(): Promise<void> {
   }
 
   await b.schedule(QUEUES.consolidate, CONSOLIDATE_CRON, {}, { tz: "UTC" });
+}
+
+/** Register the daily contradiction pass; unschedules itself when turned off. */
+export async function scheduleContradictions(): Promise<void> {
+  const b = await getBoss();
+  if (!env.CONTRADICT_ENABLED) {
+    await b.unschedule(QUEUES.contradict).catch(() => {});
+    return;
+  }
+  await b.schedule(QUEUES.contradict, CONTRADICT_CRON, {}, { tz: "UTC" });
+}
+
+export async function enqueueContradictions(): Promise<void> {
+  const b = await getBoss();
+  // The pass walks every pack; a double trigger would pay the judge twice for
+  // the same verdicts.
+  await b.send(QUEUES.contradict, {}, { singletonKey: "contradict", singletonSeconds: 600 });
 }
 
 export async function enqueueConsolidation(): Promise<void> {

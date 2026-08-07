@@ -1,4 +1,4 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl } from "@/worker/queue";
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
 import { compileLesson } from "@/worker/lesson";
@@ -31,6 +31,7 @@ import { runMaintenance, refreshBrain } from "@/worker/maintenance";
 import { runGeneration } from "@/worker/generate";
 import { failGeneration } from "@/lib/generate";
 import { runConsolidation } from "@/worker/consolidate";
+import { runContradictions } from "@/worker/contradict";
 import { embedHealthy } from "@/lib/embed";
 import { env } from "@/lib/env";
 
@@ -269,6 +270,29 @@ async function main() {
 
   await scheduleConsolidation();
 
+  await boss.work(
+    QUEUES.contradict,
+    { batchSize: 1, pollingIntervalSeconds: 30 },
+    async () => {
+      const started = Date.now();
+      try {
+        const report = await runContradictions();
+        console.log(
+          `[contradict] packs=${report.packs} candidates=${report.candidates} ` +
+            `judged=${report.judged} found=${report.found} ` +
+            `${report.costCents.toFixed(1)}¢ ${Date.now() - started}ms`,
+        );
+      } catch (err) {
+        reportError("worker", "contradict", err, {
+          detail: `after ${Date.now() - started}ms`,
+        });
+        throw err;
+      }
+    },
+  );
+
+  await scheduleContradictions();
+
   await boss.work(QUEUES.digest, { batchSize: 1, pollingIntervalSeconds: 60 }, async () => {
     const sent = await runDigest();
     console.log(`[digest] sent ${sent} weekly letter(s)`);
@@ -310,7 +334,8 @@ async function main() {
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +
       `(one job at a time per queue, maintenance ${MAINTENANCE_CRON} UTC, ` +
-      `consolidation ${env.CONSOLIDATE_ENABLED ? `${CONSOLIDATE_CRON} UTC` : "off"})`,
+      `consolidation ${env.CONSOLIDATE_ENABLED ? `${CONSOLIDATE_CRON} UTC` : "off"}, ` +
+      `contradictions ${env.CONTRADICT_ENABLED ? `${CONTRADICT_CRON} UTC` : "off"})`,
   );
 
   const shutdown = async (signal: string) => {

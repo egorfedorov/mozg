@@ -26,6 +26,16 @@ export const metadata = {
  */
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
+    date: "2026-08-07",
+    title: "Where two brains in a pack disagree, both sides show",
+    body: "The brains in a pack are read as one, so a conflict between two of them used to reach you as one confident answer with the argument invisible. Every night they are now read against each other; a real conflict is published on the pack page and flagged inside brain_search, naming both claims and the brain each came from. Nothing is merged and nothing is quietly picked — an agent that meets one is told to report both.",
+  },
+  {
+    date: "2026-08-06",
+    title: "The site reads in eleven languages",
+    body: "Every public page now speaks Arabic, Chinese (both scripts), French, Hindi, Japanese, Portuguese, Russian, Spanish, Thai and Urdu — picked from your browser, changeable from the footer, right-to-left where it belongs. The brains themselves stay English on purpose: a translated note is a note nobody examined, and retrieval is already cross-lingual, so asking in your own language works today.",
+  },
+  {
     date: "2026-08-04",
     title: "The questions you ask become the exam",
     body: "When any agent searches a brain and gets nothing back, that query is now added to the brain's exam automatically — and the next re-read of the sources chases it. Hitting a gap is the bug report. The whole loop is written up on /collective.",

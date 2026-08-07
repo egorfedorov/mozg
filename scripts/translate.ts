@@ -113,9 +113,40 @@ Rules:
   language has that choice.
 - Preserve any leading or trailing whitespace, and any punctuation that ends
   the sentence.
+- Quote marks: use your own language's (Chinese and Japanese 「」, French « »,
+  otherwise the curly “ ”). Never a straight ASCII double quote inside a
+  translation. This is not typographic fussiness — a straight quote is what
+  the model breaks its own JSON on, and the string is then dropped silently.
+  One Simplified Chinese sentence containing “it got smarter” was lost on
+  every run for exactly this reason until this line existed.
 - Do not add explanations, do not expand abbreviations, do not "improve" the
   meaning. If a sentence is blunt in English it stays blunt.
 - Return every key you were given, exactly once, with the key unchanged.`;
+
+/**
+ * The tool argument, whichever shape it arrived in.
+ *
+ * A forced tool call is supposed to hand back an array. Occasionally the model
+ * writes the array as a *string* of JSON instead — and then iterating it walks
+ * the string one character at a time, finds no `.key` on any of them, and the
+ * whole batch vanishes without an error. Parsing it back costs three lines;
+ * the alternative is a language that is quietly short and a run that says it
+ * finished.
+ */
+function asList(value: unknown): { key: string; text: string }[] {
+  if (Array.isArray(value)) return value as { key: string; text: string }[];
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as { key: string; text: string }[];
+    } catch {
+      // Unparseable — the model escaped its own quotes wrong, which is the
+      // failure the quotation-mark rule in SYSTEM exists to prevent. Nothing
+      // to salvage here; the retry above asks again.
+    }
+  }
+  return [];
+}
 
 async function translateBatch(
   locale: string,
@@ -134,7 +165,8 @@ async function translateBatch(
   // kept whatever came back. Halving the slice breaks the pattern; a single
   // string on its own is the floor.
   const ask = async (slice: { key: string; text: string }[], depth = 0): Promise<void> => {
-    const { data } = await structured<{ translations: { key: string; text: string }[] }>({
+    if (!slice.length) return;
+    const { data } = await structured<{ translations: unknown }>({
       model: env.MODEL_TRANSLATE ?? env.MODEL_JUDGE,
       // Generous, and it has to be: a language whose script costs several
       // tokens a character (Chinese, Thai, Hindi) writes far more tokens than
@@ -152,16 +184,20 @@ async function translateBatch(
         },
       ],
     });
-    for (const t of data.translations ?? []) {
+    for (const t of asList(data.translations)) {
       if (t.key && t.text) out[t.key] = t.text;
     }
 
     const dropped = slice.filter((s) => !out[s.key]);
-    if (dropped.length && depth < 4 && slice.length > 1) {
-      const half = Math.ceil(dropped.length / 2);
-      await ask(dropped.slice(0, half), depth + 1);
-      await ask(dropped.slice(half), depth + 1);
-    }
+    if (!dropped.length || depth >= 4) return;
+    // A lone string is asked again rather than halved — halving one item hands
+    // the recursion an empty slice and the string is simply never retried,
+    // which is how a single sentence stayed missing from Chinese through four
+    // runs that each reported success.
+    if (dropped.length === 1) return ask(dropped, depth + 1);
+    const half = Math.ceil(dropped.length / 2);
+    await ask(dropped.slice(0, half), depth + 1);
+    await ask(dropped.slice(half), depth + 1);
   };
 
   for (let i = 0; i < items.length; i += BATCH) {
@@ -240,6 +276,16 @@ async function main() {
 
     await writeFile(path, `${JSON.stringify(next, null, 2)}\n`, "utf8");
     console.log(`    → ${path} (${Object.keys(next).length} strings)`);
+
+    // Say what did not land. The count on the line above is what the file
+    // holds, not what was asked for, so a string the model kept refusing used
+    // to read as a finished language — and the English it falls back to on the
+    // page looks deliberate. Naming it is the difference between a known gap
+    // and an invisible one.
+    const lost = missing.filter(([k]) => !next[k]);
+    for (const [k, text] of lost) {
+      console.log(`    ! not translated (${k}): ${text.slice(0, 70)}…`);
+    }
   }
 
   if (!only && !all) console.log(`\nreport only — pass --lang <code> or --all to translate.`);

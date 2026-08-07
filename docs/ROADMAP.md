@@ -32,6 +32,11 @@ next month rather than shrinking to fit.
 - **Safety.** Secret, PII and prompt-injection scanning at ingest and again
   at publication; third-party notes framed as data for reading agents; AI
   training crawlers refused.
+- **Disagreement, published.** The brains in a pack are read against each
+  other nightly; a real conflict is shown on the pack page and flagged in
+  `brain_search` with both claims and the brain each came from. Across brains
+  there is no exam to settle it, so it is never merged and never silently
+  resolved.
 
 ## August 5–31 — the money path, and the front door
 

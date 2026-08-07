@@ -7,6 +7,7 @@ import Contents from "@/components/Contents";
 import { formatCents } from "@/lib/money-math";
 import { PACKS, packBySlug } from "@/lib/packs";
 import { brainsIn, statsOf } from "@/lib/pack-brains";
+import { contradictionsIn, lastJudgedIn } from "@/lib/contradictions";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,12 @@ export default async function PackPage({
   const brains = await brainsIn(pack);
   const { notes, median } = statsOf(brains);
   const perSeat = Math.round(pack.priceCents / pack.seats);
+
+  const brainIds = brains.map((b) => b.id);
+  const [clashes, lastJudged] = await Promise.all([
+    contradictionsIn(brainIds),
+    lastJudgedIn(brainIds),
+  ]);
 
   return (
     <>
@@ -118,6 +125,54 @@ export default async function PackPage({
               </Link>
             ))}
           </div>
+        </section>
+
+        {/*
+          The disagreements, printed on the sales page.
+          Publishing them is the argument, not a caveat to it: a pack whose
+          brains never appeared to conflict would only mean nobody was
+          checking, and an agent holding one side of an unresolved argument
+          with no idea there is another side is the exact failure the rest of
+          this page is sold against. Every conflict here is also flagged in
+          brain_search, so the buyer's agent meets it mid-answer.
+        */}
+        <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
+          <h2 className="h2">{t("Where these brains disagree")}</h2>
+          {clashes.length > 0 ? (
+            <>
+              <p style={{ color: "var(--ink-2)", maxWidth: "58ch", margin: ".5rem 0 1.25rem" }}>
+                {t("Different sources, read every night for places where two of them answer the same question differently. Nothing is merged and nothing is quietly picked: your agent is handed both sides, with the brain each came from.")}</p>
+              <div className="rows">
+                {clashes.map((c) => (
+                  <div className="row" key={c.id}>
+                    <span style={{ minWidth: 0 }}>
+                      <strong>{c.subject}</strong>
+                      <span className="row-sub">
+                        {c.a.brain_slug}: {c.a.claim}
+                      </span>
+                      <span className="row-sub">
+                        {c.b.brain_slug}: {c.b.claim}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            // Whole sentences, never fragments joined around a variable — a
+            // translator handed "The last pass, on" returns something that only
+            // reads as a sentence in English. The date carries its own label.
+            <p style={{ color: "var(--ink-2)", maxWidth: "58ch", margin: ".5rem 0 0" }}>
+              {t("Every night these brains are read against each other for places where two of them answer the same question differently.")}{" "}
+              {lastJudged ? (
+                <>
+                  {t("None are open.")} {t("Last pass:")} {lastJudged}.
+                </>
+              ) : (
+                t("The first pass has not run yet.")
+              )}
+            </p>
+          )}
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>

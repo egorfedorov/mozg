@@ -112,6 +112,13 @@ const schema = z.object({
   // validated.
   CONSOLIDATE_ENABLED: z.stringbool().default(false),
 
+  // Nightly cross-brain contradiction hunt. On by default, unlike its
+  // neighbour above, for two reasons: it writes a row and changes no note, so
+  // a wrong verdict is a line somebody can dismiss rather than a fact lost;
+  // and it only ever looks inside a pack, so an installation that ships no
+  // packs finds no candidates and pays for nothing.
+  CONTRADICT_ENABLED: z.stringbool().default(true),
+
   // Comma-separated addresses that may open /admin. Empty means nobody can —
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.
