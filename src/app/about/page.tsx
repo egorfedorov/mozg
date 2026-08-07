@@ -232,11 +232,10 @@ export default async function AboutPage() {
           ])}</p>
 
           <p className="lr-sign">
-            <span className="mono">Egor Fedorov</span>
+            <span className="mono">{t("Egor Fedorov")}</span>
             <br />
             <span className="mono lr-sign-sub">
-              Uraanghay Saqa · Sakha Republic · building mozg in the open
-            </span>
+              {t("Uraanghay Saqa · Sakha Republic · building mozg in the open")}</span>
           </p>
         </section>
       </main>

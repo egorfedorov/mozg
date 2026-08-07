@@ -184,14 +184,11 @@ export default async function WhyPage() {
             {t("Teach it once.")}</h2>
           <div style={{ display: "flex", gap: ".75rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>
-              Build a brain
-            </Link>
+              {t("Build a brain")}</Link>
             <Link className="btn btn-ghost" href="/guide">
-              How to build a good one
-            </Link>
+              {t("How to build a good one")}</Link>
             <Link className="btn btn-ghost" href="/connect">
-              Connect it
-            </Link>
+              {t("Connect it")}</Link>
           </div>
         </section>
       </main>

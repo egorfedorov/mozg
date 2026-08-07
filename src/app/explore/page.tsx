@@ -162,7 +162,7 @@ export default async function ExplorePage({
               </Chip>
             ))}
             <span style={{ flex: 1 }} />
-            <span className="eyebrow">Sort</span>
+            <span className="eyebrow">{t("Sort")}</span>
             {SORTS.map((s) => (
               <Chip key={s.key} href={href({ sort: s.key })} on={s.key === sort.key}>
                 {s.label}
@@ -207,12 +207,10 @@ export default async function ExplorePage({
               {t("Publishing a brain makes it readable by anyone and gives it a page search engines can find. Set a price and it earns every time someone buys it.")}</p>
             <div style={{ display: "flex", gap: ".75rem", marginTop: "1rem", flexWrap: "wrap" }}>
               <Link className="btn" href="/brains">
-                Go to your brains
-              </Link>
+                {t("Go to your brains")}</Link>
               {(topic || price !== "all") && (
                 <Link className="btn btn-ghost" href="/explore">
-                  Show everything
-                </Link>
+                  {t("Show everything")}</Link>
               )}
             </div>
           </div>
@@ -265,17 +263,13 @@ export default async function ExplorePage({
 
                 <div className="card-foot">
                   <span style={{ opacity: 0.8 }}>
-                    {(brain.note_count + brain.child_notes).toLocaleString()} notes
-                    {brain.children > 0 && ` · ${brain.children} inside`}
-                    {/* Only a brain that is actually for sale can have been sold.
-                        On a free one the line read as a shop counter at zero. */}
-                    {brain.price_cents > 0 && brain.sales_count > 0 && ` · ${brain.sales_count} sold`}
-                    {brain.calls_week > 0 && ` · ${brain.calls_week} asks/wk`}
-                    {/* Two, not one: "asked by 1 person" is the author, and saying
-                        so out loud makes a young brain look abandoned rather than
-                        new. */}
-                    {brain.readers_week > 1 && ` · ${brain.readers_week} people`}
-                  </span>
+                    {markup(t("<0/> notes <1/> <2/> <3/> <4/>"), [
+                    (brain.note_count + brain.child_notes).toLocaleString(),
+                    brain.children > 0 && ` · ${brain.children} inside`,
+                    brain.price_cents > 0 && brain.sales_count > 0 && ` · ${brain.sales_count} sold`,
+                    brain.calls_week > 0 && ` · ${brain.calls_week} asks/wk`,
+                    brain.readers_week > 1 && ` · ${brain.readers_week} people`,
+                  ])}</span>
                   {brain.score !== null && (
                     <span className="card-score">
                       {brain.score}
@@ -302,8 +296,7 @@ export default async function ExplorePage({
             ])}</p>
           </div>
           <Link className="btn" href="/guide">
-            How to build one
-          </Link>
+            {t("How to build one")}</Link>
         </section>
       </main>
       <SiteFooter />

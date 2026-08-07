@@ -105,50 +105,31 @@ export default async function BetaPage() {
           <div className="rows">
             <div className="row">
               <span style={{ minWidth: 0 }}>
-                <strong>Break it, then tell us.</strong>
+                <strong>{t("Break it, then tell us.")}</strong>
                 <span className="row-sub" style={{ maxWidth: "70ch" }}>
-                  Feed it a docs site that confuses it. Ask a brain something it
-                  scored well on and got wrong anyway. Find the button that does
-                  nothing. Every report goes to a human the same day:{" "}
-                  <a href="/chat" style={{ textDecoration: "underline" }}>chatmozg</a>{" "}
-                  or{" "}
-                  <a
-                    href="https://github.com/egorfedorov/mozg-plugin/issues"
+                  {markup(t("Feed it a docs site that confuses it. Ask a brain something it scored well on and got wrong anyway. Find the button that does nothing. Every report goes to a human the same day: <0>chatmozg</0> or <1>GitHub issues</1> . A bug with steps to reproduce it is a gift — we answer it like one."), [
+                  <a href="/chat" style={{ textDecoration: "underline" }} key="s0" />,
+                  <a href="https://github.com/egorfedorov/mozg-plugin/issues"
                     target="_blank"
                     rel="noreferrer noopener"
-                    style={{ textDecoration: "underline" }}
-                  >
-                    GitHub issues
-                  </a>
-                  . A bug with steps to reproduce it is a gift — we answer it
-                  like one.
-                </span>
+                    style={{ textDecoration: "underline" }} key="s1" />,
+                ])}</span>
               </span>
             </div>
             <div className="row">
               <span style={{ minWidth: 0 }}>
-                <strong>Tell one person who fights their agent&apos;s memory.</strong>
+                <strong>{t("Tell one person who fights their agent's memory.")}</strong>
                 <span className="row-sub" style={{ maxWidth: "70ch" }}>
-                  You know exactly who — the one re-explaining their stack to a
-                  model every morning. Send them a brain from the{" "}
-                  <Link href="/explore" style={{ textDecoration: "underline" }}>
-                    catalogue
-                  </Link>
-                  ; the free ones need no account to look at, and five real
-                  queries into any paid one are free. Word of mouth is the whole
-                  marketing department right now.
-                </span>
+                  {markup(t("You know exactly who — the one re-explaining their stack to a model every morning. Send them a brain from the <0>catalogue</0> ; the free ones need no account to look at, and five real queries into any paid one are free. Word of mouth is the whole marketing department right now."), [
+                  <Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />,
+                ])}</span>
               </span>
             </div>
             <div className="row">
               <span style={{ minWidth: 0 }}>
-                <strong>Tell us what a brain should exist for.</strong>
+                <strong>{t("Tell us what a brain should exist for.")}</strong>
                 <span className="row-sub" style={{ maxWidth: "70ch" }}>
-                  A doc site your agents keep misquoting, a spec you keep
-                  re-pasting, a field with no good brain yet — name it and we
-                  will likely build it within days. The best brains in the
-                  catalogue started as one sentence in the chat.
-                </span>
+                  {t("A doc site your agents keep misquoting, a spec you keep re-pasting, a field with no good brain yet — name it and we will likely build it within days. The best brains in the catalogue started as one sentence in the chat.")}</span>
               </span>
             </div>
           </div>
@@ -171,11 +152,9 @@ export default async function BetaPage() {
 
         <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "2rem" }}>
           <Link className="btn" href="/brains">
-            Try it — teach a brain from one link
-          </Link>
+            {t("Try it — teach a brain from one link")}</Link>
           <Link className="btn btn-ghost" href="/explore">
-            Browse the catalogue
-          </Link>
+            {t("Browse the catalogue")}</Link>
         </div>
       </main>
       <SiteFooter />

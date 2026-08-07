@@ -124,6 +124,12 @@ function keyed(element: string, index: number): string {
   return element.replace(/^<([A-Za-z][\w.]*)/, `<$1 key="s${index}"`);
 }
 
+/** An arrow or function whose own parameter is called `t`. */
+function shadowsT(node: ts.Node): boolean {
+  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return false;
+  return node.parameters.some((p) => ts.isIdentifier(p.name) && p.name.text === "t");
+}
+
 /** Does this expression carry a sentence of its own inside some JSX? */
 function hidesProse(node: ts.Node): boolean {
   let found = false;
@@ -239,11 +245,29 @@ function transform(source: string, file: string): { output: string; wrapped: num
   );
   if (!root?.body) return { output: source, wrapped: 0, skipped };
 
-  function visit(node: ts.Node) {
+  /**
+   * @param inSentence This node sits inside a paragraph that has words of its
+   * own, so an inline tag here is a fragment — `<em>for</em>` mid-line — and
+   * its text must not be wrapped alone. Outside one, the same `<span>` or
+   * `<Link>` is a standalone label ("Sign in", "between its last two exam
+   * sittings") and has to be. Treating every inline tag as a fragment is what
+   * left the header and half the small print in English.
+   */
+  function visit(node: ts.Node, inSentence = false) {
+    // A callback that named its parameter `t` shadows the translator, and the
+    // rewrite compiles to "AgentTaught has no call signatures" three hundred
+    // lines away from the cause. Leave that subtree alone and say so.
+    if (shadowsT(node)) {
+      const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+      skipped.push(`${file}:${line + 1}  (a callback parameter named "t" shadows the translator)`);
+      return;
+    }
     if (ts.isJsxElement(node)) {
       const tag = node.openingElement.tagName.getText(sf);
-      if (INLINE.has(tag)) {
-        ts.forEachChild(node, visit);
+      // Code is never prose. A standalone <code>npm run worker</code> would
+      // otherwise go to a translator, and come back translated.
+      if ((INLINE.has(tag) && inSentence) || tag === "code" || tag === "kbd") {
+        ts.forEachChild(node, (c) => visit(c, inSentence));
         return;
       }
       const children = node.children.filter(
@@ -283,9 +307,16 @@ function transform(source: string, file: string): { output: string; wrapped: num
           .slice(0, 70);
         const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
         skipped.push(`${file}:${line + 1}  ${sample}`);
+        // Refused, so its pieces stay pieces: walking in with inSentence set
+        // stops the inline tags of a sentence nobody could weave from being
+        // wrapped one fragment at a time.
+        ts.forEachChild(node, (c) => visit(c, true));
+        return;
       }
+      ts.forEachChild(node, (c) => visit(c, prose.length > 0));
+      return;
     }
-    ts.forEachChild(node, visit);
+    ts.forEachChild(node, (c) => visit(c, inSentence));
   }
   visit(root.body);
 

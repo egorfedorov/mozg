@@ -80,7 +80,7 @@ export default async function GlobalChangesPage() {
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("Recent sittings")}</h2>
-            <span className="eyebrow">each diffed against its predecessor</span>
+            <span className="eyebrow">{t("each diffed against its predecessor")}</span>
           </div>
           {sittings.length === 0 ? (
             <p className="lede">{t("The first public sitting will land here.")}</p>
@@ -92,11 +92,15 @@ export default async function GlobalChangesPage() {
                     <strong>{s.title}</strong>
                     <span className="row-sub">
                       {s.gained > 0 && (
-                        <span style={{ color: "var(--color-riso-green)" }}>+{s.gained} newly passed</span>
+                        <span style={{ color: "var(--color-riso-green)" }}>{markup(t("+<0/> newly passed"), [
+                          s.gained,
+                        ])}</span>
                       )}
                       {s.gained > 0 && s.lost > 0 && " · "}
                       {s.lost > 0 && (
-                        <span style={{ color: "var(--color-riso-red)" }}>−{s.lost} lost</span>
+                        <span style={{ color: "var(--color-riso-red)" }}>{markup(t("−<0/> lost"), [
+                          s.lost,
+                        ])}</span>
                       )}
                       {s.gained === 0 && s.lost === 0 && "held steady"}
                     </span>
@@ -112,7 +116,7 @@ export default async function GlobalChangesPage() {
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("Sources that moved")}</h2>
-            <span className="eyebrow">hash-detected, re-read, then re-examined</span>
+            <span className="eyebrow">{t("hash-detected, re-read, then re-examined")}</span>
           </div>
           {moved.length === 0 ? (
             <p className="lede">{t("Quiet — the watched documentation is as it was.")}</p>
@@ -122,7 +126,9 @@ export default async function GlobalChangesPage() {
                 <Link key={i} className="row" href={`/b/${m.handle}/${m.slug}/changes`}>
                   <span style={{ minWidth: 0 }}>
                     <strong style={{ overflowWrap: "anywhere" }}>{m.name}</strong>
-                    <span className="row-meta">in {m.title}</span>
+                    <span className="row-meta">{markup(t("in <0/>"), [
+                      m.title,
+                    ])}</span>
                   </span>
                   <span className="row-side mono">{m.at}</span>
                 </Link>

@@ -56,7 +56,7 @@ export default async function StylesPage() {
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("One prompt, with and without the brain")}</h2>
-            <span className="eyebrow">same image model, nothing else changed</span>
+            <span className="eyebrow">{t("same image model, nothing else changed")}</span>
           </div>
           <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", maxWidth: "60rem" }}>
             {[
@@ -86,7 +86,7 @@ export default async function StylesPage() {
         <section style={{ marginTop: "3.5rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("How an artist sells a style")}</h2>
-            <span className="eyebrow">every step already works today</span>
+            <span className="eyebrow">{t("every step already works today")}</span>
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
             {[
@@ -121,8 +121,7 @@ export default async function StylesPage() {
           <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
             {t("Browse them by artist, see what each one teaches and what it scored, and take one to your agent.")}</p>
           <Link className="btn" href="https://gallery.mozg.sh">
-            Open the gallery
-          </Link>
+            {t("Open the gallery")}</Link>
         </section>
 
         {/* This block used to be titled "Next on this road". It shipped, so it
@@ -137,17 +136,14 @@ export default async function StylesPage() {
             <strong key="s0" />,
           ])}</p>
           <Link className="btn" href="https://gallery.mozg.sh">
-            See it in the gallery
-          </Link>
+            {t("See it in the gallery")}</Link>
         </section>
 
         <section style={{ marginTop: "3rem", display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
           <Link className="btn" href={user ? "/styles/new" : "/sign-in?next=/styles/new"}>
-            Start your style brain — free, guided
-          </Link>
+            {t("Start your style brain — free, guided")}</Link>
           <Link className="btn btn-ghost" href="/explore?topic=art">
-            Browse art brains
-          </Link>
+            {t("Browse art brains")}</Link>
         </section>
       </main>
       <SiteFooter />

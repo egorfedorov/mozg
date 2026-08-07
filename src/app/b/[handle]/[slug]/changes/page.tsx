@@ -1,3 +1,4 @@
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
@@ -95,7 +96,7 @@ export default async function ChangesPage({
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("Exam sittings")}</h2>
-            <span className="eyebrow">each diffed against the one before</span>
+            <span className="eyebrow">{t("each diffed against the one before")}</span>
           </div>
           {runs.length === 0 ? (
             <p className="lede">{t("No completed sittings yet.")}</p>
@@ -108,12 +109,15 @@ export default async function ChangesPage({
                     <span className="row-sub">
                       {r.gained > 0 && (
                         <span style={{ color: "var(--color-riso-green)" }}>
-                          +{r.gained} newly passed
-                        </span>
+                          {markup(t("+<0/> newly passed"), [
+                          r.gained,
+                        ])}</span>
                       )}
                       {r.gained > 0 && r.lost > 0 && " · "}
                       {r.lost > 0 && (
-                        <span style={{ color: "var(--color-riso-red)" }}>−{r.lost} lost</span>
+                        <span style={{ color: "var(--color-riso-red)" }}>{markup(t("−<0/> lost"), [
+                          r.lost,
+                        ])}</span>
                       )}
                       {r.gained === 0 && r.lost === 0 && "held steady"}
                     </span>
@@ -128,7 +132,7 @@ export default async function ChangesPage({
         <section style={{ marginTop: "2.5rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("Sources whose content moved")}</h2>
-            <span className="eyebrow">hash-detected, then re-read</span>
+            <span className="eyebrow">{t("hash-detected, then re-read")}</span>
           </div>
           {sources.length === 0 ? (
             <p className="lede">{t("No detected content changes yet — the sources are as they were ingested.")}</p>

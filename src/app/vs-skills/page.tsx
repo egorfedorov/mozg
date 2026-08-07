@@ -103,14 +103,14 @@ export default async function VsSkillsPage() {
             <div className="score-head">
               <div>
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>{t("a folder of files")}</p>
-                <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>coverage</span>
+                <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>{t("coverage")}</span>
               </div>
               <div className="score-big">?<sup>%</sup></div>
             </div>
             <div className="score-head" style={{ borderTop: "1.5px solid var(--ink)" }}>
               <div>
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>{t("the same knowledge, as a brain")}</p>
-                <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>measured, re-sat after every change</span>
+                <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>{t("measured, re-sat after every change")}</span>
               </div>
               <div className="score-big">92<sup>%</sup></div>
             </div>
@@ -201,14 +201,11 @@ export default async function VsSkillsPage() {
 
         <section style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "2.5rem" }}>
           <Link className="btn" href="/brains">
-            Turn your knowledge folder into a brain
-          </Link>
+            {t("Turn your knowledge folder into a brain")}</Link>
           <Link className="btn btn-ghost" href="/vs">
-            The gentler comparison: brain vs a file
-          </Link>
+            {t("The gentler comparison: brain vs a file")}</Link>
           <Link className="btn btn-ghost" href="/explore">
-            See measured brains
-          </Link>
+            {t("See measured brains")}</Link>
         </section>
       </main>
       <SiteFooter />

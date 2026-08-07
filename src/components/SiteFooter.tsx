@@ -1,3 +1,4 @@
+import { markup } from "@/lib/markup";
 import { translator, msg } from "@/lib/t";
 import Link from "next/link";
 import StatusDot from "@/components/StatusDot";
@@ -72,8 +73,9 @@ export default async function SiteFooter() {
       >
         <div>
           <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>
-            mozg<span>.</span>
-          </Link>
+            {markup(t("mozg<0>.</0>"), [
+            <span key="s0" />,
+          ])}</Link>
           <p
             style={{
               color: "var(--ink-2)",
@@ -125,15 +127,15 @@ export default async function SiteFooter() {
           alignItems: "center",
         }}
       >
-        <span>mozg.sh</span>
+        <span>{t("mozg.sh")}</span>
         <StatusDot />
-        <span>Brains are licensed CC BY-NC-SA by default — copying is fine, reselling is not.</span>
+        <span>{t("Brains are licensed CC BY-NC-SA by default — copying is fine, reselling is not.")}</span>
         <span style={{ flex: 1 }} />
-        <a href="/about">manifesto</a>
-        <a href="https://github.com/egorfedorov/mozg">github</a>
-        <a href="/beta">beta</a>
-        <a href="/changelog">changelog</a>
-        <a href="/chat">chatmozg</a>
+        <a href="/about">{t("manifesto")}</a>
+        <a href="https://github.com/egorfedorov/mozg">{t("github")}</a>
+        <a href="/beta">{t("beta")}</a>
+        <a href="/changelog">{t("changelog")}</a>
+        <a href="/chat">{t("chatmozg")}</a>
       </div>
     </footer>
   );

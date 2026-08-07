@@ -65,7 +65,7 @@ export default async function CookiePolicyPage() {
 
         <p>
           <CookieSettingsLink />{" "}
-          <span style={{ color: "var(--ink-3)" }}>— change your choice, from any page.</span>
+          <span style={{ color: "var(--ink-3)" }}>{t("— change your choice, from any page.")}</span>
         </p>
 
         <h2 className="h2">{t("The three groups")}</h2>

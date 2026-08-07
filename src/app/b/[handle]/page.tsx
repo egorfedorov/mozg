@@ -205,7 +205,7 @@ export default async function ProfilePage({
           <section style={{ marginTop: "2.5rem" }}>
             <div className="section-head">
               <h2 className="h2">{t("Published brains")}</h2>
-              <span className="eyebrow">anyone can add these</span>
+              <span className="eyebrow">{t("anyone can add these")}</span>
             </div>
             <div className="grid-brains">
               {published.map((b) => (
@@ -240,7 +240,7 @@ export default async function ProfilePage({
             <section style={{ marginTop: "2.5rem" }}>
               <div className="section-head">
                 <h2 className="h2">{t("Connected to your agents")}</h2>
-                <span className="eyebrow">only you can see this list</span>
+                <span className="eyebrow">{t("only you can see this list")}</span>
               </div>
               <div className="rows" style={{ maxWidth: "52rem" }}>
                 {shelf.length === 0 ? (
@@ -268,11 +268,12 @@ export default async function ProfilePage({
                           {b.score != null ? ` · exam ${b.score}%` : ""}
                         </span>
                         <span className="row-meta">
-                          {b.cards} cards
-                          {b.learned > 0
+                          {markup(t("<0/> cards <1/>"), [
+                          b.cards,
+                          b.learned > 0
                             ? ` · you have studied ${Math.round((Math.min(b.learned, b.cards) / Math.max(b.cards, 1)) * 100)}%`
-                            : " · not studied yet"}
-                        </span>
+                            : " · not studied yet",
+                        ])}</span>
                       </span>
                       <span className="row-side mono" style={{ fontSize: ".75rem" }}>
                         {b.access}
@@ -288,9 +289,10 @@ export default async function ProfilePage({
                 <div className="section-head">
                   <h2 className="h2">{t("Notes you proposed")}</h2>
                   <span className="eyebrow">
-                    {proposals.filter((p) => p.status === "active").length} taken ·{" "}
-                    {proposals.filter((p) => p.status === "pending").length} waiting
-                  </span>
+                    {markup(t("<0/> taken · <1/> waiting"), [
+                    proposals.filter((p) => p.status === "active").length,
+                    proposals.filter((p) => p.status === "pending").length,
+                  ])}</span>
                 </div>
                 <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
                   {t("Your agent learned these while reading someone else's brain and sent them to its owner. They answer nobody until the owner takes them.")}</p>
@@ -311,8 +313,11 @@ export default async function ProfilePage({
                       <span style={{ minWidth: 0 }}>
                         <strong>{p.title}</strong>
                         <span className="row-meta">
-                          to {p.owner_handle}/{p.slug} · {p.at}
-                        </span>
+                          {markup(t("to <0/>/<1/> · <2/>"), [
+                          p.owner_handle,
+                          p.slug,
+                          p.at,
+                        ])}</span>
                       </span>
                       <span className="row-side mono" style={{ fontSize: ".75rem" }}>
                         {p.status === "active"
@@ -331,7 +336,7 @@ export default async function ProfilePage({
               <section style={{ marginTop: "2.5rem" }}>
                 <div className="section-head">
                   <h2 className="h2">{t("Courses in flight")}</h2>
-                  <span className="eyebrow">pick up where you left off</span>
+                  <span className="eyebrow">{t("pick up where you left off")}</span>
                 </div>
                 <div className="rows" style={{ maxWidth: "52rem" }}>
                   {studying.map((b) => {
@@ -348,9 +353,11 @@ export default async function ProfilePage({
                         <span style={{ minWidth: 0 }}>
                           <strong>{b.title}</strong>
                           <span className="row-meta">
-                            {b.learned} of {b.cards} cards
-                            {pct >= 80 ? " · certificate unlocked" : ""}
-                          </span>
+                            {markup(t("<0/> of <1/> cards <2/>"), [
+                            b.learned,
+                            b.cards,
+                            pct >= 80 ? " · certificate unlocked" : "",
+                          ])}</span>
                         </span>
                         <span className="row-side mono" style={{ fontSize: ".75rem" }}>
                           {pct}%
@@ -368,8 +375,10 @@ export default async function ProfilePage({
           <div className="section-head">
             <h2 className="h2">{t("Achievements")}</h2>
             <span className="eyebrow">
-              {done.length} of {CATALOG.length} earned
-            </span>
+              {markup(t("<0/> of <1/> earned"), [
+              done.length,
+              CATALOG.length,
+            ])}</span>
           </div>
           {/* Two whole sentences, and the branch picks the second one — never
               a sentence assembled from a shared opening and two endings, which

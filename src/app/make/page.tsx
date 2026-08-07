@@ -146,14 +146,11 @@ export default async function MakePage() {
           </div>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>
-              Make one
-            </Link>
+              {t("Make one")}</Link>
             <Link className="btn btn-ghost" href="/guide">
-              The long version
-            </Link>
+              {t("The long version")}</Link>
             <Link className="btn btn-ghost" href="/vs">
-              Why not a file?
-            </Link>
+              {t("Why not a file?")}</Link>
           </div>
         </section>
       </main>

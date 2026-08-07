@@ -283,7 +283,7 @@ export default async function BasicsPage() {
         <section style={{ marginTop: "clamp(3rem, 8vw, 5rem)" }}>
           <div className="section-head">
             <h2 className="h2">{t("Words you will run into")}</h2>
-            <span className="eyebrow">in plain language</span>
+            <span className="eyebrow">{t("in plain language")}</span>
           </div>
           <div className="rows">
             {GLOSSARY.map((g) => (
@@ -313,14 +313,11 @@ export default async function BasicsPage() {
           ])}</p>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
             <Link className="btn" href="/explore">
-              Look at the catalogue
-            </Link>
+              {t("Look at the catalogue")}</Link>
             <Link className="btn btn-ghost" href="/start">
-              Set it up, step by step
-            </Link>
+              {t("Set it up, step by step")}</Link>
             <Link className="btn btn-ghost" href="/stories">
-              How people use it
-            </Link>
+              {t("How people use it")}</Link>
           </div>
         </section>
       </main>

@@ -226,8 +226,8 @@ export default async function Contents({ active }: { active?: string }) {
                   className="nav-flat"
                   data-active={CATALOGUE.href === active}
                 >
-                  <span className="nav-label">{CATALOGUE.label}</span>
-                  <span className="nav-summary-note">{CATALOGUE.note}</span>
+                  <span className="nav-label">{t(CATALOGUE.label)}</span>
+                  <span className="nav-summary-note">{t(CATALOGUE.note)}</span>
                 </Link>,
               ]
             : [group];

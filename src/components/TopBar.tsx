@@ -1,4 +1,6 @@
+import { markup } from "@/lib/markup";
 import Link from "next/link";
+import { translator } from "@/lib/t";
 import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
 import LanguagePicker from "@/components/LanguagePicker";
@@ -17,6 +19,7 @@ import { currentLocale } from "@/lib/t";
  * do not render this at all; they have the rail.
  */
 export default async function TopBar({ active }: { active?: string }) {
+  const t = await translator();
   const [user, locale] = await Promise.all([currentUser(), currentLocale()]);
 
   return (
@@ -28,12 +31,13 @@ export default async function TopBar({ active }: { active?: string }) {
             help. Not a decoration. */}
         <span style={{ display: "flex", alignItems: "center", gap: ".6rem", marginRight: "auto" }}>
           <Link href="/" className="wordmark" style={{ marginRight: 0 }}>
-            mozg<span>.</span>
-          </Link>
+            {markup(t("mozg<0>.</0>"), [
+            <span key="s0" />,
+          ])}</Link>
           <Link
             href="/beta"
             className="mono"
-            title="What beta means here, and how to help"
+            title={t("What beta means here, and how to help")}
             style={{
               fontSize: ".6875rem",
               letterSpacing: ".08em",
@@ -44,7 +48,7 @@ export default async function TopBar({ active }: { active?: string }) {
               textDecoration: "none",
             }}
           >
-            beta
+            {t("beta")}
           </Link>
         </span>
 
@@ -62,7 +66,7 @@ export default async function TopBar({ active }: { active?: string }) {
                 href="/admin"
                 style={{ color: "var(--color-riso-red)" }}
               >
-                admin
+                {t("admin")}
               </Link>
             )}
             <Link
@@ -74,12 +78,12 @@ export default async function TopBar({ active }: { active?: string }) {
               {user.handle ?? user.email}
             </Link>
             <Link className="btn" href="/brains">
-              Your brains
+              {t("Your brains")}
             </Link>
           </>
         ) : (
           <Link className="btn" href="/sign-in">
-            Sign in
+            {t("Sign in")}
           </Link>
         )}
       </div>

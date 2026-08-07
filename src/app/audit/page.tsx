@@ -38,7 +38,7 @@ export default async function AuditPage() {
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("What the report says")}</h2>
-            <span className="eyebrow">measured, dated, reproducible</span>
+            <span className="eyebrow">{t("measured, dated, reproducible")}</span>
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
             {[
@@ -61,7 +61,7 @@ export default async function AuditPage() {
         <section style={{ marginTop: "3rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("How it runs")}</h2>
-            <span className="eyebrow">your data stays yours</span>
+            <span className="eyebrow">{t("your data stays yours")}</span>
           </div>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: 0 }}>
             {t("You export your corpus (JSONL, markdown, or an API dump — we adapt), it is imported as a private brain nobody else can reach, the exam runs, the report is delivered, and the imported copy is deleted on request. The first audits are hands-on with us in the loop — that is deliberate, not a beta apology: the report format is being shaped by real corpora.")}</p>
@@ -74,8 +74,7 @@ export default async function AuditPage() {
             {t("Your tool's exam score, published with your sign-off, methodology attached. You get an independent number to cite; we get the proof the exam grades anything. Write what your base is and roughly how big — a person answers, usually same day.")}</p>
           <div style={{ marginTop: "1rem" }}>
             <Link className="btn" href="/chat">
-              Start the conversation
-            </Link>
+              {t("Start the conversation")}</Link>
           </div>
         </section>
 

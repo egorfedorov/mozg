@@ -132,7 +132,7 @@ export default async function StartPage() {
             <p className="eyebrow" style={{ margin: 0 }}>{t("web · mozg")}</p>
             <p style={{ fontWeight: 800, fontSize: "1.2rem", margin: ".25rem 0" }}>{t("Next.js App Router")}</p>
             <p className="mono" style={{ fontSize: ".8125rem", margin: 0 }}>
-              <span style={{ color: "var(--color-riso-green)" }}>trained 84%</span>
+              <span style={{ color: "var(--color-riso-green)" }}>{t("trained 84%")}</span>
               {" · 1,213 notes · free"}
             </p>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".5rem 0 0" }}>
@@ -153,9 +153,12 @@ export default async function StartPage() {
           ])}</p>
           <Term
             lines={[
-              <span key="1"><span className="c">$</span> claude mcp add --transport http mozg https://mozg.sh/mcp \</span>,
-              <span key="2">{"    "}--header &quot;Authorization: Bearer mzg_your_token&quot;</span>,
-              <span key="3" className="t">✓ connected · 4 brains available</span>,
+              <span key="1">{markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp \\"), [
+                <span className="c" key="s0" />,
+              ])}</span>,
+              <span key="2">{markup(t("--header \"Authorization: Bearer mzg_your_token\""), [
+              ])}</span>,
+              <span key="3" className="t">{t("✓ connected · 4 brains available")}</span>,
             ]}
           />
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: ".75rem" }}>
@@ -169,12 +172,14 @@ export default async function StartPage() {
             {t("Ask your agent something spec-level from the brain you added:")}</p>
           <Term
             lines={[
-              <span key="1"><span className="u">&gt;</span> what does a route handler have to export for streaming?</span>,
+              <span key="1">{markup(t("<0>&gt;</0> what does a route handler have to export for streaming?"), [
+                <span className="u" key="s0" />,
+              ])}</span>,
               <span key="2" style={{ height: ".6rem", display: "block" }} />,
-              <span key="3" className="k">  brain_search(brain: &quot;mozg/nextjs&quot;, query: &quot;route handler streaming&quot;)</span>,
-              <span key="4" className="c">  → 4 notes · 96 ms</span>,
+              <span key="3" className="k">  {t("brain_search(brain: \"mozg/nextjs\", query: \"route handler streaming\")")}</span>,
+              <span key="4" className="c">  {t("→ 4 notes · 96 ms")}</span>,
               <span key="5" style={{ height: ".6rem", display: "block" }} />,
-              <span key="6">  Export an async GET returning a Response with a ReadableStream…</span>,
+              <span key="6">  {t("Export an async GET returning a Response with a ReadableStream…")}</span>,
             ]}
           />
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch", marginTop: ".75rem" }}>
@@ -191,9 +196,9 @@ export default async function StartPage() {
           <div style={{ marginTop: ".75rem", border: "1.5px solid var(--ink)", background: "var(--paper-2)", maxWidth: 460, padding: "1rem 1.25rem" }}>
             <p className="eyebrow" style={{ margin: "0 0 .5rem" }}>{t("exam · sat automatically")}</p>
             <p className="mono" style={{ fontSize: ".9375rem", margin: 0 }}>
-              <span style={{ color: "var(--color-riso-green)" }}>✓ 19 passed</span>
+              <span style={{ color: "var(--color-riso-green)" }}>{t("✓ 19 passed")}</span>
               {"  ·  "}
-              <span style={{ color: "var(--color-riso-red)" }}>✕ 7 failed</span>
+              <span style={{ color: "var(--color-riso-red)" }}>{t("✕ 7 failed")}</span>
               {"  ·  trained 73%"}
             </p>
             <div style={{ height: 8, border: "1px solid var(--ink)", background: "var(--paper)", margin: ".6rem 0" }}>
@@ -217,9 +222,9 @@ export default async function StartPage() {
         </Step>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
-          <Link className="btn" href="/sign-in">Start — step 1</Link>
-          <Link className="btn btn-ghost" href="/explore">Browse the catalogue first</Link>
-          <Link className="btn btn-ghost" href="/guide">The long guide, when you want depth</Link>
+          <Link className="btn" href="/sign-in">{t("Start — step 1")}</Link>
+          <Link className="btn btn-ghost" href="/explore">{t("Browse the catalogue first")}</Link>
+          <Link className="btn btn-ghost" href="/guide">{t("The long guide, when you want depth")}</Link>
         </section>
       </main>
       <SiteFooter />

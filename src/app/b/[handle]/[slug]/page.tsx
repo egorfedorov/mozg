@@ -297,7 +297,7 @@ export default async function PublicBrainPage({
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
         <p className="eyebrow">
-          <Link href="/explore">explore</Link> /{" "}
+          <Link href="/explore">{t("explore")}</Link> /{" "}
           <Link href={`/explore?topic=${brain.topic}`}>{topicLabel(brain.topic)}</Link> /{" "}
           {handle}
           {parent && (
@@ -412,7 +412,7 @@ export default async function PublicBrainPage({
                   <span className="term-dot" />
                   <span className="term-dot" />
                   <span className="term-dot" />
-                  <span style={{ marginLeft: ".5rem" }}>use this brain</span>
+                  <span style={{ marginLeft: ".5rem" }}>{t("use this brain")}</span>
                 </div>
                 <div className="c">
                   {user ? "# your token from /settings/tokens" : "# sign in to get a token"}
@@ -446,8 +446,7 @@ export default async function PublicBrainPage({
                         borderColor: "var(--color-riso-yellow)",
                       }}
                     >
-                      Sign in — get this command with your token in it
-                    </Link>
+                      {t("Sign in — get this command with your token in it")}</Link>
                   )}
                 </div>
                 {!user && (
@@ -491,7 +490,11 @@ export default async function PublicBrainPage({
               <>
                 <div className="section-head">
                   <h2 className="h2">{t("From buyers")}</h2>
-                  <span className="eyebrow">★ {rating.avg} · {rating.n} rating{rating.n === 1 ? "" : "s"}</span>
+                  <span className="eyebrow">{markup(t("★ <0/> · <1/> rating<2/>"), [
+                    rating.avg,
+                    rating.n,
+                    rating.n === 1 ? "" : "s",
+                  ])}</span>
                 </div>
                 <div className="rows" style={{ marginBottom: "1rem" }}>
                   {latestReviews.map((r, i) => (
@@ -545,22 +548,36 @@ export default async function PublicBrainPage({
           <section style={{ margin: "0 0 2.5rem" }}>
             <div className="section-head">
               <h2 className="h2">{t("Taught by agents")}</h2>
-              <span className="eyebrow">attribution from the grader, not copy</span>
+              <span className="eyebrow">{t("attribution from the grader, not copy")}</span>
             </div>
             <div className="rows" style={{ maxWidth: "44rem" }}>
-              {taught.map((t) => (
-                <div key={t.client} className="row">
+              {/* `a`, not `t` — the callback parameter used to be named t and
+                  shadowed the translator, which typechecks as "AgentTaught has
+                  no call signatures" and is a confusing way to learn it. */}
+              {taught.map((a) => (
+                <div key={a.client} className="row">
                   <span style={{ minWidth: 0 }}>
-                    <strong className="mono" style={{ fontSize: ".875rem" }}>{t.client}</strong>
+                    <strong className="mono" style={{ fontSize: ".875rem" }}>{a.client}</strong>
                     <span className="row-sub">
-                      {t.notes} note{t.notes === 1 ? "" : "s"} written back while working
-                      {t.citedTotal > 0 &&
-                        ` · evidence in ${t.citedPass} of ${t.citedTotal} examined answers`}
-                    </span>
+                      {/* Singular and plural are two whole sentences, chosen
+                          before translation — a plural suffix in a slot is an
+                          English grammar rule the other ten languages do not
+                          have. */}
+                      {markup(
+                        a.notes === 1
+                          ? t("<0/> note written back while working")
+                          : t("<0/> notes written back while working"),
+                        [a.notes],
+                      )}
+                      {a.citedTotal > 0 &&
+                        markup(t(" · evidence in <0/> of <1/> examined answers"), [
+                          a.citedPass,
+                          a.citedTotal,
+                        ])}</span>
                   </span>
-                  {t.citedTotal > 0 && (
+                  {a.citedTotal > 0 && (
                     <span className="row-side mono" style={{ color: "var(--color-riso-green)" }}>
-                      {Math.round((100 * t.citedPass) / t.citedTotal)}%
+                      {Math.round((100 * a.citedPass) / a.citedTotal)}%
                     </span>
                   )}
                 </div>
@@ -574,8 +591,9 @@ export default async function PublicBrainPage({
             <div className="section-head">
               <h2 className="h2">{t("What is inside")}</h2>
               <span className="eyebrow">
-                asking this brain searches all {children.length}
-              </span>
+                {markup(t("asking this brain searches all <0/>"), [
+                children.length,
+              ])}</span>
             </div>
             <div className="rows">
               {children.map((c) => (
@@ -583,7 +601,9 @@ export default async function PublicBrainPage({
                   <span style={{ minWidth: 0 }}>
                     <strong>{c.title}</strong>
                     <span className="row-sub">{c.goal ?? "No goal set."}</span>
-                    <span className="row-meta">{c.note_count} notes</span>
+                    <span className="row-meta">{markup(t("<0/> notes"), [
+                      c.note_count,
+                    ])}</span>
                   </span>
                   <span className="row-side">
                     {c.score === null ? "—" : `${c.score}%`}
@@ -639,8 +659,7 @@ export default async function PublicBrainPage({
             {brain.visibility === "public" && brain.score !== null && (
               <div style={{ padding: ".9rem 1.25rem", borderTop: "1.5px solid var(--ink)" }}>
                 <Link className="navlink" href={`/b/${handle}/${brain.slug}/badge`}>
-                  exam badge — share this score →
-                </Link>
+                  {t("exam badge — share this score →")}</Link>
               </div>
             )}
           </section>
@@ -650,7 +669,9 @@ export default async function PublicBrainPage({
           <section style={{ marginTop: "2.5rem" }}>
             <div className="section-head">
               <h2 className="h2">{t("Attacks survived")}</h2>
-              <span className="eyebrow">re-run weekly · {redteam[0].ran}</span>
+              <span className="eyebrow">{markup(t("re-run weekly · <0/>"), [
+                redteam[0].ran,
+              ])}</span>
             </div>
             <div className="rows" style={{ maxWidth: "52rem" }}>
               {redteam.map((r) => (

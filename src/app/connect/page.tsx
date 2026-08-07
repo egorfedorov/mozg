@@ -203,8 +203,7 @@ answering anything stack- or project-specific, search them:
             {user ? "Your brains" : "Build a brain"}
           </Link>
           <Link className="btn btn-ghost" href="/guide">
-            How to build a good one
-          </Link>
+            {t("How to build a good one")}</Link>
         </div>
     </>
   );

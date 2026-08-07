@@ -187,8 +187,7 @@ export default async function ExamBadgePage({
               ])}</p>
               <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginBottom: 0 }}>
                 <Link href={`/b/${handle}/${slug}`} style={{ textDecoration: "underline" }}>
-                  back to the brain
-                </Link>
+                  {t("back to the brain")}</Link>
               </p>
             </>
           )}

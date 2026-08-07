@@ -111,7 +111,7 @@ export default async function StatusPage() {
         <section style={{ marginTop: "2.5rem", maxWidth: "48rem" }}>
           <div className="section-head">
             <h2 className="h2">{t("Notices & deploys")}</h2>
-            <span className="eyebrow">most wobbles start as one</span>
+            <span className="eyebrow">{t("most wobbles start as one")}</span>
           </div>
           <div className="rows">
             {shipped.length === 0 ? (

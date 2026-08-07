@@ -168,8 +168,7 @@ export default async function GuidePage() {
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
                   {t("30 checks · 7 categories")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-                  8 notes
-                </span>
+                  {t("8 notes")}</span>
               </div>
               <div className="score-big">
                 37<sup>%</sup>
@@ -185,7 +184,9 @@ export default async function GuidePage() {
                 <span className="sig">{sigil}</span>
                 <span>
                   {name}
-                  {gap && <span className="score-gap">missing · {gap}</span>}
+                  {gap && <span className="score-gap">{markup(t("missing · <0/>"), [
+                            gap,
+                          ])}</span>}
                 </span>
                 <span className="count">{count}</span>
               </div>
@@ -299,11 +300,9 @@ export default async function GuidePage() {
 
         <div style={{ display: "flex", gap: ".75rem", marginTop: "2.5rem", flexWrap: "wrap" }}>
           <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>
-            Build one
-          </Link>
+            {t("Build one")}</Link>
           <Link className="btn btn-ghost" href="/connect">
-            Connect it
-          </Link>
+            {t("Connect it")}</Link>
         </div>
       </main>
       <SiteFooter />

@@ -1,3 +1,4 @@
+import { markup } from "@/lib/markup";
 import { translator, msg } from "@/lib/t";
 import Link from "next/link";
 import SignOutLink from "@/components/SignOutLink";
@@ -127,12 +128,13 @@ export default async function AppShell({
 
         <div className="app-rail-head">
           <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>
-            mozg<span>.</span>
-          </Link>
+            {markup(t("mozg<0>.</0>"), [
+            <span key="s0" />,
+          ])}</Link>
 
           <label htmlFor="app-nav-open" className="app-burger mono">
-            <span className="app-burger-shut">☰ menu</span>
-            <span className="app-burger-open">✕ close</span>
+            <span className="app-burger-shut">{t("☰ menu")}</span>
+            <span className="app-burger-open">{t("✕ close")}</span>
           </label>
         </div>
 
@@ -164,8 +166,8 @@ export default async function AppShell({
 
             <div>
               <p className="eyebrow app-nav-title">{t("Elsewhere")}</p>
-              <Link href="/explore">Catalogue</Link>
-              <Link href="/guide">Guide</Link>
+              <Link href="/explore">{t("Catalogue")}</Link>
+              <Link href="/guide">{t("Guide")}</Link>
               <SignOutLink />
             </div>
           </nav>

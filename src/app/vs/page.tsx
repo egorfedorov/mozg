@@ -115,10 +115,9 @@ export default async function VsPage() {
                 with the columns they name instead of near them. */}
             <div className="vs-row vs-head">
               <div className="vs-pair">
-                <span className="eyebrow">A Skill file</span>
+                <span className="eyebrow">{t("A Skill file")}</span>
                 <span className="eyebrow" style={{ color: "var(--color-riso-red)" }}>
-                  A brain
-                </span>
+                  {t("A brain")}</span>
               </div>
             </div>
 
@@ -181,11 +180,9 @@ export default async function VsPage() {
           </div>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
             <Link className="btn" href={user ? "/brains/new" : "/sign-in"}>
-              Build one
-            </Link>
+              {t("Build one")}</Link>
             <Link className="btn btn-ghost" href="/explore">
-              Take one that exists
-            </Link>
+              {t("Take one that exists")}</Link>
           </div>
         </section>
       </main>

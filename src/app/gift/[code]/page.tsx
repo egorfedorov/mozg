@@ -118,11 +118,9 @@ export default async function GiftPage({
             ])}</p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
               <Link className="btn" href={brainHref}>
-                Open the brain
-              </Link>
+                {t("Open the brain")}</Link>
               <Link className="btn btn-ghost" href="/connect">
-                Connect an agent
-              </Link>
+                {t("Connect an agent")}</Link>
             </div>
           </>
         ) : state === "own" ? (

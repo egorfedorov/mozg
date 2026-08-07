@@ -205,8 +205,8 @@ export default async function CollectivePage({
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
-          <Link className="btn" href="/explore">Take a brain that&apos;s already learning</Link>
-          <Link className="btn btn-ghost" href="/make">Or start one of your own</Link>
+          <Link className="btn" href="/explore">{t("Take a brain that's already learning")}</Link>
+          <Link className="btn btn-ghost" href="/make">{t("Or start one of your own")}</Link>
         </section>
       </main>
       <SiteFooter />

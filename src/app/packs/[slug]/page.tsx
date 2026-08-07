@@ -66,8 +66,7 @@ export default async function PackPage({
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
         <p className="eyebrow">
           <Link href="/packs" style={{ textDecoration: "underline" }}>
-            Packs
-          </Link>{" "}
+            {t("Packs")}</Link>{" "}
           · {pack.eyebrow}
         </p>
         <h1
@@ -103,11 +102,11 @@ export default async function PackPage({
 
         <p style={{ marginTop: "1.5rem", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
           <Link className="btn" href="/settings/packs">
-            Buy the pack — {formatCents(pack.priceCents)} once
-          </Link>
+            {markup(t("Buy the pack — <0/> once"), [
+            formatCents(pack.priceCents),
+          ])}</Link>
           <Link className="btn btn-ghost" href="/explore">
-            Read the brains first
-          </Link>
+            {t("Read the brains first")}</Link>
         </p>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
@@ -126,9 +125,10 @@ export default async function PackPage({
                   <strong>{b.title}</strong>
                   {b.goal && <span className="row-sub">{b.goal}</span>}
                   <span className="row-meta">
-                    {b.note_count.toLocaleString("en-US")} notes
-                    {b.parent ? ` · part of ${b.parent}` : ""}
-                  </span>
+                    {markup(t("<0/> notes <1/>"), [
+                    b.note_count.toLocaleString("en-US"),
+                    b.parent ? ` · part of ${b.parent}` : "",
+                  ])}</span>
                 </span>
                 <span className="row-side">{b.score !== null ? `${b.score}%` : "unscored"}</span>
               </Link>
@@ -209,11 +209,11 @@ export default async function PackPage({
 
         <p style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
           <Link className="btn" href="/settings/packs">
-            Buy the pack — {formatCents(pack.priceCents)} once
-          </Link>
+            {markup(t("Buy the pack — <0/> once"), [
+            formatCents(pack.priceCents),
+          ])}</Link>
           <Link className="btn btn-ghost" href="/chat">
-            Ask a person first
-          </Link>
+            {t("Ask a person first")}</Link>
         </p>
       </main>
 

@@ -149,27 +149,23 @@ export default async function Home() {
 
         <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", alignItems: "center", marginBottom: "3.5rem" }}>
           {user ? (
-            <Link className="btn" href="/brains">Open your brains</Link>
+            <Link className="btn" href="/brains">{t("Open your brains")}</Link>
           ) : (
             <Link className="btn" href="/start">
-              Start here — 10 minutes to a thinking agent
-            </Link>
+              {t("Start here — 10 minutes to a thinking agent")}</Link>
           )}
           <Link className="btn btn-ghost" href="/explore">
-            Browse public brains
-          </Link>
+            {t("Browse public brains")}</Link>
           {!user && (
             <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-              free · no card · the guided path
-            </span>
+              {t("free · no card · the guided path")}</span>
           )}
           <a
             className="mono"
             href="https://github.com/egorfedorov/mozg"
             style={{ fontSize: ".75rem", color: "var(--ink-2)", textDecoration: "underline" }}
           >
-            open source · AGPL · star it on GitHub
-          </a>
+            {t("open source · AGPL · star it on GitHub")}</a>
         </div>
 
         <div className="term" aria-label="Example session">
@@ -177,7 +173,7 @@ export default async function Home() {
             <span className="term-dot" />
             <span className="term-dot" />
             <span className="term-dot" />
-            <span style={{ marginLeft: ".5rem" }}>claude code</span>
+            <span style={{ marginLeft: ".5rem" }}>{t("claude code")}</span>
           </div>
           <div>
             {markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp"), [
@@ -213,15 +209,14 @@ export default async function Home() {
             alignItems: "baseline",
           }}
         >
-          <span className="eyebrow">Reads in</span>
+          <span className="eyebrow">{t("Reads in")}</span>
           {CLIENT_NAMES.map((name) => (
             <span key={name} className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
               {name}
             </span>
           ))}
           <Link className="mono" href="/connect" style={{ fontSize: ".8125rem" }}>
-            all of them →
-          </Link>
+            {t("all of them →")}</Link>
         </div>
 
         <section style={{ marginTop: "clamp(3rem, 8vw, 4.5rem)" }}>
@@ -293,8 +288,7 @@ export default async function Home() {
                   <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
                     {t("Brain · Design system")}</p>
                   <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-                    32 checks · 4 categories
-                  </span>
+                    {t("32 checks · 4 categories")}</span>
                 </div>
                 <div className="score-big">
                   84<sup>%</sup>
@@ -303,28 +297,28 @@ export default async function Home() {
 
               <div className="score-row" data-state="pass">
                 <span className="sig">✓</span>
-                <span>Colour, borders and elevation</span>
+                <span>{t("Colour, borders and elevation")}</span>
                 <span className="count">12 / 12</span>
               </div>
               <div className="score-row" data-state="pass">
                 <span className="sig">✓</span>
-                <span>Type scale and spacing</span>
+                <span>{t("Type scale and spacing")}</span>
                 <span className="count">8 / 8</span>
               </div>
               <div className="score-row" data-state="partial">
                 <span className="sig">▲</span>
                 <span>
-                  Motion and transitions
-                  <span className="score-gap">missing · no screen recordings yet</span>
-                </span>
+                  {markup(t("Motion and transitions <0>missing · no screen recordings yet</0>"), [
+                  <span className="score-gap" key="s0" />,
+                ])}</span>
                 <span className="count">3 / 7</span>
               </div>
               <div className="score-row" data-state="fail">
                 <span className="sig">✕</span>
                 <span>
-                  Empty and error states
-                  <span className="score-gap">missing · no source covers this</span>
-                </span>
+                  {markup(t("Empty and error states <0>missing · no source covers this</0>"), [
+                  <span className="score-gap" key="s0" />,
+                ])}</span>
                 <span className="count">0 / 5</span>
               </div>
             </div>
@@ -387,11 +381,12 @@ export default async function Home() {
                 <Link key={l.slug} className="row" href={`/b/${l.handle}/${l.slug}`}>
                   <span style={{ minWidth: 0 }}>
                     <strong>{l.title}</strong>
-                    <span className="row-meta">between its last two exam sittings</span>
+                    <span className="row-meta">{t("between its last two exam sittings")}</span>
                   </span>
                   <span className="row-side mono" style={{ color: "var(--color-riso-green)" }}>
-                    +{l.gained} newly passed
-                  </span>
+                    {markup(t("+<0/> newly passed"), [
+                    l.gained,
+                  ])}</span>
                 </Link>
               ))}
               <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0, padding: ".5rem 1.25rem" }}>
@@ -425,8 +420,7 @@ export default async function Home() {
               {t("Anthropic's prompt-engineering material as a spaced-repetition course: read, recall, quiz — with the brain's own exam as the final. Free, no card, and your agent can query the same brain while you study it.")}</p>
           </div>
           <Link className="btn" href="https://learn.mozg.sh/mozg/prompt-engineering">
-            Start the course
-          </Link>
+            {t("Start the course")}</Link>
         </section>
 
         {/* The second service, given the same shape as learn's block: the
@@ -455,8 +449,7 @@ export default async function Home() {
             ])}</p>
           </div>
           <Link className="btn" href="https://gallery.mozg.sh">
-            Open the gallery
-          </Link>
+            {t("Open the gallery")}</Link>
         </section>
 
         {/* The whole pitch again, as 28 seconds of motion. Code-rendered
@@ -553,8 +546,7 @@ export default async function Home() {
               <h2 className="h2">
                 {t("In the catalogue now")}</h2>
               <Link className="mono" href="/explore" style={{ fontSize: ".8125rem" }}>
-                all brains →
-              </Link>
+                {t("all brains →")}</Link>
             </div>
 
             <div className="grid-brains">
@@ -572,8 +564,10 @@ export default async function Home() {
                   <p className="card-goal">{b.goal ?? "No goal set."}</p>
                   <div className="card-foot">
                     <span style={{ opacity: 0.8 }}>
-                      {b.price_cents ? formatCents(b.price_cents) : "Free"} · {b.note_count} notes
-                    </span>
+                      {markup(t("<0/> · <1/> notes"), [
+                      b.price_cents ? formatCents(b.price_cents) : "Free",
+                      b.note_count,
+                    ])}</span>
                     {b.score !== null && (
                       <span className="card-score">
                         {b.score}
@@ -623,10 +617,9 @@ export default async function Home() {
               alignContent: "center",
             }}
           >
-            <span className="h3">Star it on GitHub →</span>
+            <span className="h3">{t("Star it on GitHub →")}</span>
             <span style={{ color: "var(--ink-2)", fontSize: ".875rem", marginTop: ".35rem" }}>
-              AGPL · self-host · contribute a catalogue pack
-            </span>
+              {t("AGPL · self-host · contribute a catalogue pack")}</span>
           </a>
         </section>
 
@@ -651,8 +644,7 @@ export default async function Home() {
             <p style={{ color: "var(--ink-2)", margin: ".6rem 0 1rem", maxWidth: "54ch" }}>
               {t("Why knowledge should keep its author, why a thing that claims to know should sit an exam, and what a language spoken by 450,000 people has to do with any of it.")}</p>
             <Link className="btn btn-ghost" href="/about">
-              Read it
-            </Link>
+              {t("Read it")}</Link>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".9rem 0 0" }}>
               {t("Egor Fedorov · Uraanghay Saqa · Sakha Republic")}</p>
           </div>

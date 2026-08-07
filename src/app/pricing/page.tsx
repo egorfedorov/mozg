@@ -105,16 +105,19 @@ export default async function PricingPage() {
             {/* The strongest thing on this page says the resulting price, not a
                 percentage: −50% is a claim, $12.50 is a number. */}
             <strong className="mono" style={{ fontSize: ".8125rem", textTransform: "uppercase", letterSpacing: ".08em" }}>
-              Founding offer
-            </strong>
+              {t("Founding offer")}</strong>
             <span style={{ fontSize: ".9375rem" }}>
-              The first {FOUNDING_LIMIT} paying accounts keep half price{" "}
-              <strong>forever</strong> — Pro ${(PLAN_PRICE_CENTS.pro / 200).toFixed(2)}/mo, Team $
-              {(PLAN_PRICE_CENTS.team / 200).toFixed(2)}/mo.
-            </span>
+              {markup(t("The first <0/> paying accounts keep half price <1>forever</1> — Pro $<2/>/mo, Team $ <3/>/mo."), [
+              FOUNDING_LIMIT,
+              <strong key="s1" />,
+              (PLAN_PRICE_CENTS.pro / 200).toFixed(2),
+              (PLAN_PRICE_CENTS.team / 200).toFixed(2),
+            ])}</span>
             <span className="mono" style={{ fontSize: ".8125rem", marginLeft: "auto", whiteSpace: "nowrap" }}>
-              {spots} of {FOUNDING_LIMIT} left
-            </span>
+              {markup(t("<0/> of <1/> left"), [
+              spots,
+              FOUNDING_LIMIT,
+            ])}</span>
           </div>
         )}
 
@@ -122,7 +125,7 @@ export default async function PricingPage() {
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
             <h2 className="h2">{t("Plans — for building your own")}</h2>
-            <span className="eyebrow">cancel anytime, export everything</span>
+            <span className="eyebrow">{t("cancel anytime, export everything")}</span>
           </div>
 
           <div
@@ -208,9 +211,10 @@ export default async function PricingPage() {
                       className="btn"
                       href={user ? "/settings#plan" : `/sign-in?next=/settings%23plan`}
                     >
-                      Subscribe to {p.key === "pro" ? "Pro" : "Team"}
-                      {spots > 0 ? " · half price" : ""}
-                    </Link>
+                      {markup(t("Subscribe to <0/> <1/>"), [
+                      p.key === "pro" ? "Pro" : "Team",
+                      spots > 0 ? " · half price" : "",
+                    ])}</Link>
                   )}
                 </div>
               </div>
@@ -227,7 +231,7 @@ export default async function PricingPage() {
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
             <h2 className="h2">{t("The catalogue — free; the marketplace — authors' call")}</h2>
-            <span className="eyebrow">official brains cost nothing</span>
+            <span className="eyebrow">{t("official brains cost nothing")}</span>
           </div>
 
           <div
@@ -259,7 +263,7 @@ export default async function PricingPage() {
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 4rem)" }}>
           <div className="section-head">
             <h2 className="h2">{t("Balance — how paying works")}</h2>
-            <span className="eyebrow">crypto now · card on the way</span>
+            <span className="eyebrow">{t("crypto now · card on the way")}</span>
           </div>
           <div
             style={{
@@ -274,11 +278,9 @@ export default async function PricingPage() {
                 {t("Purchases come from a balance you top up once — USDT, USDC, BTC and other coins today, cards soon. Selling brains pays into the same balance, and authors withdraw from it. Every movement is listed on one page, nothing hidden.")}</p>
               <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
                 <Link className="btn" href={user ? "/settings/topup" : "/sign-in?next=/settings/topup"}>
-                  Top up balance
-                </Link>
+                  {t("Top up balance")}</Link>
                 <Link className="btn btn-ghost" href="/explore?price=paid">
-                  Browse the catalogue
-                </Link>
+                  {t("Browse the catalogue")}</Link>
               </div>
             </div>
             {/* The money's whole loop in four lines, so the empty right half of

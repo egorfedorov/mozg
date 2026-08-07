@@ -165,14 +165,14 @@ export default async function StoriesPage() {
                   }}
                 >
                   <span className="mono" style={{ color: "var(--color-riso-red)" }}>
-                    the problem ·{" "}
-                  </span>
+                    {markup(t("the problem ·"), [
+                  ])}</span>
                   {s.person.problem}
                 </p>
                 <p style={{ margin: 0, fontSize: ".9375rem", lineHeight: 1.55 }}>
                   <span className="mono" style={{ color: "var(--color-riso-green)" }}>
-                    after ·{" "}
-                  </span>
+                    {markup(t("after ·"), [
+                  ])}</span>
                   {s.person.resolution}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default async function StoriesPage() {
                 fontSize: ".9375rem",
               }}
             >
-              <strong style={{ color: "var(--ink)" }}>Where it stops: </strong>
+              <strong style={{ color: "var(--ink)" }}>{t("Where it stops:")}</strong>
               {s.limit}
             </p>
 
@@ -257,14 +257,11 @@ export default async function StoriesPage() {
             {t("None of them wrote a context file. Each one took knowledge that already existed — a method, a manual, a platform's docs, a client's conventions — and made it something an agent can search and a person can measure. The measurement is the part that matters: every brain here can tell you its score and list the questions it still fails, which is the one thing a pasted document will never do.")}</p>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
             <Link className="btn" href="/start">
-              Start here
-            </Link>
+              {t("Start here")}</Link>
             <Link className="btn btn-ghost" href="/explore">
-              Take one from the catalogue
-            </Link>
+              {t("Take one from the catalogue")}</Link>
             <Link className="btn btn-ghost" href="/pricing">
-              What it costs
-            </Link>
+              {t("What it costs")}</Link>
           </div>
         </section>
       </main>
