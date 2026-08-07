@@ -4,6 +4,7 @@ import { Chip, Row, Rows, Section, Stat, Stats } from "@/components/ui";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { limitsFor } from "@/lib/plans";
+import { billingFor } from "@/lib/team";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ export const metadata = { title: "Usage — mozg" };
  * platform's own cost with no per-caller attribution. A dollar figure here
  * would have to be invented, and an invented number on a usage page is worse
  * than no number.
+ *
+ * On a studio seat this shows the studio's month, not the reader's slice of it:
+ * calls are billed to the account that pays (see 0073), and a page that showed
+ * a colleague only their own calls would not add up to the number the quota
+ * actually enforces.
  *
  * Server-rendered, no chart library: the bars are divs, the range filter is a
  * link, so the whole page is a URL you can send someone.
@@ -72,13 +78,17 @@ export default async function UsagePage({
   const key: RangeKey = isRange(asked) ? asked : "7d";
   const range = RANGES[key];
 
+  // Everything below is scoped to the account being billed, which is the
+  // reader themselves unless they hold a studio seat.
+  const billing = await billingFor(user.id, user.plan, user.paidUntil);
+
   const [buckets, totals, tools, brains, recent, month] = await Promise.all([
     query<{ bucket: Date; n: number }>(
       `select date_trunc($2, created_at) as bucket, count(*)::int as n
          from calls
-        where caller_id = $1 and created_at >= now() - $3::interval
+        where billed_to = $1 and created_at >= now() - $3::interval
         group by 1 order by 1`,
-      [user.id, range.unit, range.span],
+      [billing.id, range.unit, range.span],
     ),
     query<{
       calls: number;
@@ -93,16 +103,16 @@ export default async function UsagePage({
               count(*) filter (where tool = 'brain_search' and results = 0)::int as empty,
               percentile_disc(0.5) within group (order by latency_ms)::int as median_ms
          from calls
-        where caller_id = $1 and created_at >= now() - $2::interval`,
-      [user.id, range.span],
+        where billed_to = $1 and created_at >= now() - $2::interval`,
+      [billing.id, range.span],
     ).then((r) => r[0]),
     query<{ tool: string; n: number; median_ms: number | null }>(
       `select tool, count(*)::int as n,
               percentile_disc(0.5) within group (order by latency_ms)::int as median_ms
          from calls
-        where caller_id = $1 and created_at >= now() - $2::interval
+        where billed_to = $1 and created_at >= now() - $2::interval
         group by 1 order by 2 desc`,
-      [user.id, range.span],
+      [billing.id, range.span],
     ),
     query<{ slug: string; title: string; handle: string | null; n: number; failed: number }>(
       `select b.slug, b.title, u.handle, count(*)::int as n,
@@ -110,9 +120,9 @@ export default async function UsagePage({
          from calls c
          join brains b on b.id = c.brain_id
          left join "user" u on u.id = b.owner_id
-        where c.caller_id = $1 and c.created_at >= now() - $2::interval
+        where c.billed_to = $1 and c.created_at >= now() - $2::interval
         group by 1, 2, 3 order by 4 desc limit 12`,
-      [user.id, range.span],
+      [billing.id, range.span],
     ),
     query<{
       created_at: Date;
@@ -127,35 +137,39 @@ export default async function UsagePage({
       `select c.created_at, c.tool, c.query, c.results, c.latency_ms, c.ok, c.error, b.slug
          from calls c
          left join brains b on b.id = c.brain_id
-        where c.caller_id = $1 and c.created_at >= now() - $2::interval
+        where c.billed_to = $1 and c.created_at >= now() - $2::interval
         order by c.created_at desc limit 40`,
-      [user.id, range.span],
+      [billing.id, range.span],
     ),
     query<{ n: number }>(
       `select count(*)::int as n from calls
-        where caller_id = $1 and created_at >= date_trunc('month', now())`,
-      [user.id],
+        where billed_to = $1 and created_at >= date_trunc('month', now())`,
+      [billing.id],
     ).then((r) => r[0]?.n ?? 0),
   ]);
 
   const series = fill(buckets, range);
   const peak = Math.max(1, ...series.map((s) => s.n));
-  const limit = limitsFor(user.plan).calls;
+  const limit = limitsFor(billing.plan).calls;
 
   return (
     <AppShell
       active="/settings/usage"
-      eyebrow={`${month} of ${limit} calls this month on ${user.plan}`}
+      eyebrow={
+        `${month} of ${limit.toLocaleString("en-US")} calls this month on ${billing.plan}` +
+        (billing.shared ? " — your studio's shared allowance" : "")
+      }
       title="Usage"
       narrow
     >
       <div className="stack">
         <div>
           <p className="lede">
-            Every MCP call your tokens made — when, which tool, which brain, and
-            whether it found anything. Metering is by call, not by token, so
-            there is no bill to read here: the number that runs out is the one
-            in the corner above.
+            {billing.shared
+              ? "Every MCP call your studio made — yours and your colleagues' — with the tool, the brain, and whether it found anything. One allowance, shared."
+              : "Every MCP call your tokens made — when, which tool, which brain, and whether it found anything."}{" "}
+            Metering is by call, not by token, so there is no bill to read here:
+            the number that runs out is the one in the corner above.
           </p>
           <div className="chips">
             {(Object.keys(RANGES) as RangeKey[]).map((r) => (

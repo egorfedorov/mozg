@@ -1,6 +1,7 @@
 import { maybeOne } from "@/db";
 import type { Brain, GrantRole } from "@/db/types";
 import { gateFor, hasPaid } from "@/lib/paywall";
+import { seatIn } from "@/lib/team";
 
 /**
  * Who may do what with a brain. Every read path and every MCP tool goes
@@ -63,6 +64,13 @@ async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
       [brain.id, userId],
     );
     if (grant) return open(grant.role);
+
+    // A studio seat is a grant on everything its owner has — including the
+    // brain they made this morning, which is the whole difference between a
+    // seat and twelve invitations. seatIn also checks that the studio's month
+    // has not lapsed, so a plan that expires actually closes.
+    const seat = await seatIn(brain.owner_id, userId);
+    if (seat) return open(seat);
   }
 
   if (brain.visibility !== "public") return { brain, access: null, preview: false };

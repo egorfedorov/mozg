@@ -39,10 +39,12 @@ function brain(over: Partial<Brain>): Brain {
   };
 }
 
-/** Brain table + grants + purchases, just enough for accessFor. */
+/** Brain table + grants + seats + purchases, just enough for accessFor. */
 function stubAccessDb(opts: {
   brains: Brain[];
   grants?: { brain_id: string; role: GrantRole; user_id: string }[];
+  /** A studio seat. `lapsed` stands in for an expired paid_until. */
+  seats?: { owner_id: string; role: GrantRole; user_id: string; lapsed?: boolean }[];
   purchases?: { brain_id: string; buyer_id: string }[];
 }) {
   stubDb((text, params) => {
@@ -61,6 +63,17 @@ function stubAccessDb(opts: {
         (g) => g.brain_id === params[0] && g.user_id === params[1],
       );
       return grant ? [{ role: grant.role }] : [];
+    }
+    if (/from members/.test(text)) {
+      // The real query joins the invited address and the owner's plan; the
+      // stub treats a listed seat as verified and its studio as paid unless
+      // the case says otherwise.
+      const seat = (opts.seats ?? []).find(
+        (m) => m.owner_id === params[0] && m.user_id === params[1],
+      );
+      return seat
+        ? [{ role: seat.role, plan: "studio", paid_until: seat.lapsed ? new Date(0) : null }]
+        : [];
     }
     if (/from purchases/.test(text)) {
       const [brainIds, buyerId] = params as [string[], string];
@@ -162,6 +175,36 @@ test("a paid parent covers its free children", async () => {
   assert.deepEqual(await accessFor(child.id, BUYER), {
     brain: child,
     access: "viewer",
+    preview: false,
+  });
+});
+
+test("a studio seat opens every brain its owner has, without a per-brain grant", async () => {
+  const b = brain({ visibility: "private" });
+  stubAccessDb({
+    brains: [b],
+    seats: [{ owner_id: OWNER, role: "contributor", user_id: "user-colleague" }],
+  });
+
+  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
+    brain: b,
+    access: "contributor",
+    preview: false,
+  });
+  // Someone else's colleague is still a stranger.
+  assert.deepEqual(await accessFor(b.id, STRANGER), { brain: b, access: null, preview: false });
+});
+
+test("a lapsed studio closes: the seat stops opening private brains", async () => {
+  const b = brain({ visibility: "private" });
+  stubAccessDb({
+    brains: [b],
+    seats: [{ owner_id: OWNER, role: "contributor", user_id: "user-colleague", lapsed: true }],
+  });
+
+  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
+    brain: b,
+    access: null,
     preview: false,
   });
 });

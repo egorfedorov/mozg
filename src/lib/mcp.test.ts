@@ -5,7 +5,12 @@ import { callTool } from "./mcp";
 import { stubDb } from "./test-db";
 import type { TokenOwner } from "./tokens";
 
-const owner: TokenOwner = { userId: "u1", tokenId: "t1", plan: "free" };
+const owner: TokenOwner = {
+  userId: "u1",
+  tokenId: "t1",
+  plan: "free",
+  billing: { id: "u1", plan: "free", shared: false },
+};
 
 /**
  * The refusal an agent gets when it guessed a handle. It used to say only

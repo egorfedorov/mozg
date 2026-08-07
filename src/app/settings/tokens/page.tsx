@@ -7,6 +7,7 @@ import { query } from "@/db";
 import type { McpToken } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { quotaRemaining } from "@/lib/tokens";
+import { billingFor } from "@/lib/team";
 import { revoke } from "./actions";
 import ConfirmForm from "@/components/ConfirmForm";
 
@@ -18,24 +19,31 @@ export default async function TokensPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/tokens");
 
+  // A seat holder spends the studio's month, so that is the month to show —
+  // see lib/team.ts. Alone, this resolves to the reader's own account.
+  const billing = await billingFor(user.id, user.plan, user.paidUntil);
+
   const [tokens, remaining, used] = await Promise.all([
     query<McpToken>(
       `select * from mcp_tokens where user_id = $1 and revoked_at is null
         order by created_at desc`,
       [user.id],
     ),
-    quotaRemaining(user.id, user.plan),
+    quotaRemaining(billing.id, billing.plan),
     query<{ n: number }>(
       `select count(*)::int as n from calls
-        where caller_id = $1 and created_at >= date_trunc('month', now())`,
-      [user.id],
+        where billed_to = $1 and created_at >= date_trunc('month', now())`,
+      [billing.id],
     ).then((r) => r[0]?.n ?? 0),
   ]);
 
   return (
     <AppShell
       active="/settings/tokens"
-      eyebrow={`${used} calls this month · ${remaining} left on ${user.plan}`}
+      eyebrow={
+        `${used} calls this month · ${remaining} left on ${billing.plan}` +
+        (billing.shared ? " (your studio's)" : "")
+      }
       title="Access tokens"
       narrow
     >

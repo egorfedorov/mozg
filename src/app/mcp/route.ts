@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { query, maybeOne } from "@/db";
 import { TOOLS, callTool } from "@/lib/mcp";
 import { reportError } from "@/lib/errors";
-import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
+import { verifyToken, quotaRemaining, burstExceeded, tokenOwnerFor } from "@/lib/tokens";
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import type { Plan } from "@/db/types";
 import { captureServer } from "@/lib/analytics";
 
 /**
@@ -95,13 +94,7 @@ export async function POST(req: Request) {
   if (!owner) {
     try {
       const oauth = await auth.api.getMcpSession({ headers: req.headers as unknown as Headers });
-      if (oauth?.userId) {
-        const u = await maybeOne<{ plan: Plan }>(
-          `select plan from "user" where id = $1`,
-          [oauth.userId],
-        );
-        if (u) owner = { userId: oauth.userId, tokenId: "oauth", plan: u.plan };
-      }
+      if (oauth?.userId) owner = await tokenOwnerFor(oauth.userId, "oauth");
     } catch {
       // An unparseable or expired OAuth token reads as "no session".
     }
@@ -244,7 +237,10 @@ async function handle(rpc: RpcRequest, owner: Owner) {
         };
       }
 
-      const remaining = await quotaRemaining(owner.userId, owner.plan);
+      // Billed to the studio when the caller holds a seat, to themselves
+      // otherwise — one allowance per account that pays, not per person who
+      // calls.
+      const remaining = await quotaRemaining(owner.billing.id, owner.billing.plan);
       if (remaining <= 0) {
         return {
           jsonrpc: "2.0" as const,
@@ -254,8 +250,9 @@ async function handle(rpc: RpcRequest, owner: Owner) {
               {
                 type: "text",
                 text:
-                  `Monthly call quota reached on the ${owner.plan} plan. ` +
-                  "Tell the user to upgrade at mozg.sh/settings.",
+                  `Monthly call quota reached on the ${owner.billing.plan} plan` +
+                  (owner.billing.shared ? " your studio shares" : "") +
+                  ". Tell the user to upgrade at mozg.sh/settings.",
               },
             ],
             isError: true,
@@ -284,12 +281,13 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       // before it; a failed insert must still not fail the tool call.
       await query(
         `insert into calls
-           (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok, error)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+           (brain_id, caller_id, owner_id, billed_to, tool, query, results, top_score, latency_ms, ok, error)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           outcome.brainId ?? null,
           owner.userId,
           outcome.ownerId ?? null,
+          owner.billing.id,
           name,
           typeof args.query === "string" ? args.query.slice(0, 500) : null,
           outcome.results ?? null,

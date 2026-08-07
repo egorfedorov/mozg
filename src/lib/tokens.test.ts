@@ -45,20 +45,55 @@ test("issueToken stores only the hash, returns the plaintext once", async () => 
   assert.equal(stored[3], "laptop");
 });
 
-test("verifyToken resolves a live token to its owner", async () => {
+test("verifyToken resolves a live token to its owner, billed to themselves", async () => {
   const token = "mzg_" + "a".repeat(32);
   stubDb((text) => {
     if (/from mcp_tokens t/.test(text)) {
       return [{ id: "tok-1", user_id: "u1", token_hash: hashToken(token), plan: "pro" }];
     }
     if (/update mcp_tokens set last_used_at/.test(text)) return [];
+    // Not in anyone's studio.
+    if (/from members m/.test(text)) return [];
     throw new Error(`unexpected query: ${text}`);
   });
 
-  const owner = await verifyToken(`Bearer ${token}`);
-  assert.deepEqual(owner, { userId: "u1", tokenId: "tok-1", plan: "pro" });
+  const solo = {
+    userId: "u1",
+    tokenId: "tok-1",
+    plan: "pro",
+    billing: { id: "u1", plan: "pro", shared: false },
+  };
+  assert.deepEqual(await verifyToken(`Bearer ${token}`), solo);
   // The bare token works too, not just the Authorization-header form.
-  assert.deepEqual(await verifyToken(token), { userId: "u1", tokenId: "tok-1", plan: "pro" });
+  assert.deepEqual(await verifyToken(token), solo);
+});
+
+/**
+ * The rule the studio plan is sold on: a colleague's calls come out of the
+ * studio's month, not their own free account. Without this, five seats meant
+ * five separate free allowances and the thing being paid for did not exist.
+ */
+test("verifyToken bills a seat holder to the studio, not to themselves", async () => {
+  const token = "mzg_" + "c".repeat(32);
+  stubDb((text) => {
+    if (/from mcp_tokens t/.test(text)) {
+      return [{ id: "tok-9", user_id: "colleague", token_hash: hashToken(token), plan: "free" }];
+    }
+    if (/update mcp_tokens set last_used_at/.test(text)) return [];
+    if (/from members m/.test(text)) {
+      return [{ owner_id: "studio", role: "contributor", plan: "studio", paid_until: null }];
+    }
+    throw new Error(`unexpected query: ${text}`);
+  });
+
+  assert.deepEqual(await verifyToken(token), {
+    userId: "colleague",
+    tokenId: "tok-9",
+    // What they may do is still their own plan…
+    plan: "free",
+    // …but the month they spend is the studio's.
+    billing: { id: "studio", plan: "studio", shared: true },
+  });
 });
 
 test("verifyToken rejects unknown and revoked tokens", async () => {

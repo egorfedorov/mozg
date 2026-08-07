@@ -4,12 +4,27 @@ import { useState, useTransition } from "react";
 import { useActionState } from "react";
 import { requestUpgrade, payUpgrade, checkPromoAction } from "./actions";
 import { formatCents } from "@/lib/money-math";
-import { PLAN_PRICE_CENTS, type PaidPlan } from "@/lib/plans";
+import { PLANS, PLAN_PRICE_CENTS, type PaidPlan } from "@/lib/plans";
 
-const PITCH: Record<PaidPlan, string> = {
-  pro: "20 brains · 1,000 sources each · 10k agent calls a month · agents can write back",
-  team: "100 brains · 5,000 sources each · 50k agent calls a month · everything in Pro",
-};
+/**
+ * The one line under each price, read off the limits table rather than typed
+ * out beside it. The hand-written version had drifted — it was still promising
+ * 10k and 50k calls after both had tripled, which is the drift lib/plans.ts
+ * warns about in its own first paragraph.
+ */
+function pitch(plan: PaidPlan): string {
+  const l = PLANS[plan];
+  const k = (n: number) => (n >= 1000 ? `${n / 1000}k` : String(n));
+  return [
+    l.seats > 1 ? `${l.seats} seats, one shared allowance` : null,
+    `${l.brains} brains`,
+    `${l.sources.toLocaleString("en-US")} sources each`,
+    `${k(l.calls)} agent calls a month`,
+    `$${l.monthlyExtractCents / 100} of our reading`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 /**
  * The upgrade block. Two doors into the same plan: pay from the balance right
@@ -123,7 +138,7 @@ export default function PlanPanel({
                 className="mono"
                 style={{ display: "block", fontSize: ".75rem", color: "var(--ink-2)", marginTop: ".2rem" }}
               >
-                {PITCH[plan]}
+                {pitch(plan)}
               </span>
             </div>
 

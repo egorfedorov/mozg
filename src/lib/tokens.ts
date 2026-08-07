@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query } from "@/db";
 import type { Plan } from "@/db/types";
 import { limitsFor, effectivePlan } from "@/lib/plans";
+import { billingFor, type Billing } from "@/lib/team";
 
 /**
  * MCP access tokens.
@@ -40,6 +41,14 @@ export interface TokenOwner {
   userId: string;
   tokenId: string;
   plan: Plan;
+  /**
+   * Whose month this caller's calls come out of. Their own account normally;
+   * the studio's when they hold a seat in one. Only the monthly call quota
+   * reads this — what a caller may *do* is still their own plan, because a
+   * seat buys shared reading and a shared allowance, not the owner's ability
+   * to create brains under someone else's name.
+   */
+  billing: Billing;
 }
 
 /** Resolve a bearer token to its owner, or null. Also stamps last_used_at. */
@@ -77,7 +86,39 @@ export async function verifyToken(raw: string | null): Promise<TokenOwner | null
 
   // The plan in force, not the plan on the row: an expired paid plan reads
   // as free, so a lapsed month tightens the quota instead of riding on.
-  return { userId: row.user_id, tokenId: row.id, plan: effectivePlan(row.plan, row.paid_until) };
+  const plan = effectivePlan(row.plan, row.paid_until);
+  return {
+    userId: row.user_id,
+    tokenId: row.id,
+    plan,
+    billing: await billingFor(row.user_id, row.plan, row.paid_until),
+  };
+}
+
+/**
+ * Build a TokenOwner from a user id, for the paths that authenticated some
+ * other way — today the OAuth MCP session.
+ *
+ * It exists because that path used to assemble the object by hand from a bare
+ * `select plan`, which quietly skipped effectivePlan: an OAuth caller whose
+ * paid month had ended kept the paid quota until someone noticed. One place
+ * that knows how to answer "who is this and what do they get".
+ */
+export async function tokenOwnerFor(
+  userId: string,
+  tokenId: string,
+): Promise<TokenOwner | null> {
+  const row = await maybeOne<{ plan: Plan; paid_until: Date | null }>(
+    `select plan, paid_until from "user" where id = $1`,
+    [userId],
+  );
+  if (!row) return null;
+  return {
+    userId,
+    tokenId,
+    plan: effectivePlan(row.plan, row.paid_until),
+    billing: await billingFor(userId, row.plan, row.paid_until),
+  };
 }
 
 export async function revokeToken(userId: string, tokenId: string): Promise<void> {
@@ -87,11 +128,19 @@ export async function revokeToken(userId: string, tokenId: string): Promise<void
   );
 }
 
-export async function quotaRemaining(userId: string, plan: Plan): Promise<number> {
+/**
+ * Calls left this month on the account being billed.
+ *
+ * By billed_to, not caller_id: a studio's five colleagues spend one allowance,
+ * and counting each of them separately would mean the number the studio pays
+ * for bears no relation to what it can spend. For everyone else billed_to is
+ * their own id and nothing changes. See 0073.
+ */
+export async function quotaRemaining(accountId: string, plan: Plan): Promise<number> {
   const row = await maybeOne<{ used: number }>(
     `select count(*)::int as used from calls
-      where caller_id = $1 and created_at >= date_trunc('month', now())`,
-    [userId],
+      where billed_to = $1 and created_at >= date_trunc('month', now())`,
+    [accountId],
   );
   // lib/plans.ts is the one table for limits — a local copy here is how the
   // settings page and the enforcement drift apart.
