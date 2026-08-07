@@ -239,13 +239,13 @@ export default async function BasicsPage() {
             {t("You do not have to know the right word for what you want. That is the whole point of asking something that actually knows the subject.")}</p>
           <AskedTwice
             ask={
-              "“Make the spin feel more exciting when two of the special symbols land. I have no idea how these games do that.”"
+              t("“Make the spin feel more exciting when two of the special symbols land. I have no idea how these games do that.”")
             }
             without={
-              "A shake and a louder noise once the reels have stopped — reasonable, generic, and pointed at the wrong moment. Nothing was wrong with the request; the agent simply answered exactly it."
+              t("A shake and a louder noise once the reels have stopped — reasonable, generic, and pointed at the wrong moment. Nothing was wrong with the request; the agent simply answered exactly it.")
             }
             withBrain={
-              "It asks the brain first and comes back with the name of the thing: anticipation. The last reel slows down and plays a build-up animation while it is still spinning, which is where the tension in these games actually lives — plus the two house rules about when it must not fire. You had never heard the word, and got what somebody with ten years in the industry would have specified."
+              t("It asks the brain first and comes back with the name of the thing: anticipation. The last reel slows down and plays a build-up animation while it is still spinning, which is where the tension in these games actually lives — plus the two house rules about when it must not fire. You had never heard the word, and got what somebody with ten years in the industry would have specified.")
             }
             accent="var(--color-riso-green)"
           />

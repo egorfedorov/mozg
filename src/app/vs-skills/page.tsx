@@ -146,12 +146,12 @@ export default async function VsSkillsPage() {
           <p style={{ color: "var(--ink-2)", maxWidth: "62ch" }}>
             {t("This is the error nobody notices, because nothing looks wrong. You describe what you want in the words you have; the agent does exactly that and nothing more. The thing a professional would have proposed — the convention with a name you have never heard — never comes up, because neither of you knew it was missing.")}</p>
           <AskedTwice
-            ask={"\u201cWhen two scatters land, the spin should feel more exciting. I do not know how these games do that \u2014 make it good.\u201d"}
+            ask={t("\u201cWhen two scatters land, the spin should feel more exciting. I do not know how these games do that \u2014 make it good.\u201d")}
             without={
-              "A screen shake and a louder sound after the reels stop. Reasonable, generic, and aimed at the wrong moment: the tension in a slot lives before the outcome, not after it. The one moment the request was about stays empty."
+              t("A screen shake and a louder sound after the reels stop. Reasonable, generic, and aimed at the wrong moment: the tension in a slot lives before the outcome, not after it. The one moment the request was about stays empty.")
             }
             withBrain={
-              "It searches and comes back with the name of the thing: anticipation. \u201cWith two scatters visible, the last reel slows and its anticipation animation plays until it stops \u2014 that is where the tension is. Your studio brain says anticipation fires from the third reel on and never on a guaranteed loss, and the platform wants it emitted as its own event so the frontend can play it mid-spin.\u201d Then it builds that."
+              t("It searches and comes back with the name of the thing: anticipation. \u201cWith two scatters visible, the last reel slows and its anticipation animation plays until it stops \u2014 that is where the tension is. Your studio brain says anticipation fires from the third reel on and never on a guaranteed loss, and the platform wants it emitted as its own event so the frontend can play it mid-spin.\u201d Then it builds that.")
             }
             accent="var(--color-riso-green)"
           />
