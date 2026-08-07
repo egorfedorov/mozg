@@ -128,6 +128,22 @@ export const PLAN_PRICE_CENTS: Record<PaidPlan, number> = {
   studio: 24_900,
 };
 
+/**
+ * The paid plans in ascending order, and the only place that order is written
+ * down. The settings page used to carry its own copy as a ternary, so `studio`
+ * shipped as a plan nobody could buy: the tier existed, the limits were
+ * enforced, and no button offered it.
+ */
+export const PLAN_LADDER: PaidPlan[] = ["pro", "team", "studio"];
+
+/** The plans worth offering to someone on `plan` — strictly above it. */
+export function upgradesFrom(plan: Plan): PaidPlan[] {
+  // The operator's account is not a customer, and free sits below the whole
+  // ladder (indexOf -1 → the entire list, which is what free should see).
+  if (plan === "admin") return [];
+  return PLAN_LADDER.slice(PLAN_LADDER.indexOf(plan as PaidPlan) + 1);
+}
+
 /** How long one payment keeps a plan alive. Not a subscription — nothing renews. */
 export const PLAN_PERIOD_DAYS = 30;
 

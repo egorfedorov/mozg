@@ -6,7 +6,7 @@ import AppShell from "@/components/AppShell";
 import ProfileForm from "./ProfileForm";
 import PlanPanel from "./PlanPanel";
 import AiKeyPanel from "./AiKeyPanel";
-import { limitsFor, type PaidPlan } from "@/lib/plans";
+import { limitsFor, upgradesFrom } from "@/lib/plans";
 import { pendingPlanRequest } from "@/lib/upgrade";
 import { env } from "@/lib/env";
 import PushToggle from "@/components/PushToggle";
@@ -52,9 +52,9 @@ export default async function SettingsPage() {
   );
 
   const pending = await pendingPlanRequest(user.id);
-  // Only plans strictly above the current one are worth offering.
-  const targets: PaidPlan[] =
-    user.plan === "free" ? ["pro", "team"] : user.plan === "pro" ? ["team"] : [];
+  // Only plans strictly above the current one — see lib/plans.ts, which owns
+  // the order so this page cannot forget a tier again.
+  const targets = upgradesFrom(user.plan);
 
   return (
     <AppShell active="/settings" eyebrow={user.email} title="Plan & profile">

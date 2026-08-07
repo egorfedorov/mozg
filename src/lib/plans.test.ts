@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { effectivePlan, limitsFor, PLANS, PLAN_PRICE_CENTS, PLAN_PERIOD_DAYS } from "./plans";
+import {
+  effectivePlan,
+  limitsFor,
+  upgradesFrom,
+  PLANS,
+  PLAN_PRICE_CENTS,
+  PLAN_PERIOD_DAYS,
+} from "./plans";
 
 const NOW = new Date("2026-08-04T00:00:00Z");
 
@@ -80,4 +87,20 @@ test("export is the paid act — free reads over MCP, paid takes the file", () =
   assert.equal(PLANS.team.exports, true);
   // An expired paid plan loses export along with everything else.
   assert.equal(limitsFor("pro", "2020-01-01T00:00:00Z").exports, false);
+});
+
+/**
+ * The tier that shipped unbuyable. `studio` existed in PLANS, its limits were
+ * enforced, and the settings page offered ["pro", "team"] from a ternary
+ * written before it — so nobody could pay for it. The ladder lives in one
+ * place now; this is the check that it stays that way.
+ */
+test("every paid tier above the current one is offered, and admin is not sold to", () => {
+  assert.deepEqual(upgradesFrom("free"), ["pro", "team", "studio"]);
+  assert.deepEqual(upgradesFrom("pro"), ["team", "studio"]);
+  assert.deepEqual(upgradesFrom("team"), ["studio"]);
+  assert.deepEqual(upgradesFrom("studio"), []);
+  assert.deepEqual(upgradesFrom("admin"), []);
+  // Nothing is offered that has no price on it.
+  for (const p of upgradesFrom("free")) assert.ok(PLAN_PRICE_CENTS[p] > 0);
 });
