@@ -19,6 +19,11 @@
 
 export interface Pack {
   slug: string;
+  /** Bought once, per account. Not a subscription: the material does not
+   *  expire, and renting a book somebody has already read is a bad trade. */
+  priceCents: number;
+  /** People who may read it on one purchase, the buyer counted. */
+  seats: number;
   /** The trade, in the reader's words. */
   title: string;
   eyebrow: string;
@@ -39,6 +44,8 @@ export interface Pack {
 export const PACKS: Pack[] = [
   {
     slug: "igaming",
+    priceCents: 9900,
+    seats: 3,
     title: "Slot studios",
     eyebrow: "For slot studios",
     headline: ["A failed submission", "costs more than a year of this."],
@@ -63,4 +70,19 @@ export const PACKS: Pack[] = [
 
 export function packBySlug(slug: string): Pack | undefined {
   return PACKS.find((p) => p.slug === slug);
+}
+
+/**
+ * Which packs contain this brain — by its own slug, or by its family's.
+ *
+ * Takes slugs rather than a Brain so the read path can answer without loading
+ * the parent row when the brain has no parent, which is most of them.
+ */
+export function packsWith(slug: string, parentSlug?: string | null): string[] {
+  return PACKS.filter(
+    (p) =>
+      p.loose.includes(slug) ||
+      p.parents.includes(slug) ||
+      (parentSlug ? p.parents.includes(parentSlug) : false),
+  ).map((p) => p.slug);
 }

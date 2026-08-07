@@ -1,7 +1,8 @@
 import { maybeOne } from "@/db";
 import type { Brain, GrantRole } from "@/db/types";
 import { gateFor, hasPaid } from "@/lib/paywall";
-import { payingAccountsFor, seatIn } from "@/lib/team";
+import { holdsAnyPack } from "@/lib/pack-access";
+import { packsWith } from "@/lib/packs";
 
 /**
  * Who may do what with a brain. Every read path and every MCP tool goes
@@ -64,13 +65,6 @@ async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
       [brain.id, userId],
     );
     if (grant) return open(grant.role);
-
-    // A studio seat is a grant on everything its owner has — including the
-    // brain they made this morning, which is the whole difference between a
-    // seat and twelve invitations. seatIn also checks that the studio's month
-    // has not lapsed, so a plan that expires actually closes.
-    const seat = await seatIn(brain.owner_id, userId);
-    if (seat) return open(seat);
   }
 
   if (brain.visibility !== "public") return { brain, access: null, preview: false };
@@ -80,14 +74,37 @@ async function resolve(brain: Brain, userId: string | null): Promise<Resolved> {
   // add the free children instead.
   const gate = await gateFor(brain);
   if (gate) {
-    // The buyer's receipt travels to their seats: a studio buys the pack once
-    // and its five people read it, which is the whole shape of a pack sale.
-    return (await hasPaid(gate, await payingAccountsFor(userId)))
-      ? open("viewer")
-      : { brain, access: null, preview: true };
+    if (await hasPaid(gate, userId)) return open("viewer");
+    // Or the brain came in a pack somebody bought. A pack is the cheaper way
+    // to the same material, and it travels to the seats on that purchase —
+    // which is the whole shape of a pack sale, since the brains themselves
+    // belong to whoever wrote them and the buyer owns none of them.
+    if (await inHeldPack(brain, userId)) return open("viewer");
+    return { brain, access: null, preview: true };
   }
 
   return open("viewer");
+}
+
+/**
+ * Is this brain inside a pack the reader holds?
+ *
+ * The parent row is only fetched when there is a parent AND some pack names
+ * families at all — a gated brain outside every pack asks the database
+ * nothing.
+ */
+async function inHeldPack(brain: Brain, userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  let parentSlug: string | null = null;
+  if (brain.parent_id) {
+    const parent = await maybeOne<{ slug: string }>(
+      `select slug from brains where id = $1`,
+      [brain.parent_id],
+    );
+    parentSlug = parent?.slug ?? null;
+  }
+  const packs = packsWith(brain.slug, parentSlug);
+  return packs.length > 0 && holdsAnyPack(userId, packs);
 }
 
 export async function canRead(brainId: string, userId: string | null): Promise<boolean> {

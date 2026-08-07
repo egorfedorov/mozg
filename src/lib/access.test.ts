@@ -39,13 +39,13 @@ function brain(over: Partial<Brain>): Brain {
   };
 }
 
-/** Brain table + grants + seats + purchases, just enough for accessFor. */
+/** Brain table + grants + purchases + pack holdings, enough for accessFor. */
 function stubAccessDb(opts: {
   brains: Brain[];
   grants?: { brain_id: string; role: GrantRole; user_id: string }[];
-  /** A studio seat. `lapsed` stands in for an expired paid_until. */
-  seats?: { owner_id: string; role: GrantRole; user_id: string; lapsed?: boolean }[];
   purchases?: { brain_id: string; buyer_id: string }[];
+  /** Packs this reader holds — bought, or seated on somebody's purchase. */
+  packs?: { pack: string; user_id: string }[];
 }) {
   stubDb((text, params) => {
     if (/select \* from brains where id/.test(text)) {
@@ -64,36 +64,24 @@ function stubAccessDb(opts: {
       );
       return grant ? [{ role: grant.role }] : [];
     }
-    // Two different questions hit `members`. The stub treats a listed seat as
-    // verified and its studio as paid unless the case says otherwise.
-    // seatIn opens with `select m.role`; payingAccountsFor with `select
-    // m.owner_id`. Both mention m.owner_id in their WHERE, so the select list
-    // is what tells them apart.
-    if (/select m\.owner_id/.test(text)) {
-      // payingAccountsFor: every studio this person sits in. One param.
-      return (opts.seats ?? [])
-        .filter((m) => m.user_id === params[0])
-        .map((m) => ({
-          owner_id: m.owner_id,
-          plan: "studio",
-          paid_until: m.lapsed ? new Date(0) : null,
-        }));
-    }
-    if (/from members/.test(text)) {
-      // seatIn: does this person sit in THAT studio. Two params.
-      const seat = (opts.seats ?? []).find(
-        (m) => m.owner_id === params[0] && m.user_id === params[1],
-      );
-      return seat
-        ? [{ role: seat.role, plan: "studio", paid_until: seat.lapsed ? new Date(0) : null }]
+    if (/from pack_purchases/.test(text)) {
+      // holdsAnyPack: does this reader hold any of these packs. The real query
+      // folds "bought it" and "seated on it" into one EXISTS; the stub takes
+      // the answer directly, since which of the two it was does not change
+      // what access.ts does with it.
+      const [userId, packs] = params as [string, string[]];
+      return (opts.packs ?? []).some((h) => h.user_id === userId && packs.includes(h.pack))
+        ? [{ "?column?": 1 }]
         : [];
     }
+    if (/select slug from brains where id/.test(text)) {
+      const row = opts.brains.find((b) => b.id === params[0]);
+      return row ? [{ slug: row.slug }] : [];
+    }
     if (/from purchases/.test(text)) {
-      // buyer_id is matched against a LIST: a reader's own account plus any
-      // studio whose seat they hold, because a purchase travels to its seats.
-      const [brainIds, buyerIds] = params as [string[], string[]];
+      const [brainIds, buyerId] = params as [string[], string];
       return (opts.purchases ?? []).some(
-        (p) => buyerIds.includes(p.buyer_id) && brainIds.includes(p.brain_id),
+        (p) => p.buyer_id === buyerId && brainIds.includes(p.brain_id),
       )
         ? [{ "?column?": 1 }]
         : [];
@@ -194,54 +182,52 @@ test("a paid parent covers its free children", async () => {
   });
 });
 
-test("a studio seat opens every brain its owner has, without a per-brain grant", async () => {
-  const b = brain({ visibility: "private" });
-  stubAccessDb({
-    brains: [b],
-    seats: [{ owner_id: OWNER, role: "contributor", user_id: "user-colleague" }],
-  });
-
-  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
-    brain: b,
-    access: "contributor",
-    preview: false,
-  });
-  // Someone else's colleague is still a stranger.
-  assert.deepEqual(await accessFor(b.id, STRANGER), { brain: b, access: null, preview: false });
-});
-
-test("a lapsed studio closes: the seat stops opening private brains", async () => {
-  const b = brain({ visibility: "private" });
-  stubAccessDb({
-    brains: [b],
-    seats: [{ owner_id: OWNER, role: "contributor", user_id: "user-colleague", lapsed: true }],
-  });
-
-  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
-    brain: b,
-    access: null,
-    preview: false,
-  });
-});
-
 /**
- * The shape a pack sale actually has: the brains belong to whoever wrote them,
- * the studio owns none of them, and the only thing a colleague can inherit is
- * the receipt. Without this a five-seat plan sold access to nothing.
+ * The shape a pack sale actually has. The brains belong to whoever wrote them
+ * and the buyer owns none of them, so the only thing that can travel is the
+ * receipt — and it has to travel to the seats, or a pack bought for a team is
+ * a pack one person can read.
+ *
+ * "igaming" is a real pack slug from lib/packs.ts and "stake-engine" one of
+ * its families; if either is renamed without the other, this fails, which is
+ * the point of not making the slugs up here.
  */
-test("a studio's purchase reaches the people holding its seats", async () => {
-  const b = brain({ visibility: "public", price_cents: 24_900 });
+test("a pack held opens the brains inside it, and nobody else's", async () => {
+  const parent = brain({ visibility: "public", price_cents: 9900, slug: "stake-engine" });
+  const child = brain({ visibility: "public", price_cents: 0, parent_id: parent.id });
   stubAccessDb({
-    brains: [b],
-    seats: [{ owner_id: "studio", role: "contributor", user_id: "user-colleague" }],
-    purchases: [{ brain_id: b.id, buyer_id: "studio" }],
+    brains: [parent, child],
+    packs: [
+      { pack: "igaming", user_id: BUYER },
+      // A seat on somebody else's purchase resolves the same way.
+      { pack: "igaming", user_id: "user-colleague" },
+    ],
   });
 
-  assert.deepEqual(await accessFor(b.id, "user-colleague"), {
-    brain: b,
-    access: "viewer",
-    preview: false,
+  for (const who of [BUYER, "user-colleague"]) {
+    assert.deepEqual(await accessFor(parent.id, who), {
+      brain: parent,
+      access: "viewer",
+      preview: false,
+    });
+    // The family comes with it: the child is gated by the parent's price.
+    assert.deepEqual(await accessFor(child.id, who), {
+      brain: child,
+      access: "viewer",
+      preview: false,
+    });
+  }
+
+  assert.deepEqual(await accessFor(parent.id, STRANGER), {
+    brain: parent,
+    access: null,
+    preview: true,
   });
-  // Nobody else rides along on it.
-  assert.deepEqual(await accessFor(b.id, STRANGER), { brain: b, access: null, preview: true });
+});
+
+test("a pack nobody holds leaves the paywall exactly where it was", async () => {
+  const b = brain({ visibility: "public", price_cents: 9900, slug: "stake-engine" });
+  stubAccessDb({ brains: [b], packs: [{ pack: "igaming", user_id: "someone-else" }] });
+
+  assert.deepEqual(await accessFor(b.id, BUYER), { brain: b, access: null, preview: true });
 });

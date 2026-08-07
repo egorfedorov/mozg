@@ -271,6 +271,76 @@ export async function settlePayout(opts: {
   });
 }
 
+export type PackPurchaseResult =
+  | { ok: true; paidCents: number; balanceCents: number }
+  | { ok: false; reason: "already-owned" | "insufficient" };
+
+/**
+ * Buy a pack from the balance. One transaction, same discipline as
+ * purchaseBrain: lock the buyer, check, debit, record.
+ *
+ * The price comes from lib/packs.ts rather than from a locked row, because a
+ * pack is editorial — there is no seller to pay and no row to reprice under
+ * us. It is passed in so this module keeps knowing nothing about which packs
+ * exist; the caller reads it from the one place it is written down.
+ *
+ * No seller credit, and that is the honest shape: a pack is the platform
+ * selling access to its own catalogue. The day a pack contains somebody
+ * else's brain, this is where the split goes, and it should refuse to ship
+ * until it does.
+ */
+export async function purchasePack(opts: {
+  pack: string;
+  buyerId: string;
+  priceCents: number;
+}): Promise<PackPurchaseResult> {
+  const { pack, buyerId, priceCents } = opts;
+
+  return tx(async (client) => {
+    // Lock first. Without it two clicks a millisecond apart both read the old
+    // balance and both pass the check.
+    const locked = await client.query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1 for update`,
+      [buyerId],
+    );
+    if (!locked.rows.length) throw new Error(`no such user: ${buyerId}`);
+
+    const owned = await client.query(
+      `select 1 from pack_purchases where pack = $1 and buyer_id = $2`,
+      [pack, buyerId],
+    );
+    if (owned.rowCount) return { ok: false as const, reason: "already-owned" as const };
+
+    if (locked.rows[0].balance_cents < priceCents) {
+      return { ok: false as const, reason: "insufficient" as const };
+    }
+
+    await client.query(
+      `insert into pack_purchases (pack, buyer_id, price_cents) values ($1, $2, $3)`,
+      [pack, buyerId, priceCents],
+    );
+
+    await move({
+      client,
+      userId: buyerId,
+      amountCents: -priceCents,
+      kind: "purchase",
+      note: `pack: ${pack}`,
+    });
+
+    const after = await client.query<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1`,
+      [buyerId],
+    );
+
+    return {
+      ok: true as const,
+      paidCents: priceCents,
+      balanceCents: after.rows[0].balance_cents,
+    };
+  });
+}
+
 export type PurchaseResult =
   | { ok: true; purchaseId: string; paidCents: number; balanceCents: number }
   | { ok: false; reason: "already-owned" | "insufficient" | "free" | "own-brain" };

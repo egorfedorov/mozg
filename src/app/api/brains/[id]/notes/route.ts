@@ -14,7 +14,6 @@ import {
 import { limitsFor } from "@/lib/plans";
 import { requireUser } from "@/lib/session";
 import { verifyToken, quotaRemaining, burstExceeded } from "@/lib/tokens";
-import { billingFor, type Billing } from "@/lib/team";
 
 /**
  * The HTTP door for agents that do not speak MCP: the same write pipeline as
@@ -28,14 +27,10 @@ import { billingFor, type Billing } from "@/lib/team";
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   let userId: string;
   let plan: Plan;
-  // Whose month this write comes out of — the studio's when the caller holds
-  // a seat. Same rule as /mcp; the two doors must not meter differently.
-  let billing: Billing;
   const token = await verifyToken(req.headers.get("authorization"));
   if (token) {
     userId = token.userId;
     plan = token.plan;
-    billing = token.billing;
   } else {
     let user;
     try {
@@ -45,7 +40,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
     userId = user.id;
     plan = user.plan;
-    billing = await billingFor(user.id, user.plan, user.paidUntil);
   }
 
   const { id } = await ctx.params;
@@ -92,9 +86,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       { status: 429 },
     );
   }
-  if ((await quotaRemaining(billing.id, billing.plan)) <= 0) {
+  if ((await quotaRemaining(userId, plan)) <= 0) {
     return NextResponse.json(
-      { error: `Monthly call quota reached on the ${billing.plan} plan.` },
+      { error: `Monthly call quota reached on the ${plan} plan.` },
       { status: 429 },
     );
   }
@@ -155,13 +149,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   // monthly quota and the burst ceiling see this traffic too.
   await query(
     `insert into calls
-       (brain_id, caller_id, owner_id, billed_to, tool, query, results, top_score, latency_ms, ok)
-     values ($1, $2, $3, $4, $5, null, $6, null, $7, $8)`,
+       (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok)
+     values ($1, $2, $3, $4, null, $5, null, $6, $7)`,
     [
       resolved.brain.id,
       userId,
       resolved.brain.owner_id,
-      billing.id,
       notes.length > 1 ? "brain_write_batch" : "brain_write",
       saved,
       Date.now() - started,

@@ -16,14 +16,11 @@ function pitch(plan: PaidPlan): string {
   const l = PLANS[plan];
   const k = (n: number) => (n >= 1000 ? `${n / 1000}k` : String(n));
   return [
-    l.seats > 1 ? `${l.seats} seats, one shared allowance` : null,
     `${l.brains} brains`,
     `${l.sources.toLocaleString("en-US")} sources each`,
     `${k(l.calls)} agent calls a month`,
     `$${l.monthlyExtractCents / 100} of our reading`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ].join(" · ");
 }
 
 /**

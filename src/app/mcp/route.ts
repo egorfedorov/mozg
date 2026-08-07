@@ -237,10 +237,7 @@ async function handle(rpc: RpcRequest, owner: Owner) {
         };
       }
 
-      // Billed to the studio when the caller holds a seat, to themselves
-      // otherwise — one allowance per account that pays, not per person who
-      // calls.
-      const remaining = await quotaRemaining(owner.billing.id, owner.billing.plan);
+      const remaining = await quotaRemaining(owner.userId, owner.plan);
       if (remaining <= 0) {
         return {
           jsonrpc: "2.0" as const,
@@ -250,9 +247,8 @@ async function handle(rpc: RpcRequest, owner: Owner) {
               {
                 type: "text",
                 text:
-                  `Monthly call quota reached on the ${owner.billing.plan} plan` +
-                  (owner.billing.shared ? " your studio shares" : "") +
-                  ". Tell the user to upgrade at mozg.sh/settings.",
+                  `Monthly call quota reached on the ${owner.plan} plan. ` +
+                  "Tell the user to upgrade at mozg.sh/settings.",
               },
             ],
             isError: true,
@@ -281,13 +277,12 @@ async function handle(rpc: RpcRequest, owner: Owner) {
       // before it; a failed insert must still not fail the tool call.
       await query(
         `insert into calls
-           (brain_id, caller_id, owner_id, billed_to, tool, query, results, top_score, latency_ms, ok, error)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+           (brain_id, caller_id, owner_id, tool, query, results, top_score, latency_ms, ok, error)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           outcome.brainId ?? null,
           owner.userId,
           outcome.ownerId ?? null,
-          owner.billing.id,
           name,
           typeof args.query === "string" ? args.query.slice(0, 500) : null,
           outcome.results ?? null,

@@ -6,7 +6,6 @@ import { maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { gateFor, hasPaid } from "@/lib/paywall";
-import { payingAccountsFor } from "@/lib/team";
 
 /**
  * A review is a buyer's word, verified: the same gate that unlocks reading
@@ -26,7 +25,7 @@ export async function submitReview(_prev: unknown, formData: FormData) {
   if (brain.owner_id === user.id) return { error: "Reviewing your own brain would fool nobody." };
 
   const gate = await gateFor(brain);
-  if (gate && !(await hasPaid(gate, await payingAccountsFor(user.id)))) {
+  if (gate && !(await hasPaid(gate, user.id))) {
     return { error: "Reviews are for buyers — the paywall and the rating share one gate." };
   }
   if (!gate) {

@@ -10,12 +10,6 @@ import type { Plan } from "@/db/types";
  * on every path into the product: the web app, and an agent over MCP.
  */
 export interface PlanLimits {
-  /**
-   * People who may work on this account's brains, the owner included. One on
-   * every plan but studio: a seat is the thing a studio actually buys, and
-   * pretending otherwise is how "team" ended up meaning "higher ceilings".
-   */
-  seats: number;
   brains: number;
   /** Sources per brain. */
   sources: number;
@@ -71,7 +65,7 @@ export const PLANS: Record<Plan, PlanLimits> = {
   // Five exam sittings, not one: agent-written notes now queue a re-sit, each one
   // ~7.5¢ of judge, and a single sitting meant a free brain's score froze the
   // first time its owner taught it. Five is enough to watch the loop move.
-  free: { seats: 1, brains: 1, sources: 200, calls: 3000, dailyExtractCents: 50, monthlyExtractCents: 50, examSittings: 5, write: true, exports: false },
+  free: { brains: 1, sources: 200, calls: 3000, dailyExtractCents: 50, monthlyExtractCents: 50, examSittings: 5, write: true, exports: false },
   // $25/mo buys $20 of our inference — about 1,300 pages at the measured average,
   // or a few hundred pages plus the exams that grade them at 7.5¢ a sitting. The
   // remaining $5 covers hosting, the embedder, storage and the judge, and is the
@@ -79,29 +73,17 @@ export const PLANS: Record<Plan, PlanLimits> = {
   // rather than the month. Calls are generous for the same reason as on free: they
   // cost CPU, not tokens, and an agent that hesitates to search is the failure
   // mode this product exists to prevent.
-  pro: { seats: 1, brains: 20, sources: 1000, calls: 30_000, dailyExtractCents: 400, monthlyExtractCents: 2000, examSittings: Infinity, write: true, exports: true },
+  pro: { brains: 20, sources: 1000, calls: 30_000, dailyExtractCents: 400, monthlyExtractCents: 2000, examSittings: Infinity, write: true, exports: true },
   // $79/mo buys $65 of inference — ~4,400 pages a month across a hundred brains,
   // and enough calls for a room full of agents. Priced under the round hundred on
   // purpose: the ceilings that make this tier are mostly our CPU (brains, calls),
   // not tokens, so the margin can be wider without the number looking greedy.
-  // It is one person's ceilings, deliberately: the seat is what studio sells, and
-  // a tier that quietly included colleagues would leave nothing above it.
-  team: { seats: 1, brains: 100, sources: 5000, calls: 150_000, dailyExtractCents: 1300, monthlyExtractCents: 6500, examSittings: Infinity, write: true, exports: true },
-  // $249/mo, five seats. Priced against what it replaces rather than against the
-  // tier below it: a studio that fails a submission loses weeks of a team, and
-  // the brains this plan is bought for — approval, compliance, the RGS contract —
-  // exist to stop exactly that. Per seat it is under $50, which is the number to
-  // say out loud when $249 lands badly.
-  //
-  // The ceilings are shared, not multiplied: 300k calls is the studio's month,
-  // not each colleague's, because calls.billed_to charges a member's call to the
-  // studio (see 0073). $180 of inference inside a $249 price leaves $69 against
-  // hosting, the embedder and the judge for five people — thinner than pro's
-  // margin on purpose, since the seats are what is being sold.
-  studio: { seats: 5, brains: 200, sources: 10_000, calls: 300_000, dailyExtractCents: 3600, monthlyExtractCents: 18_000, examSittings: Infinity, write: true, exports: true },
+  // Ceilings, not people: sharing is what a pack purchase does, and it is not
+  // gated on a tier — see src/lib/packs.ts.
+  team: { brains: 100, sources: 5000, calls: 150_000, dailyExtractCents: 1300, monthlyExtractCents: 6500, examSittings: Infinity, write: true, exports: true },
   // The operator's own account: the catalogue lives here, so the caps are
   // sized for seeding sessions, not for a customer. Not sold anywhere.
-  admin: { seats: 100, brains: 10_000, sources: 100_000, calls: 1_000_000, dailyExtractCents: 100_000, monthlyExtractCents: 1_000_000, examSittings: Infinity, write: true, exports: true },
+  admin: { brains: 10_000, sources: 100_000, calls: 1_000_000, dailyExtractCents: 100_000, monthlyExtractCents: 1_000_000, examSittings: Infinity, write: true, exports: true },
 };
 
 export function limitsFor(
@@ -112,7 +94,7 @@ export function limitsFor(
 }
 
 /** The plans that can be bought. */
-export type PaidPlan = "pro" | "team" | "studio";
+export type PaidPlan = "pro" | "team";
 
 /**
  * Monthly price in cents. There is no card checkout yet — this is what the
@@ -124,17 +106,15 @@ export const PLAN_PRICE_CENTS: Record<PaidPlan, number> = {
   // it reads as the point rather than as a giveaway.
   pro: 2500,
   team: 7900,
-  // Five seats. See the limits above for why this is not team-times-three.
-  studio: 24_900,
 };
 
 /**
  * The paid plans in ascending order, and the only place that order is written
- * down. The settings page used to carry its own copy as a ternary, so `studio`
- * shipped as a plan nobody could buy: the tier existed, the limits were
+ * down. The settings page used to carry its own copy as a ternary, which is
+ * how a tier once shipped that nobody could buy: it existed, its limits were
  * enforced, and no button offered it.
  */
-export const PLAN_LADDER: PaidPlan[] = ["pro", "team", "studio"];
+export const PLAN_LADDER: PaidPlan[] = ["pro", "team"];
 
 /** The plans worth offering to someone on `plan` — strictly above it. */
 export function upgradesFrom(plan: Plan): PaidPlan[] {
@@ -160,7 +140,7 @@ export function effectivePlan(
   paidUntil?: Date | string | null,
   now: Date = new Date(),
 ): Plan {
-  if (plan !== "pro" && plan !== "team" && plan !== "studio") return plan;
+  if (plan !== "pro" && plan !== "team") return plan;
   if (!paidUntil) return plan;
   return new Date(paidUntil).getTime() > now.getTime() ? plan : "free";
 }

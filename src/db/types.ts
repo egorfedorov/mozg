@@ -1,6 +1,6 @@
 /** Row shapes. Kept in lockstep with src/db/migrations/*.sql by hand. */
 
-export type Plan = "free" | "pro" | "team" | "studio" | "admin";
+export type Plan = "free" | "pro" | "team" | "admin";
 export type Visibility = "private" | "link" | "public";
 export type License = "nc" | "mit" | "proprietary";
 export type SourceKind = "image" | "text" | "url" | "file" | "site";

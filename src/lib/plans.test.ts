@@ -96,10 +96,9 @@ test("export is the paid act — free reads over MCP, paid takes the file", () =
  * place now; this is the check that it stays that way.
  */
 test("every paid tier above the current one is offered, and admin is not sold to", () => {
-  assert.deepEqual(upgradesFrom("free"), ["pro", "team", "studio"]);
-  assert.deepEqual(upgradesFrom("pro"), ["team", "studio"]);
-  assert.deepEqual(upgradesFrom("team"), ["studio"]);
-  assert.deepEqual(upgradesFrom("studio"), []);
+  assert.deepEqual(upgradesFrom("free"), ["pro", "team"]);
+  assert.deepEqual(upgradesFrom("pro"), ["team"]);
+  assert.deepEqual(upgradesFrom("team"), []);
   assert.deepEqual(upgradesFrom("admin"), []);
   // Nothing is offered that has no price on it.
   for (const p of upgradesFrom("free")) assert.ok(PLAN_PRICE_CENTS[p] > 0);

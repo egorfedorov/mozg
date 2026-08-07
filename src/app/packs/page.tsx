@@ -3,7 +3,6 @@ import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import { formatCents } from "@/lib/money-math";
-import { PLANS, PLAN_PRICE_CENTS } from "@/lib/plans";
 import { PACKS } from "@/lib/packs";
 import { brainsIn, statsOf } from "@/lib/pack-brains";
 
@@ -46,9 +45,8 @@ export default async function PacksPage() {
         <p className="lede" style={{ maxWidth: "58ch" }}>
           Nobody needs one brain. A job needs the six or eight its work actually
           spans — the rules, the API, the maths, the craft — and needs them to
-          agree with each other. A pack is that set, on{" "}
-          {PLANS.studio.seats} seats and one shared allowance, for{" "}
-          {formatCents(PLAN_PRICE_CENTS.studio)} a month.
+          agree with each other. A pack is that set, bought once and shared
+          with the people you work with.
         </p>
         <p style={{ maxWidth: "58ch", marginTop: "1rem", color: "var(--ink-2)" }}>
           Sold together, scored separately. Every brain in every pack sits its
@@ -64,7 +62,8 @@ export default async function PacksPage() {
                   <strong>{pack.title}</strong>
                   <span className="row-sub">{pack.covers}</span>
                   <span className="row-meta">
-                    {stats.brains} brains · {stats.notes.toLocaleString("en-US")} notes
+                    {stats.brains} brains · {stats.notes.toLocaleString("en-US")} notes ·{" "}
+                    {formatCents(pack.priceCents)} once · {pack.seats} seats
                   </span>
                 </span>
                 <span className="row-side">

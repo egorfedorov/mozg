@@ -1,17 +1,24 @@
 "use client";
 
 import { useActionState } from "react";
-import { inviteMember } from "./actions";
+import { invitePackSeat } from "./actions";
 
 /**
- * One row: an address, a role, a button. The seat count lives above it on the
- * page, so the form does not have to explain a limit it cannot show.
+ * One row per pack: an address and a button. The seat count sits above it on
+ * the page, so the form does not have to explain a limit it cannot show.
  */
-export default function InviteForm({ disabled }: { disabled?: boolean }) {
-  const [state, action, pending] = useActionState(inviteMember, null);
+export default function InviteForm({
+  pack,
+  disabled,
+}: {
+  pack: string;
+  disabled?: boolean;
+}) {
+  const [state, action, pending] = useActionState(invitePackSeat, null);
 
   return (
-    <form action={action} className="stack-tight" style={{ marginTop: "1rem" }}>
+    <form action={action} className="stack-tight" style={{ marginTop: ".75rem" }}>
+      <input type="hidden" name="pack" value={pack} />
       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
         <input
           name="email"
@@ -30,23 +37,8 @@ export default function InviteForm({ disabled }: { disabled?: boolean }) {
             fontSize: ".875rem",
           }}
         />
-        <select
-          name="role"
-          defaultValue="contributor"
-          disabled={disabled}
-          style={{
-            padding: ".5rem .6rem",
-            border: "1.5px solid var(--ink)",
-            background: "var(--paper)",
-            font: "inherit",
-            fontSize: ".875rem",
-          }}
-        >
-          <option value="contributor">can propose notes</option>
-          <option value="viewer">read only</option>
-        </select>
         <button className="btn" type="submit" disabled={pending || disabled}>
-          {pending ? "Inviting…" : "Invite"}
+          {pending ? "Adding…" : "Give a seat"}
         </button>
       </div>
 
@@ -57,7 +49,7 @@ export default function InviteForm({ disabled }: { disabled?: boolean }) {
       )}
       {state?.ok && (
         <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem" }}>
-          {state.email} holds a seat. It opens the moment they sign in with that
+          {state.email} has a seat. It opens the moment they sign in with that
           address and verify it — there is nothing for them to accept.
         </p>
       )}

@@ -4,7 +4,6 @@ import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import { formatCents } from "@/lib/money-math";
-import { PLANS, PLAN_PRICE_CENTS } from "@/lib/plans";
 import { PACKS, packBySlug } from "@/lib/packs";
 import { brainsIn, statsOf } from "@/lib/pack-brains";
 
@@ -46,8 +45,7 @@ export default async function PackPage({
 
   const brains = await brainsIn(pack);
   const { notes, median } = statsOf(brains);
-  const seats = PLANS.studio.seats;
-  const perSeat = Math.round(PLAN_PRICE_CENTS.studio / seats);
+  const perSeat = Math.round(pack.priceCents / pack.seats);
 
   return (
     <>
@@ -85,8 +83,8 @@ export default async function PackPage({
         </p>
 
         <p style={{ marginTop: "1.5rem", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
-          <Link className="btn" href="/settings#plan">
-            Take a studio — {formatCents(PLAN_PRICE_CENTS.studio)}/mo
+          <Link className="btn" href="/settings/packs">
+            Buy the pack — {formatCents(pack.priceCents)} once
           </Link>
           <Link className="btn btn-ghost" href="/explore">
             Read the brains first
@@ -122,18 +120,18 @@ export default async function PackPage({
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="h2">{seats} seats, one allowance</h2>
+          <h2 className="h2">Bought once, shared {pack.seats} ways</h2>
           <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>
-            A seat is an invitation to the studio, not to a brain. {pack.team},
-            and all of it comes out of one month —{" "}
-            {PLANS.studio.calls.toLocaleString("en-US")} calls, not{" "}
-            {seats} separate allowances to keep an eye on. Add a brain on
-            Tuesday and everybody has it on Tuesday.
+            {formatCents(pack.priceCents)}, one time — {formatCents(perSeat)} a
+            head. It does not renew and it does not expire, and when a brain in
+            the pack learns something new you have it without paying again.
           </p>
-          <p style={{ maxWidth: "58ch", color: "var(--ink-2)" }}>
-            {formatCents(PLAN_PRICE_CENTS.studio)} a month, which is{" "}
-            {formatCents(perSeat)} a seat. A month at a time — nothing renews on
-            its own.
+          <p style={{ maxWidth: "58ch", margin: "0 0 1rem" }}>
+            {pack.team}. The seat shares the reading, not the allowance: how
+            much each of you can teach and how many calls you may make is still
+            your own plan, so a colleague who works this hard ends up on their
+            own <Link href="/pricing">pro</Link> rather than quietly spending
+            yours.
           </p>
         </section>
 
@@ -148,8 +146,8 @@ export default async function PackPage({
         </section>
 
         <p style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)", display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
-          <Link className="btn" href="/settings#plan">
-            Take a studio — {formatCents(PLAN_PRICE_CENTS.studio)}/mo
+          <Link className="btn" href="/settings/packs">
+            Buy the pack — {formatCents(pack.priceCents)} once
           </Link>
           <Link className="btn btn-ghost" href="/chat">
             Ask a person first

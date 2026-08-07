@@ -2,7 +2,6 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { maybeOne, query } from "@/db";
 import type { Plan } from "@/db/types";
 import { limitsFor, effectivePlan } from "@/lib/plans";
-import { billingFor, type Billing } from "@/lib/team";
 
 /**
  * MCP access tokens.
@@ -41,14 +40,6 @@ export interface TokenOwner {
   userId: string;
   tokenId: string;
   plan: Plan;
-  /**
-   * Whose month this caller's calls come out of. Their own account normally;
-   * the studio's when they hold a seat in one. Only the monthly call quota
-   * reads this — what a caller may *do* is still their own plan, because a
-   * seat buys shared reading and a shared allowance, not the owner's ability
-   * to create brains under someone else's name.
-   */
-  billing: Billing;
 }
 
 /** Resolve a bearer token to its owner, or null. Also stamps last_used_at. */
@@ -86,13 +77,7 @@ export async function verifyToken(raw: string | null): Promise<TokenOwner | null
 
   // The plan in force, not the plan on the row: an expired paid plan reads
   // as free, so a lapsed month tightens the quota instead of riding on.
-  const plan = effectivePlan(row.plan, row.paid_until);
-  return {
-    userId: row.user_id,
-    tokenId: row.id,
-    plan,
-    billing: await billingFor(row.user_id, row.plan, row.paid_until),
-  };
+  return { userId: row.user_id, tokenId: row.id, plan: effectivePlan(row.plan, row.paid_until) };
 }
 
 /**
@@ -113,12 +98,7 @@ export async function tokenOwnerFor(
     [userId],
   );
   if (!row) return null;
-  return {
-    userId,
-    tokenId,
-    plan: effectivePlan(row.plan, row.paid_until),
-    billing: await billingFor(userId, row.plan, row.paid_until),
-  };
+  return { userId, tokenId, plan: effectivePlan(row.plan, row.paid_until) };
 }
 
 export async function revokeToken(userId: string, tokenId: string): Promise<void> {
@@ -129,18 +109,17 @@ export async function revokeToken(userId: string, tokenId: string): Promise<void
 }
 
 /**
- * Calls left this month on the account being billed.
+ * Calls left this month on this account.
  *
- * By billed_to, not caller_id: a studio's five colleagues spend one allowance,
- * and counting each of them separately would mean the number the studio pays
- * for bears no relation to what it can spend. For everyone else billed_to is
- * their own id and nothing changes. See 0073.
+ * Everyone spends their own: a seat on somebody's pack shares the reading, not
+ * the allowance. A colleague who runs out buys their own plan, which is the
+ * point — a shared bucket would hide exactly the signal the plans are sold on.
  */
-export async function quotaRemaining(accountId: string, plan: Plan): Promise<number> {
+export async function quotaRemaining(userId: string, plan: Plan): Promise<number> {
   const row = await maybeOne<{ used: number }>(
     `select count(*)::int as used from calls
-      where billed_to = $1 and created_at >= date_trunc('month', now())`,
-    [accountId],
+      where caller_id = $1 and created_at >= date_trunc('month', now())`,
+    [userId],
   );
   // lib/plans.ts is the one table for limits — a local copy here is how the
   // settings page and the enforcement drift apart.
