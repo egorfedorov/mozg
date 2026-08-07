@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
+import LanguagePicker from "@/components/LanguagePicker";
+import { currentLocale } from "@/lib/t";
 
 /**
  * The header for the public side of the site.
@@ -15,7 +17,7 @@ import { isAdmin } from "@/lib/admin";
  * do not render this at all; they have the rail.
  */
 export default async function TopBar({ active }: { active?: string }) {
-  const user = await currentUser();
+  const [user, locale] = await Promise.all([currentUser(), currentLocale()]);
 
   return (
     <header className="topbar">
@@ -45,6 +47,11 @@ export default async function TopBar({ active }: { active?: string }) {
             beta
           </Link>
         </span>
+
+        {/* Left of whoever you are, signed in or not: the reader who needs it
+            is the reader who cannot read the label next to it, so it has to be
+            findable without reading anything. */}
+        <LanguagePicker current={locale} />
 
         {user ? (
           <>

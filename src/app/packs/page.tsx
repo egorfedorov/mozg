@@ -5,6 +5,7 @@ import Contents from "@/components/Contents";
 import { formatCents } from "@/lib/money-math";
 import { PACKS } from "@/lib/packs";
 import { brainsIn, statsOf } from "@/lib/pack-brains";
+import { translator } from "@/lib/t";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export const metadata = {
  * a poor median should look poor here.
  */
 export default async function PacksPage() {
+  const t = await translator();
   const packs = await Promise.all(
     PACKS.map(async (pack) => ({ pack, stats: statsOf(await brainsIn(pack)) })),
   );
@@ -38,20 +40,27 @@ export default async function PacksPage() {
           className="display"
           style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}
         >
-          A trade&rsquo;s brains,
-          <br />
-          sold together.
+          {/* One string with the break inside it: a headline handed to a
+              translator in two halves comes back as two halves that do not
+              agree with each other. */}
+          {t("A trade’s brains,\nsold together.")
+            .split("\n")
+            .map((line, i) => (
+              <span key={i}>
+                {i > 0 && <br />}
+                {line}
+              </span>
+            ))}
         </h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Nobody needs one brain. A job needs the six or eight its work actually
-          spans — the rules, the API, the maths, the craft — and needs them to
-          agree with each other. A pack is that set, bought once and shared
-          with the people you work with.
+          {t(
+            "Nobody needs one brain. A job needs the six or eight its work actually spans — the rules, the API, the maths, the craft — and needs them to agree with each other. A pack is that set, bought once and shared with the people you work with.",
+          )}
         </p>
         <p style={{ maxWidth: "58ch", marginTop: "1rem", color: "var(--ink-2)" }}>
-          Sold together, scored separately. Every brain in every pack sits its
-          own exam and publishes what it failed, so a pack cannot hide a weak
-          member behind a strong one.
+          {t(
+            "Sold together, scored separately. Every brain in every pack sits its own exam and publishes what it failed, so a pack cannot hide a weak member behind a strong one.",
+          )}
         </p>
 
         <section style={{ marginTop: "clamp(2.5rem, 6vw, 3.5rem)" }}>
@@ -62,12 +71,13 @@ export default async function PacksPage() {
                   <strong>{pack.title}</strong>
                   <span className="row-sub">{pack.covers}</span>
                   <span className="row-meta">
-                    {stats.brains} brains · {stats.notes.toLocaleString("en-US")} notes ·{" "}
-                    {formatCents(pack.priceCents)} once · {pack.seats} seats
+                    {stats.brains} {t("brains")} · {stats.notes.toLocaleString("en-US")}{" "}
+                    {t("notes")} · {formatCents(pack.priceCents)} {t("once")} · {pack.seats}{" "}
+                    {t("seats")}
                   </span>
                 </span>
                 <span className="row-side">
-                  {stats.median !== null ? `${stats.median}% median` : "unscored"}
+                  {stats.median !== null ? `${stats.median}% ${t("median")}` : t("unscored")}
                 </span>
               </Link>
             ))}
@@ -75,19 +85,18 @@ export default async function PacksPage() {
         </section>
 
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
-          <h2 className="h2">Yours is not here</h2>
+          <h2 className="h2">{t("Yours is not here")}</h2>
           <p style={{ maxWidth: "58ch", margin: ".5rem 0 1rem" }}>
-            Packs get made where the calls already are — the first one exists
-            because a room full of agents kept reaching for the same twelve
-            brains. If that describes your trade, say which brains you would put
-            in it and we will build the ones that are missing.
+            {t(
+              "Packs get made where the calls already are — the first one exists because a room full of agents kept reaching for the same twelve brains. If that describes your trade, say which brains you would put in it and we will build the ones that are missing.",
+            )}
           </p>
           <p style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
             <Link className="btn" href="/chat">
-              Ask for a pack
+              {t("Ask for a pack")}
             </Link>
             <Link className="btn btn-ghost" href="/explore">
-              Browse every brain
+              {t("Browse every brain")}
             </Link>
           </p>
         </section>

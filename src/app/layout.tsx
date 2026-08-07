@@ -1,3 +1,5 @@
+import { localeOf } from "@/lib/locales";
+import { currentLocale } from "@/lib/t";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
@@ -54,9 +56,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = localeOf(await currentLocale());
+
   return (
-    <html lang="en">
+    // dir matters more than lang does: Arabic and Urdu laid out left-to-right
+    // are not "slightly off", they are unreadable.
+    <html lang={locale.code} dir={locale.rtl ? "rtl" : undefined}>
       {/* No footer here on purpose: it belongs to the public side of the site.
           A workspace ends in work, not in a wall of links out. */}
       <body>

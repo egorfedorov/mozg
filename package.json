@@ -27,6 +27,7 @@
     "check:money": "tsx --env-file-if-exists=.env scripts/check-money.ts",
     "grandfather": "tsx --env-file-if-exists=.env scripts/grandfather.ts",
     "price-pack": "tsx --env-file-if-exists=.env scripts/price-pack.ts",
+    "translate": "tsx --env-file-if-exists=.env scripts/translate.ts",
     "check:purchase": "tsx --env-file-if-exists=.env scripts/check-purchase.ts",
     "check:mcp": "tsx --env-file-if-exists=.env scripts/check-mcp.ts",
     "check:refresh": "tsx --env-file-if-exists=.env scripts/check-refresh.ts",

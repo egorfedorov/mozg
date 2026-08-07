@@ -2844,3 +2844,83 @@ a.row:hover {
 .usage-chart:has(.usage-col:nth-child(13)) .usage-col:not(:nth-child(3n + 1)) .usage-tick {
   display: none;
 }
+
+/* ─── language picker ───────────────────────────────────────────────────────
+   Sits in the top bar, left of the name or of Sign in. The button is an icon
+   with no label on purpose: the person who needs it is the person who cannot
+   read the words beside it. */
+
+.lang {
+  position: relative;
+  display: inline-flex;
+}
+
+.lang-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.lang-button:hover,
+.lang-button[aria-expanded="true"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.lang-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  min-width: 11rem;
+  max-height: min(70vh, 30rem);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.lang-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lang-menu button:hover {
+  background: var(--paper-2);
+}
+
+/* The one you are reading in, marked rather than hidden — a menu that drops
+   the current choice makes you count to work out where you are. */
+.lang-menu button[data-on="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lang-menu button[dir="rtl"] {
+  text-align: right;
+}
