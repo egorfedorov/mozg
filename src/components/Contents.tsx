@@ -61,6 +61,9 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     summary: msg("what people do with it"),
     pages: [
       { href: "/stories", label: msg("How people use it"), note: msg("an artist, a company, a game studio") },
+      // A sibling product rather than a use case, but this is where a reader
+      // asking "what else is there" actually looks.
+      { href: "/ichi", label: msg("ichi"), note: msg("a temper for your agent, not just knowledge") },
       { href: "/packs", label: msg("Packs"), note: msg("a trade's brains, sold together") },
       { href: "https://gallery.mozg.sh", label: msg("Style gallery"), note: msg("buy the way someone works"), external: true },
       { href: "/styles", label: msg("Sell your style"), note: msg("the answer to scraping that pays you") },
