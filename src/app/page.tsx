@@ -20,7 +20,15 @@ export const dynamic = "force-dynamic";
 /** Kept short and true: every one of these is configured on /connect. */
 const CLIENT_NAMES = ["Claude Code", "Codex", "Cursor", "Cline", "Kimi CLI", "Qwen Code", "VS Code"];
 
-const USES: { field: string; tint: string; title: string; body: string }[] = [
+const USES: {
+  field: string;
+  tint: string;
+  title: string;
+  body: string;
+  /** Set on the one card that is a sibling product rather than a use case. */
+  href?: string;
+  cta?: string;
+}[] = [
   {
     field: msg("Design systems"),
     tint: "violet",
@@ -44,6 +52,14 @@ const USES: { field: string; tint: string; title: string; body: string }[] = [
     tint: "orange",
     title: msg("What nobody wrote down"),
     body: msg("Naming, review rules, the deploy sequence — the folklore a new agent never gets."),
+  },
+  {
+    field: msg("ichi · a sibling project"),
+    tint: "green",
+    title: msg("A brain gives your agent knowledge. ichi gives it a temper."),
+    body: msg("Same idea, other half: a persistent character that rides with your agent over MCP. It remembers how it was treated, takes offence, grows attached — and keeps the standards you laid down."),
+    href: "https://ichi.mozg.sh",
+    cta: msg("Meet ichi →"),
   },
 ];
 
@@ -257,6 +273,24 @@ export default async function Home() {
                   {t(u.title)}
                 </h3>
                 <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{t(u.body)}</p>
+                {u.href && (
+                  <a
+                    href={u.href}
+                    className="mono"
+                    style={{
+                      display: "inline-block",
+                      marginTop: ".75rem",
+                      fontSize: ".8125rem",
+                      color: "var(--ink)",
+                      textDecoration: "underline",
+                      textDecorationColor: `var(--color-riso-${u.tint})`,
+                      textDecorationThickness: "2px",
+                      textUnderlineOffset: "4px",
+                    }}
+                  >
+                    {t(u.cta ?? "Open")}
+                  </a>
+                )}
               </div>
             ))}
           </div>
