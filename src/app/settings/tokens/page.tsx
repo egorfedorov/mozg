@@ -18,7 +18,7 @@ export default async function TokensPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/tokens");
 
-  const [tokens, remaining, used] = await Promise.all([
+  const [tokens, remaining, used, ichiTokens] = await Promise.all([
     query<McpToken>(
       `select * from mcp_tokens where user_id = $1 and revoked_at is null
         order by created_at desc`,
@@ -30,6 +30,28 @@ export default async function TokensPage() {
         where caller_id = $1 and created_at >= date_trunc('month', now())`,
       [user.id],
     ).then((r) => r[0]?.n ?? 0),
+    /*
+     * The sibling product's tokens, read straight from its schema.
+     *
+     * ichi shares this database and this account — one user row, one plan —
+     * but keeps its tables in an `ichi` schema so neither migration runner can
+     * touch the other's. A read of two columns is a small, deliberate coupling
+     * and much less machinery than an internal API for a list nobody paginates.
+     *
+     * Credentials stay separate on purpose: one token reaching both a
+     * knowledge brain and somebody's personal memory is a bigger blast radius
+     * than the convenience is worth. So this page shows them and sends you to
+     * ichi to mint or revoke — it never issues one.
+     *
+     * Degrades to an empty list rather than a 500: this page is about mozg's
+     * tokens, and the sibling being down must not take it with them.
+     */
+    query<{ prefix: string; name: string | null; last_used_at: Date | null }>(
+      `select prefix, name, last_used_at from ichi.ichi_tokens
+        where user_id = $1 and revoked_at is null
+        order by created_at desc`,
+      [user.id],
+    ).catch(() => []),
   ]);
 
   return (
@@ -89,6 +111,49 @@ export default async function TokensPage() {
             </Rows>
           </Section>
         )}
+        {/* One account, two products. Shown even when empty, because the
+            point is telling a mozg user that ichi exists and uses this same
+            login — an empty section says that; a hidden one says nothing. */}
+        <Section
+          title="ichi tokens"
+          aside={ichiTokens.length ? `${ichiTokens.length} active` : undefined}
+        >
+          {ichiTokens.length > 0 ? (
+            <Rows>
+              {ichiTokens.map((t) => (
+                <Row
+                  key={t.prefix}
+                  title={`${t.prefix}…`}
+                  sub={t.name ?? undefined}
+                  meta={
+                    t.last_used_at
+                      ? `last used ${new Date(t.last_used_at).toISOString().slice(0, 10)}`
+                      : "never used"
+                  }
+                />
+              ))}
+            </Rows>
+          ) : (
+            <p className="lede" style={{ margin: 0 }}>
+              None yet.{" "}
+              <a href="https://ichi.mozg.sh" target="_blank" rel="noreferrer">
+                ichi
+              </a>{" "}
+              gives your agent a persistent character and holds the standards you
+              lay down. Same account as this one — run <code>:token</code> in its
+              console to mint one.
+            </p>
+          )}
+          <p className="hint" style={{ marginTop: ".75rem" }}>
+            Minted and revoked in{" "}
+            <a href="https://ichi.mozg.sh" target="_blank" rel="noreferrer">
+              ichi&apos;s console
+            </a>
+            . Kept separate from mozg tokens on purpose: one credential reaching
+            both your project knowledge and your ichi&apos;s memory is a wider
+            blast radius than the convenience is worth.
+          </p>
+        </Section>
       </div>
     </AppShell>
   );
