@@ -51,6 +51,34 @@ const INLINE = new Set([
 ]);
 
 /**
+ * Text that is meant to stay English, and why.
+ *
+ * Shared with scripts/check-i18n.ts on purpose: without it the two disagree
+ * forever — the check stays quiet about a bare personal name while this file
+ * re-wraps it on every run, so the same line reappears in every diff and the
+ * reason it should not be translated lives only in somebody's memory.
+ *
+ * Keep it short. An allow list that grows is a check somebody has stopped
+ * believing.
+ */
+export const ALLOW = new Map<string, string>([
+  ["Egor Fedorov", "a bare personal name has nothing in it to translate, and asking got two different Arabic spellings of the same man"],
+  ["one brain, every agent", "baked into the OG image, which crawlers fetch with no language"],
+  ["mozg", "the product's name"],
+  ["chatmozg", "the product's name"],
+  ["github.com/egorfedorov/mozg", "a URL"],
+  ["Model Context Protocol", "the protocol's name, in every language"],
+  ["Claude Code", "another company's product name"],
+  ["Codex", "another company's product name"],
+  ["Cursor", "another company's product name"],
+]);
+
+/** Deliberately English, per ALLOW. */
+export function allowed(text: string): boolean {
+  return ALLOW.has(decode(text).trim().replace(/\s+/g, " "));
+}
+
+/**
  * Attributes whose value is a sentence somebody reads or hears.
  *
  * The text scanner cannot see these — `title="Make an account"` is an
@@ -65,7 +93,7 @@ const INLINE = new Set([
  * Everything absent from this list — href, className, name, id, type, value —
  * is machinery, and a translated className is a broken page.
  */
-const HUMAN_ATTRS = new Set([
+export const HUMAN_ATTRS = new Set([
   "alt", "aria-label", "aside", "blurb", "caption", "description", "empty",
   "eyebrow", "heading", "hint", "label", "lede", "legend", "message", "meta",
   "note", "placeholder", "sub", "summary", "title", "tooltip", "why",
@@ -78,15 +106,19 @@ const HUMAN_ATTRS = new Set([
  * key nine times out of ten, and `alt=""` on a decorative image must stay
  * exactly that.
  */
-function isProseAttr(text: string): boolean {
+export function isProseAttr(text: string): boolean {
   if (text.trim().length < 3) return false;
   if (!/\p{L}{2,}/u.test(text)) return false;
   return !/^[a-z0-9_-]+$/.test(text.trim());
 }
 
 /** JSX text worth translating: has a letter, is not a lone entity or digit. */
-function isProse(raw: string): boolean {
-  const text = raw.trim();
+export function isProse(raw: string): boolean {
+  // Decoded first, or the entity's own NAME counts as the word: `(&quot;` is
+  // two punctuation marks around a value, and "quot" is four letters to a
+  // regex. Both the codemod and the check reported those as untranslated
+  // sentences and neither could do anything with them.
+  const text = decode(raw).trim();
   if (text.length < 2) return false;
   if (!/\p{L}/u.test(text)) return false;
   // A bare "·" separator or "—" with a stray word is layout, not a sentence.
@@ -367,7 +399,8 @@ function transform(source: string, file: string): { output: string; wrapped: num
       node.initializer &&
       ts.isStringLiteral(node.initializer) &&
       HUMAN_ATTRS.has(node.name.getText(sf)) &&
-      isProseAttr(node.initializer.text)
+      isProseAttr(node.initializer.text) &&
+      !allowed(node.initializer.text)
     ) {
       edits.push({
         start: node.initializer.getStart(sf),
@@ -393,6 +426,7 @@ function transform(source: string, file: string): { output: string; wrapped: num
       if (prose.length && children.length === 1 && ts.isJsxText(children[0])) {
         // The whole element is one run of text: safe to wrap as one sentence.
         const child = children[0];
+        if (allowed(child.text)) return;
         edits.push({
           start: child.getStart(sf),
           end: child.getEnd(),
@@ -460,6 +494,7 @@ function transform(source: string, file: string): { output: string; wrapped: num
 
   const inExpression = (node: ts.Node) => {
     if (!ts.isStringLiteral(node) || !isProseAttr(node.text) || covered(node)) return;
+    if (allowed(node.text)) return;
     let display = false;
     for (let p: ts.Node | undefined = node.parent; p; p = p.parent) {
       if (ts.isCallExpression(p)) {
@@ -610,7 +645,13 @@ async function main() {
   if (!write) console.log("\ndry run — nothing written. Re-run with --write.");
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Only when run as a script — the predicates above are imported by
+// scripts/check-i18n.ts, which must agree with this file about what counts as
+// prose. Two definitions would drift, and the day they do the check reports a
+// string the codemod refuses to wrap.
+if (/i18n-wrap\.(ts|mjs)$/.test(process.argv[1] ?? "")) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

@@ -21,6 +21,13 @@ jobs:
       - run: npm run lint
       - run: npm test
 
+      # Every sentence the site says was wrapped in t() by hand and by codemod,
+      # and nothing stopped the next commit from adding a bare <p>Hello</p>.
+      # That is not hypothetical — three hundred button labels survived a sweep
+      # over the same files, because nobody had written down where to look.
+      - name: Nothing on the site is left untranslated
+        run: npm run check:i18n
+
       # The plugin lives here but installs from egorfedorov/mozg-plugin, and the
       # two drifted silently once already — the published copy sat two commands
       # and a rewritten hook behind while the server side was live. No secret
