@@ -46,6 +46,12 @@ export interface SearchHit {
   kind: string;
   excerpt: string;
   score: number;
+  /**
+   * The cross-encoder's verdict on this passage against this query, when the
+   * reranker ran. Unlike `score` it is absolute: below zero the model is
+   * saying the passage does not answer the question, whatever else came back.
+   */
+  rerank?: number;
   /** Which retriever(s) surfaced it — useful when debugging a bad answer. */
   via: "vector" | "text" | "both";
   /** Which brain it came from. Only interesting when searching a family. */

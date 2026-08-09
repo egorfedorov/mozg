@@ -17,36 +17,47 @@ test("documents longer than the cap are clipped, shorter are untouched", async (
 
 test("applyRerank reorders by score and keeps the top limit", async () => {
   const { applyRerank } = await load();
-  const items = ["a", "b", "c"];
+  const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
   const scores = [
     { index: 2, score: 0.9 },
     { index: 0, score: 0.5 },
     { index: 1, score: 0.1 },
   ];
-  assert.deepEqual(applyRerank(items, scores, 3), ["c", "a", "b"]);
-  assert.deepEqual(applyRerank(items, scores, 2), ["c", "a"]);
+  assert.deepEqual(applyRerank(items, scores, 3), [
+    { id: "c", rerank: 0.9 },
+    { id: "a", rerank: 0.5 },
+    { id: "b", rerank: 0.1 },
+  ]);
+  assert.deepEqual(applyRerank(items, scores, 2), [
+    { id: "c", rerank: 0.9 },
+    { id: "a", rerank: 0.5 },
+  ]);
 });
 
 test("applyRerank does not trust the service to sort", async () => {
   const { applyRerank } = await load();
-  const items = ["a", "b", "c"];
+  const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
   // Same scores, delivered in ascending order — the client sorts, not the wire.
   const scores = [
     { index: 1, score: 0.1 },
     { index: 0, score: 0.5 },
     { index: 2, score: 0.9 },
   ];
-  assert.deepEqual(applyRerank(items, scores, 3), ["c", "a", "b"]);
+  assert.deepEqual(applyRerank(items, scores, 3), [
+    { id: "c", rerank: 0.9 },
+    { id: "a", rerank: 0.5 },
+    { id: "b", rerank: 0.1 },
+  ]);
 });
 
 test("out-of-range and fractional indices are dropped, not fatal", async () => {
   const { applyRerank } = await load();
-  const items = ["a", "b"];
+  const items = [{ id: "a" }, { id: "b" }];
   const scores = [
     { index: 5, score: 99 },
     { index: -1, score: 98 },
     { index: 1.5, score: 97 },
     { index: 1, score: 0.2 },
   ];
-  assert.deepEqual(applyRerank(items, scores, 2), ["b"]);
+  assert.deepEqual(applyRerank(items, scores, 2), [{ id: "b", rerank: 0.2 }]);
 });

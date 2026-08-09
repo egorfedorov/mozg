@@ -44,12 +44,23 @@ export interface RerankScore {
  * and drops scores pointing outside the array, because a corrupt response
  * should cost us the rerank, not the search.
  */
-export function applyRerank<T>(items: T[], scores: RerankScore[], limit: number): T[] {
+export function applyRerank<T extends object>(
+  items: T[],
+  scores: RerankScore[],
+  limit: number,
+): (T & { rerank: number })[] {
   const valid = scores.filter(
     (s) => Number.isInteger(s.index) && s.index >= 0 && s.index < items.length,
   );
   valid.sort((a, b) => b.score - a.score);
-  return valid.slice(0, limit).map((s) => items[s.index]);
+  // The cross-encoder's own score rides along. It used to be dropped here, and
+  // it is the only number in the pipeline that means "this passage answers
+  // this question" — RRF ranks are relative to the candidate set, so a fused
+  // score cannot tell a good answer from the best of five bad ones. Measured:
+  // asking a PixiJS brain a Playwright question fused to 0.0274 against a
+  // median of 0.0320, indistinguishable, while a cross-encoder rates that pair
+  // far below anything it considers relevant.
+  return valid.slice(0, limit).map((s) => ({ ...items[s.index], rerank: s.score }));
 }
 
 /**

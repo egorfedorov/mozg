@@ -16,6 +16,13 @@ import {
 import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
+
+/**
+ * Below this the cross-encoder is saying the passage does not answer the
+ * question. bge-reranker-v2-m3 emits logits, so zero is the model's own
+ * decision boundary rather than a number picked to look reasonable.
+ */
+const RERANK_IRRELEVANT = 0;
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
@@ -677,7 +684,17 @@ async function brainSearch(
   // belongs: a true zero almost never happens (hybrid retrieval nearly always
   // returns SOMETHING), so gating discovery on an empty result set would have
   // fired approximately never. Measured by trying it.
-  const weak = hits[0]?.score !== undefined && hits[0].score < WEAK_TOP_SCORE;
+  // Prefer the cross-encoder's verdict, which is absolute: below zero it is
+  // saying this passage does not answer this question. The fused RRF score
+  // cannot carry that — it ranks within the candidate set, so the best of five
+  // bad answers scores like a good one. Only when the reranker did not run does
+  // this fall back to WEAK_TOP_SCORE, which the usage harvest calibrated for
+  // "found nothing" rather than for "found the wrong thing".
+  const top = hits[0];
+  const weak =
+    top?.rerank !== undefined
+      ? top.rerank < RERANK_IRRELEVANT
+      : top?.score !== undefined && top.score < WEAK_TOP_SCORE;
   const elsewhere = weak
     ? (await searchCollective(q)).filter((r) => r.slug !== resolved.brain.slug).slice(0, 2)
     : [];
