@@ -90,3 +90,17 @@ test("a model's bad label costs the field, not the page", async () => {
   assert.equal(parsed.notes[0].category.length, 80);
   assert.equal(parsed.notes[0].confidence, 1);
 });
+
+test("halving a cut-off segment keeps every byte, on a paragraph break", async () => {
+  const { halve } = await load();
+  const text = "a".repeat(20_000) + "\n\n" + "b".repeat(20_000);
+  const [first, second] = halve(text);
+  assert.equal(first.length, 20_000, "cuts at the blank line, not mid-word");
+  assert.equal(first + second, text, "a split retry must not drop material");
+
+  // No blank line anywhere: still splits, still lossless.
+  const flat = "x".repeat(9_000);
+  const [a, b] = halve(flat);
+  assert.ok(a.length > 0 && b.length > 0);
+  assert.equal(a + b, flat);
+});

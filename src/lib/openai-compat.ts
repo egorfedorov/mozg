@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Usage } from "@/lib/claude";
+import { OutputCutoff } from "@/lib/cutoff";
 
 /**
  * The OpenAI-compatible path for structured(): OpenAI, Kimi/Moonshot,
@@ -81,7 +82,7 @@ export async function structuredOpenAi<T>(opts: {
 
   const choice = json.choices?.[0];
   if (choice?.finish_reason === "length") {
-    throw new Error(
+    throw new OutputCutoff(
       "ran out of output room — the answer was cut off, not malformed. " +
         "Give it a smaller input or a larger max_tokens.",
     );

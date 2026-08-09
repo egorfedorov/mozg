@@ -2,6 +2,7 @@ import { z } from "zod";
 import { maybeOne, one, query, tx } from "@/db";
 import type { Brain, Check, Plan } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
+import { OutputCutoff } from "@/lib/cutoff";
 import { env } from "@/lib/env";
 import { findRegressions } from "@/lib/regressions";
 import { searchBrain } from "@/lib/search";
@@ -123,9 +124,8 @@ export async function generateChecks(brain: Brain): Promise<number> {
     [scope],
   );
   const target = examSize(scopeNotes);
-  const negatives = negativeTarget(target);
 
-  const { data: raw } = await structured<unknown>({
+  const ask = async (n: number) => structured<unknown>({
     model: env.MODEL_EXTRACT,
     toolName: "save_checks",
     toolDescription: "Save the exam. Call once with every check you wrote.",
@@ -155,7 +155,7 @@ export async function generateChecks(brain: Brain): Promise<number> {
               "give an imitation away.\n\n"
             : "You write exams for knowledge bases that AI coding agents read.\n\n") +
           "Given a goal and the titles of the notes a brain currently holds, write " +
-          `up to ${target} control questions that verify whether the brain can ` +
+          `up to ${n} control questions that verify whether the brain can ` +
           "actually support that goal.\n\n" +
           "Each check has a question a user would really ask, and `expect` — what a " +
           "correct answer must contain. Make `expect` checkable: name the specific " +
@@ -192,7 +192,7 @@ export async function generateChecks(brain: Brain): Promise<number> {
           "NOT currently cover. Those failures are the point — they tell the user " +
           "what material is missing. An exam that only asks what the brain already " +
           "knows is worthless.\n\n" +
-          `Also include about ${negatives} checks with kind "negative": plausible questions a ` +
+          `Also include about ${negativeTarget(n)} checks with kind "negative": plausible questions a ` +
           "user might genuinely ask this brain that are OUTSIDE its scope — " +
           "neighbouring topics, adjacent products, common confusions the goal " +
           "does not cover. For these, `expect` must say that the correct " +
@@ -211,6 +211,22 @@ export async function generateChecks(brain: Brain): Promise<number> {
       },
     ],
   });
+
+  // A 100-check exam written in one reply runs out of output room on a brain
+  // whose expectations are wordy, and the whole sitting dies with it. Ask for
+  // half as many rather than for nothing: a 50-check exam still measures the
+  // brain, and examSize's floor of 30 is where asking less stops being worth
+  // it. Retrying the same size would just spend the same tokens again.
+  let raw: unknown;
+  for (let n = target; ; n = Math.round(n / 2)) {
+    try {
+      ({ data: raw } = await ask(n));
+      break;
+    } catch (err) {
+      if (!(err instanceof OutputCutoff) || n <= 30) throw err;
+      console.warn(`[exam] ${brain.slug}: ${n} checks did not fit — asking for ${Math.round(n / 2)}`);
+    }
+  }
 
   const parsed = generated.safeParse(raw);
   let checks: z.infer<typeof generated>["checks"];

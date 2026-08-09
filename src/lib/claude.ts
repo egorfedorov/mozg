@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "@/lib/env";
 import { byokStorage } from "@/lib/byok";
+import { OutputCutoff } from "@/lib/cutoff";
 
 let client: Anthropic | null = null;
 // One client per distinct user key. Keys are few (one per BYOK user, reused
@@ -100,7 +101,12 @@ export async function structured<T>(opts: {
   }
 
   const response = await claude().messages.create({
-    model: opts.model,
+    // An Anthropic-compatible endpoint that is not Anthropic — Kimi's coding
+    // plan, Bedrock-style gateways — speaks the same protocol with its own
+    // catalogue, and MODEL_EXTRACT means nothing there. The openai path has
+    // always replaced the model this way; this one used to send our id to
+    // their server and get model_not_found for every call.
+    model: byok?.model || opts.model,
     max_tokens: opts.maxTokens ?? 16000,
     system: [
       // Same prefix for every call in a batch, so it caches.
@@ -125,7 +131,7 @@ export async function structured<T>(opts: {
   // fields, and the schema check then reports a mismatch — which sends you
   // looking at the schema instead of at the output limit. Say what happened.
   if (response.stop_reason === "max_tokens") {
-    throw new Error(
+    throw new OutputCutoff(
       `ran out of output room after ${response.usage.output_tokens} tokens — ` +
         "the answer was cut off, not malformed. Give it a smaller input or " +
         "a larger max_tokens.",
@@ -190,6 +196,11 @@ export function costCents(model: string, usage: Usage): number {
   const base = model.replace(/-\d{8}$/, "").replace(/-thinking$/, "");
   const p = PRICE[base];
   if (!p) {
+    // A BYOK job spends the owner's key on a catalogue we do not price — Kimi's
+    // k3, a local model, whatever they pointed us at. Zero is the honest number
+    // for what the platform paid, and saying so once per call would be four
+    // thousand log lines on one ingest run.
+    if (byokStorage.getStore()) return 0;
     console.warn(`[cost] no price for model "${model}" — reporting 0`);
     return 0;
   }

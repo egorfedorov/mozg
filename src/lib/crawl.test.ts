@@ -246,3 +246,31 @@ test("sitemap wins over walking when it lists the section", async () => {
   assert.equal(found.via, "sitemap");
   assert.deepEqual(found.pages, ["https://x.com/docs/a", "https://x.com/docs/b"]);
 });
+
+test("a repo's own plumbing is not its documentation", async () => {
+  const { isDocPath } = await import("./crawl");
+  // Measured on prod: these were ingested as product documentation.
+  for (const junk of [
+    "CHANGELOG.md",
+    "packages/expo-router/CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE.md",
+    ".expo-code-review/agents/security.md",
+    ".claude/skills/playwright-dev/api.md",
+    ".github/actions/next-repo-actions/dist/prs/licenses.txt",
+    "node_modules/left-pad/readme.md",
+  ]) {
+    assert.equal(isDocPath(junk), false, junk);
+  }
+  // And these are real chapters that a coarser rule would have eaten.
+  for (const doc of [
+    "docs/pages/build/setup.mdx", // expo documents EAS Build here
+    "docs/test/writing-tests.mdx", // bun documents its test runner here
+    "runtime/test/index.md",
+    "docs/guides/migration.md",
+    "README.md",
+    "src/routes/docs/math-sdk/quick-start/+page.svx",
+  ]) {
+    assert.equal(isDocPath(doc), true, doc);
+  }
+});

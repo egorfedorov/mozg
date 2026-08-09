@@ -92,6 +92,38 @@ const DOC_ENDINGS = [".md", ".mdx", ".svx", ".txt", ".rst", ".adoc"];
 const SKIP_ENDINGS =
   /\.(png|jpe?g|gif|svg|webp|ico|css|js|mjs|json|xml|zip|tar|gz|mp4|webm|woff2?|ttf|eot)$/i;
 
+/**
+ * Repository directories that hold markdown but never documentation.
+ *
+ * "Every .md in the tree" is the right default for a docs repo and the wrong
+ * one for a product monorepo: measured on prod, a run over expo, next.js and
+ * playwright also ingested `.expo-code-review/agents/*.md`, `.claude/skills/*`,
+ * `.github/actions/**\/dist/licenses.txt` — the repo's own tooling, read as if
+ * it were the product's manual.
+ *
+ * Only directories that cannot mean anything else are listed. `build/` and
+ * `test/` are deliberately absent: expo documents EAS Build under
+ * `docs/pages/build/` and bun documents its test runner under `docs/test/`, so
+ * a rule on those names would drop real chapters — the mistake this cannot
+ * afford, since a brain that quietly lost a chapter still scores itself as
+ * complete.
+ */
+const NOT_DOCS = /(^|\/)(\.[^/]+|node_modules|vendor|dist|__tests__)\//;
+
+/**
+ * Repository housekeeping files. A CHANGELOG is the single most expensive page
+ * measured (expo's, at 41¢ for 393 notes of "fixed X in Y") and the least
+ * useful: an agent asking how something works is never answered by the list of
+ * releases in which it changed.
+ */
+const NOT_DOC_FILE =
+  /(^|\/)(changelog|changes|history|release[-_]notes|licen[sc]es?|code[-_]of[-_]conduct|contributing|authors|governance|maintainers|notice)\.[a-z]+$/i;
+
+/** Is this repo path the product's documentation, or the repo's own plumbing? */
+export function isDocPath(path: string): boolean {
+  return !NOT_DOCS.test(path) && !NOT_DOC_FILE.test(path);
+}
+
 // ─── GitHub ──────────────────────────────────────────────────────────────────
 
 export interface GitHubRef {
@@ -149,13 +181,15 @@ async function githubPages(gh: GitHubRef, cap: number): Promise<Discovery> {
   }
   const tree = (await res.json()) as { tree: { path: string; type: string }[] };
 
-  const files = tree.tree
+  const found = tree.tree
     .filter((t) => t.type === "blob")
     .map((t) => t.path)
     .filter(
       (p) => p.startsWith(gh.path) && DOC_ENDINGS.some((e) => p.endsWith(e)),
     )
     .sort();
+  const files = found.filter(isDocPath);
+  const plumbing = found.length - files.length;
 
   if (!files.length) {
     throw new Error(
@@ -168,6 +202,7 @@ async function githubPages(gh: GitHubRef, cap: number): Promise<Discovery> {
     files.map((p) => `https://raw.githubusercontent.com/${gh.repo}/${gh.ref}/${p}`),
     cap,
     "github",
+    plumbing ? `skipped ${plumbing} repository files that are not documentation` : undefined,
   );
 }
 

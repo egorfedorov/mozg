@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { z } from "zod";
 import { costCents, structured, type Usage } from "@/lib/claude";
+import { OutputCutoff } from "@/lib/cutoff";
 import { env } from "@/lib/env";
 import type { NoteKind } from "@/db/types";
 
@@ -445,6 +446,44 @@ export function segments(text: string): string[] {
  *  starts tripping reseller rate limits and the retries eat the win. */
 const SEGMENT_CONCURRENCY = 4;
 
+/**
+ * How many times a segment may be halved when its notes do not fit the reply.
+ *
+ * Segment size is chosen by input bytes, but the limit that actually bites is
+ * output: a 60 KB page of prose yields a handful of notes, and 60 KB of API
+ * reference yields a note per method and runs out of room mid-answer. Two
+ * splits take that segment to 15 KB, which cleared every cut-off measured on
+ * prod (electron's base-window.md, loki's configuration.md), and each half
+ * stays small enough to finish inside the client timeout — a bigger
+ * max_tokens would not.
+ */
+const MAX_SPLITS = 2;
+
+/** Below this a cut-off is the model looping, not a segment worth halving. */
+const MIN_SPLIT = 4_000;
+
+/** Cut a part in two at the paragraph break nearest the middle. */
+export function halve(text: string): [string, string] {
+  const mid = Math.floor(text.length / 2);
+  const cut = text.lastIndexOf("\n\n", mid);
+  const at = cut > text.length / 4 ? cut : mid;
+  return [text.slice(0, at), text.slice(at)];
+}
+
+function merge(results: ExtractResult[]): ExtractResult {
+  return {
+    notes: results.flatMap((r) => r.notes),
+    usage: results.reduce(
+      (a, r) => ({
+        inputTokens: a.inputTokens + r.usage.inputTokens,
+        outputTokens: a.outputTokens + r.usage.outputTokens,
+        costCents: a.costCents + r.usage.costCents,
+      }),
+      { inputTokens: 0, outputTokens: 0, costCents: 0 },
+    ),
+  };
+}
+
 export async function extractFromText(
   text: string,
   opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[]; style?: boolean },
@@ -455,8 +494,14 @@ export async function extractFromText(
   let usage = { inputTokens: 0, outputTokens: 0, costCents: 0 };
   let failed = 0;
 
-  const extractPart = async (part: string, i: number): Promise<ExtractResult | null> => {
-    const where = parts.length > 1 ? ` (part ${i + 1} of ${parts.length})` : "";
+  const extractPart = async (
+    part: string,
+    i: number,
+    depth = 0,
+  ): Promise<ExtractResult | null> => {
+    const where =
+      (parts.length > 1 ? ` (part ${i + 1} of ${parts.length})` : "") +
+      (depth ? ` (split ${depth})` : "");
     try {
       const { data: raw, usage: u } = await structured<unknown>({
         model: env.MODEL_EXTRACT,
@@ -473,6 +518,21 @@ export async function extractFromText(
       });
       return finish(raw, u);
     } catch (err) {
+      // A cut-off answer is not a bad segment — it is a segment whose notes
+      // were more than one reply could hold. Halve it and extract both
+      // halves: the page keeps its material instead of losing all of it, and
+      // the segment that failed is the dense one worth keeping most.
+      if (err instanceof OutputCutoff && depth < MAX_SPLITS && part.length > MIN_SPLIT) {
+        const [a, b] = halve(part);
+        const both = await Promise.all([
+          extractPart(a, i, depth + 1),
+          extractPart(b, i, depth + 1),
+        ]);
+        const kept = both.filter((r): r is ExtractResult => r !== null);
+        // Both halves failing is a genuinely failed segment; one surviving is
+        // still better than the zero notes this used to store.
+        if (kept.length) return merge(kept);
+      }
       // One bad segment should not lose the other eleven. A page that fails
       // entirely still throws, so the source is marked failed rather than
       // stored as a partial nobody knows is partial.
