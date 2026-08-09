@@ -385,6 +385,34 @@ export async function extractFromPdf(
 const SEGMENT = 60_000;
 const MAX_SEGMENTS = 12;
 
+/**
+ * How full a segment has to be before a paragraph break is worth cutting at.
+ *
+ * This was half a segment, and half is too generous to be safe: a document
+ * whose paragraphs run just over 30 KB got a blank line found at 30,100 every
+ * time, so every segment came out half empty and twelve of them held 360 KB
+ * rather than 720. A real 627 KB source then failed against a message that
+ * said it was "over the 720 KB one source can hold", which is both wrong and
+ * impossible to act on — the number it printed was a best case that that text
+ * could never reach.
+ *
+ * At 90% the worst case is 54 KB a segment, so the floor and the ceiling are
+ * close enough that the limit means something. The cost is that a document
+ * with paragraphs every 20 KB now gets cut mid-paragraph instead of at the
+ * break before — one segment opening mid-sentence, against a whole source
+ * refusing to ingest.
+ */
+const MIN_FILL = 0.9;
+
+/**
+ * The largest source that fits whatever its paragraphs look like.
+ *
+ * Plain text with no blank lines still packs the full SEGMENT and reaches 720
+ * KB; this is the number that holds either way, which is the one an error
+ * message is allowed to quote.
+ */
+const GUARANTEED = Math.floor(SEGMENT * MIN_FILL) * MAX_SEGMENTS;
+
 /** Split on blank lines so a segment does not start mid-sentence. */
 export function segments(text: string): string[] {
   if (text.length <= SEGMENT) return [text];
@@ -394,8 +422,9 @@ export function segments(text: string): string[] {
   while (rest.length) {
     if (out.length >= MAX_SEGMENTS) {
       throw new Error(
-        `source text is ${Math.round(text.length / 1000)} KB — over the ` +
-          `${Math.round((SEGMENT * MAX_SEGMENTS) / 1000)} KB one source can hold. ` +
+        `source text is ${Math.round(text.length / 1000)} KB and does not fit in ` +
+          `${MAX_SEGMENTS} segments — the most one source can hold is about ` +
+          `${Math.round(GUARANTEED / 1000)} KB. ` +
           "Split it into smaller sources; nothing was ingested.",
       );
     }
@@ -405,7 +434,7 @@ export function segments(text: string): string[] {
     }
     const window = rest.slice(0, SEGMENT);
     const cut = window.lastIndexOf("\n\n");
-    const at = cut > SEGMENT / 2 ? cut : SEGMENT;
+    const at = cut >= SEGMENT * MIN_FILL ? cut : SEGMENT;
     out.push(rest.slice(0, at));
     rest = rest.slice(at);
   }

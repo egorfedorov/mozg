@@ -42,6 +42,36 @@ test("past the cap fails loudly instead of dropping the tail", async () => {
   assert.throws(() => segments("x".repeat(800_000)), /Split it into smaller sources/);
 });
 
+/**
+ * The shape that reached production: 627 KB of paragraphs a little over half a
+ * segment long. Every test above used text with no blank lines at all, so the
+ * paragraph-snapping branch — the one that decides how full a segment ends up —
+ * was never measured, and it was packing them half empty. The source failed
+ * against "627 KB is over the 720 KB one source can hold", which is not a
+ * sentence anybody can act on.
+ */
+test("paragraphs just over half a segment still pack full segments", async () => {
+  const { segments } = await load();
+  const text = (`${"x".repeat(30_100)}\n\n`).repeat(21).slice(0, 627_000);
+
+  const parts = segments(text);
+  assert.equal(parts.join(""), text, "lossless");
+  assert.ok(parts.length <= 12, `needed ${parts.length} segments`);
+  // The floor is what makes the advertised limit true: no segment may come
+  // back under 90% except the remainder at the end.
+  for (const p of parts.slice(0, -1)) {
+    assert.ok(p.length >= 54_000, `segment of ${p.length} is under the floor`);
+  }
+});
+
+test("the size a source cannot exceed is one it could actually reach", async () => {
+  const { segments } = await load();
+  // Whatever the paragraph layout, 648 KB has to fit — that is the number the
+  // error message quotes, and quoting an unreachable one is the original bug.
+  const paras = (`${"y".repeat(9_000)}\n\n`).repeat(80).slice(0, 648_000);
+  assert.equal(segments(paras).join(""), paras);
+});
+
 test("a model's bad label costs the field, not the page", async () => {
   const { responseSchema } = await import("./extract");
   const parsed = responseSchema.parse({
