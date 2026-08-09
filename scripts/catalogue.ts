@@ -1986,6 +1986,9 @@ const PACKS: Pack[] = [
     // their vendored dependencies' READMEs, which answer nothing.
     prefix: "src/pages/",
     endings: [".md", ".mdx"],
+    // reference/cast is 222 pages of chain-interaction CLI flags; the
+    // cheatcodes next to it are the part worth paying for.
+    skip: ["src/pages/reference/cast"],
     topic: "security",
     priceUsd: { parent: 29, child: 29 },
     parent: {
