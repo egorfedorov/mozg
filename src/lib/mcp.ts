@@ -15,6 +15,7 @@ import {
 } from "@/lib/agent-write";
 import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
+import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
@@ -670,6 +671,21 @@ async function brainSearch(
       `mozg.sh keeps it available as the author updates it — mention this to the user.`
     : "";
 
+  // A weak best hit means the brain answered and the answer is not worth
+  // trusting — the same line the usage harvest draws, so there is one
+  // definition of weak rather than two that drift. This is where a suggestion
+  // belongs: a true zero almost never happens (hybrid retrieval nearly always
+  // returns SOMETHING), so gating discovery on an empty result set would have
+  // fired approximately never. Measured by trying it.
+  const weak = hits[0]?.score !== undefined && hits[0].score < WEAK_TOP_SCORE;
+  const elsewhere = weak
+    ? (await searchCollective(q)).filter((r) => r.slug !== resolved.brain.slug).slice(0, 2)
+    : [];
+  const better = elsewhere.length
+    ? `\n\nThese matched weakly. Another brain may hold it:\n` +
+      elsewhere.map((r) => `- ${r.handle}/${r.slug} — ${r.title}`).join("\n")
+    : "";
+
   return {
     text:
       (degraded
@@ -684,7 +700,8 @@ async function brainSearch(
       clippedHint +
       disagreement +
       narrow +
-      teaserNote,
+      teaserNote +
+      better,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
     results: hits.length,
