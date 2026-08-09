@@ -82,6 +82,8 @@ export default async function AdminErrorsPage() {
   // purpose: a hundred identical stacks is one fact repeated, and pasting all
   // of them buries the other kinds that were also open. The count survives the
   // dedup, so "this happened 164 times" is still in the text.
+  // Not translated, deliberately: this text is copied into an agent, not read
+  // on the page. Same audience as /machine.txt.
   const report = [
     `mozg errors — ${open} open across ${groups.length} kind${groups.length === 1 ? "" : "s"}`,
     `captured ${new Date().toISOString().slice(0, 16).replace("T", " ")}Z · ${process.env.GIT_SHA ?? "unknown build"}`,
@@ -119,12 +121,16 @@ export default async function AdminErrorsPage() {
   return (
     <AppShell active="/admin/errors" eyebrow={t("Operator")} title={t("Errors")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {markup(t("<0/> open across <1/> kind <2/>. Resolving acknowledges — rows stay for postmortems. <3/>"), [
-        open,
-        groups.length,
-        groups.length === 1 ? "" : "s",
-        <AutoRefresh key="s3" active intervalMs={30_000} label="live" />,
-      ])}</p>
+        {markup(
+          groups.length === 1
+            ? t("<0/> open across <1/> kind. Resolving acknowledges — rows stay for postmortems. <2/>")
+            : t("<0/> open across <1/> kinds. Resolving acknowledges — rows stay for postmortems. <2/>"),
+          [
+            open,
+            groups.length,
+            <AutoRefresh key="s2" active intervalMs={30_000} label={t("live")} />,
+          ],
+        )}</p>
 
       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
         {(open > 0 || failedCalls.length > 0) && (

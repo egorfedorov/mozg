@@ -3,6 +3,7 @@
 import { useT } from "@/lib/t-client";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+import { fill } from "@/lib/markup";
 
 /**
  * Drag a folder of screenshots in. Uploads go straight to the queue, so the
@@ -25,7 +26,12 @@ export default function Dropzone({ brainId }: { brainId: string }) {
 
       setBusy(true);
       setError(null);
-      setMessage(`Uploading ${list.length} file${list.length > 1 ? "s" : ""}…`);
+      setMessage(
+        fill(
+          list.length === 1 ? t("Uploading <0/> file…") : t("Uploading <0/> files…"),
+          [list.length],
+        ),
+      );
 
       const form = new FormData();
       for (const f of list) form.append("files", f);
@@ -42,9 +48,14 @@ export default function Dropzone({ brainId }: { brainId: string }) {
           setMessage(null);
         } else {
           const skipped = data.rejected?.length
-            ? ` · skipped ${data.rejected.length}`
+            ? fill(t(" · skipped <0/>"), [data.rejected.length])
             : "";
-          setMessage(`Queued ${data.accepted} file${data.accepted === 1 ? "" : "s"}${skipped}`);
+          setMessage(
+            fill(
+              data.accepted === 1 ? t("Queued <0/> file") : t("Queued <0/> files"),
+              [data.accepted],
+            ) + skipped,
+          );
           router.refresh();
         }
       } catch {
@@ -54,7 +65,8 @@ export default function Dropzone({ brainId }: { brainId: string }) {
         setBusy(false);
       }
     },
-    [brainId, router],
+    // t is memoised on the dictionary, so this is stable across renders.
+    [brainId, router, t],
   );
 
   return (

@@ -587,10 +587,10 @@ export default async function BrainPage({
               }}
             >
               <h2 className="h2">{t("Agents flagged these notes")}</h2>
-              <span className="eyebrow">{markup(t("<0/> report<1/>"), [
-                flags.length,
-                flags.length === 1 ? "" : "s",
-              ])}</span>
+              <span className="eyebrow">{markup(
+                flags.length === 1 ? t("<0/> report") : t("<0/> reports"),
+                [flags.length],
+              )}</span>
             </div>
             <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
               {t("An agent using this brain mid-task says a note did not match reality. The note keeps answering until you decide — fix or remove it on the notes page, then close the report.")}</p>

@@ -100,7 +100,7 @@ export default async function PacksSettingsPage() {
               <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
                 {markup(t("<0/> brains · <1/> notes <2/> · <3>what is in it</3>"), [
                 stats.brains,
-                stats.notes.toLocaleString(t("en-US")),
+                stats.notes.toLocaleString("en-US"),
                 stats.median !== null && ` · ${stats.median}% median exam score`,
                 <Link href={`/packs/${pack.slug}`} style={{ textDecoration: "underline" }} key="s3" />,
               ])}</p>

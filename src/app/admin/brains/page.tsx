@@ -72,10 +72,12 @@ export default async function AdminBrainsPage() {
       )}
 
       <p className="lede">
-          {markup(t("<0/> brain<1/>. Changing visibility away from public also clears the price — a listing nobody can reach cannot be bought."), [
-        brains.length,
-        brains.length === 1 ? "" : "s",
-      ])}</p>
+          {markup(
+            brains.length === 1
+              ? t("<0/> brain. Changing visibility away from public also clears the price — a listing nobody can reach cannot be bought.")
+              : t("<0/> brains. Changing visibility away from public also clears the price — a listing nobody can reach cannot be bought."),
+            [brains.length],
+          )}</p>
 
         <div className="adm-scroll" style={{ marginTop: "1rem" }}>
           <table className="adm">

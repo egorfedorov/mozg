@@ -41,11 +41,12 @@ export default function Session({ brainId, cards, backHref }: { brainId: string;
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem", textAlign: "center" }}>
         <p className="h2" style={{ margin: 0 }}>{t("Sitting done.")}</p>
         <p style={{ color: "var(--ink-2)" }}>
-          {markup(t("<0/> card<1/>, <2/> relearned. The ones you missed come back sooner — that is the whole method."), [
-          done,
-          done === 1 ? "" : "s",
-          lapses,
-        ])}</p>
+          {markup(
+            done === 1
+              ? t("<0/> card, <1/> relearned. The ones you missed come back sooner — that is the whole method.")
+              : t("<0/> cards, <1/> relearned. The ones you missed come back sooner — that is the whole method."),
+            [done, lapses],
+          )}</p>
         <Link className="btn" href={backHref}>{t("Back to the brain")}</Link>
       </div>
     );

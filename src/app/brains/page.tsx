@@ -90,7 +90,10 @@ export default async function BrainsPage() {
         {attention.length > 0 && (
           <Section
             title={t("Needs you")}
-            aside={`${attention.length} thing${attention.length === 1 ? "" : "s"}`}
+            aside={fill(
+              attention.length === 1 ? t("<0/> thing") : t("<0/> things"),
+              [attention.length],
+            )}
           >
             <Rows>
               {attention.slice(0, 8).map((item, i) => (

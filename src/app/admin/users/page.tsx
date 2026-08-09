@@ -26,11 +26,12 @@ export default async function AdminUsersPage() {
   return (
     <AppShell active="/admin/users" eyebrow={t("Operator")} title={t("People")}>
       <p className="lede">
-          {markup(t("<0/> account<1/>. MCP is shown as live when a token was used in the last <2/> minutes — that is the only honest signal, since MCP has no session to stay open."), [
-        users.length,
-        users.length === 1 ? "" : "s",
-        LIVE_MINUTES,
-      ])}</p>
+          {markup(
+            users.length === 1
+              ? t("<0/> account. MCP is shown as live when a token was used in the last <1/> minutes — that is the only honest signal, since MCP has no session to stay open.")
+              : t("<0/> accounts. MCP is shown as live when a token was used in the last <1/> minutes — that is the only honest signal, since MCP has no session to stay open."),
+            [users.length, LIVE_MINUTES],
+          )}</p>
 
         <div className="adm-scroll" style={{ marginTop: "1rem" }}>
           <table className="adm">

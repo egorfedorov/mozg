@@ -202,9 +202,7 @@ export default async function CoursePage({
           <div>
             <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>{t("STREAK")}</p>
             <p className="h2" style={{ margin: 0 }}>
-              {streak}<span style={{ fontSize: ".8em" }}> {markup(t("day<0/>"), [
-                        streak === 1 ? "" : "s",
-                      ])}</span>
+              {streak}<span style={{ fontSize: ".8em" }}> {streak === 1 ? t("day") : t("days")}</span>
             </p>
           </div>
         )}

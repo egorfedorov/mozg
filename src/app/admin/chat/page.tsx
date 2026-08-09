@@ -79,12 +79,16 @@ export default async function AdminChatPage() {
   return (
     <AppShell active="/admin/chat" eyebrow={t("Operator")} title="chatmozg">
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {markup(t("<0/> thread<1/> · <2/> unread. The people who write here are the beta doing its job — answer like it. <3/>"), [
-        threads.length,
-        threads.length === 1 ? "" : "s",
-        threads.reduce((n, thread) => n + thread.unread, 0),
-        <AutoRefresh key="s3" active intervalMs={20_000} label={t("live — new messages appear without reloading")} />,
-      ])}</p>
+        {markup(
+          threads.length === 1
+            ? t("<0/> thread · <1/> unread. The people who write here are the beta doing its job — answer like it. <2/>")
+            : t("<0/> threads · <1/> unread. The people who write here are the beta doing its job — answer like it. <2/>"),
+          [
+            threads.length,
+            threads.reduce((n, thread) => n + thread.unread, 0),
+            <AutoRefresh key="s2" active intervalMs={20_000} label={t("live — new messages appear without reloading")} />,
+          ],
+        )}</p>
 
       {/* Speak first: pick anyone, not only people who already wrote. The new
           thread appears below and in their mascot the moment it sends. */}

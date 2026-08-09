@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -177,7 +177,12 @@ export default async function ProfilePage({
           who.name ? `${who.name} · ` : "",
           who.joined,
           published.length > 0
-            ? `${published.length} brain${published.length === 1 ? "" : "s"} in the catalogue.`
+            ? fill(
+                published.length === 1
+                  ? t("<0/> brain in the catalogue.")
+                  : t("<0/> brains in the catalogue."),
+                [published.length],
+              )
             : t("Nothing published yet."),
         ])}</p>
 

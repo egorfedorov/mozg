@@ -1,7 +1,7 @@
 "use client";
 
 import { useT } from "@/lib/t-client";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import { useActionState } from "react";
 import { saveWallets } from "./actions";
 
@@ -60,8 +60,13 @@ export default function WalletsForm({ wallets }: { wallets: WalletField[] }) {
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-green)" }}>
             {markup(t("saved ✓ <0/> <1/> <2/>"), [
             state.at,
-            state.saved.length > 0 && ` · ${state.saved.length} address${state.saved.length > 1 ? "es" : ""}`,
-            state.cleared.length > 0 && ` · ${state.cleared.map(label).join(", ")} back to env`,
+            state.saved.length > 0 &&
+              fill(
+                state.saved.length === 1 ? t(" · <0/> address") : t(" · <0/> addresses"),
+                [state.saved.length],
+              ),
+            state.cleared.length > 0 &&
+              fill(t(" · <0/> back to env"), [state.cleared.map(label).join(", ")]),
           ])}</span>
         )}
         {state && state.rejected.length > 0 && (

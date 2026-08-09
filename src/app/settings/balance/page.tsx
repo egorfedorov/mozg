@@ -1,5 +1,5 @@
 import { translator } from "@/lib/t";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/db";
@@ -66,7 +66,7 @@ export default async function BalancePage() {
           <Stat
             label={t("Earned")}
             value={formatCents(earned.total)}
-            note={`${earned.sales} sale${earned.sales === 1 ? "" : "s"}`}
+            note={fill(earned.sales === 1 ? t("<0/> sale") : t("<0/> sales"), [earned.sales])}
           />
           <Stat label={t("Spent on brains")} value={formatCents(earned.spent)} />
         </Stats>

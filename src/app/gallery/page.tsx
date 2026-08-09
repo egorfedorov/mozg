@@ -87,12 +87,12 @@ export default async function GalleryPage() {
               <Link className="btn gal-btn" href="https://mozg.sh/styles">
                 {t("How it works for artists")}</Link>
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--paper-2)", opacity: 0.6 }}>
-                {markup(t("<0/> style<1/> · <2/> artist<3/> · 95% to the author"), [
-                styles.length,
-                styles.length === 1 ? "" : "s",
-                artists,
-                artists === 1 ? "" : "s",
-              ])}</span>
+                {markup(
+                  styles.length === 1
+                    ? t("<0/> style · <1/> artists · 95% to the author")
+                    : t("<0/> styles · <1/> artists · 95% to the author"),
+                  [styles.length, artists],
+                )}</span>
             </div>
           </div>
         </header>
@@ -133,11 +133,10 @@ export default async function GalleryPage() {
                       {s.goal && <span className="gal-goal">{s.goal.split("\n")[0]}</span>}
                       <span className="gal-foot mono">
                         <span>
-                          {markup(t("<0/> rule<1/> <2/>"), [
-                          s.note_count,
-                          s.note_count === 1 ? "" : "s",
-                          s.buyers > 0 && ` · ${s.buyers} using it`,
-                        ])}</span>
+                          {markup(
+                            s.note_count === 1 ? t("<0/> rule <1/>") : t("<0/> rules <1/>"),
+                            [s.note_count, s.buyers > 0 && ` · ${s.buyers} using it`],
+                          )}</span>
                         <span className="gal-price">
                           {s.price_cents > 0 ? `$${(s.price_cents / 100).toFixed(0)}` : "free"}
                         </span>

@@ -147,12 +147,12 @@ export default async function MindPage() {
   return (
     <AppShell active="/mind" eyebrow={t("Everything your agents can know")} title={t("Your mind")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {markup(t("<0/> brain<1/> · <2/> notes · <3/> of your asks this week. Green — proven on its exam; red — where it honestly fails. Type to find who knows what."), [
-        brains.length,
-        brains.length === 1 ? "" : "s",
-        totals.notes.toLocaleString(),
-        totals.calls,
-      ])}</p>
+        {markup(
+          brains.length === 1
+            ? t("<0/> brain · <1/> notes · <2/> of your asks this week. Green — proven on its exam; red — where it honestly fails. Type to find who knows what.")
+            : t("<0/> brains · <1/> notes · <2/> of your asks this week. Green — proven on its exam; red — where it honestly fails. Type to find who knows what."),
+          [brains.length, totals.notes.toLocaleString(), totals.calls],
+        )}</p>
 
       {handoffs.length > 0 && (
         <section style={{ margin: "0 0 1.75rem" }}>

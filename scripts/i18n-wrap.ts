@@ -462,10 +462,22 @@ function transform(source: string, file: string): { output: string; wrapped: num
     if (!ts.isStringLiteral(node) || !isProseAttr(node.text) || covered(node)) return;
     let display = false;
     for (let p: ts.Node | undefined = node.parent; p; p = p.parent) {
-      if (ts.isCallExpression(p) && ts.isIdentifier(p.expression)) {
-        const name = p.expression.text;
-        // Already translated, or already a slot-filled sentence.
-        if (name === "t" || name === "msg" || name === "fill") return;
+      if (ts.isCallExpression(p)) {
+        if (ts.isIdentifier(p.expression)) {
+          const name = p.expression.text;
+          // Already translated, or already a slot-filled sentence.
+          if (name === "t" || name === "msg" || name === "fill") return;
+        }
+        // An argument to a method call is machinery until proven otherwise:
+        // toLocaleString("en-US"), join(", "), split("\n"), replace(…).
+        // Wrapping the first of those shipped `toLocaleString(t("en-US"))`,
+        // and the translator dutifully returned hi-IN — so Hindi silently got
+        // lakh grouping on a number the code had asked to format one way. One
+        // translation away from a RangeError, too. A real sentence in that
+        // position is rare and belongs to a person; it shows up in the report.
+        if (ts.isPropertyAccessExpression(p.expression) && p.arguments.some((a) => a === node)) {
+          return;
+        }
       }
       if (ts.isJsxAttribute(p)) {
         display = HUMAN_ATTRS.has(p.name.getText(sf));

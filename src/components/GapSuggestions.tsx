@@ -39,10 +39,10 @@ export default function GapSuggestions({
       >
         <h2 className="h2">{t("Gaps the exam keeps hitting")}</h2>
         <span className="eyebrow">
-          {markup(t("<0/> suggestion<1/>"), [
-          suggestions.length,
-          suggestions.length === 1 ? "" : "s",
-        ])}</span>
+          {markup(
+            suggestions.length === 1 ? t("<0/> suggestion") : t("<0/> suggestions"),
+            [suggestions.length],
+          )}</span>
       </div>
       <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
         {t("These questions were asked — by the exam or by real agents — and the brain got them wrong. Each says which kind of gap it is, because the fix differs: only the missing ones want a new source. Dismiss the ones not worth filling.")}</p>

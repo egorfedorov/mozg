@@ -76,10 +76,10 @@ export default async function SharePage({
                 {env.NEXT_PUBLIC_APP_URL}/gift/{g.code}
               </code>
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", flexShrink: 0 }}>
-                {markup(t("<0/> use<1/> left"), [
-                g.uses_left,
-                g.uses_left === 1 ? "" : "s",
-              ])}</span>
+                {markup(
+                  g.uses_left === 1 ? t("<0/> use left") : t("<0/> uses left"),
+                  [g.uses_left],
+                )}</span>
               <form action={revokeGiftLink}>
                 <input type="hidden" name="id" value={g.id} />
                 <input type="hidden" name="slug" value={brain.slug} />

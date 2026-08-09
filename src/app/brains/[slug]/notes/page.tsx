@@ -171,7 +171,10 @@ export default async function NotesPage({
         {duplicates.length > 0 && (
           <Section
             title={t("Saying the same thing twice")}
-            aside={`${duplicates.length} pair${duplicates.length === 1 ? "" : "s"}`}
+            aside={fill(
+              duplicates.length === 1 ? t("<0/> pair") : t("<0/> pairs"),
+              [duplicates.length],
+            )}
           >
             <p className="lede" style={{ marginBottom: ".75rem" }}>
               {t("Two notes this close crowd each other out of search results and make the brain look fuller than it is. Keep the one that says it better — the other is superseded, not deleted, and stays in the history below.")}</p>

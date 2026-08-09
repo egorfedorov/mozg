@@ -499,11 +499,10 @@ export default async function PublicBrainPage({
               <>
                 <div className="section-head">
                   <h2 className="h2">{t("From buyers")}</h2>
-                  <span className="eyebrow">{markup(t("★ <0/> · <1/> rating<2/>"), [
-                    rating.avg,
-                    rating.n,
-                    rating.n === 1 ? "" : "s",
-                  ])}</span>
+                  <span className="eyebrow">{markup(
+                    rating.n === 1 ? t("★ <0/> · <1/> rating") : t("★ <0/> · <1/> ratings"),
+                    [rating.avg, rating.n],
+                  )}</span>
                 </div>
                 <div className="rows" style={{ marginBottom: "1rem" }}>
                   {latestReviews.map((r, i) => (

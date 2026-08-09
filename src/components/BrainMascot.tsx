@@ -1,5 +1,5 @@
 import { translator } from "@/lib/t";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 
 /**
@@ -39,62 +39,96 @@ export interface MascotFacts {
  * current usefulness; the last is always the honest limit, because a report that
  * ends on a boast is an advert.
  */
-function lines(f: MascotFacts): { text: string; tone?: "good" | "warn" }[] {
+function lines(
+  f: MascotFacts,
+  t: (english: string) => string,
+): { text: string; tone?: "good" | "warn" }[] {
   const out: { text: string; tone?: "good" | "warn" }[] = [];
 
   if (!f.hasGoal) {
-    out.push({ text: "I have no goal yet, so there is nothing to measure me against.", tone: "warn" });
-    out.push({ text: "Give me one and I will write my own exam from it." });
+    out.push({ text: t("I have no goal yet, so there is nothing to measure me against."), tone: "warn" });
+    out.push({ text: t("Give me one and I will write my own exam from it.") });
     return out;
   }
 
   if (f.notes === 0) {
-    out.push({ text: "I am empty. Feed me a documentation link or a folder and I will read it." });
+    out.push({ text: t("I am empty. Feed me a documentation link or a folder and I will read it.") });
     if (f.sourcesPending > 0) {
-      out.push({ text: `${f.sourcesPending} source${f.sourcesPending === 1 ? "" : "s"} on the way — ask me again in a minute.` });
+      out.push({
+        text: fill(
+          f.sourcesPending === 1
+            ? t("<0/> source on the way — ask me again in a minute.")
+            : t("<0/> sources on the way — ask me again in a minute."),
+          [f.sourcesPending],
+        ),
+      });
     }
     return out;
   }
 
   // Plurals, and the case a brain taught by an agent falls into: it holds notes
   // and has no sources at all, where "from 0 sources" reads like a fault.
-  const noteWord = `${f.notes.toLocaleString()} note${f.notes === 1 ? "" : "s"}`;
+  const noteWord = fill(
+    f.notes === 1 ? t("<0/> note") : t("<0/> notes"),
+    [f.notes.toLocaleString()],
+  );
   out.push({
     text: f.sourcesReady
-      ? `I hold ${noteWord} from ${f.sourcesReady} source${f.sourcesReady === 1 ? "" : "s"}.`
-      : `I hold ${noteWord}, taught to me directly rather than read from a source.`,
+      ? fill(
+          f.sourcesReady === 1
+            ? t("I hold <0/> from <1/> source.")
+            : t("I hold <0/> from <1/> sources."),
+          [noteWord, f.sourcesReady],
+        )
+      : fill(t("I hold <0/>, taught to me directly rather than read from a source."), [noteWord]),
   });
 
   if (f.strong.length) {
     const list = f.strong.slice(0, 3).join(", ");
-    out.push({ text: `Ask me about ${list} — I answer those.`, tone: "good" });
+    out.push({ text: fill(t("Ask me about <0/> — I answer those."), [list]), tone: "good" });
   }
 
   if (f.score !== null) {
     out.push({
       text:
         f.score >= 80
-          ? `I passed ${f.score}% of my own exam, so trust me and still check the specifics.`
+          ? fill(t("I passed <0/>% of my own exam, so trust me and still check the specifics."), [f.score])
           : f.score >= 50
-            ? `I passed ${f.score}% of my own exam. Useful, not authoritative — read my failures below.`
-            : `I only passed ${f.score}% of my own exam. Treat me as a hint, not an answer.`,
+            ? fill(t("I passed <0/>% of my own exam. Useful, not authoritative — read my failures below."), [f.score])
+            : fill(t("I only passed <0/>% of my own exam. Treat me as a hint, not an answer."), [f.score]),
       tone: f.score >= 80 ? "good" : "warn",
     });
   }
 
   if (f.weak.length) {
     out.push({
-      text: `Do not trust me on ${f.weak.slice(0, 2).join(" or ")} — I fail every check there.`,
+      text: fill(t("Do not trust me on <0/> — I fail every check there."), [
+        f.weak.slice(0, 2).join(t(" or ")),
+      ]),
       tone: "warn",
     });
   }
 
   if (f.sourcesPending > 0) {
-    out.push({ text: `${f.sourcesPending} more source${f.sourcesPending === 1 ? "" : "s"} is still being read; I will re-sit the exam after.` });
+    out.push({
+      text: fill(
+        f.sourcesPending === 1
+          ? t("<0/> more source is still being read; I will re-sit the exam after.")
+          : t("<0/> more sources are still being read; I will re-sit the exam after."),
+        [f.sourcesPending],
+      ),
+    });
   }
 
   if (f.callsWeek > 0) {
-    out.push({ text: `I answered ${f.callsWeek} search${f.callsWeek === 1 ? "" : "es"} this week.` });
+    out.push({
+      text: fill(
+        f.callsWeek === 1
+          ? t("I answered <0/> search this week.")
+          : t("I answered <0/> searches this week."),
+        [f.callsWeek],
+      ),
+    });
   }
 
   return out;
@@ -115,7 +149,7 @@ function Face() {
 export default async function BrainMascot({ facts, slug }: { facts: MascotFacts; slug: string }) {
   const t = await translator();
 
-  const said = lines(facts);
+  const said = lines(facts, t);
 
   return (
     <section

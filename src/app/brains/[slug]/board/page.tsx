@@ -98,11 +98,12 @@ export default async function BoardPage({
         <h1 className="h1" style={{ margin: 0 }}>
           {t("The board")}</h1>
         <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-          {markup(t("<0/> cards · <1/> empty slot<2/> the exam wants filled"), [
-          notes.length,
-          gaps.length,
-          gaps.length === 1 ? "" : "s",
-        ])}</span>
+          {markup(
+            gaps.length === 1
+              ? t("<0/> cards · <1/> empty slot the exam wants filled")
+              : t("<0/> cards · <1/> empty slots the exam wants filled"),
+            [notes.length, gaps.length],
+          )}</span>
       </div>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
         {t("Every column is a category; red-edged slots are questions the exam failed — write the answer straight into the slot's column and the next sitting measures it.")}</p>

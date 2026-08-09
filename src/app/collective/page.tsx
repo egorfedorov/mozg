@@ -106,11 +106,12 @@ export default async function CollectivePage({
               ) : (
                 <>
                   <p className="eyebrow" style={{ marginBottom: ".75rem" }}>
-                    {markup(t("<0/> brain<1/> answer <2/>"), [
-                    results.length,
-                    results.length === 1 ? "" : "s",
-                    topic ? ` · ${topicLabel(topic)}` : "",
-                  ])}</p>
+                    {markup(
+                      results.length === 1
+                        ? t("<0/> brain answers <1/>")
+                        : t("<0/> brains answer <1/>"),
+                      [results.length, topic ? ` · ${topicLabel(topic)}` : ""],
+                    )}</p>
                   <div className="rows">
                     {results.map((r) => (
                       <Link key={r.slug} className="row" href={`/b/${r.handle}/${r.slug}`}>

@@ -171,10 +171,12 @@ export default function MascotDockClient({
                         <span>
                           <strong>{t("chatmozg")}</strong>
                           <span className="dock-ach-blurb">
-                            {markup(t("<0/> message<1/> waiting for you"), [
-                            operator.unread,
-                            operator.unread === 1 ? "" : "s",
-                          ])}</span>
+                            {markup(
+                              operator.unread === 1
+                                ? t("<0/> message waiting for you")
+                                : t("<0/> messages waiting for you"),
+                              [operator.unread],
+                            )}</span>
                         </span>
                         <span className="mono dock-ach-new">{t("reply →")}</span>
                       </Link>
@@ -184,10 +186,12 @@ export default function MascotDockClient({
                         <span>
                           <strong>{t("Payments")}</strong>
                           <span className="dock-ach-blurb">
-                            {markup(t("<0/> new invoice<1/> since you last looked"), [
-                            operator.payments,
-                            operator.payments === 1 ? "" : "s",
-                          ])}</span>
+                            {markup(
+                              operator.payments === 1
+                                ? t("<0/> new invoice since you last looked")
+                                : t("<0/> new invoices since you last looked"),
+                              [operator.payments],
+                            )}</span>
                         </span>
                         <span className="mono dock-ach-new">{t("see →")}</span>
                       </Link>
