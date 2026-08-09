@@ -1982,8 +1982,10 @@ const PACKS: Pack[] = [
     // the testing discipline in one place.
     key: "foundry",
     repo: "foundry-rs/book",
-    prefix: "src/",
-    endings: [".md"],
+    // The book is .mdx under src/pages; src/snippets is example projects with
+    // their vendored dependencies' READMEs, which answer nothing.
+    prefix: "src/pages/",
+    endings: [".md", ".mdx"],
     topic: "security",
     priceUsd: { parent: 29, child: 29 },
     parent: {
