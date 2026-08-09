@@ -2194,6 +2194,213 @@ const PACKS: Pack[] = [
     },
     children: [],
   },
+  {
+    // The specification behind every component library's accessibility claim. Keyboard interaction is a list of required behaviours, not a principle, and it is the part reconstructed from memory most often and wrongly.
+    key: "aria-apg",
+    repo: "w3c/aria-practices",
+    prefix: "content/patterns/",
+    endings: [".html", ".md"],
+    topic: "design",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "aria-apg",
+      title: "ARIA Authoring Practices",
+      goal:
+        "Answer what an accessible component must actually do: for every pattern in the ARIA Authoring Practices Guide \u2014 combobox, dialog, disclosure, grid, listbox, menu, tabs, tree and the rest \u2014 the required roles, states and properties, the exact keyboard interaction expected of each, and the focus management that makes it work. Not advice about accessibility: the specified behaviour a component either has or does not.",
+    },
+    children: [],
+  },
+  {
+    key: "radix",
+    repo: "radix-ui/website",
+    prefix: "data/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "radix-primitives",
+      title: "Radix Primitives",
+      goal:
+        "Answer questions about Radix Primitives as documented today: every primitive with its anatomy, parts and props, the controlled and uncontrolled APIs, composition with asChild, the accessibility each primitive provides and what it leaves to you, styling and animation, and the keyboard behaviour of each component.",
+    },
+    children: [],
+  },
+  {
+    key: "carbon",
+    repo: "carbon-design-system/carbon-website",
+    prefix: "src/pages/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "carbon",
+      title: "IBM Carbon",
+      goal:
+        "Answer questions about the Carbon Design System as documented today: the component library with each component's variants, states and usage rules, the type and colour tokens and when to use which, the 2x grid and spacing scale, motion, iconography, accessibility requirements per component, and the guidance on when NOT to use a pattern.",
+    },
+    children: [],
+  },
+  {
+    key: "polaris",
+    repo: "Shopify/polaris",
+    prefix: "polaris.shopify.com/content/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "polaris",
+      title: "Shopify Polaris",
+      goal:
+        "Answer questions about Polaris as documented today: the components with their props and variants, the design tokens, the content and voice guidelines including exact wording rules for buttons, errors and empty states, patterns for common merchant tasks, and the accessibility requirements each component carries.",
+    },
+    children: [],
+  },
+  {
+    key: "primer",
+    repo: "primer/design",
+    prefix: "content/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "primer",
+      title: "GitHub Primer",
+      goal:
+        "Answer questions about Primer as documented today: the component set and when each applies, design tokens for colour, typography and spacing, the layout and responsive guidance, accessibility requirements per component, and the UI patterns GitHub uses for navigation, forms, feedback and empty states.",
+    },
+    children: [],
+  },
+  {
+    key: "ant-design",
+    repo: "ant-design/ant-design",
+    prefix: "docs/",
+    endings: [".md", ".mdx"],
+    skip: ["docs/blog", "/zh-CN"],
+    topic: "design",
+    parent: {
+      slug: "ant-design",
+      title: "Ant Design",
+      goal:
+        "Answer questions about Ant Design as documented today: the design language and its principles, the component set with variants and behaviour, form and data-entry patterns, data display including tables and their many props, theming and design tokens, and the migration notes between major versions.",
+    },
+    children: [],
+  },
+  {
+    key: "mantine",
+    repo: "mantinedev/mantine",
+    prefix: "apps/mantine.dev/src/pages/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "mantine",
+      title: "Mantine",
+      goal:
+        "Answer questions about Mantine as documented today: every component with its props and styles API, the theming system and CSS variables, the hooks library and what each does, forms, dates, charts and notifications packages, and dark mode and responsive styling.",
+    },
+    children: [],
+  },
+  {
+    key: "tailwind-docs",
+    repo: "tailwindlabs/tailwindcss.com",
+    prefix: "src/docs/",
+    endings: [".mdx", ".md"],
+    topic: "design",
+    parent: {
+      slug: "tailwind-patterns",
+      title: "Tailwind CSS \u00b7 Utilities reference",
+      goal:
+        "Answer questions about Tailwind CSS utilities exactly as documented: every utility class and the CSS it produces, the variant and modifier syntax, responsive and state variants, dark mode, the theme scale for colour, spacing and typography, and how to extend or override any of it.",
+    },
+    children: [],
+  },
+  {
+    key: "observable-plot",
+    repo: "observablehq/plot",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "design",
+    parent: {
+      slug: "observable-plot",
+      title: "Observable Plot",
+      goal:
+        "Answer questions about Observable Plot as documented today: every mark " +
+        "and its channels, scales and their options, faceting, transforms such " +
+        "as bin, group, stack and window, legends and axes, projections, and how " +
+        "to compose a full figure \u2014 with the option names and defaults exact.",
+    },
+    children: [],
+  },
+  {
+    key: "echarts",
+    repo: "apache/echarts-doc",
+    prefix: "en/",
+    endings: [".md"],
+    topic: "design",
+    parent: {
+      slug: "echarts",
+      title: "Apache ECharts",
+      goal:
+        "Answer questions about Apache ECharts as documented today: every series " +
+        "type and its options, the coordinate systems, axis and tooltip and " +
+        "legend configuration, data transforms and datasets, events and actions, " +
+        "responsive and dynamic updates, and performance with large data \u2014 " +
+        "option by option, with defaults.",
+    },
+    children: [],
+  },
+  {
+    key: "chartjs",
+    repo: "chartjs/Chart.js",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "design",
+    parent: {
+      slug: "chartjs",
+      title: "Chart.js",
+      goal:
+        "Answer questions about Chart.js as documented today: each chart type " +
+        "and its dataset options, scales and their configuration, plugins and " +
+        "the plugin API, animations and interaction modes, responsive sizing, " +
+        "and how to migrate between major versions.",
+    },
+    children: [],
+  },
+  {
+    key: "d3",
+    repo: "d3/d3",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "design",
+    parent: {
+      slug: "d3",
+      title: "D3",
+      goal:
+        "Answer questions about D3 as documented today: selections and the data " +
+        "join, scales and axes, shapes and generators for line, area, arc and " +
+        "pie, hierarchies and treemaps, forces, geographic projections, " +
+        "transitions, and the array and format utilities \u2014 with exact " +
+        "signatures for each module.",
+    },
+    children: [],
+  },
+  {
+    // Dashboards are where a wrong transformation quietly changes the number
+    // somebody is about to make a decision on. Release notes and what's-new
+    // are history, not behaviour.
+    key: "grafana",
+    repo: "grafana/grafana",
+    prefix: "docs/sources/",
+    endings: [".md"],
+    skip: ["docs/sources/release-notes", "docs/sources/whatsnew", "docs/sources/upgrade-guide"],
+    topic: "design",
+    parent: {
+      slug: "grafana",
+      title: "Grafana dashboards",
+      goal:
+        "Answer questions about Grafana as documented today: building dashboards " +
+        "and every panel type with its options, variables and templating, " +
+        "transformations and how they chain, data source configuration and query " +
+        "editors, alerting rules and notification policies, provisioning " +
+        "dashboards as code, and permissions.",
+    },
+    children: [],
+  },
 ];
 
 interface Args {
