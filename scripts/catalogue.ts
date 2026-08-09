@@ -26,10 +26,30 @@ interface Pack {
   /** File endings that are documentation. */
   endings: string[];
   topic: string;
+  /**
+   * Sell this family. The parent's price is the bundle; a child carries its
+   * own, and lib/access.ts prefers the child's — buying one part must not be
+   * priced as if it were the whole.
+   *
+   * Left unset the family is free, which is what every documentation pack
+   * here is: the argument for paying is expertise somebody assembled, not a
+   * public manual read aloud.
+   */
+  priceUsd?: { parent: number; child: number };
   parent: { slug: string; title: string; goal: string };
   children: { slug: string; title: string; goal: string; areas: string[] }[];
   /** Paths matching these are skipped — changelogs, templates, i18n copies. */
   skip?: string[];
+  /**
+   * When set, ONLY paths whose filename starts with one of these is read.
+   *
+   * A deny list cannot express a narrow brain over a flat repository. The AWS
+   * provider keeps 1,690 resource pages side by side in one directory with no
+   * per-service folder, so "IAM and nothing else" is 179 files named for their
+   * resource and unreachable through skip. This is how a subject that deserves
+   * its own brain gets carved out of a repository that has no shape.
+   */
+  include?: string[];
   /**
    * Set when the repository keeps every published version side by side. Only
    * the newest dated directory is kept: a brain holding six versions of one
@@ -1907,6 +1927,268 @@ const PACKS: Pack[] = [
       },
     ],
   },
+  {
+    // A wrong IAM policy is not a bug, it is a breach, and the AWS provider
+    // documents 179 identity resources in a flat directory where nothing
+    // groups them. That is what `include` is for.
+    key: "tf-aws-iam",
+    repo: "hashicorp/terraform-provider-aws",
+    prefix: "website/docs/r/",
+    endings: [".markdown", ".md"],
+    include: ["iam_", "organizations_", "kms_", "secretsmanager_", "sso", "identitystore_"],
+    topic: "devops",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "tf-aws-iam",
+      title: "Terraform \u00b7 AWS identity and secrets",
+      goal:
+        "Answer questions about declaring AWS identity in Terraform exactly " +
+        "as the provider specifies: every IAM resource with its arguments and " +
+        "attributes, roles and trust policies, policy documents and their " +
+        "condition keys, Organizations and SCPs, Identity Center, KMS keys " +
+        "and grants, and Secrets Manager \u2014 including which arguments " +
+        "force replacement and which are conflicting.",
+    },
+    children: [],
+  },
+  {
+    // Every public S3 bucket and every open security group started as a
+    // plausible-looking argument nobody checked against the provider.
+    key: "tf-aws-network",
+    repo: "hashicorp/terraform-provider-aws",
+    prefix: "website/docs/r/",
+    endings: [".markdown", ".md"],
+    include: [
+      "vpc", "subnet", "route", "nat_", "network", "security_group", "ec2_transit",
+      "lb", "elb", "cloudfront_", "acm_", "wafv2_", "shield_",
+    ],
+    topic: "devops",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "tf-aws-network",
+      title: "Terraform \u00b7 AWS networking and edge",
+      goal:
+        "Answer questions about declaring AWS networking in Terraform exactly " +
+        "as the provider specifies: VPCs, subnets and route tables, gateways " +
+        "and endpoints, security groups and NACLs and how their rule " +
+        "resources interact, Transit Gateway, load balancers and target " +
+        "groups, CloudFront and ACM, and WAF \u2014 with the arguments that " +
+        "force replacement called out.",
+    },
+    children: [],
+  },
+  {
+    // Contract bugs are withdrawals. The Foundry book is the toolchain and
+    // the testing discipline in one place.
+    key: "foundry",
+    repo: "foundry-rs/book",
+    prefix: "src/",
+    endings: [".md"],
+    topic: "security",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "foundry",
+      title: "Foundry & Solidity testing",
+      goal:
+        "Answer questions about Foundry as documented today: forge test and " +
+        "its cheatcodes with exact signatures, fuzz and invariant testing and " +
+        "how to configure them, forking mainnet in tests, gas snapshots and " +
+        "optimisation, cast for chain interaction, anvil, deployment scripts " +
+        "and verification, and every foundry.toml key.",
+    },
+    children: [],
+  },
+  {
+    // Instrumentation is the subject where an agent's guess compiles, runs,
+    // and silently produces traces that join up wrong.
+    key: "opentelemetry",
+    repo: "open-telemetry/opentelemetry.io",
+    prefix: "content/en/docs/",
+    endings: [".md"],
+    skip: ["/blog", "/community", "/contributing"],
+    topic: "devops",
+    priceUsd: { parent: 19, child: 19 },
+    parent: {
+      slug: "opentelemetry",
+      title: "OpenTelemetry",
+      goal:
+        "Answer questions about OpenTelemetry as documented today: the " +
+        "signals and their data model, context propagation and baggage, the " +
+        "SDK setup for each language, automatic versus manual " +
+        "instrumentation, semantic conventions and the attribute names they " +
+        "fix, sampling strategies, and the Collector \u2014 receivers, " +
+        "processors, exporters and pipeline configuration.",
+    },
+    children: [
+      {
+        slug: "opentelemetry-collector",
+        title: "OpenTelemetry \u00b7 Collector",
+        goal:
+          "Answer questions about the OpenTelemetry Collector exactly as " +
+          "specified: every receiver, processor, exporter and connector with " +
+          "its configuration keys, pipeline wiring, deployment modes, and " +
+          "scaling and troubleshooting.",
+        areas: ["collector"],
+      },
+      {
+        slug: "opentelemetry-languages",
+        title: "OpenTelemetry \u00b7 Language SDKs",
+        goal:
+          "Answer questions about instrumenting an application with the " +
+          "OpenTelemetry SDK in each supported language: setup, exporters, " +
+          "manual spans and metrics, and the automatic instrumentation " +
+          "available per runtime.",
+        areas: ["languages", "zero-code"],
+      },
+      {
+        slug: "opentelemetry-conventions",
+        title: "OpenTelemetry \u00b7 Semantic conventions",
+        goal:
+          "Answer questions about OpenTelemetry semantic conventions exactly " +
+          "as specified: the required and recommended attribute names for " +
+          "HTTP, database, messaging, RPC, cloud and system telemetry, and " +
+          "what each one must contain.",
+        areas: ["specs", "concepts"],
+      },
+    ],
+  },
+  {
+    // Accessibility failures are lawsuits, and the guidelines are a
+    // conformance standard rather than advice — exactly the shape an agent
+    // paraphrases into something that no longer conforms.
+    key: "wcag",
+    repo: "w3c/wcag",
+    prefix: "guidelines/",
+    endings: [".html", ".md"],
+    topic: "design",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "wcag",
+      title: "WCAG conformance",
+      goal:
+        "Answer what WCAG actually requires: each success criterion by " +
+        "number and level with its exact wording, what satisfies it and what " +
+        "fails it, the sufficient techniques and common failures, and the " +
+        "conformance requirements for a claim \u2014 not general advice about " +
+        "accessibility.",
+    },
+    children: [],
+  },
+  {
+    // Alerting is where a wrong PromQL expression is silent until the night
+    // it does not page anyone.
+    key: "prometheus",
+    repo: "prometheus/docs",
+    prefix: "docs/",
+    endings: [".md"],
+    topic: "devops",
+    priceUsd: { parent: 19, child: 19 },
+    parent: {
+      slug: "prometheus",
+      title: "Prometheus & alerting",
+      goal:
+        "Answer questions about Prometheus as documented today: the data " +
+        "model and metric types, PromQL including rate and increase and the " +
+        "traps of each, recording and alerting rules, Alertmanager routing " +
+        "grouping inhibition and silences, service discovery and relabelling, " +
+        "storage and retention, and federation.",
+    },
+    children: [],
+  },
+  {
+    // Loki is not Elasticsearch and the label model is the whole difference;
+    // getting it wrong produces a cardinality bill rather than an error.
+    key: "loki",
+    repo: "grafana/loki",
+    prefix: "docs/sources/",
+    endings: [".md"],
+    topic: "devops",
+    priceUsd: { parent: 19, child: 19 },
+    parent: {
+      slug: "loki",
+      title: "Grafana Loki",
+      goal:
+        "Answer questions about Loki as documented today: the label model " +
+        "and why cardinality decides cost, LogQL queries and parsers, " +
+        "Promtail and Alloy pipelines, the deployment modes, storage " +
+        "schemas and retention, and the configuration reference key by key.",
+    },
+    children: [],
+  },
+  {
+    // Running Temporal is a different job from writing workflows, and the
+    // free brain deliberately stops at the code.
+    key: "temporal-ops",
+    repo: "temporalio/documentation",
+    prefix: "docs/production-deployment/",
+    endings: [".md", ".mdx"],
+    topic: "devops",
+    priceUsd: { parent: 19, child: 19 },
+    parent: {
+      slug: "temporal-ops",
+      title: "Temporal in production",
+      goal:
+        "Answer questions about running a Temporal cluster: the self-hosted " +
+        "components and how they scale, persistence and visibility stores, " +
+        "multi-cluster replication and failover, security and mTLS, " +
+        "namespace configuration and retention, monitoring and the metrics " +
+        "that matter, and upgrade procedure.",
+    },
+    children: [],
+  },
+  {
+    // Storage and databases in Terraform: the resources where a forced
+    // replacement deletes the data.
+    key: "tf-aws-data",
+    repo: "hashicorp/terraform-provider-aws",
+    prefix: "website/docs/r/",
+    endings: [".markdown", ".md"],
+    include: [
+      "s3", "rds", "db_", "dynamodb", "elasticache", "redshift", "aurora",
+      "backup_", "efs_", "fsx", "docdb", "neptune", "timestream",
+    ],
+    topic: "devops",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "tf-aws-data",
+      title: "Terraform \u00b7 AWS storage and databases",
+      goal:
+        "Answer questions about declaring AWS storage and databases in " +
+        "Terraform exactly as the provider specifies: S3 buckets and every " +
+        "separate configuration resource that replaced the inline blocks, " +
+        "RDS and Aurora clusters and their parameter groups, DynamoDB " +
+        "tables and indexes, ElastiCache, EFS and FSx, and Backup \u2014 " +
+        "with the arguments that force replacement, which on these " +
+        "resources destroys data, named explicitly.",
+    },
+    children: [],
+  },
+  {
+    // Compute and containers: the other half of an AWS estate, and the half
+    // where task definitions and launch templates hide their real arguments.
+    key: "tf-aws-compute",
+    repo: "hashicorp/terraform-provider-aws",
+    prefix: "website/docs/r/",
+    endings: [".markdown", ".md"],
+    include: [
+      "instance", "launch_", "autoscaling", "ecs_", "eks_", "lambda_", "batch_",
+      "apprunner_", "ecr", "sqs_", "sns_", "eventbridge", "cloudwatch_",
+    ],
+    topic: "devops",
+    priceUsd: { parent: 29, child: 29 },
+    parent: {
+      slug: "tf-aws-compute",
+      title: "Terraform \u00b7 AWS compute and events",
+      goal:
+        "Answer questions about declaring AWS compute in Terraform exactly " +
+        "as the provider specifies: EC2 instances and launch templates, " +
+        "autoscaling groups and their policies, ECS services and task " +
+        "definitions, EKS clusters and node groups, Lambda functions with " +
+        "their permissions and event sources, ECR, and the SQS, SNS, " +
+        "EventBridge and CloudWatch resources that wire them together.",
+    },
+    children: [],
+  },
 ];
 
 interface Args {
@@ -1949,6 +2231,8 @@ async function docPages(pack: Pack): Promise<string[]> {
         p.startsWith(pack.prefix) &&
         pack.endings.some((e) => p.endsWith(e)) &&
         !(pack.skip ?? []).some((s) => p.includes(s)) &&
+        (!pack.include ||
+          pack.include.some((i) => (p.split("/").pop() ?? "").startsWith(i))) &&
         !JUNK.some((j) => j.test(p)),
     )
     .sort();
@@ -1969,6 +2253,7 @@ async function upsert(
   spec: { slug: string; title: string; goal: string },
   topic: string,
   parentId: string | null,
+  priceCents = 0,
 ): Promise<{ id: string; created: boolean }> {
   const existing = await maybeOne<{ id: string }>(
     `select id from brains where owner_id = $1 and slug = $2`,
@@ -1976,16 +2261,17 @@ async function upsert(
   );
   if (existing) {
     await query(
-      `update brains set title = $2, parent_id = $3, topic = $4 where id = $1`,
-      [existing.id, spec.title, parentId, topic],
+      `update brains set title = $2, parent_id = $3, topic = $4, price_cents = $5
+        where id = $1`,
+      [existing.id, spec.title, parentId, topic, priceCents],
     );
     await setGoal(existing.id, spec.goal);
     return { id: existing.id, created: false };
   }
   const brain = await one<{ id: string }>(
-    `insert into brains (owner_id, slug, title, goal, topic, parent_id)
-     values ($1, $2, $3, $4, $5, $6) returning id`,
-    [ownerId, spec.slug, spec.title, spec.goal, topic, parentId],
+    `insert into brains (owner_id, slug, title, goal, topic, parent_id, price_cents)
+     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
+    [ownerId, spec.slug, spec.title, spec.goal, topic, parentId, priceCents],
   );
   return { id: brain.id, created: true };
 }
@@ -2022,14 +2308,20 @@ async function seedPack(pack: Pack, ownerId: string, args: Args): Promise<number
   }
   if (args.dry) return 0;
 
-  const parent = await upsert(ownerId, pack.parent, pack.topic, null);
+  const parent = await upsert(
+    ownerId,
+    pack.parent,
+    pack.topic,
+    null,
+    (pack.priceUsd?.parent ?? 0) * 100,
+  );
   let queued = 0;
 
   for (const spec of [pack.parent, ...pack.children]) {
     const isParent = spec.slug === pack.parent.slug;
     const brain = isParent
       ? parent
-      : await upsert(ownerId, spec, pack.topic, parent.id);
+      : await upsert(ownerId, spec, pack.topic, parent.id, (pack.priceUsd?.child ?? 0) * 100);
 
     await query(
       `update brains set visibility = 'public', license = 'nc', price_cents = 0
