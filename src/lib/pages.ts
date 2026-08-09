@@ -53,6 +53,8 @@ const PRIVATE = [
   "/settings",
   "/chat",
   "/learn",
+  "/mind",
+  "/achievements",
   "/gallery/mine",
   "/sign-in",
   "/welcome",
@@ -61,9 +63,22 @@ const PRIVATE = [
   "/styles/new",
 ];
 
-export function hasMachineView(path: string): boolean {
+/**
+ * Public pages that become a workspace screen once you are signed in.
+ *
+ * /connect is both: a marketing page with the config for each MCP client, and
+ * the "Connect an agent" item in the workspace nav, rendered in the app shell.
+ * Denying it outright would take the fact sheet off a page written for agents
+ * to read; leaving it floats the switch over somebody's sidebar while they
+ * work. So it depends on who is looking.
+ */
+const PRIVATE_WHEN_SIGNED_IN = ["/connect"];
+
+export function hasMachineView(path: string, signedIn = false): boolean {
   // Badges are embedded in other people's READMEs the way an image is —
   // a floating switch on top of one is nonsense.
   if (path.endsWith("/badge")) return false;
-  return !PRIVATE.some((p) => path === p || path.startsWith(`${p}/`));
+  const under = (p: string) => path === p || path.startsWith(`${p}/`);
+  if (PRIVATE.some(under)) return false;
+  return !(signedIn && PRIVATE_WHEN_SIGNED_IN.some(under));
 }

@@ -8,6 +8,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MascotDock from "@/components/MascotDock";
 import MachineView from "@/components/MachineView";
 import { machineDoc } from "@/lib/machine";
+import { currentUser } from "@/lib/session";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import CookieConsent from "@/components/CookieConsent";
 import Analytics from "@/components/Analytics";
@@ -63,6 +64,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // out of one context, so a page cannot forget to provide it and quietly go
   // back to English.
   const dict = await clientDictionary();
+  // Only to decide whether this render is a workspace screen; currentUser is
+  // memoised per request, so this costs nothing the dock was not already paying.
+  const signedIn = Boolean(await currentUser());
 
   return (
     // dir matters more than lang does: Arabic and Urdu laid out left-to-right
@@ -81,7 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {/* The document is built on the server so the numbers in it come from
               the modules that enforce them; the client half only knows which page
               it is on. It renders nothing on the workspace side of the site. */}
-          <MachineView doc={machineDoc()} />
+          <MachineView doc={machineDoc()} signedIn={signedIn} />
           <ClientErrorReporter />
           {/* Above Analytics in the tree and ahead of it in effect: the loader
               reads the cookie this writes, so an unanswered banner means an

@@ -21,7 +21,7 @@ import { PAGES, CURRENT_PAGE_MARKER, hasMachineView } from "@/lib/pages";
  * and a preference that cannot outlive the page it is set on is not worth
  * storing.
  */
-export default function MachineView({ doc }: { doc: string }) {
+export default function MachineView({ doc, signedIn }: { doc: string; signedIn: boolean }) {
   const t = useT();
   const path = usePathname();
   const [machine, setMachine] = useState(false);
@@ -35,7 +35,7 @@ export default function MachineView({ doc }: { doc: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [machine]);
 
-  if (!hasMachineView(path)) return null;
+  if (!hasMachineView(path, signedIn)) return null;
 
   // What this page is, in our words rather than scraped from the title — the
   // catalogue in lib/pages.ts already says it, and a brain page says it best
