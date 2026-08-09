@@ -331,7 +331,9 @@ export const TOOLS: ToolDef[] = [
       "scored against, so write it as an outcome (\"answer questions about our " +
       "webhook retries and idempotency\") rather than a subject (\"webhooks\"). " +
       "Creating the same title twice returns the existing brain instead of a " +
-      "duplicate.",
+      "duplicate. The full procedure — what the exam measures and the four " +
+      "mistakes that leave a brain at 40% — is at https://mozg.sh/make.txt, " +
+      "written for you rather than for a person.",
     inputSchema: {
       type: "object",
       properties: {

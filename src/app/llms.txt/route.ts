@@ -73,6 +73,7 @@ ${brains.map(line).join("\n")}
 ## Full version
 
 - [llms-full.txt](llms-full.txt): the free catalogue with category maps and note titles — enough to answer from
+- [make.txt](make.txt): how to BUILD a brain, written for the agent doing it — the tools in order, what the exam measures, the four mistakes that leave a brain at 40%
 - [machine.txt](machine.txt): the site as a flat fact sheet — endpoint, tool names, plan ceilings, page map. Every page also carries it behind its Machine switch.
 
 ## Optional

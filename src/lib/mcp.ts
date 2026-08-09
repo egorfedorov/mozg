@@ -580,11 +580,25 @@ async function brainSearch(
   });
 
   if (!hits.length) {
+    // A miss is the one moment worth spending a catalogue-wide search on: the
+    // agent has already told us exactly what it needs and the brain it picked
+    // cannot give it. Answering "nothing here" and stopping is how a platform
+    // with a Supabase brain lets somebody conclude nobody has one. Misses are
+    // rare, so the fan-out is affordable exactly where it pays.
+    const elsewhere = (await searchCollective(q)).filter((r) => r.slug !== resolved.brain.slug);
     return {
       text:
         `No matches in "${resolved.brain.title}" for: ${q}\n\n` +
-        "Call brain_brief to see which categories it does cover, or answer from " +
-        "your own knowledge and say the brain had nothing on this.",
+        (elsewhere.length
+          ? `Another brain does answer it:\n` +
+            elsewhere
+              .slice(0, 3)
+              .map((r) => `- ${r.handle}/${r.slug} — ${r.title}`)
+              .join("\n") +
+            `\n\nbrain_search {"brain": "${elsewhere[0].handle}/${elsewhere[0].slug}", "query": ${JSON.stringify(q)}}` +
+            "\nKeep it: library_add that handle."
+          : "Call brain_brief to see which categories it does cover, or answer from " +
+            "your own knowledge and say the brain had nothing on this."),
       brainId: resolved.brain.id,
       ownerId: resolved.brain.owner_id,
       results: 0,

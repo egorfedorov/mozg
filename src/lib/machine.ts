@@ -97,6 +97,7 @@ ${rows(PAGES.map((p) => [p.path, p.what] as [string, string]))}
 ${rows([
   ["/llms.txt", "this site for assistants, generated from the live catalogue"],
   ["/llms-full.txt", "the free catalogue with category maps and note titles"],
+  ["/make.txt", "how to build a brain, written for the agent doing it"],
   ["/sitemap.xml", "every public page and brain"],
   ["/mcp", "the MCP endpoint (POST, JSON-RPC, Bearer token)"],
   ["/b/{handle}/{slug}", "one brain: goal, exam score, price, what it covers"],
