@@ -1638,11 +1638,17 @@ async function brainFind(
  */
 export function foundText(
   question: string,
-  found: { handle: string; title: string; answers: { title: string; snippet: string }[] }[],
+  found: { handle: string; slug: string; title: string; answers: { title: string; snippet: string }[] }[],
   shelf: Set<string>,
 ): string {
+  // handle is the OWNER ("mozg"); the brain is owner/slug. Printing the owner
+  // alone gave every result the same name and an argument brain_search cannot
+  // resolve — the tool answered perfectly and told the agent to call itself
+  // wrongly.
+  const nameOf = (r: { handle: string; slug: string }) => `${r.handle}/${r.slug}`;
   const lines = found.slice(0, 5).map((r) => {
-    const head = `- ${r.handle} — ${r.title}${shelf.has(r.handle) ? " (on your shelf)" : ""}`;
+    const name = nameOf(r);
+    const head = `- ${name} — ${r.title}${shelf.has(name) ? " (on your shelf)" : ""}`;
     // The matched notes, not just the name: a handle that merely sounds right
     // is what sends an agent to search the wrong brain and conclude the
     // catalogue is useless.
@@ -1656,7 +1662,7 @@ export function foundText(
   return (
     `Brains that answer "${question}":\n` +
     lines.join("\n") +
-    `\n\nSearch one properly: brain_search {"brain": "${found[0].handle}", "query": "${question}"}.` +
+    `\n\nSearch one properly: brain_search {"brain": "${nameOf(found[0])}", "query": "${question}"}.` +
     "\nKeep it for every future session: library_add that handle."
   );
 }

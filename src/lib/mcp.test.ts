@@ -110,11 +110,12 @@ test("brain_find's answer carries the evidence, not just the handle", async () =
     "how does RLS work in supabase",
     [
       {
-        handle: "mozg/supabase",
+        handle: "mozg",
+        slug: "supabase",
         title: "Supabase",
         answers: [{ title: "Row level security", snippet: "Enable RLS on every table." }],
       },
-      { handle: "mozg/drizzle", title: "Drizzle", answers: [] },
+      { handle: "mozg", slug: "drizzle", title: "Drizzle", answers: [] },
     ],
     new Set(["mozg/drizzle"]),
   );
