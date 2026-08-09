@@ -55,3 +55,44 @@ test("an empty shelf says how to fill it instead of listing nothing", async () =
   assert.equal(out.isError, true);
   assert.match(out.text, /brain_create/);
 });
+
+/**
+ * A brain can honestly be yours two ways at once — buying a family both grants
+ * it and shelves it — and the shelf query unions those branches, so each of
+ * the eighteen slot-studio brains came back twice. Forty rows for twenty-two
+ * brains, printed into the context window of every session that called
+ * brain_list, and into every refusal that carried the shelf.
+ *
+ * The queries are guarded now; this pins the rule about the answer, which is
+ * the one that has to hold whatever a future branch returns.
+ */
+test("a brain you hold two ways is offered once", async () => {
+  stubDb(
+    shelfOnly([
+      { handle: "mozg/slot-studio", title: "Slot studio" },
+      { handle: "mozg/slot-studio", title: "Slot studio" },
+      { handle: "mozg/pixijs-casino", title: "PixiJS casino" },
+    ]),
+  );
+
+  const out = await callTool("brain_brief", { brain: "mozg/nope" }, owner);
+
+  const hits = out.text.split("mozg/slot-studio").length - 1;
+  assert.equal(hits, 1, `offered ${hits} times:\n${out.text}`);
+  assert.match(out.text, /mozg\/pixijs-casino/);
+});
+
+test("onePerHandle keeps the first row, which is the truer relationship", async () => {
+  const { onePerHandle } = await import("./mcp");
+  assert.deepEqual(
+    onePerHandle([
+      { handle: "a", access: "buyer" },
+      { handle: "a", access: "added" },
+      { handle: "b", access: "added" },
+    ]),
+    [
+      { handle: "a", access: "buyer" },
+      { handle: "b", access: "added" },
+    ],
+  );
+});

@@ -223,13 +223,33 @@ export async function callTool(
   }
 }
 
+/**
+ * One line per brain, whatever the query did.
+ *
+ * Both shelf queries union three branches — owned, granted, added — and a
+ * brain can honestly be two of them at once: buying a family both grants it
+ * and shelves it, so the whole slot-studio family came back twice. A plain
+ * UNION cannot merge those rows because they differ in the access column, and
+ * brain_list is the first call of every session, so the duplicate was paid for
+ * in every session's context window.
+ *
+ * The queries are guarded now; this keeps the guarantee where it belongs — on
+ * the answer, not on one SELECT. First row wins, which is the order the
+ * queries already sort into: owned, then granted, then added, and the grant is
+ * the truer relationship of the last two.
+ */
+export function onePerHandle<T extends { handle: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => !seen.has(r.handle) && seen.add(r.handle));
+}
+
 async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
   // An agent that cannot reach a brain during a deploy reports the brain as
   // broken, and its user believes it. One line at the top of the session's first
   // call is the cheapest place to say "this is us, for twenty minutes" — and
   // brain_list is that call by convention (its own description says so).
   const notice = await agentNotice();
-  const rows = await query<{
+  let rows = await query<{
     handle: string;
     title: string;
     goal: string | null;
@@ -255,15 +275,31 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
      -- Brains added from the catalogue. Without this the catalogue was a
      -- shop window an agent could never see into: reading a public brain
      -- worked if you knew its handle, and nothing ever told you the handle.
+     --
+     -- Only the ones no branch above already returned. Buying a family puts it
+     -- on the shelf AND grants it, which is two rows for one brain — and every
+     -- agent calls this first, so the whole slot-studio family was printed
+     -- twice into the context window of every session. A plain UNION cannot
+     -- dedupe them: the rows differ in the access column ('buyer' against
+     -- 'added'), and the grant is the truer of the two — 'added' is only
+     -- where it sits.
      select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
             'added', null
        from library l
        join brains b on b.id = l.brain_id
        join "user" u on u.id = b.owner_id
       where l.user_id = $1 and b.visibility = 'public'
+        and b.owner_id <> $1
+        and not exists (
+          select 1
+            from grants g2
+            join "user" me2 on lower(me2.email) = lower(g2.email)
+           where g2.brain_id = b.id and me2.id = $1 and me2."emailVerified")
       order by 1`,
     [owner.userId],
   );
+
+  rows = onePerHandle(rows);
 
   // The public catalogue, so an agent that lacks a subject knows it can be
   // had by handle — headless sessions proved that without this an agent
@@ -1544,21 +1580,32 @@ async function notFound(handle: string, userId: string): Promise<ToolOutcome> {
        join "user" me on lower(me.email) = lower(g.email)
       where me.id = $1 and me."emailVerified"
      union all
+     -- Same guard as brain_list: a bought family is both granted and shelved,
+     -- and offering the agent the same handle twice in a refusal reads like
+     -- the server cannot count.
      select u.handle || '/' || b.slug, b.title
        from library l
        join brains b on b.id = l.brain_id
        join "user" u on u.id = b.owner_id
       where l.user_id = $1
+        and b.owner_id <> $1
+        and not exists (
+          select 1
+            from grants g2
+            join "user" me2 on lower(me2.email) = lower(g2.email)
+           where g2.brain_id = b.id and me2.id = $1 and me2."emailVerified")
       order by 1`,
     [userId],
   );
+
+  const shelf = onePerHandle(rows);
 
   const asked = handle.trim().toLowerCase();
   const head = asked
     ? `No brain "${handle}" is available to you.`
     : "That tool needs a brain name and was called without one.";
 
-  if (!rows.length) {
+  if (!shelf.length) {
     return {
       text:
         `${head} Your shelf is empty — create one with brain_create, or add a ` +
@@ -1573,13 +1620,13 @@ async function notFound(handle: string, userId: string): Promise<ToolOutcome> {
   const slug = (h: string) => h.slice(h.indexOf("/") + 1);
   const words = new Set(slug(asked).split(/[\-_\s]+/).filter((w) => w.length > 2));
   const near = words.size
-    ? rows.filter((r) =>
+    ? shelf.filter((r) =>
         slug(r.handle.toLowerCase())
           .split(/[\-_]+/)
           .some((w) => words.has(w)),
       )
     : [];
-  const ordered = [...near, ...rows.filter((r) => !near.includes(r))];
+  const ordered = [...near, ...shelf.filter((r) => !near.includes(r))];
 
   return {
     text:
