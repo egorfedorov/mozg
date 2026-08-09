@@ -2328,10 +2328,14 @@ async function seedPack(pack: Pack, ownerId: string, args: Args): Promise<number
       ? parent
       : await upsert(ownerId, spec, pack.topic, parent.id, (pack.priceUsd?.child ?? 0) * 100);
 
+    // Publishing sets the price too, from the pack — it used to force zero,
+    // left over from the day every official brain was made free, and it ran
+    // AFTER upsert had set the real one. Ten paid brains seeded at $0 before
+    // anyone noticed, because both statements looked correct on their own.
     await query(
-      `update brains set visibility = 'public', license = 'nc', price_cents = 0
+      `update brains set visibility = 'public', license = 'nc', price_cents = $2
         where id = $1`,
-      [brain.id],
+      [brain.id, ((isParent ? pack.priceUsd?.parent : pack.priceUsd?.child) ?? 0) * 100],
     );
 
     const paths = plan.get(spec.slug) ?? [];
