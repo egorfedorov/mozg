@@ -225,6 +225,37 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: "brain_find",
+    description:
+      "Find WHICH brain can answer something, when you do not already know one " +
+      "exists. brain_search needs a brain by name; this needs only the question, " +
+      "and searches every public brain at once. Call it before answering from " +
+      "memory about any library, framework, API or platform — the catalogue " +
+      "holds brains on things your training data has moved on from, and the only " +
+      "reason not to use one is that nobody told you it was there. Returns the " +
+      "brains that actually matched, with the evidence they matched on, so you " +
+      "can judge rather than trust the name. Then brain_search that handle, or " +
+      "library_add it to keep it.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: {
+          type: "string",
+          description:
+            "What you actually need to know, in the user's words. Full questions " +
+            "beat keywords — the search is semantic.",
+        },
+        topic: {
+          type: "string",
+          description:
+            "Optional field to narrow to, e.g. web, ai, gamedev, security, mobile.",
+        },
+      },
+      required: ["question"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "library_add",
     description:
       "Put a public brain from the catalogue on your shelf, by handle. After " +

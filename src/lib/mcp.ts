@@ -14,7 +14,7 @@ import {
   type WriteNoteResult,
 } from "@/lib/agent-write";
 import { scanSecrets } from "@/lib/scan";
-import { searchBrain, briefBrain } from "@/lib/search";
+import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
@@ -214,6 +214,8 @@ export async function callTool(
       return brainAddSource(args, owner);
     case "brain_refresh":
       return brainRefresh(args, owner);
+    case "brain_find":
+      return brainFind(args, owner);
     case "library_add":
       return libraryAdd(args, owner);
     case "library_remove":
@@ -1555,6 +1557,108 @@ async function brainAddSource(
     ownerId: brain.owner_id,
     results: added.length,
   };
+}
+
+/**
+ * Which brain can answer this — the question nothing could ask before.
+ *
+ * brain_search takes a brain by name, so reaching a brain required already
+ * knowing it exists. The catalogue answers that for a person on /explore and
+ * answered it for nobody inside a session: on the day this was written the
+ * shelf held twenty public brains with thousands of notes each — Expo,
+ * Supabase, Drizzle, Playwright, Tailwind, the OWASP sheets — and every one of
+ * them had been read zero times, while the nine brains somebody had been told
+ * about carried every single call. Not a retrieval problem. Nothing had a way
+ * to say "there is a brain for that".
+ *
+ * Public brains only, and each one's own notes: searchCollective is the same
+ * function /collective renders, and the shop window has to stay a shop window.
+ *
+ * The answer carries the matched notes rather than just the names, because a
+ * handle that merely sounds right is what sends an agent to search the wrong
+ * brain and conclude the catalogue is useless.
+ */
+async function brainFind(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const question = String(args.question ?? "").trim();
+  if (question.length < 3) {
+    return {
+      text: "Say what you need to know — brain_find takes a question, not a brain name.",
+      isError: true,
+    };
+  }
+  const topic = args.topic ? String(args.topic).trim() : null;
+
+  const found = await searchCollective(question, { topic });
+  if (!found.length) {
+    return {
+      text:
+        `No public brain answers "${question}".` +
+        (topic ? ` (Searched the ${topic} field only — drop the topic to widen it.)` : "") +
+        "\nAnswer from what you know, and say it is unverified. If this keeps " +
+        "happening for a subject you work in, brain_create makes one and " +
+        "brain_add_source feeds it the docs.",
+      results: 0,
+    };
+  }
+
+  // What is already reachable, so the answer does not tell somebody to add a
+  // brain they have been reading all week.
+  const shelf = new Set(
+    (
+      await query<{ handle: string }>(
+        `select u.handle || '/' || b.slug as handle
+           from library l
+           join brains b on b.id = l.brain_id
+           join "user" u on u.id = b.owner_id
+          where l.user_id = $1
+         union
+         select u.handle || '/' || b.slug
+           from brains b
+           join "user" u on u.id = b.owner_id
+          where b.owner_id = $1`,
+        [owner.userId],
+      )
+    ).map((r) => r.handle),
+  );
+
+  return { text: foundText(question, found, shelf), results: found.length };
+}
+
+/**
+ * The answer brain_find hands back.
+ *
+ * Its own function because the retrieval above cannot be unit tested — the
+ * vector leg needs the embedder and the reranker needs the model — while every
+ * decision that matters here can be: that the evidence rides along, that a
+ * brain already on the shelf is not offered as a discovery, and that the reply
+ * ends in the exact call to make next.
+ */
+export function foundText(
+  question: string,
+  found: { handle: string; title: string; answers: { title: string; snippet: string }[] }[],
+  shelf: Set<string>,
+): string {
+  const lines = found.slice(0, 5).map((r) => {
+    const head = `- ${r.handle} — ${r.title}${shelf.has(r.handle) ? " (on your shelf)" : ""}`;
+    // The matched notes, not just the name: a handle that merely sounds right
+    // is what sends an agent to search the wrong brain and conclude the
+    // catalogue is useless.
+    const evidence = r.answers
+      .slice(0, 2)
+      .map((a) => `    · ${a.title}: ${a.snippet}`)
+      .join("\n");
+    return evidence ? `${head}\n${evidence}` : head;
+  });
+
+  return (
+    `Brains that answer "${question}":\n` +
+    lines.join("\n") +
+    `\n\nSearch one properly: brain_search {"brain": "${found[0].handle}", "query": "${question}"}.` +
+    "\nKeep it for every future session: library_add that handle."
+  );
 }
 
 /**

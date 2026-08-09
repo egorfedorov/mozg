@@ -96,3 +96,53 @@ test("onePerHandle keeps the first row, which is the truer relationship", async 
     ],
   );
 });
+
+/**
+ * brain_find exists because reaching a brain used to require already knowing
+ * it was there. On the day it was written the catalogue held twenty public
+ * brains — Expo, Supabase, Drizzle, Playwright, the OWASP sheets, thousands of
+ * notes each — every one read zero times, while the nine brains somebody had
+ * been told about carried every call on the platform.
+ */
+test("brain_find's answer carries the evidence, not just the handle", async () => {
+  const { foundText } = await import("./mcp");
+  const out = foundText(
+    "how does RLS work in supabase",
+    [
+      {
+        handle: "mozg/supabase",
+        title: "Supabase",
+        answers: [{ title: "Row level security", snippet: "Enable RLS on every table." }],
+      },
+      { handle: "mozg/drizzle", title: "Drizzle", answers: [] },
+    ],
+    new Set(["mozg/drizzle"]),
+  );
+
+  assert.match(out, /mozg\/supabase/);
+  // A handle that merely sounds right sends an agent to the wrong brain.
+  assert.match(out, /Row level security: Enable RLS on every table\./);
+  // Already reachable — offering it as a discovery reads like the server
+  // cannot see its own shelf.
+  assert.match(out, /mozg\/drizzle — Drizzle \(on your shelf\)/);
+  // Ends in the call to make next, with the best match filled in.
+  assert.match(out, /brain_search \{"brain": "mozg\/supabase"/);
+});
+
+test("brain_find says so plainly when the catalogue cannot help", async () => {
+  stubDb(() => []);
+
+  const out = await callTool("brain_find", { question: "how do I fold a paper crane" }, owner);
+
+  assert.equal(out.results, 0);
+  assert.match(out.text, /No public brain answers/);
+  // Not a dead end: the honest next move is to say it is unverified.
+  assert.match(out.text, /unverified/);
+});
+
+test("brain_find refuses a brain name where a question belongs", async () => {
+  stubDb(() => []);
+  const out = await callTool("brain_find", { question: "hi" }, owner);
+  assert.equal(out.isError, true);
+  assert.match(out.text, /a question, not a brain name/);
+});
