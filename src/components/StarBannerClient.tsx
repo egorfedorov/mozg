@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTucked } from "./useTucked";
+import { useT } from "@/lib/t-client";
 
 /**
  * Dismissable, and it stays dismissed — a banner that returns on every page
@@ -15,6 +16,7 @@ import { useTucked } from "./useTucked";
 export default function StarBannerClient({ stars, repo }: { stars: number | null; repo: string }) {
   const [shown, setShown] = useState(true);
   const tucked = useTucked();
+  const t = useT();
   if (!shown) return null;
 
   return (
@@ -41,10 +43,10 @@ export default function StarBannerClient({ stars, repo }: { stars: number | null
         }}
       >
         <span className="mono" style={{ opacity: 0.75 }}>
-          mozg is open source
+          {t("mozg is open source")}
         </span>
         <span style={{ opacity: 0.55 }}>·</span>
-        <span>Brains get smarter with every person who uses them.</span>
+        <span>{t("Brains get smarter with every person who uses them.")}</span>
         <a
           href={`https://github.com/${repo}`}
           target="_blank"
@@ -64,7 +66,8 @@ export default function StarBannerClient({ stars, repo }: { stars: number | null
           <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
             <path d="M8 .25l2.32 4.7 5.18.75-3.75 3.66.89 5.16L8 12.08l-4.64 2.44.89-5.16L.5 5.7l5.18-.75L8 .25z" />
           </svg>
-          Star{stars !== null ? ` ${stars.toLocaleString()}` : ""}
+          {t("Star")}
+          {stars !== null ? ` ${stars.toLocaleString()}` : ""}
         </a>
         <button
           onClick={() => {
@@ -75,7 +78,7 @@ export default function StarBannerClient({ stars, repo }: { stars: number | null
             }
             setShown(false);
           }}
-          aria-label="Dismiss"
+          aria-label={t("Dismiss")}
           style={{
             background: "none",
             border: 0,

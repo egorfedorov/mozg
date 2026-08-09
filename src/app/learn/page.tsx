@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { query } from "@/db";
 import { achievedBrainIds } from "@/lib/achievements";
@@ -21,6 +23,8 @@ export const metadata = {
  * your agent knows".
  */
 export default async function LearnHome() {
+  const t = await translator();
+
   const user = await currentUser();
 
   // Brains this person can study: their library and free public ones. For a
@@ -100,23 +104,17 @@ export default async function LearnHome() {
     <LearnShell>
 
       <main className="shell" style={{ paddingBlock: "clamp(2.5rem, 7vw, 4.5rem)" }}>
-        <p className="eyebrow">For humans</p>
+        <p className="eyebrow">{t("For humans")}</p>
         <h1 className="display" style={{ fontSize: "clamp(2rem, 6.5vw, 4rem)", margin: ".5rem 0 1rem" }}>
-          Study what your
-          <br />
-          AI agent knows.
-        </h1>
+          {markup(t("Study what your <0/> AI agent knows."), [
+          <br key="s0" />,
+        ])}</h1>
         <p className="lede" style={{ maxWidth: "58ch" }}>
-          Every mozg brain is exam-scored knowledge kept current by re-reads.
-          Your agent queries it over MCP — and you can learn the very same
-          material: notes become cards, the exam becomes your quiz, and spaced
-          repetition brings each card back right before you would forget it.
-          The brain shows its score; see if you can beat your own agent.
-        </p>
+          {t("Every mozg brain is exam-scored knowledge kept current by re-reads. Your agent queries it over MCP — and you can learn the very same material: notes become cards, the exam becomes your quiz, and spaced repetition brings each card back right before you would forget it. The brain shows its score; see if you can beat your own agent.")}</p>
 
         {!user && (
           <p style={{ marginTop: "1rem" }}>
-            <Link className="btn" href="/sign-in?next=/learn">Sign in to keep progress</Link>
+            <Link className="btn" href="/sign-in?next=/learn">{t("Sign in to keep progress")}</Link>
           </p>
         )}
 
@@ -133,28 +131,28 @@ export default async function LearnHome() {
               data-tint={tintFor(b)}
             >
               <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
-                {topicLabel(b.topic)} · course
-              </span>
+                {markup(t("<0/> · course"), [
+                topicLabel(b.topic),
+              ])}</span>
               <h3 className="card-title">{b.title}</h3>
               <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
               <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
-                {b.cards} cards
-                {b.score != null ? ` · agent ${b.score}%` : ""}
-                {b.due > 0 ? ` · ${b.due} due` : ""}
-                {b.seen > 0 ? ` · ${b.seen} seen` : ""}
-                {beaten.has(b.id) ? " · ★ you beat the agent" : ""}
-              </p>
+                {markup(t("<0/> cards <1/> <2/> <3/> <4/>"), [
+                b.cards,
+                b.score != null ? ` · agent ${b.score}%` : "",
+                b.due > 0 ? ` · ${b.due} due` : "",
+                b.seen > 0 ? ` · ${b.seen} seen` : "",
+                beaten.has(b.id) ? " · ★ you beat the agent" : "",
+              ])}</p>
             </Link>
           ))}
         </div>
 
         {user && brains.length === 0 && (
           <p style={{ color: "var(--ink-2)" }}>
-            Your shelf is empty — start with a free brain below, or add one
-            from the{" "}
-            <Link href="/explore" style={{ textDecoration: "underline" }}>catalogue</Link>{" "}
-            and it appears here as a course.
-          </p>
+            {markup(t("Your shelf is empty — start with a free brain below, or add one from the <0>catalogue</0> and it appears here as a course."), [
+            <Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />,
+          ])}</p>
         )}
 
         {free.length > 0 && (
@@ -174,15 +172,17 @@ export default async function LearnHome() {
                   data-tint={tintFor(b)}
                 >
                   <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
-                    free {topicLabel(b.topic)} · course
-                  </span>
+                    {markup(t("free <0/> · course"), [
+                    topicLabel(b.topic),
+                  ])}</span>
                   <h3 className="card-title">{b.title}</h3>
                   <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
                   <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
-                    {b.cards} cards
-                    {b.score != null ? ` · agent ${b.score}%` : ""}
-                    {beaten.has(b.id) ? " · ★ you beat the agent" : ""}
-                  </p>
+                    {markup(t("<0/> cards <1/> <2/>"), [
+                    b.cards,
+                    b.score != null ? ` · agent ${b.score}%` : "",
+                    beaten.has(b.id) ? " · ★ you beat the agent" : "",
+                  ])}</p>
                 </Link>
               ))}
             </div>

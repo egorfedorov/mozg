@@ -128,7 +128,7 @@ export default async function PayPage({
                 </div>
                 {qr && (
                   <div
-                    aria-label="Address as a QR code"
+                    aria-label={t("Address as a QR code")}
                     style={{ padding: ".75rem", border: "1.5px solid var(--ink)", background: "var(--paper)" }}
                     dangerouslySetInnerHTML={{ __html: qr }}
                   />

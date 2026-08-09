@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import GalleryShell from "./GalleryShell";
 import { query } from "@/db";
@@ -51,6 +53,8 @@ interface StyleCard {
  * which is the correct incentive.
  */
 export default async function GalleryPage() {
+  const t = await translator();
+
   const styles = await query<StyleCard>(
     `select b.id, b.slug, u.handle, coalesce(u.name, u.handle) as artist,
             b.title, b.goal, b.score, b.note_count, b.price_cents, b.cover_key,
@@ -72,28 +76,23 @@ export default async function GalleryPage() {
         <header className="gal-hero">
           <div className="shell">
             <p className="eyebrow" style={{ color: "var(--paper-2)", opacity: 0.75 }}>
-              Style gallery · illustration · photography · motion · sound
-            </p>
+              {t("Style gallery · illustration · photography · motion · sound")}</p>
             <h1 className="display gal-title">
-              Buy the way
-              <br />
-              someone works.
-            </h1>
+              {markup(t("Buy the way <0/> someone works."), [
+              <br key="s0" />,
+            ])}</h1>
             <p className="gal-lede">
-              Not a filter. Not a fine-tune scraped off their portfolio. The
-              artist&apos;s own rules — palette, light, line, the things they
-              refuse to do — written down, exam-scored, and licensed to your
-              agent. They are paid every time it is used, and access can be
-              taken back.
-            </p>
+              {t("Not a filter. Not a fine-tune scraped off their portfolio. The artist's own rules — palette, light, line, the things they refuse to do — written down, exam-scored, and licensed to your agent. They are paid every time it is used, and access can be taken back.")}</p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", alignItems: "center" }}>
               <Link className="btn gal-btn" href="https://mozg.sh/styles">
-                How it works for artists
-              </Link>
+                {t("How it works for artists")}</Link>
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--paper-2)", opacity: 0.6 }}>
-                {styles.length} style{styles.length === 1 ? "" : "s"} ·{" "}
-                {artists} artist{artists === 1 ? "" : "s"} · 95% to the author
-              </span>
+                {markup(t("<0/> style<1/> · <2/> artist<3/> · 95% to the author"), [
+                styles.length,
+                styles.length === 1 ? "" : "s",
+                artists,
+                artists === 1 ? "" : "s",
+              ])}</span>
             </div>
           </div>
         </header>
@@ -101,15 +100,11 @@ export default async function GalleryPage() {
         <div className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
           {styles.length === 0 ? (
             <div className="panel" style={{ maxWidth: "44rem" }}>
-              <h2 className="h2" style={{ marginTop: 0 }}>Nothing on the wall yet.</h2>
+              <h2 className="h2" style={{ marginTop: 0 }}>{t("Nothing on the wall yet.")}</h2>
               <p style={{ color: "var(--ink-2)" }}>
-                The first styles are being written right now. If yours should be
-                among them, it takes an afternoon and the catalogue listing is
-                free.
-              </p>
+                {t("The first styles are being written right now. If yours should be among them, it takes an afternoon and the catalogue listing is free.")}</p>
               <Link className="btn" href="https://mozg.sh/styles">
-                Put your style up
-              </Link>
+                {t("Put your style up")}</Link>
             </div>
           ) : (
             <div className="gal-grid">
@@ -122,10 +117,12 @@ export default async function GalleryPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={cover} alt={`A work in ${s.title}`} loading="lazy" />
                       ) : (
-                        <span className="gal-cover-empty mono">no cover yet</span>
+                        <span className="gal-cover-empty mono">{t("no cover yet")}</span>
                       )}
                       {s.score !== null && (
-                        <span className="gal-score mono">exam {s.score}%</span>
+                        <span className="gal-score mono">{markup(t("exam <0/>%"), [
+                          s.score,
+                        ])}</span>
                       )}
                     </span>
                     <span className="gal-meta">
@@ -136,9 +133,11 @@ export default async function GalleryPage() {
                       {s.goal && <span className="gal-goal">{s.goal.split("\n")[0]}</span>}
                       <span className="gal-foot mono">
                         <span>
-                          {s.note_count} rule{s.note_count === 1 ? "" : "s"}
-                          {s.buyers > 0 && ` · ${s.buyers} using it`}
-                        </span>
+                          {markup(t("<0/> rule<1/> <2/>"), [
+                          s.note_count,
+                          s.note_count === 1 ? "" : "s",
+                          s.buyers > 0 && ` · ${s.buyers} using it`,
+                        ])}</span>
                         <span className="gal-price">
                           {s.price_cents > 0 ? `$${(s.price_cents / 100).toFixed(0)}` : "free"}
                         </span>
@@ -151,23 +150,13 @@ export default async function GalleryPage() {
           )}
 
           <section className="gal-note">
-            <h2 className="h2" style={{ marginTop: 0 }}>What you are actually buying</h2>
+            <h2 className="h2" style={{ marginTop: 0 }}>{t("What you are actually buying")}</h2>
             <p>
-              A brain, not a picture pack and not a model. It holds the rules an
-              artist works by, and any agent you use — Claude Code, Codex,
-              Cursor, anything that speaks MCP — reads them before it generates
-              or art-directs. Bought once from your balance; the author keeps
-              updating it and you get the updates.
-            </p>
+              {t("A brain, not a picture pack and not a model. It holds the rules an artist works by, and any agent you use — Claude Code, Codex, Cursor, anything that speaks MCP — reads them before it generates or art-directs. Bought once from your balance; the author keeps updating it and you get the updates.")}</p>
             <p>
-              Because it runs through mozg rather than as a fine-tune on
-              somebody&apos;s disk, the licence is real: attribution stays
-              attached and access can be revoked. That is the difference the
-              whole thing rests on — a LoRA in the wild is forever, a licence is
-              not.
-            </p>
+              {t("Because it runs through mozg rather than as a fine-tune on somebody's disk, the licence is real: attribution stays attached and access can be revoked. That is the difference the whole thing rests on — a LoRA in the wild is forever, a licence is not.")}</p>
             <p style={{ marginBottom: 0 }}>
-              <Link href="https://mozg.sh/styles">The full argument, and how to sell one →</Link>
+              <Link href="https://mozg.sh/styles">{t("The full argument, and how to sell one →")}</Link>
             </p>
           </section>
         </div>

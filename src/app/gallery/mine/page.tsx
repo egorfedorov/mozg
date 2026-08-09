@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import GalleryShell from "../GalleryShell";
@@ -20,6 +22,8 @@ export const metadata = { title: "Your images — mozg gallery" };
  * track of, and a product that makes that easy is one people stop trusting.
  */
 export default async function MyGenerations() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("https://mozg.sh/sign-in?next=/gallery/mine");
 
@@ -46,28 +50,26 @@ export default async function MyGenerations() {
     <GalleryShell>
       <main className="shell" style={{ paddingBlock: "clamp(1.5rem, 4vw, 2.5rem)" }}>
         <p className="eyebrow">
-          <Link href="https://gallery.mozg.sh">← the gallery</Link>
+          <Link href="https://gallery.mozg.sh">{t("← the gallery")}</Link>
         </p>
         <h1 className="display" style={{ fontSize: "clamp(1.7rem, 4.5vw, 2.8rem)", margin: ".3rem 0 1rem" }}>
-          Your images
-        </h1>
+          {t("Your images")}</h1>
 
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginBottom: "1.5rem" }}>
-          {totals.images} made · {formatCents(totals.spent)} spent ·{" "}
-          {formatCents(balance)} balance
-          {totals.earned > 0 && ` · ${formatCents(totals.earned)} earned from your own styles`}
-          {"  "}
-          <AutoRefresh active={live} intervalMs={5000} label="drawing" />
-        </p>
+          {markup(t("<0/> made · <1/> spent · <2/> balance <3/> <4/>"), [
+          totals.images,
+          formatCents(totals.spent),
+          formatCents(balance),
+          totals.earned > 0 && ` · ${formatCents(totals.earned)} earned from your own styles`,
+          <AutoRefresh key="s4" active={live} intervalMs={5000} label="drawing" />,
+        ])}</p>
 
         {jobs.length === 0 ? (
           <div className="panel" style={{ maxWidth: "44rem" }}>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
-              Nothing yet. Pick a style and ask it for something.
-            </p>
+              {t("Nothing yet. Pick a style and ask it for something.")}</p>
             <Link className="btn" href="https://gallery.mozg.sh">
-              Open the gallery
-            </Link>
+              {t("Open the gallery")}</Link>
           </div>
         ) : (
           <div className="gen-grid" style={{ marginTop: 0 }}>

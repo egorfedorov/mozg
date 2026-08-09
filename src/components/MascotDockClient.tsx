@@ -5,6 +5,7 @@ import Link from "next/link";
 import ChatForm from "@/app/chat/ChatForm";
 import AutoRefresh from "@/components/AutoRefresh";
 import { markDockSeen } from "./dock-actions";
+import { useT } from "@/lib/t-client";
 
 /**
  * The dock: a brain that breathes in the corner, and the drawer it opens.
@@ -48,6 +49,7 @@ export default function MascotDockClient({
   operator: { unread: number; payments: number } | null;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
   // Opening the drawer is reading it: the server forgets the counters, the
   // client zeroes its own copy, and the two agree without a refetch. The new
   // badges themselves stay visible for the rest of the visit — only the count
@@ -111,7 +113,7 @@ export default function MascotDockClient({
       {operator && <AutoRefresh active intervalMs={open ? 15_000 : 30_000} />}
       <button
         type="button"
-        aria-label={open ? "Close the chat" : "Ask the developer"}
+        aria-label={open ? t("Close the chat") : t("Ask the developer")}
         aria-expanded={open}
         onClick={toggle}
         className="dock-button"
@@ -128,12 +130,12 @@ export default function MascotDockClient({
               <p className="eyebrow" style={{ margin: 0 }}>
                 chatmozg
               </p>
-              <p className="mono dock-sub">a person reads this, not a bot</p>
+              <p className="mono dock-sub">{t("a person reads this, not a bot")}</p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Close"
+              aria-label={t("Close")}
               className="dock-close"
             >
               ✕
@@ -144,18 +146,19 @@ export default function MascotDockClient({
             {!signedIn ? (
               <div style={{ display: "grid", gap: ".9rem" }}>
                 <p style={{ margin: 0, color: "var(--ink-2)", fontSize: ".9375rem", lineHeight: 1.6 }}>
-                  Ask anything — a bug, a brain you wish existed, or what any of
-                  this is. Messages are a thread, so an answer comes back here.
+                  {t(
+                    "Ask anything — a bug, a brain you wish existed, or what any of this is. Messages are a thread, so an answer comes back here.",
+                  )}
                 </p>
                 <p style={{ margin: 0, color: "var(--ink-2)", fontSize: ".9375rem", lineHeight: 1.6 }}>
-                  It needs an account, only so the reply has somewhere to land.
+                  {t("It needs an account, only so the reply has somewhere to land.")}
                 </p>
                 <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
                   <Link className="btn" href="/sign-in?next=/chat">
-                    Sign in and ask
+                    {t("Sign in and ask")}
                   </Link>
                   <Link className="btn btn-ghost" href="/basics">
-                    Or read the basics
+                    {t("Or read the basics")}
                   </Link>
                 </div>
               </div>
@@ -197,22 +200,23 @@ export default function MascotDockClient({
                           <strong>{a.title}</strong>
                           <span className="dock-ach-blurb">{a.blurb}</span>
                         </span>
-                        <span className="mono dock-ach-new">new</span>
+                        <span className="mono dock-ach-new">{t("new")}</span>
                       </Link>
                     ))}
                   </div>
                 )}
                 {messages.length === 0 ? (
                   <p style={{ margin: "0 0 1rem", color: "var(--ink-2)", fontSize: ".9375rem", lineHeight: 1.6 }}>
-                    Nothing here yet. One full message beats five pings: what
-                    happened, where, and what you expected instead.
+                    {t(
+                      "Nothing here yet. One full message beats five pings: what happened, where, and what you expected instead.",
+                    )}
                   </p>
                 ) : (
                   <div className="dock-thread">
                     {messages.map((m) => (
                       <div key={m.id} className="dock-msg" data-author={m.author}>
                         <p className="mono dock-msg-at">
-                          {m.author === "operator" ? "mozg" : "you"} · {m.at}
+                          {m.author === "operator" ? "mozg" : t("you")} · {m.at}
                         </p>
                         <p className="dock-msg-body">{m.body}</p>
                       </div>
@@ -226,7 +230,7 @@ export default function MascotDockClient({
                 {!operator && <AutoRefresh active={open} intervalMs={15_000} />}
                 <p className="mono dock-foot">
                   <Link className="linkish" href="/chat">
-                    open the full thread →
+                    {t("open the full thread →")}
                   </Link>
                 </p>
               </>

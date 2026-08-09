@@ -1,11 +1,14 @@
+import { translator } from "@/lib/t";
+
 /** Skeleton of the catalogue: heading, chip rows, then the card grid. */
-export default function Loading() {
+export default async function Loading() {
+  const t = await translator();
   return (
     <main
       className="shell"
       style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}
       aria-busy="true"
-      aria-label="Loading public brains"
+      aria-label={t("Loading public brains")}
     >
       <div className="skel" style={{ height: ".75rem", width: "18rem" }} />
       <div className="skel" style={{ height: "3rem", width: "min(26rem, 80%)", margin: "1rem 0" }} />

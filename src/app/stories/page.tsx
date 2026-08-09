@@ -64,7 +64,7 @@ export default async function StoriesPage() {
           {t("The people below are composites, and the portraits are drawn — not customers, and not photographs pretending to be. The situations and the mechanics are real.")}</p>
 
         <nav
-          aria-label="The stories"
+          aria-label={t("The stories")}
           style={{
             marginTop: "clamp(2rem, 5vw, 3rem)",
             display: "grid",

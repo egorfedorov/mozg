@@ -40,7 +40,7 @@ export default async function VsSkillsPage() {
           <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 1")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("You pay for every word, every session — needed or not.")}</h2>
-          <svg viewBox="0 0 720 200" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A file dumps whole into context; a brain returns three notes">
+          <svg viewBox="0 0 720 200" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label={t("A file dumps whole into context; a brain returns three notes")}>
             <rect x="30" y="30" width="120" height="140" fill="none" stroke="#14161a" strokeWidth="2" />
             {Array.from({ length: 9 }).map((_, i) => (
               <line key={i} x1="42" y1={46 + i * 14} x2="138" y2={46 + i * 14} stroke="#14161a" strokeWidth="2" opacity="0.35" />
@@ -73,7 +73,7 @@ export default async function VsSkillsPage() {
           <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Error № 2")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("The docs changed on Tuesday. Your agent finds out never.")}</h2>
-          <svg viewBox="0 0 720 170" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A file stays flat while docs change; a brain re-reads and re-examines">
+          <svg viewBox="0 0 720 170" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label={t("A file stays flat while docs change; a brain re-reads and re-examines")}>
             <path d="M 40 60 L 320 60" stroke="#14161a" strokeWidth="2" strokeDasharray="6 5" />
             <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("file: same bytes, month after month")}</text>
             <path d="M 40 130 C 120 128, 140 100, 200 104 C 260 108, 280 80, 340 78" stroke="#3ec300" strokeWidth="3" fill="none" />

@@ -120,7 +120,7 @@ export default async function BrainMascot({ facts, slug }: { facts: MascotFacts;
   return (
     <section
       className="panel"
-      aria-label="What this brain says about itself"
+      aria-label={t("What this brain says about itself")}
       style={{ display: "grid", gap: "1rem" }}
     >
       <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>

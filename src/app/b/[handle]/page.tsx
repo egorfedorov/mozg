@@ -182,22 +182,22 @@ export default async function ProfilePage({
         ])}</p>
 
         <Stats>
-          <Stat label="Published" value={String(stats.public_brains)} note="in the catalogue" />
+          <Stat label={t("Published")} value={String(stats.public_brains)} note={t("in the catalogue")} />
           {/* A stranger gets the published total only. The all-brains figure
               would put the size of someone's private shelf on a public page. */}
           <Stat
-            label="Notes"
+            label={t("Notes")}
             value={(isMe
               ? stats.notes
               : published.reduce((n, b) => n + b.note_count, 0)
             ).toLocaleString()}
             note={isMe ? "across all your brains" : "in their published brains"}
           />
-          <Stat label="Badges" value={`${done.length} / ${CATALOG.length}`} href={isMe ? "/achievements" : undefined} />
-          <Stat label="Duels won" value={String(stats.duels)} note="outscored a brain's own exam" />
-          <Stat label="Best streak" value={`${stats.best_streak}d`} note="studying, in a row" />
+          <Stat label={t("Badges")} value={`${done.length} / ${CATALOG.length}`} href={isMe ? "/achievements" : undefined} />
+          <Stat label={t("Duels won")} value={String(stats.duels)} note={t("outscored a brain's own exam")} />
+          <Stat label={t("Best streak")} value={`${stats.best_streak}d`} note={t("studying, in a row")} />
           {stats.best_score > 0 && (
-            <Stat label="Best exam" value={`${stats.best_score}%`} note="their strongest brain" />
+            <Stat label={t("Best exam")} value={`${stats.best_score}%`} note={t("their strongest brain")} />
           )}
         </Stats>
 

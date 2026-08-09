@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useT } from "@/lib/t-client";
 import { createStyleBrain } from "./style-actions";
 
 const FIELDS: { key: string; label: string; hint: string; placeholder: string }[] = [
@@ -63,11 +64,12 @@ const FIELDS: { key: string; label: string; hint: string; placeholder: string }[
 
 export default function StyleForm() {
   const [state, action, pending] = useActionState(createStyleBrain, null);
+  const t = useT();
 
   return (
     <form action={action} style={{ display: "grid", gap: "1.25rem", maxWidth: "44rem" }}>
       <label style={{ display: "grid", gap: ".3rem" }}>
-        <span style={{ fontWeight: 600 }}>Style name</span>
+        <span style={{ fontWeight: 600 }}>{t("Style name")}</span>
         <input
           name="name"
           required
@@ -99,11 +101,12 @@ export default function StyleForm() {
 
       <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
         <button className="btn" disabled={pending}>
-          {pending ? "Building the brain…" : "Create — then drop your works in"}
+          {pending ? t("Building the brain…") : t("Create — then drop your works in")}
         </button>
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-          every section optional — the next step is uploading artworks, and mozg
-          writes the rules it sees in them
+          {t(
+            "every section optional — the next step is uploading artworks, and mozg writes the rules it sees in them",
+          )}
         </span>
       </div>
     </form>

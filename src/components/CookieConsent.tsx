@@ -11,6 +11,8 @@ import {
   type Consent,
 } from "@/lib/consent";
 import { useConsent } from "@/components/useConsent";
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 
 /**
  * The cookie bar, and the panel behind "Customize".
@@ -34,6 +36,7 @@ export default function CookieConsent() {
   // `undefined` until the cookie has been read — first paint must not flash a
   // bar at someone who decided months ago.
   const decided = useConsent();
+  const t = useT();
   const [panel, setPanel] = useState(false);
   const [draft, setDraft] = useState<Consent | null>(null);
 
@@ -64,39 +67,41 @@ export default function CookieConsent() {
     <div
       role="dialog"
       aria-modal={panel || undefined}
-      aria-label="Cookie preferences"
+      aria-label={t("Cookie preferences")}
       className="cookie-bar"
     >
       <div className="cookie-card">
         <p className="eyebrow" style={{ margin: 0 }}>
-          🍪 Cookie preferences
+          {t("🍪 Cookie preferences")}
         </p>
         <p style={{ color: "var(--ink-2)", margin: ".5rem 0 0", maxWidth: "58ch" }}>
-          Essential cookies keep you signed in and remember this choice.
-          Everything else is optional and off until you say otherwise.{" "}
-          <Link href="/cookies" style={{ textDecoration: "underline" }}>
-            What each one does
-          </Link>
-          .
+          {markup(
+            t(
+              "Essential cookies keep you signed in and remember this choice. Everything else is optional and off until you say otherwise. <0>What each one does</0>.",
+            ),
+            [<Link href="/cookies" style={{ textDecoration: "underline" }} key="s0" />],
+          )}
         </p>
 
         {panel && (
           <div className="cookie-rows">
             <Toggle
-              label="Essential"
-              note="Sign-in session, this consent record. Without them the site cannot work."
+              label={t("Essential")}
+              note={t(
+                "Sign-in session, this consent record. Without them the site cannot work.",
+              )}
               on
               locked
             />
             <Toggle
-              label="Analytics"
-              note="Which pages get read, where people give up. PostHog, aggregate."
+              label={t("Analytics")}
+              note={t("Which pages get read, where people give up. PostHog, aggregate.")}
               on={current.analytics}
               onChange={(v) => setDraft({ ...current, analytics: v })}
             />
             <Toggle
-              label="Functional"
-              note="Remembered choices — dismissed banners, small preferences."
+              label={t("Functional")}
+              note={t("Remembered choices — dismissed banners, small preferences.")}
               on={current.functional}
               onChange={(v) => setDraft({ ...current, functional: v })}
             />
@@ -107,10 +112,10 @@ export default function CookieConsent() {
           {panel ? (
             <>
               <button type="button" className="btn" onClick={() => save(current)}>
-                Save preferences
+                {t("Save preferences")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => save(ALL_ON)}>
-                Accept all
+                {t("Accept all")}
               </button>
               {decided && (
                 <button
@@ -118,20 +123,20 @@ export default function CookieConsent() {
                   className="btn btn-ghost"
                   onClick={() => setPanel(false)}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
               )}
             </>
           ) : (
             <>
               <button type="button" className="btn" onClick={() => save(ALL_ON)}>
-                Accept all
+                {t("Accept all")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => save(ESSENTIAL_ONLY)}>
-                Reject optional
+                {t("Reject optional")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setPanel(true)}>
-                Customize
+                {t("Customize")}
               </button>
             </>
           )}
@@ -154,6 +159,10 @@ function Toggle({
   locked?: boolean;
   onChange?: (v: boolean) => void;
 }) {
+  // Its own translator rather than three more props: the label and the note
+  // come from the caller because they name the specific cookie, but "on" and
+  // "off" belong to the switch and nowhere else.
+  const t = useT();
   return (
     <label className="cookie-row" data-locked={locked || undefined}>
       <span style={{ minWidth: 0 }}>
@@ -162,7 +171,7 @@ function Toggle({
       </span>
       <span className="cookie-switch">
         <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
-          {locked ? "always on" : on ? "on" : "off"}
+          {locked ? t("always on") : on ? t("on") : t("off")}
         </span>
         <input
           type="checkbox"

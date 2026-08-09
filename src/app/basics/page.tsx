@@ -152,7 +152,7 @@ export default async function BasicsPage() {
               <svg
                 viewBox="0 0 414 150"
                 role="img"
-                aria-label="Three agents connect through one MCP socket to a brain; the brain answers with a few notes"
+                aria-label={t("Three agents connect through one MCP socket to a brain; the brain answers with a few notes")}
                 style={{ width: "100%", height: "auto", color: "var(--ink)", display: "block" }}
               >
                 <defs>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useRouter } from "next/navigation";
 import { generate } from "./actions";
 
@@ -52,6 +54,7 @@ export default function GenerateBox({
     return () => clearInterval(t);
   }, [live, router]);
 
+  const t = useT();
   const broke = !free && balanceCents < priceCents;
 
   return (
@@ -60,7 +63,7 @@ export default function GenerateBox({
         <input type="hidden" name="handle" value={handle} />
         <input type="hidden" name="slug" value={slug} />
         <label className="eyebrow" htmlFor="gen-prompt">
-          What should it draw?
+          {t("What should it draw?")}
         </label>
         <textarea
           id="gen-prompt"
@@ -68,22 +71,28 @@ export default function GenerateBox({
           rows={3}
           required
           maxLength={600}
-          placeholder="a fox sitting and reading a small book"
+          placeholder={t("a fox sitting and reading a small book")}
           className="gen-input"
         />
         <div className="gen-actions">
           <button className="btn" disabled={pending || broke}>
-            {pending ? "Sending…" : free ? "Generate — free, your style" : `Generate — ${priceCents}¢`}
+            {pending
+              ? t("Sending…")
+              : free
+                ? t("Generate — free, your style")
+                : markup(t("Generate — <0/>¢"), [priceCents])}
           </button>
           <span className="mono gen-note">
             {free
-              ? "your own style, so nothing is charged"
-              : `${artistCents}¢ of that goes to the artist, every time`}
+              ? t("your own style, so nothing is charged")
+              : markup(t("<0/>¢ of that goes to the artist, every time"), [artistCents])}
           </span>
         </div>
         {broke && (
           <p className="mono gen-err">
-            Your balance is {(balanceCents / 100).toFixed(2)} — top up in settings.
+            {markup(t("Your balance is <0/> — top up in settings."), [
+              (balanceCents / 100).toFixed(2),
+            ])}
           </p>
         )}
         {state?.error && <p className="mono gen-err">{state.error}</p>}
@@ -98,7 +107,7 @@ export default function GenerateBox({
                 <img src={`/api/generations/${j.id}/image`} alt={j.prompt} loading="lazy" />
               ) : (
                 <span className="gen-placeholder mono" data-failed={j.status === "failed"}>
-                  {j.status === "failed" ? (j.error ?? "failed") : "drawing…"}
+                  {j.status === "failed" ? (j.error ?? t("failed")) : t("drawing…")}
                 </span>
               )}
               <figcaption className="mono">{j.prompt}</figcaption>
@@ -109,7 +118,9 @@ export default function GenerateBox({
 
       {live && (
         <p className="mono gen-note" style={{ marginTop: ".75rem" }}>
-          Working — this takes up to a minute. You can leave the page; it will be here.
+          {t(
+            "Working — this takes up to a minute. You can leave the page; it will be here.",
+          )}
         </p>
       )}
     </section>

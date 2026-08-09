@@ -20,11 +20,13 @@ export const metadata = {
  */
 
 function Step({
+  t,
   n,
   title,
   why,
   children,
 }: {
+  t: (english: string) => string;
   n: string;
   title: string;
   why: string;
@@ -54,7 +56,7 @@ function Step({
       <div style={{ flex: 1, minWidth: 0 }}>
         <h2 className="h2" style={{ margin: "0 0 .35rem" }}>{title}</h2>
         <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: "0 0 1rem" }}>
-          why: {why}
+          {t("why:")} {why}
         </p>
         {children}
       </div>
@@ -62,14 +64,14 @@ function Step({
   );
 }
 
-function Term({ lines }: { lines: React.ReactNode[] }) {
+function Term({ lines, t }: { lines: React.ReactNode[]; t: (english: string) => string }) {
   return (
     <div className="term" style={{ marginTop: ".75rem" }}>
       <div className="term-bar">
         <span className="term-dot" />
         <span className="term-dot" />
         <span className="term-dot" />
-        <span style={{ marginLeft: ".5rem" }}>terminal</span>
+        <span style={{ marginLeft: ".5rem" }}>{t("terminal")}</span>
       </div>
       {lines.map((l, i) => (
         <div key={i}>{l}</div>
@@ -116,14 +118,14 @@ export default async function StartPage() {
           </div>
         </section>
 
-        <Step n="1" title="Make an account" why="the free tier is real: read the catalogue, connect agents, one trial brain — no card.">
+        <Step n="1" t={t} title={t("Make an account")} why={t("the free tier is real: read the catalogue, connect agents, one trial brain — no card.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {markup(t("<0>mozg.sh/sign-in</0> — email, Google or GitHub. You land in your workspace: a left rail with your brains, balance and tokens."), [
             <Link href="/sign-in" style={{ textDecoration: "underline" }} key="s0" />,
           ])}</p>
         </Step>
 
-        <Step n="2" title="Take a brain from the catalogue" why="someone already built and examined the brain for your stack — starting from a proven one beats building blind.">
+        <Step n="2" t={t} title={t("Take a brain from the catalogue")} why={t("someone already built and examined the brain for your stack — starting from a proven one beats building blind.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {markup(t("Open the <0>catalogue</0> and pick your stack — Next.js App Router, Expo, Svelte 5, Tailwind v4, the MCP spec. Every card shows the same three honest numbers:"), [
             <Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />,
@@ -146,12 +148,13 @@ export default async function StartPage() {
           ])}</p>
         </Step>
 
-        <Step n="3" title="Connect your agent" why="one command; after it, every agent session can search your shelf without you pasting anything.">
+        <Step n="3" t={t} title={t("Connect your agent")} why={t("one command; after it, every agent session can search your shelf without you pasting anything.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {markup(t("Grab a token at <0>settings → tokens</0>, then in your terminal:"), [
             <Link href="/settings/tokens" style={{ textDecoration: "underline" }} key="s0" />,
           ])}</p>
           <Term
+            t={t}
             lines={[
               <span key="1">{markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp \\"), [
                 <span className="c" key="s0" />,
@@ -167,10 +170,11 @@ export default async function StartPage() {
           ])}</p>
         </Step>
 
-        <Step n="4" title="Prove it works" why="never trust wiring you haven't seen carry current.">
+        <Step n="4" t={t} title={t("Prove it works")} why={t("never trust wiring you haven't seen carry current.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {t("Ask your agent something spec-level from the brain you added:")}</p>
           <Term
+            t={t}
             lines={[
               <span key="1">{markup(t("<0>&gt;</0> what does a route handler have to export for streaming?"), [
                 <span className="u" key="s0" />,
@@ -188,7 +192,7 @@ export default async function StartPage() {
           ])}</p>
         </Step>
 
-        <Step n="5" title="Build your own — from one link" why="your project's real knowledge isn't in any public doc; the trial brain shows the whole loop before you pay anything.">
+        <Step n="5" t={t} title={t("Build your own — from one link")} why={t("your project's real knowledge isn't in any public doc; the trial brain shows the whole loop before you pay anything.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {markup(t("<0>New brain</0> → paste one documentation URL. The crawler finds every page (GitHub repo, llms.txt, sitemap, or a link walk), reads them into searchable notes, drafts a goal — and then the important part happens:"), [
             <Link href="/brains/new" style={{ textDecoration: "underline" }} key="s0" />,
@@ -213,7 +217,7 @@ export default async function StartPage() {
           ])}</p>
         </Step>
 
-        <Step n="6" title="Let it get smarter — and learn it yourself" why="a brain is not a file: it improves from use, and you can study the same material your agent queries.">
+        <Step n="6" t={t} title={t("Let it get smarter — and learn it yourself")} why={t("a brain is not a file: it improves from use, and you can study the same material your agent queries.")}>
           <p style={{ color: "var(--ink-2)", maxWidth: "60ch" }}>
             {markup(t("From here everything is automatic: searches that find nothing become exam questions, corrections your agents file arrive for your review, re-reads keep sources current, and <0>/mind</0> shows everything your agents can know on one screen. And the same notes double as a human course — <1>learn.mozg.sh</1>: read, recall, quiz, streaks, a certificate at 80%, and a scoreboard against your own agent's exam score."), [
             <Link href="/mind" style={{ textDecoration: "underline" }} key="s0" />,

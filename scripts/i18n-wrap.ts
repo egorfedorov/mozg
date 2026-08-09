@@ -50,6 +50,40 @@ const INLINE = new Set([
   "Link",
 ]);
 
+/**
+ * Attributes whose value is a sentence somebody reads or hears.
+ *
+ * The text scanner cannot see these — `title="Make an account"` is an
+ * attribute, not a child — and for a long time nothing did: six headings on
+ * /start, the five cards on the landing page, and every alt text on /about
+ * were English in eleven languages while the paragraphs around them were not.
+ *
+ * `alt` and `aria-label` are in here on purpose. A screen reader is somebody
+ * reading the page, and leaving them out is the accessible version of not
+ * translating it at all.
+ *
+ * Everything absent from this list — href, className, name, id, type, value —
+ * is machinery, and a translated className is a broken page.
+ */
+const HUMAN_ATTRS = new Set([
+  "alt", "aria-label", "blurb", "caption", "description", "empty", "heading",
+  "hint", "label", "lede", "legend", "note", "placeholder", "sub", "summary",
+  "title", "tooltip", "why",
+]);
+
+/**
+ * An attribute value worth translating.
+ *
+ * Stricter than isProse: a lone lowercase token in a `title` is a slug or a
+ * key nine times out of ten, and `alt=""` on a decorative image must stay
+ * exactly that.
+ */
+function isProseAttr(text: string): boolean {
+  if (text.trim().length < 3) return false;
+  if (!/\p{L}{2,}/u.test(text)) return false;
+  return !/^[a-z0-9_-]+$/.test(text.trim());
+}
+
 /** JSX text worth translating: has a letter, is not a lone entity or digit. */
 function isProse(raw: string): boolean {
   const text = raw.trim();
@@ -262,6 +296,24 @@ function transform(source: string, file: string): { output: string; wrapped: num
       skipped.push(`${file}:${line + 1}  (a callback parameter named "t" shadows the translator)`);
       return;
     }
+    // Attributes are wrapped wherever they are found, independently of the
+    // element's children — a <Card title="…" blurb="…" /> is self-closing and
+    // never reaches the text branches below at all.
+    if (
+      ts.isJsxAttribute(node) &&
+      node.initializer &&
+      ts.isStringLiteral(node.initializer) &&
+      HUMAN_ATTRS.has(node.name.getText(sf)) &&
+      isProseAttr(node.initializer.text)
+    ) {
+      edits.push({
+        start: node.initializer.getStart(sf),
+        end: node.initializer.getEnd(),
+        text: `{t("${literal(node.initializer.text)}")}`,
+      });
+      return;
+    }
+
     if (ts.isJsxElement(node)) {
       const tag = node.openingElement.tagName.getText(sf);
       // Code is never prose. A standalone <code>npm run worker</code> would

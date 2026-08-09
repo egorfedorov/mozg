@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { renderSnippet, type Client } from "@/lib/clients";
 import { mintToken } from "./token-action";
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
+import { msg } from "@/lib/msg";
 
 const FAMILY_LABEL: Record<Client["family"], string> = {
-  cli: "Terminal",
-  editor: "Editor",
-  desktop: "Desktop",
+  cli: msg("Terminal"),
+  editor: msg("Editor"),
+  desktop: msg("Desktop"),
 };
 
 export default function ClientList({
@@ -21,6 +24,7 @@ export default function ClientList({
   signedIn: boolean;
 }) {
   const [active, setActive] = useState(clients[0].id);
+  const t = useT();
   const [copied, setCopied] = useState(false);
   // Filled in only when the reader asks for it, and only in their own browser.
   // Signed out, the page is public and the placeholder is the whole point.
@@ -57,7 +61,7 @@ export default function ClientList({
           return (
             <div key={family}>
               <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
-                {FAMILY_LABEL[family]}
+                {t(FAMILY_LABEL[family])}
               </p>
               <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
                 {inFamily.map((c) => (
@@ -98,7 +102,7 @@ export default function ClientList({
           }}
         >
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-            {client.path ?? `${client.name} · run this`}
+            {client.path ?? markup(t("<0/> · run this"), [client.name])}
           </span>
           <a
             className="navlink"
@@ -107,7 +111,7 @@ export default function ClientList({
             rel="noreferrer noopener"
             style={{ fontSize: ".75rem" }}
           >
-            {client.name} docs ↗
+            {markup(t("<0/> docs ↗"), [client.name])}
           </a>
         </div>
 
@@ -141,7 +145,7 @@ export default function ClientList({
                 borderColor: copied ? "var(--color-riso-green)" : "var(--color-riso-yellow)",
               }}
             >
-              {copied ? "Copied" : token ? "Copy — ready to run" : "Copy"}
+              {copied ? t("Copied") : token ? t("Copy — ready to run") : t("Copy")}
             </button>
 
             {signedIn && !token && (
@@ -155,7 +159,7 @@ export default function ClientList({
                   borderColor: "var(--paper)",
                 }}
               >
-                {minting ? "Making…" : "Make a token and fill it in"}
+                {minting ? t("Making…") : t("Make a token and fill it in")}
               </button>
             )}
           </div>
@@ -169,25 +173,28 @@ export default function ClientList({
           <div className="c" style={{ marginTop: ".9rem" }}>
             {token ? (
               <>
-                token filled in — this is the only time it is shown. It is also on{" "}
-                <Link href="/settings/tokens" style={{ textDecoration: "underline" }}>
-                  your tokens page
-                </Link>{" "}
-                as {token.slice(0, 12)}…, where you can revoke it.
+                {markup(
+                  t(
+                    "token filled in — this is the only time it is shown. It is also on <0>your tokens page</0> as <1/>…, where you can revoke it.",
+                  ),
+                  [
+                    <Link href="/settings/tokens" style={{ textDecoration: "underline" }} key="s0" />,
+                    token.slice(0, 12),
+                  ],
+                )}
               </>
             ) : signedIn ? (
               <>
-                replace YOUR_TOKEN, or press the button and we will —{" "}
-                <Link href="/settings/tokens" style={{ textDecoration: "underline" }}>
-                  all your tokens
-                </Link>
+                {markup(
+                  t("replace YOUR_TOKEN, or press the button and we will — <0>all your tokens</0>"),
+                  [<Link href="/settings/tokens" style={{ textDecoration: "underline" }} key="s0" />],
+                )}
               </>
             ) : (
               <>
-                replace YOUR_TOKEN —{" "}
-                <Link href="/sign-in" style={{ textDecoration: "underline" }}>
-                  sign in to make one
-                </Link>
+                {markup(t("replace YOUR_TOKEN — <0>sign in to make one</0>"), [
+                  <Link href="/sign-in" style={{ textDecoration: "underline" }} key="s0" />,
+                ])}
               </>
             )}
           </div>

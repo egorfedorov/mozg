@@ -25,6 +25,7 @@ import { structured } from "../src/lib/claude";
 import { env } from "../src/lib/env";
 import { LOCALES, DEFAULT_LOCALE } from "../src/lib/locales";
 import { key } from "../src/lib/t";
+import { normalize } from "../src/lib/msg";
 
 // src/lib too: a few marked strings live beside the data they describe —
 // the field labels in topics.ts, for one. Only t() and msg() calls are
@@ -137,6 +138,10 @@ Rules:
   that must stay in Latin script: <0>brain</0> keeps its slot and keeps the
   word, because the slot is a link or a bold run and dropping it silently
   loses the markup.
+- Personal names and place names stay in Latin script, spelled as written:
+  Egor Fedorov, Uraanghay Saqa, Sakha Republic. Translate the sentence around
+  them — "Egor Fedorov, drawn as a riso print" keeps the name and translates
+  the description. A transliterated name is a different person's name.
 - Keep the register informal-but-precise. Address the reader directly if your
   language has that choice.
 - Preserve any leading or trailing whitespace, and any punctuation that ends
@@ -261,13 +266,25 @@ async function main() {
   const failed: string[] = [];
   const files = (await Promise.all(ROOTS.map(sourceFiles))).flat();
   const english = new Map<string, string>();
+  // The subset the browser needs. A client component cannot call the server's
+  // translator, so its strings are shipped to it as a second, smaller file —
+  // and this is the only place that knows which strings those are.
+  const clientKeys = new Set<string>();
   for (const file of files) {
-    for (const text of stringsIn(await readFile(file, "utf8"))) english.set(key(text), text);
+    const source = await readFile(file, "utf8");
+    const client = source.includes('"use client"');
+    for (const text of stringsIn(source)) {
+      english.set(key(text), text);
+      if (client) clientKeys.add(key(text));
+    }
   }
-  console.log(`${english.size} translatable string(s) across ${files.length} file(s)\n`);
+  console.log(
+    `${english.size} translatable string(s) across ${files.length} file(s)` +
+      ` (${clientKeys.size} of them in client components)\n`,
+  );
   if (!english.size) return;
 
-  await mkdir(LOCALES_DIR, { recursive: true });
+  await mkdir(join(LOCALES_DIR, "client"), { recursive: true });
   const targets = LOCALES.filter(
     (l) => l.code !== DEFAULT_LOCALE && (only ? l.code === only : true),
   );
@@ -323,6 +340,18 @@ async function main() {
 
     await writeFile(path, `${JSON.stringify(next, null, 2)}\n`, "utf8");
     console.log(`    → ${path} (${Object.keys(next).length} strings)`);
+
+    // The browser's copy, keyed by the English itself. Written from the file
+    // just above rather than from a second translation run, so the same
+    // sentence cannot come out two different ways on the two halves of a page.
+    const clientDict: Record<string, string> = {};
+    for (const k of clientKeys) {
+      const text = english.get(k);
+      if (text && next[k]) clientDict[normalize(text)] = next[k];
+    }
+    const clientPath = join(LOCALES_DIR, "client", `${locale.code}.json`);
+    await writeFile(clientPath, `${JSON.stringify(clientDict, null, 2)}\n`, "utf8");
+    console.log(`    → ${clientPath} (${Object.keys(clientDict).length} strings)`);
 
     // Say what did not land. The count on the line above is what the file
     // holds, not what was asked for, so a string the model kept refusing used

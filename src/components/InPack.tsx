@@ -36,7 +36,7 @@ export default async function InPack({
       className="panel"
       style={{ borderLeft: `4px solid var(--color-riso-${held ? "green" : "blue"})` }}
     >
-      <p className="eyebrow">{held ? "You have this" : "Also in a pack"}</p>
+      <p className="eyebrow">{held ? t("You have this") : t("Also in a pack")}</p>
 
       {held ? (
         <p style={{ margin: ".4rem 0 .75rem" }}>
@@ -46,16 +46,29 @@ export default async function InPack({
         ])}</p>
       ) : (
         <p style={{ margin: ".4rem 0 .75rem" }}>
-          <strong>{t(pack.title)}</strong> is this brain and {brains - 1} others
-          the same job needs — bought once at{" "}
-          <strong>{formatCents(pack.priceCents)}</strong>, shared with{" "}
-          {pack.seats - 1} colleagues, and it does not expire.
+          {markup(
+            t(
+              "<0/> is this brain and <1/> others the same job needs — bought once at <2/>, shared with <3/> colleagues, and it does not expire.",
+            ),
+            [
+              <strong key="s0">{t(pack.title)}</strong>,
+              brains - 1,
+              <strong key="s2">{formatCents(pack.priceCents)}</strong>,
+              pack.seats - 1,
+            ],
+          )}
           {singleCents > 0 && (
             <>
               {" "}
-              This one alone is {formatCents(singleCents)}, so the pack pays for
-              itself at{" "}
-              {Math.max(2, Math.ceil(pack.priceCents / singleCents))} of them.
+              {markup(
+                t(
+                  "This one alone is <0/>, so the pack pays for itself at <1/> of them.",
+                ),
+                [
+                  formatCents(singleCents),
+                  Math.max(2, Math.ceil(pack.priceCents / singleCents)),
+                ],
+              )}
             </>
           )}
         </p>

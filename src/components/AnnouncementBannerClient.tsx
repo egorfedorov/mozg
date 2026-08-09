@@ -3,6 +3,9 @@
 import { useState } from "react";
 import type { Announcement } from "@/lib/announcements";
 import { useTucked } from "./useTucked";
+import { useT } from "@/lib/t-client";
+import { msg } from "@/lib/msg";
+import { markup } from "@/lib/markup";
 
 /**
  * Maintenance is loud, news is not. A degraded queue has to interrupt — it
@@ -11,9 +14,9 @@ import { useTucked } from "./useTucked";
  * status bar that moves reads as an ad.
  */
 const TONE: Record<Announcement["kind"], { bg: string; fg: string; label: string }> = {
-  maintenance: { bg: "var(--color-riso-red)", fg: "var(--paper)", label: "maintenance" },
-  news: { bg: "var(--color-riso-green)", fg: "var(--ink)", label: "new" },
-  notice: { bg: "var(--ink-2)", fg: "var(--paper)", label: "notice" },
+  maintenance: { bg: "var(--color-riso-red)", fg: "var(--paper)", label: msg("maintenance") },
+  news: { bg: "var(--color-riso-green)", fg: "var(--ink)", label: msg("new") },
+  notice: { bg: "var(--ink-2)", fg: "var(--paper)", label: msg("notice") },
 };
 
 export default function AnnouncementBannerClient({
@@ -23,6 +26,7 @@ export default function AnnouncementBannerClient({
 }) {
   const [shown, setShown] = useState(true);
   const tucked = useTucked();
+  const t = useT();
   if (!shown) return null;
 
   const tone = TONE[announcement.kind];
@@ -54,7 +58,7 @@ export default function AnnouncementBannerClient({
           className="mono"
           style={{ textTransform: "uppercase", letterSpacing: ".08em", opacity: 0.8 }}
         >
-          {tone.label}
+          {t(tone.label)}
         </span>
         <span style={{ opacity: 0.55 }}>·</span>
         <strong style={{ fontWeight: 600 }}>{announcement.title}</strong>
@@ -77,7 +81,9 @@ export default function AnnouncementBannerClient({
         )}
         {announcement.ends_at && announcement.kind === "maintenance" && (
           <span className="mono" style={{ opacity: 0.75 }}>
-            until {new Date(announcement.ends_at).toISOString().slice(11, 16)} UTC
+            {markup(t("until <0/> UTC"), [
+              new Date(announcement.ends_at).toISOString().slice(11, 16),
+            ])}
           </span>
         )}
         <a
@@ -85,7 +91,7 @@ export default function AnnouncementBannerClient({
           className="mono"
           style={{ marginLeft: "auto", color: tone.fg, textDecoration: "underline" }}
         >
-          all news →
+          {t("all news →")}
         </a>
         <button
           onClick={() => {
@@ -96,7 +102,7 @@ export default function AnnouncementBannerClient({
             }
             setShown(false);
           }}
-          aria-label="Dismiss"
+          aria-label={t("Dismiss")}
           style={{
             background: "none",
             border: 0,

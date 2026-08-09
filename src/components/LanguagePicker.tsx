@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+
 import { useEffect, useRef, useState } from "react";
 import { LOCALES, writeLocale } from "@/lib/locales";
 
@@ -15,6 +17,7 @@ import { LOCALES, writeLocale } from "@/lib/locales";
  * in English is a picker for people who can already read the site.
  */
 export default function LanguagePicker({ current }: { current: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -48,8 +51,8 @@ export default function LanguagePicker({ current }: { current: string }) {
         className="lang-button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Change language"
-        title="Change language"
+        aria-label={t("Change language")}
+        title={t("Change language")}
         onClick={() => setOpen((v) => !v)}
       >
         <LanguageIcon />

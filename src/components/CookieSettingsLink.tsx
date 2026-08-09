@@ -1,6 +1,7 @@
 "use client";
 
 import { CONSENT_OPEN_EVENT } from "@/lib/consent";
+import { useT } from "@/lib/t-client";
 
 /**
  * "Cookie Settings" in the footer. A button styled as a link because that is
@@ -8,6 +9,7 @@ import { CONSENT_OPEN_EVENT } from "@/lib/consent";
  * whole reason consent counts as withdrawable.
  */
 export default function CookieSettingsLink() {
+  const t = useT();
   return (
     <button
       type="button"
@@ -23,7 +25,7 @@ export default function CookieSettingsLink() {
         textAlign: "left",
       }}
     >
-      Cookie settings
+      {t("Cookie settings")}
     </button>
   );
 }

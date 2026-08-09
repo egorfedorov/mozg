@@ -1,4 +1,6 @@
 import type { StoryArtKind } from "./stories";
+import { translator } from "@/lib/t";
+import { msg } from "@/lib/msg";
 
 /**
  * One diagram per story.
@@ -13,29 +15,26 @@ import type { StoryArtKind } from "./stories";
  * the reader is looking at, for everybody, not only for a screen reader.
  */
 
-const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => React.ReactNode }> = {
+type Translate = (english: string) => string;
+
+const FIG: Record<
+  StoryArtKind,
+  { caption: string; draw: (accent: string, t: Translate) => React.ReactNode }
+> = {
   style: {
-    caption: "One method, taught once, working in many hands at the same time",
-    draw: (accent) => (
+    caption: msg("One method, taught once, working in many hands at the same time"),
+    draw: (accent, t) => (
       <>
         <rect x="16" y="52" width="86" height="66" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M28 104 L52 68 L70 96 L82 80 L92 104 Z" fill={accent} opacity="0.85" />
-        <text x="59" y="136" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          the work
-        </text>
+        <text x="59" y="136" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("the work")}</text>
 
         <path d="M108 85 L152 85" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
 
         <rect x="158" y="58" width="104" height="54" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="210" y="80" textAnchor="middle" className="mono" fontSize="12" fill="currentColor">
-          the method
-        </text>
-        <text x="210" y="96" textAnchor="middle" className="mono" fontSize="11" fill={accent}>
-          brain · 84%
-        </text>
-        <text x="210" y="136" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          sold, kept, updated
-        </text>
+        <text x="210" y="80" textAnchor="middle" className="mono" fontSize="12" fill="currentColor">{t("the method")}</text>
+        <text x="210" y="96" textAnchor="middle" className="mono" fontSize="11" fill={accent}>{t("brain · 84%")}</text>
+        <text x="210" y="136" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("sold, kept, updated")}</text>
 
         {[0, 1, 2].map((i) => (
           <g key={i}>
@@ -63,36 +62,26 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             />
           </g>
         ))}
-        <text x="338" y="152" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          their agents
-        </text>
+        <text x="338" y="152" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("their agents")}</text>
       </>
     ),
   },
 
   closed: {
-    caption: "A loop that closes inside the building: notes in, answers out, nothing else",
-    draw: (accent) => (
+    caption: msg("A loop that closes inside the building: notes in, answers out, nothing else"),
+    draw: (accent, t) => (
       <>
         <rect x="96" y="18" width="212" height="122" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="7 5" />
-        <text x="202" y="12" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          your machines, your key
-        </text>
+        <text x="202" y="12" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("your machines, your key")}</text>
 
         <rect x="116" y="42" width="74" height="38" fill="none" stroke="currentColor" strokeWidth="2" />
-        <text x="153" y="66" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          the manual
-        </text>
+        <text x="153" y="66" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("the manual")}</text>
 
         <path d="M196 61 L228 61" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
 
         <rect x="234" y="38" width="60" height="46" fill={accent} opacity="0.18" stroke={accent} strokeWidth="2.5" />
-        <text x="264" y="58" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          private
-        </text>
-        <text x="264" y="72" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          brain
-        </text>
+        <text x="264" y="58" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("private")}</text>
+        <text x="264" y="72" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("brain")}</text>
 
         <path d="M264 90 L264 108" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
         {[0, 1, 2].map((i) => (
@@ -109,26 +98,20 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
           />
         ))}
         <path d="M256 119 L172 119" stroke="currentColor" strokeWidth="1.5" opacity="0.6" markerEnd="url(#story-arrow)" />
-        <text x="188" y="150" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          forty people, answered
-        </text>
+        <text x="188" y="150" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("forty people, answered")}</text>
 
         <path d="M330 61 L392 61" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.45" />
-        <text x="362" y="52" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.45">
-          outside
-        </text>
+        <text x="362" y="52" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.45">{t("outside")}</text>
         <path d="M352 74 L372 94 M372 74 L352 94" stroke="var(--color-riso-red)" strokeWidth="2.5" />
       </>
     ),
   },
 
   platform: {
-    caption: "Two brains, different jobs: the platform moves, the studio accumulates",
-    draw: (accent) => (
+    caption: msg("Two brains, different jobs: the platform moves, the studio accumulates"),
+    draw: (accent, t) => (
       <>
-        <text x="16" y="22" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          the platform, weekly
-        </text>
+        <text x="16" y="22" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("the platform, weekly")}</text>
         {[0, 1, 2].map((i) => (
           <rect
             key={i}
@@ -144,16 +127,10 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
         ))}
         <path d="M148 46 L176 46" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
         <rect x="182" y="24" width="116" height="46" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="240" y="43" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          platform brain
-        </text>
-        <text x="240" y="59" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
-          re-read on change
-        </text>
+        <text x="240" y="43" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("platform brain")}</text>
+        <text x="240" y="59" textAnchor="middle" className="mono" fontSize="10" fill={accent}>{t("re-read on change")}</text>
 
-        <text x="16" y="94" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          your team, as you work
-        </text>
+        <text x="16" y="94" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("your team, as you work")}</text>
         {[0, 1, 2].map((i) => (
           <path
             key={i}
@@ -165,47 +142,31 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
           />
         ))}
         <rect x="182" y="96" width="116" height="46" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="240" y="115" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          studio brain
-        </text>
-        <text x="240" y="131" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          written by hand
-        </text>
+        <text x="240" y="115" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("studio brain")}</text>
+        <text x="240" y="131" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("written by hand")}</text>
 
         <path d="M302 50 L332 74" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
         <path d="M302 118 L332 94" stroke="currentColor" strokeWidth="1.5" markerEnd="url(#story-arrow)" />
         <rect x="330" y="62" width="72" height="42" fill="none" stroke="currentColor" strokeWidth="2" />
-        <text x="366" y="80" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          agent
-        </text>
-        <text x="366" y="94" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          asks first
-        </text>
+        <text x="366" y="80" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("agent")}</text>
+        <text x="366" y="94" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("asks first")}</text>
       </>
     ),
   },
 
   maintainer: {
-    caption: "The loop that writes the roadmap: a failed search becomes an exam question",
-    draw: (accent) => (
+    caption: msg("The loop that writes the roadmap: a failed search becomes an exam question"),
+    draw: (accent, t) => (
       <>
         <rect x="18" y="52" width="78" height="44" fill="none" stroke="currentColor" strokeWidth="2" />
-        <text x="57" y="72" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          the docs
-        </text>
-        <text x="57" y="86" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          as written
-        </text>
+        <text x="57" y="72" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("the docs")}</text>
+        <text x="57" y="86" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("as written")}</text>
 
         <path d="M102 74 L138 74" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
 
         <rect x="144" y="46" width="88" height="56" fill="none" stroke="currentColor" strokeWidth="2.5" />
-        <text x="188" y="68" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          brain + exam
-        </text>
-        <text x="188" y="84" textAnchor="middle" className="mono" fontSize="11" fill={accent}>
-          score · gaps
-        </text>
+        <text x="188" y="68" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("brain + exam")}</text>
+        <text x="188" y="84" textAnchor="middle" className="mono" fontSize="11" fill={accent}>{t("score · gaps")}</text>
 
         <path d="M238 74 L282 74" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
         {[0, 1, 2].map((i) => (
@@ -221,9 +182,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             opacity="0.8"
           />
         ))}
-        <text x="336" y="128" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          real agents, asking
-        </text>
+        <text x="336" y="128" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("real agents, asking")}</text>
 
         {/* The return path: what they could not find comes back as a question. */}
         <path
@@ -233,16 +192,14 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
           strokeWidth="2"
           markerEnd="url(#story-arrow-accent)"
         />
-        <text x="262" y="170" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
-          a search that found nothing becomes an exam question
-        </text>
+        <text x="262" y="170" textAnchor="middle" className="mono" fontSize="10" fill={accent}>{t("a search that found nothing becomes an exam question")}</text>
       </>
     ),
   },
 
   agency: {
-    caption: "One brain per project, and each one leaves as a file when the work ends",
-    draw: (accent) => (
+    caption: msg("One brain per project, and each one leaves as a file when the work ends"),
+    draw: (accent, t) => (
       <>
         {Array.from({ length: 12 }, (_, i) => (
           <rect
@@ -257,9 +214,7 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             strokeWidth="1.5"
           />
         ))}
-        <text x="72" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          twelve clients
-        </text>
+        <text x="72" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("twelve clients")}</text>
 
         <path d="M144 74 L182 74" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
 
@@ -276,72 +231,46 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
             opacity="0.35"
           />
         ))}
-        <text x="240" y="52" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          a brain each
-        </text>
-        <text x="240" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          filled as work happens
-        </text>
+        <text x="240" y="52" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("a brain each")}</text>
+        <text x="240" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("filled as work happens")}</text>
 
         <path d="M298 74 L336 74" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
         <rect x="342" y="50" width="56" height="48" fill="none" stroke={accent} strokeWidth="2.5" />
-        <text x="370" y="70" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          CLAUDE
-        </text>
-        <text x="370" y="84" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          .md
-        </text>
-        <text x="370" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">
-          handover
-        </text>
+        <text x="370" y="70" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t("CLAUDE")}</text>
+        <text x="370" y="84" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t(".md")}</text>
+        <text x="370" y="140" textAnchor="middle" className="mono" fontSize="11" fill="currentColor" opacity="0.7">{t("handover")}</text>
       </>
     ),
   },
   solo: {
-    caption: "The beginner's missing instrument: an answer with a date and a score on it",
-    draw: (accent) => (
+    caption: msg("The beginner's missing instrument: an answer with a date and a score on it"),
+    draw: (accent, t) => (
       <>
         <rect x="18" y="40" width="96" height="66" fill="none" stroke="currentColor" strokeWidth="2" />
-        <text x="66" y="70" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          &quot;just do it
-        </text>
-        <text x="66" y="86" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          properly&quot;
-        </text>
+        <text x="66" y="70" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("\"just do it")}</text>
+        <text x="66" y="86" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("properly\"")}</text>
 
         <path d="M120 73 L156 73" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
 
         <rect x="162" y="26" width="104" height="42" fill="none" stroke="var(--color-riso-red)" strokeWidth="2" />
-        <text x="214" y="43" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          from memory
-        </text>
-        <text x="214" y="57" textAnchor="middle" className="mono" fontSize="10" fill="var(--color-riso-red)">
-          undated, unchecked
-        </text>
+        <text x="214" y="43" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t("from memory")}</text>
+        <text x="214" y="57" textAnchor="middle" className="mono" fontSize="10" fill="var(--color-riso-red)">{t("undated, unchecked")}</text>
 
         <rect x="162" y="80" width="104" height="42" fill="none" stroke={accent} strokeWidth="2.5" />
-        <text x="214" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          from the brain
-        </text>
-        <text x="214" y="111" textAnchor="middle" className="mono" fontSize="10" fill={accent}>
-          dated · 84% · cited
-        </text>
+        <text x="214" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t("from the brain")}</text>
+        <text x="214" y="111" textAnchor="middle" className="mono" fontSize="10" fill={accent}>{t("dated · 84% · cited")}</text>
 
         <path d="M272 101 L308 101" stroke="currentColor" strokeWidth="2" markerEnd="url(#story-arrow)" />
         <rect x="314" y="80" width="86" height="42" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <text x="357" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          she can check
-        </text>
-        <text x="357" y="111" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          without reading code
-        </text>
+        <text x="357" y="97" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t("she can check")}</text>
+        <text x="357" y="111" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("without reading code")}</text>
       </>
     ),
   },
 
   everywhere: {
-    caption: "One brain, every agent — and a file to leave with",
-    draw: (accent) => (
+    caption: msg("One brain, every agent — and a file to leave with"),
+    draw: (accent, t) => (
       <>
         {["Claude Code", "Codex", "Cursor"].map((name, i) => (
           <g key={name}>
@@ -360,27 +289,26 @@ const FIG: Record<StoryArtKind, { caption: string; draw: (accent: string) => Rea
         ))}
 
         <rect x="172" y="56" width="92" height="46" fill={accent} opacity="0.12" stroke={accent} strokeWidth="2.5" />
-        <text x="218" y="76" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">
-          one brain
-        </text>
-        <text x="218" y="92" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.75">
-          same note, one date
-        </text>
+        <text x="218" y="76" textAnchor="middle" className="mono" fontSize="11" fill="currentColor">{t("one brain")}</text>
+        <text x="218" y="92" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.75">{t("same note, one date")}</text>
 
         <path d="M270 79 L306 79" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" markerEnd="url(#story-arrow)" />
         <rect x="312" y="58" width="88" height="42" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <text x="356" y="75" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">
-          export, any time
-        </text>
-        <text x="356" y="89" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">
-          works with no account
-        </text>
+        <text x="356" y="75" textAnchor="middle" className="mono" fontSize="10" fill="currentColor">{t("export, any time")}</text>
+        <text x="356" y="89" textAnchor="middle" className="mono" fontSize="10" fill="currentColor" opacity="0.7">{t("works with no account")}</text>
       </>
     ),
   },
 };
 
-export default function StoryArt({ kind, accent }: { kind: StoryArtKind; accent: string }) {
+export default async function StoryArt({
+  kind,
+  accent,
+}: {
+  kind: StoryArtKind;
+  accent: string;
+}) {
+  const t = await translator();
   const fig = FIG[kind];
   return (
     <figure style={{ margin: "1.5rem 0 0", maxWidth: "62ch" }}>
@@ -394,7 +322,7 @@ export default function StoryArt({ kind, accent }: { kind: StoryArtKind; accent:
         <svg
           viewBox="0 0 414 180"
           role="img"
-          aria-label={fig.caption}
+          aria-label={t(fig.caption)}
           style={{ width: "100%", height: "auto", color: "var(--ink)", display: "block" }}
         >
           <defs>
@@ -413,14 +341,14 @@ export default function StoryArt({ kind, accent }: { kind: StoryArtKind; accent:
               <path d="M0 0 L10 5 L0 10 z" fill={accent} />
             </marker>
           </defs>
-          {fig.draw(accent)}
+          {fig.draw(accent, t)}
         </svg>
       </div>
       <figcaption
         className="mono"
         style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".5rem" }}
       >
-        {fig.caption}
+        {t(fig.caption)}
       </figcaption>
     </figure>
   );

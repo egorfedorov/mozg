@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
+import { msg } from "@/lib/msg";
 import { signIn, signUp } from "@/lib/auth-client";
 
 /**
@@ -14,20 +17,20 @@ function humanError(message: string | undefined, mode: "in" | "up"): string {
   const m = (message ?? "").toLowerCase();
 
   if (m.includes("invalid") && m.includes("password")) {
-    return "That password does not match. Try again, or create an account if you have not yet.";
+    return msg("That password does not match. Try again, or create an account if you have not yet.");
   }
   if (m.includes("user") && (m.includes("not found") || m.includes("exist"))) {
     return mode === "in"
-      ? "No account with that email. Create one below."
-      : "That email is already registered — sign in instead.";
+      ? msg("No account with that email. Create one below.")
+      : msg("That email is already registered — sign in instead.");
   }
   if (m.includes("already")) {
-    return "That email is already registered — sign in instead.";
+    return msg("That email is already registered — sign in instead.");
   }
   if (m.includes("password") && m.includes("short")) {
-    return "Passwords need at least 8 characters.";
+    return msg("Passwords need at least 8 characters.");
   }
-  return message || "That did not work. Try again.";
+  return message || msg("That did not work. Try again.");
 }
 
 export default function SignInForm({
@@ -44,6 +47,7 @@ export default function SignInForm({
   const params = useSearchParams();
   const next = params.get("next") ?? "/brains";
 
+  const t = useT();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,12 +76,12 @@ export default function SignInForm({
       </Link>
 
       <h1 className="h1" style={{ margin: "1.5rem 0 .5rem" }}>
-        {mode === "in" ? "Sign in" : "Create an account"}
+        {mode === "in" ? t("Sign in") : t("Create an account")}
       </h1>
       <p style={{ color: "var(--ink-2)", marginTop: 0, marginBottom: ".75rem" }}>
         {mode === "in"
-          ? "Your brains and the agents connected to them."
-          : "One brain free, no card. Upgrade when you hit the limit."}
+          ? t("Your brains and the agents connected to them.")
+          : t("One brain free, no card. Upgrade when you hit the limit.")}
       </p>
 
       {/* Says plainly whose account this is. Written for humans, and it
@@ -85,11 +89,20 @@ export default function SignInForm({
           domain with a password field and no stated identity is the exact
           shape of a credential-harvesting page. */}
       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: 0, marginBottom: "1.5rem" }}>
-        This is a mozg.sh account — open source, AGPL:{" "}
-        <a href="https://github.com/egorfedorov/mozg" style={{ textDecoration: "underline" }}>
-          github.com/egorfedorov/mozg
-        </a>
-        . We never ask for another service&apos;s password.
+        {markup(
+          t(
+            "This is a mozg.sh account — open source, AGPL: <0/>. We never ask for another service\u2019s password.",
+          ),
+          [
+            <a
+              href="https://github.com/egorfedorov/mozg"
+              style={{ textDecoration: "underline" }}
+              key="s0"
+            >
+              github.com/egorfedorov/mozg
+            </a>,
+          ],
+        )}
       </p>
 
       {(githubEnabled || googleEnabled) && (
@@ -101,7 +114,7 @@ export default function SignInForm({
               onClick={() => signIn.social({ provider: "google", callbackURL: next })}
               type="button"
             >
-              Continue with Google
+              {t("Continue with Google")}
             </button>
           )}
           {githubEnabled && (
@@ -111,7 +124,7 @@ export default function SignInForm({
             onClick={() => signIn.social({ provider: "github", callbackURL: next })}
             type="button"
           >
-            Continue with GitHub
+            {t("Continue with GitHub")}
           </button>
           )}
 
@@ -127,7 +140,7 @@ export default function SignInForm({
             }}
           >
             <span style={{ flex: 1, borderTop: "1px solid var(--rule)" }} />
-            or
+            {t("or")}
             <span style={{ flex: 1, borderTop: "1px solid var(--rule)" }} />
           </div>
         </>
@@ -148,7 +161,7 @@ export default function SignInForm({
           required
           minLength={8}
           autoComplete={mode === "in" ? "current-password" : "new-password"}
-          placeholder="Password — at least 8 characters"
+          placeholder={t("Password — at least 8 characters")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={field}
@@ -159,7 +172,7 @@ export default function SignInForm({
             className="mono"
             style={{ color: "var(--color-riso-red)", fontSize: ".8125rem", margin: 0 }}
           >
-            {error}
+            {t(error)}
           </p>
         )}
 
@@ -169,7 +182,7 @@ export default function SignInForm({
           disabled={busy}
           style={{ justifyContent: "center" }}
         >
-          {busy ? "Working…" : mode === "in" ? "Sign in" : "Create account"}
+          {busy ? t("Working…") : mode === "in" ? t("Sign in") : t("Create account")}
         </button>
       </form>
 
@@ -192,7 +205,9 @@ export default function SignInForm({
             textDecoration: "underline",
           }}
         >
-          {mode === "in" ? "No account yet? Create one" : "Already have an account? Sign in"}
+          {mode === "in"
+            ? t("No account yet? Create one")
+            : t("Already have an account? Sign in")}
         </button>
       ) : (
         /* Said out loud rather than left as a dead link: without mail we cannot
@@ -202,9 +217,9 @@ export default function SignInForm({
           className="mono"
           style={{ marginTop: "1.25rem", fontSize: ".75rem", color: "var(--ink-3)", maxWidth: "42ch" }}
         >
-          New accounts are created with GitHub while email is being set up — it
-          confirms your address, which is what lets people share brains with you.
-          Passwords cannot be reset yet, so we are not handing out new ones.
+          {t(
+            "New accounts are created with GitHub while email is being set up — it confirms your address, which is what lets people share brains with you. Passwords cannot be reset yet, so we are not handing out new ones.",
+          )}
         </p>
       )}
     </main>

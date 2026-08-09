@@ -141,15 +141,15 @@ export default async function VsPage() {
             {t("Often. A brain is a service, and a service is a dependency.")}</p>
 
           <div className="sk-strip">
-            <Panel n="—" title="It never changes" tint="var(--ink-2)">
+            <Panel n="—" title={t("It never changes")} tint="var(--ink-2)">
               <p>
                 {t("Your commit conventions, your directory layout, the three rules everyone breaks. Written once, true for years. Re-reading a source that has no source is machinery for nothing.")}</p>
             </Panel>
-            <Panel n="—" title="You work offline" tint="var(--ink-2)">
+            <Panel n="—" title={t("You work offline")} tint="var(--ink-2)">
               <p>
                 {t("A brain needs the network and an account. A file needs neither, and on a plane that is the whole argument.")}</p>
             </Panel>
-            <Panel n="—" title="It is three paragraphs" tint="var(--ink-2)">
+            <Panel n="—" title={t("It is three paragraphs")} tint="var(--ink-2)">
               <p>
                 {t("Search earns its keep somewhere past a hundred notes. Below that, putting the whole thing in context is simpler and cheaper.")}</p>
               <p>

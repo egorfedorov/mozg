@@ -185,7 +185,7 @@ export default async function Home() {
             {t("open source · AGPL · star it on GitHub")}</a>
         </div>
 
-        <div className="term" aria-label="Example session">
+        <div className="term" aria-label={t("Example session")}>
           <div className="term-bar">
             <span className="term-dot" />
             <span className="term-dot" />
@@ -536,32 +536,32 @@ export default async function Home() {
             <GuideCard
               href="/start"
               step="00"
-              title="Start here"
-              blurb="The whole journey on one page: why this exists, connect an agent, prove it works, build your own — with the screens you'll see."
+              title={t("Start here")}
+              blurb={t("The whole journey on one page: why this exists, connect an agent, prove it works, build your own — with the screens you'll see.")}
             />
             <GuideCard
               href="/vs"
               step="01"
-              title="Why not just a file?"
-              blurb="Both are text an agent reads. The difference is what happens to them over three months."
+              title={t("Why not just a file?")}
+              blurb={t("Both are text an agent reads. The difference is what happens to them over three months.")}
             />
             <GuideCard
               href="/make"
               step="02"
-              title="Make one, in six panels"
-              blurb="Pick one job, write the goal as an outcome, feed the real thing, read the failures."
+              title={t("Make one, in six panels")}
+              blurb={t("Pick one job, write the goal as an outcome, feed the real thing, read the failures.")}
             />
             <GuideCard
               href="/connect"
               step="03"
-              title="Connect your agent"
-              blurb="Copy-paste setup for Claude Code, Codex, Cursor, Kimi, DeepSeek, GLM and Qwen."
+              title={t("Connect your agent")}
+              blurb={t("Copy-paste setup for Claude Code, Codex, Cursor, Kimi, DeepSeek, GLM and Qwen.")}
             />
             <GuideCard
               href="/explore"
               step="04"
-              title="Or take one that exists"
-              blurb="A catalogue of brains other people built, by field, free and paid."
+              title={t("Or take one that exists")}
+              blurb={t("A catalogue of brains other people built, by field, free and paid.")}
             />
           </div>
         </section>

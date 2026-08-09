@@ -178,7 +178,7 @@ export default async function Contents({ active }: { active?: string }) {
   const t = await translator();
 
   return (
-    <nav className="contents" aria-label="Pages">
+    <nav className="contents" aria-label={t("Pages")}>
       <Sheet active={active} t={t} />
       <div className="shell contents-inner">
         {/* Out of the dropdown and into the bar. Of everything in this nav, one

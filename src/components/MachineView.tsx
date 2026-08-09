@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PAGES, CURRENT_PAGE_MARKER, hasMachineView } from "@/lib/pages";
@@ -20,6 +22,7 @@ import { PAGES, CURRENT_PAGE_MARKER, hasMachineView } from "@/lib/pages";
  * storing.
  */
 export default function MachineView({ doc }: { doc: string }) {
+  const t = useT();
   const path = usePathname();
   const [machine, setMachine] = useState(false);
 
@@ -50,12 +53,12 @@ export default function MachineView({ doc }: { doc: string }) {
         <pre>{doc.replace(CURRENT_PAGE_MARKER, current)}</pre>
       </div>
 
-      <div className="machine-switch" role="group" aria-label="How to read this page">
+      <div className="machine-switch" role="group" aria-label={t("How to read this page")}>
         <button
           type="button"
           aria-pressed={!machine}
-          aria-label="Human — the designed page"
-          title="Human — the designed page"
+          aria-label={t("Human — the designed page")}
+          title={t("Human — the designed page")}
           onClick={() => setMachine(false)}
         >
           <HumanIcon />
@@ -63,8 +66,8 @@ export default function MachineView({ doc }: { doc: string }) {
         <button
           type="button"
           aria-pressed={machine}
-          aria-label="Machine — the fact sheet an agent reads"
-          title="Machine — the fact sheet an agent reads"
+          aria-label={t("Machine — the fact sheet an agent reads")}
+          title={t("Machine — the fact sheet an agent reads")}
           onClick={() => setMachine(true)}
         >
           <MachineIcon />

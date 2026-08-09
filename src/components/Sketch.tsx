@@ -11,6 +11,8 @@
  * unsupported.
  */
 
+import { translator } from "@/lib/t";
+
 /** Rendered once per page. The filters every drawn thing below refers to. */
 export function SketchDefs() {
   return (
@@ -144,13 +146,16 @@ export function Panel({
  * the climbing line are where that happened. The difference between the two
  * approaches is time, so time is the axis.
  */
-export function Divergence() {
+export async function Divergence() {
+  const t = await translator();
   return (
     <svg
       viewBox="0 0 600 190"
       width="100%"
       role="img"
-      aria-label="Two lines leaving the same point: a file stays flat, a brain climbs as it is re-read and corrected."
+      aria-label={t(
+        "Two lines leaving the same point: a file stays flat, a brain climbs as it is re-read and corrected.",
+      )}
       style={{ display: "block", overflow: "visible", maxWidth: 760 }}
     >
       <g filter="url(#sk-wobble)">
@@ -207,16 +212,16 @@ export function Divergence() {
       {/* labels stay unfiltered: wobbly type is illegible, and the drawing is
           the flourish — the words are not */}
       <text x="46" y="178" className="sk-label">
-        day one
+        {t("day one")}
       </text>
       <text x="570" y="178" textAnchor="end" className="sk-label">
-        three months in
+        {t("three months in")}
       </text>
       <text x="598" y="24" textAnchor="end" className="sk-label sk-label-red">
-        a brain
+        {t("a brain")}
       </text>
       <text x="598" y="136" textAnchor="end" className="sk-label">
-        a file
+        {t("a file")}
       </text>
     </svg>
   );
@@ -229,7 +234,8 @@ export function Divergence() {
  * mostly they assume the whole document is stuffed into the agent's context.
  * Drawing it is faster than the paragraph that would be needed instead.
  */
-export function Pipeline() {
+export async function Pipeline() {
+  const t = await translator();
   const steps: [string, string][] = [
     ["a page", "screens, docs, a repo"],
     ["notes", "facts with values kept"],
@@ -242,7 +248,9 @@ export function Pipeline() {
       viewBox="0 0 640 132"
       width="100%"
       role="img"
-      aria-label="A page becomes notes, notes are searched, and five of them become an answer."
+      aria-label={t(
+        "A page becomes notes, notes are searched, and five of them become an answer.",
+      )}
       style={{ display: "block", overflow: "visible", maxWidth: 780 }}
     >
       {steps.map(([label, note], i) => {

@@ -213,7 +213,7 @@ answering anything stack- or project-specific, search them:
       <AppShell
         active="/connect"
         eyebrow="Model Context Protocol"
-        title="Connect a brain to whatever you code in."
+        title={t("Connect a brain to whatever you code in.")}
       >
         {body}
       </AppShell>

@@ -64,7 +64,7 @@ export default async function CollectivePage({
               minLength={3}
               maxLength={200}
               defaultValue={q}
-              placeholder="Ask every public brain at once — e.g. how do webhook retries work?"
+              placeholder={t("Ask every public brain at once — e.g. how do webhook retries work?")}
               style={{
                 flex: "1 1 320px",
                 padding: ".7rem .9rem",
@@ -84,9 +84,9 @@ export default async function CollectivePage({
               }}
             >
               <option value="">{t("all topics")}</option>
-              {TOPICS.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.label}
+              {TOPICS.map((field) => (
+                <option key={field.key} value={field.key}>
+                  {t(field.label)}
                 </option>
               ))}
             </select>
@@ -138,7 +138,7 @@ export default async function CollectivePage({
           <p className="eyebrow" style={{ color: "var(--color-riso-red)" }}>{t("Signal № 1")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("The question it couldn't answer becomes part of its exam.")}</h2>
-          <svg viewBox="0 0 720 190" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A search with zero results flows into the exam, then into new material">
+          <svg viewBox="0 0 720 190" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label={t("A search with zero results flows into the exam, then into new material")}>
             <rect x="25" y="60" width="150" height="50" fill="none" stroke="#14161a" strokeWidth="2" />
             <text x="100" y="82" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#14161a">{t("someone's agent asks")}</text>
             <text x="100" y="98" textAnchor="middle" fontSize="11" fontFamily="monospace" fill="#f15060">{t("0 results")}</text>
@@ -174,7 +174,7 @@ export default async function CollectivePage({
           <p className="eyebrow" style={{ color: "var(--color-riso-green)" }}>{t("Signal № 3")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 1rem" }}>
             {t("Nothing is ever deleted, so every version is still there.")}</h2>
-          <svg viewBox="0 0 720 170" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label="A chain of superseded notes with exam scores over time">
+          <svg viewBox="0 0 720 170" style={{ width: "100%", maxWidth: 720, display: "block", border: "1.5px solid var(--ink)", background: "var(--paper-2)" }} aria-label={t("A chain of superseded notes with exam scores over time")}>
             {[0, 1, 2, 3].map((i) => (
               <g key={i}>
                 <rect x={40 + i * 170} y={55} width={120} height={44} fill={i === 3 ? "#3ec300" : "none"} opacity={i === 3 ? 0.16 : 1} stroke="#14161a" strokeWidth="2" />

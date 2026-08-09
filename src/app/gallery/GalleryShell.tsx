@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -13,7 +15,9 @@ import SiteFooter from "@/components/SiteFooter";
  * The footer stays. One product, and the person who wants the licence terms or
  * the manifesto should find them where they always are.
  */
-export default function GalleryShell({ children }: { children: React.ReactNode }) {
+export default async function GalleryShell({ children }: { children: React.ReactNode }) {
+  const t = await translator();
+
   return (
     <>
       <header style={{ borderBottom: "1.5px solid var(--ink)", background: "var(--paper)" }}>
@@ -32,24 +36,21 @@ export default function GalleryShell({ children }: { children: React.ReactNode }
             className="wordmark"
             style={{ marginRight: 0, color: "var(--ink)" }}
           >
-            gallery<span style={{ color: "var(--color-riso-red)" }}>.</span>
-          </Link>
+            {markup(t("gallery<0>.</0>"), [
+            <span style={{ color: "var(--color-riso-red)" }} key="s0" />,
+          ])}</Link>
           <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-            a mozg service
-          </span>
+            {t("a mozg service")}</span>
           <Link
             className="mono"
             href="https://gallery.mozg.sh/mine"
             style={{ marginLeft: "auto", fontSize: ".8125rem" }}
           >
-            your images
-          </Link>
+            {t("your images")}</Link>
           <Link className="mono" href="https://mozg.sh/styles" style={{ fontSize: ".8125rem" }}>
-            sell your style
-          </Link>
+            {t("sell your style")}</Link>
           <Link className="mono" href="https://mozg.sh" style={{ fontSize: ".8125rem" }}>
-            mozg.sh →
-          </Link>
+            {t("mozg.sh →")}</Link>
         </div>
       </header>
       {children}

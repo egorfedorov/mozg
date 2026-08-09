@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, fromAcceptLanguage, isLocale } from "@/lib/locales";
+import { normalize } from "@/lib/msg";
+import type { ClientDictionary } from "@/lib/t-client";
 
 /**
  * Translation for the reading half of the site.
@@ -19,7 +21,7 @@ import { DEFAULT_LOCALE, LOCALE_COOKIE, fromAcceptLanguage, isLocale } from "@/l
  */
 
 export function key(english: string): string {
-  return createHash("sha1").update(english.trim().replace(/\s+/g, " ")).digest("hex").slice(0, 12);
+  return createHash("sha1").update(normalize(english)).digest("hex").slice(0, 12);
 }
 
 type Dictionary = Record<string, string>;
@@ -68,4 +70,33 @@ export async function translator(): Promise<(english: string) => string> {
   const locale = await currentLocale();
   const dict = await dictionary(locale);
   return (english: string) => dict[key(english)] ?? english;
+}
+
+const CLIENT_CACHE = new Map<string, ClientDictionary>();
+
+/**
+ * The strings the browser half needs, for the root layout to hand to
+ * <Translations>.
+ *
+ * A separate, much smaller file — the client components' strings only, keyed
+ * by the English rather than by a hash, because the browser has no sha1. Both
+ * halves of that are written by scripts/translate.ts from the same run, so the
+ * two files cannot drift.
+ */
+export async function clientDictionary(): Promise<ClientDictionary> {
+  const locale = await currentLocale();
+  if (locale === DEFAULT_LOCALE) return {};
+  const cached = CLIENT_CACHE.get(locale);
+  if (cached) return cached;
+  try {
+    const mod = await import(`@/locales/client/${locale}.json`);
+    const dict = (mod.default ?? mod) as ClientDictionary;
+    CLIENT_CACHE.set(locale, dict);
+    return dict;
+  } catch {
+    // No client strings translated for this language yet — English prints,
+    // the same as a missing key does on the server side.
+    CLIENT_CACHE.set(locale, {});
+    return {};
+  }
 }

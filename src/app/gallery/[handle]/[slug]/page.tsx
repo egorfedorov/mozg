@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import GalleryShell from "../../GalleryShell";
@@ -26,6 +28,8 @@ export default async function StyleRoom({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const user = await currentUser();
   const found = await accessForSlug(handle, slug, user?.id ?? null);
@@ -75,7 +79,7 @@ export default async function StyleRoom({
     <GalleryShell>
       <main className="shell" style={{ paddingBlock: "clamp(1.5rem, 4vw, 2.5rem)" }}>
         <p className="eyebrow">
-          <Link href="https://gallery.mozg.sh">← the gallery</Link>
+          <Link href="https://gallery.mozg.sh">{t("← the gallery")}</Link>
         </p>
 
         <div className="room-head">
@@ -86,9 +90,11 @@ export default async function StyleRoom({
           <div style={{ minWidth: 0 }}>
             <h1 className="display room-title">{brain.title}</h1>
             <p className="mono room-by">
-              by {handle}
-              {brain.score !== null && ` · exam ${brain.score}%`} · {brain.note_count} rules
-            </p>
+              {markup(t("by <0/> <1/> · <2/> rules"), [
+              handle,
+              brain.score !== null && ` · exam ${brain.score}%`,
+              brain.note_count,
+            ])}</p>
             {brain.goal && <p className="room-goal">{brain.goal.split("\n")[0]}</p>}
           </div>
         </div>
@@ -96,33 +102,30 @@ export default async function StyleRoom({
         {locked ? (
           <section className="panel" style={{ maxWidth: "44rem" }}>
             <h2 className="h2" style={{ marginTop: 0 }}>
-              ${(brain.price_cents / 100).toFixed(0)} to use this style
-            </h2>
+              {markup(t("$<0/> to use this style"), [
+              (brain.price_cents / 100).toFixed(0),
+            ])}</h2>
             <p style={{ color: "var(--ink-2)" }}>
-              Buying it once lets your own agents read the rules, and unlocks
-              generating here. The artist keeps 95% of the purchase, and{" "}
-              {ARTIST_CENTS}¢ of every image after that.
-            </p>
+              {markup(t("Buying it once lets your own agents read the rules, and unlocks generating here. The artist keeps 95% of the purchase, and <0/>¢ of every image after that."), [
+              ARTIST_CENTS,
+            ])}</p>
             <Link className="btn" href={`https://mozg.sh/b/${handle}/${slug}`}>
-              Buy it on mozg.sh
-            </Link>
+              {t("Buy it on mozg.sh")}</Link>
           </section>
         ) : !imageGenReady() ? (
           <section className="panel" style={{ maxWidth: "44rem" }}>
             <p style={{ color: "var(--ink-2)", margin: 0 }}>
-              Generating here is not switched on for this deployment. The style
-              still works in your own agents — that is what the rules are for.
-            </p>
+              {t("Generating here is not switched on for this deployment. The style still works in your own agents — that is what the rules are for.")}</p>
           </section>
         ) : !user ? (
           <section className="panel" style={{ maxWidth: "44rem" }}>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
-              Sign in to generate in this style. {GENERATION_PRICE_CENTS}¢ an
-              image, {ARTIST_CENTS}¢ of it to the artist.
-            </p>
+              {markup(t("Sign in to generate in this style. <0/>¢ an image, <1/>¢ of it to the artist."), [
+              GENERATION_PRICE_CENTS,
+              ARTIST_CENTS,
+            ])}</p>
             <Link className="btn" href={`https://mozg.sh/sign-in?next=/gallery/${handle}/${slug}`}>
-              Sign in
-            </Link>
+              {t("Sign in")}</Link>
           </section>
         ) : (
           <GenerateBox
@@ -138,11 +141,11 @@ export default async function StyleRoom({
 
         <section style={{ marginTop: "clamp(2rem, 5vw, 3rem)", maxWidth: "48rem" }}>
           <div className="section-head">
-            <h2 className="h2">What this style teaches</h2>
-            <span className="eyebrow">the rules your agent reads</span>
+            <h2 className="h2">{t("What this style teaches")}</h2>
+            <span className="eyebrow">{t("the rules your agent reads")}</span>
           </div>
           {byCategory.size === 0 ? (
-            <p className="lede">No rules written yet.</p>
+            <p className="lede">{t("No rules written yet.")}</p>
           ) : (
             <div className="rows">
               {[...byCategory.entries()].map(([cat, titles]) => (
@@ -159,12 +162,9 @@ export default async function StyleRoom({
             </div>
           )}
           <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>
-            Every image made here is compiled from these rules, not from the
-            model&apos;s idea of the name.{" "}
-            <Link href={`https://mozg.sh/b/${handle}/${slug}`}>
-              Connect it to your own agent →
-            </Link>
-          </p>
+            {markup(t("Every image made here is compiled from these rules, not from the model's idea of the name. <0>Connect it to your own agent →</0>"), [
+            <Link href={`https://mozg.sh/b/${handle}/${slug}`} key="s0" />,
+          ])}</p>
         </section>
       </main>
     </GalleryShell>

@@ -63,7 +63,7 @@ export default async function AboutPage() {
           <img
             className="lr-portrait"
             src="/about/portrait.webp"
-            alt="Egor Fedorov, drawn as a riso print"
+            alt={t("Egor Fedorov, drawn as a riso print")}
             width={320}
             height={427}
           />
@@ -111,8 +111,8 @@ export default async function AboutPage() {
 
           <Plate
             src="/about/taken.webp"
-            alt="A press swallowing framed pictures and returning empty frames"
-            caption="Everything went in. The frames came back empty."
+            alt={t("A press swallowing framed pictures and returning empty frames")}
+            caption={t("Everything went in. The frames came back empty.")}
           />
 
           <p>
@@ -151,8 +151,8 @@ export default async function AboutPage() {
 
           <Plate
             src="/about/collective.webp"
-            alt="Many hands placing notes into one growing brain"
-            caption="Everyone who asks makes it sharper. Everyone who teaches keeps their name on it."
+            alt={t("Many hands placing notes into one growing brain")}
+            caption={t("Everyone who asks makes it sharper. Everyone who teaches keeps their name on it.")}
           />
 
           <h2 className="h2">{t("And it has to pay")}</h2>
@@ -167,8 +167,8 @@ export default async function AboutPage() {
 
           <Plate
             src="/about/paid.webp"
-            alt="A brain handing a gold coin to an artist beside a signed painting"
-            caption="The same knowledge, moving the same way. This time the money moves too."
+            alt={t("A brain handing a gold coin to an artist beside a signed painting")}
+            caption={t("The same knowledge, moving the same way. This time the money moves too.")}
           />
 
           <p>
@@ -191,8 +191,8 @@ export default async function AboutPage() {
 
           <Plate
             src="/about/sakha.webp"
-            alt="A brain wrapped in Sakha ornament under northern lights"
-            caption="Uraanghay Saqa. Not enough of us to be learned. Enough of us to teach."
+            alt={t("A brain wrapped in Sakha ornament under northern lights")}
+            caption={t("Uraanghay Saqa. Not enough of us to be learned. Enough of us to teach.")}
           />
 
           <h2 className="h2">{t("What I am actually claiming")}</h2>

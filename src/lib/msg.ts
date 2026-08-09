@@ -27,3 +27,19 @@
 export function msg(english: string): string {
   return english;
 }
+
+/**
+ * The form of a sentence that both halves of the site agree on.
+ *
+ * A string is written in JSX across three lines and in a data array on one;
+ * they are the same sentence and must find the same translation. Both the
+ * server's key() and the client's dictionary lookup run their argument through
+ * here first, so the layout of the source never decides whether a translation
+ * is found.
+ *
+ * Here rather than in lib/t.ts for that file's own stated reason: this has to
+ * be callable from a client component, and lib/t.ts imports next/headers.
+ */
+export function normalize(english: string): string {
+  return english.trim().replace(/\s+/g, " ");
+}

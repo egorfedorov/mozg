@@ -191,7 +191,11 @@ export default async function ExplorePage({
             ))}
           </div>
 
-          {topic && <p className="lede">{TOPICS.find((t) => t.key === topic)?.blurb}</p>}
+          {topic && (
+            <p className="lede">
+              {t(TOPICS.find((f) => f.key === topic)?.blurb ?? "")}
+            </p>
+          )}
         </div>
 
         {brains.length === 0 ? (
@@ -239,7 +243,7 @@ export default async function ExplorePage({
                   <span>
                     {topicLabel(brain.topic)} · {brain.owner_handle}
                   </span>
-                  <PriceTag brain={brain} owned={owned.has(brain.id)} />
+                  <PriceTag brain={brain} owned={owned.has(brain.id)} t={t} />
                 </span>
 
                 <h2 className="card-title">{brain.title}</h2>
@@ -307,8 +311,18 @@ export default async function ExplorePage({
   );
 }
 
-function PriceTag({ brain, owned }: { brain: Brain; owned: boolean }) {
-  if (owned) return <span style={{ fontWeight: 700 }}>Owned</span>;
-  if (brain.price_cents === 0) return <span>Free</span>;
+function PriceTag({
+  brain,
+  owned,
+  t,
+}: {
+  brain: Brain;
+  owned: boolean;
+  // Handed down rather than awaited here: a helper beside the page is a plain
+  // synchronous function and has no translator of its own.
+  t: (english: string) => string;
+}) {
+  if (owned) return <span style={{ fontWeight: 700 }}>{t("Owned")}</span>;
+  if (brain.price_cents === 0) return <span>{t("Free")}</span>;
   return <span style={{ fontWeight: 700 }}>{formatCents(brain.price_cents)}</span>;
 }

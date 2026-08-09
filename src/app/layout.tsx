@@ -1,5 +1,6 @@
 import { localeOf } from "@/lib/locales";
-import { currentLocale } from "@/lib/t";
+import { currentLocale, clientDictionary } from "@/lib/t";
+import { Translations } from "@/lib/t-client";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
 import StarBanner from "@/components/StarBanner";
@@ -58,6 +59,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = localeOf(await currentLocale());
+  // Loaded here and nowhere else. Every client component on the site reads it
+  // out of one context, so a page cannot forget to provide it and quietly go
+  // back to English.
+  const dict = await clientDictionary();
 
   return (
     // dir matters more than lang does: Arabic and Urdu laid out left-to-right
@@ -66,22 +71,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       {/* No footer here on purpose: it belongs to the public side of the site.
           A workspace ends in work, not in a wall of links out. */}
       <body>
-        <AnnouncementBanner />
-        <StarBanner />
-        {children}
-        {/* Last in the body, fixed in the corner: it must not participate in the
-            page's layout, only sit above it. */}
-        <MascotDock />
-        {/* The document is built on the server so the numbers in it come from
-            the modules that enforce them; the client half only knows which page
-            it is on. It renders nothing on the workspace side of the site. */}
-        <MachineView doc={machineDoc()} />
-        <ClientErrorReporter />
-        {/* Above Analytics in the tree and ahead of it in effect: the loader
-            reads the cookie this writes, so an unanswered banner means an
-            unloaded tracker. */}
-        <CookieConsent />
-        <Analytics />
+        <Translations dict={dict}>
+          <AnnouncementBanner />
+          <StarBanner />
+          {children}
+          {/* Last in the body, fixed in the corner: it must not participate in the
+              page's layout, only sit above it. */}
+          <MascotDock />
+          {/* The document is built on the server so the numbers in it come from
+              the modules that enforce them; the client half only knows which page
+              it is on. It renders nothing on the workspace side of the site. */}
+          <MachineView doc={machineDoc()} />
+          <ClientErrorReporter />
+          {/* Above Analytics in the tree and ahead of it in effect: the loader
+              reads the cookie this writes, so an unanswered banner means an
+              unloaded tracker. */}
+          <CookieConsent />
+          <Analytics />
+        </Translations>
       </body>
     </html>
   );
