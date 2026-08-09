@@ -1486,6 +1486,427 @@ const PACKS: Pack[] = [
       },
     ],
   },
+  {
+    // Every React app's data layer, and the one most often written from memory:
+    // v4 idioms (isLoading, onSuccess callbacks, the old cache-time name) still
+    // outnumber v5 in training data. The other frameworks' copies of the same
+    // pages are skipped — one query concept in six dialects contradicts itself.
+    key: "tanstack-query",
+    repo: "TanStack/query",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: [
+      "docs/framework/angular",
+      "docs/framework/lit",
+      "docs/framework/preact",
+      "docs/framework/solid",
+      "docs/framework/svelte",
+      "docs/framework/vue",
+      "docs/community-resources.md",
+    ],
+    topic: "web",
+    parent: {
+      slug: "tanstack-query",
+      title: "TanStack Query",
+      goal:
+        "Answer questions about TanStack Query v5 for React as documented " +
+        "today: queries, mutations and their exact option names, query keys " +
+        "and invalidation, caching with staleTime and gcTime, suspense and " +
+        "streaming, infinite and paginated queries, optimistic updates, SSR " +
+        "and hydration \u2014 including which v4 names were removed and what " +
+        "replaced them.",
+    },
+    children: [
+      {
+        slug: "tanstack-query-react",
+        title: "TanStack Query \u00b7 React",
+        goal:
+          "Answer questions about using TanStack Query in React: the guides " +
+          "for queries, mutations, invalidation, caching behaviour, " +
+          "suspense, infinite queries, optimistic updates, SSR and " +
+          "hydration, testing, and the migration from v4.",
+        areas: ["framework"],
+      },
+      {
+        slug: "tanstack-query-reference",
+        title: "TanStack Query \u00b7 Reference",
+        goal:
+          "Answer questions about the TanStack Query API exactly as " +
+          "specified: every hook and its options with types and defaults, " +
+          "QueryClient methods, and the ESLint rules with what each catches.",
+        areas: ["reference", "eslint"],
+      },
+    ],
+  },
+  {
+    // React Router 7 absorbed Remix, so the framework an agent half-remembers
+    // is now this one under a different name. Community pages are links.
+    key: "react-router",
+    repo: "remix-run/react-router",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: ["docs/community"],
+    topic: "web",
+    parent: {
+      slug: "react-router",
+      title: "React Router",
+      goal:
+        "Answer questions about React Router 7 as documented today: the " +
+        "three modes (declarative, data, framework), routing and nested " +
+        "routes, loaders and actions, navigation and redirects, pending UI " +
+        "and error boundaries, server rendering and pre-rendering, and the " +
+        "upgrade from React Router 6 and from Remix.",
+    },
+    children: [
+      {
+        slug: "react-router-api",
+        title: "React Router \u00b7 API",
+        goal:
+          "Answer questions about the React Router API exactly as " +
+          "specified: every component, hook and utility with its props, " +
+          "arguments and return type, and the framework conventions.",
+        areas: ["api"],
+      },
+      {
+        slug: "react-router-start",
+        title: "React Router \u00b7 Getting started",
+        goal:
+          "Answer questions about starting with React Router: installation " +
+          "in each mode, the tutorials, routing basics, and what the " +
+          "framework generates.",
+        areas: ["start", "tutorials"],
+      },
+      {
+        slug: "react-router-guides",
+        title: "React Router \u00b7 Guides",
+        goal:
+          "Answer how-to questions about React Router and the reasoning " +
+          "behind its design: the how-to recipes, the explanation pages on " +
+          "data loading and state, and the upgrade guides from v6 and Remix.",
+        areas: ["how-to", "explanation", "upgrading"],
+      },
+    ],
+  },
+  {
+    // Bridge is the Nuxt 2 compatibility layer; keeping it means a brain that
+    // answers Nuxt 2 questions in a Nuxt 4 voice.
+    key: "nuxt",
+    repo: "nuxt/nuxt",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: ["docs/6.bridge", "docs/5.community"],
+    topic: "web",
+    parent: {
+      slug: "nuxt",
+      title: "Nuxt",
+      goal:
+        "Answer questions about Nuxt as documented today: the directory " +
+        "structure and what each directory does, auto-imports, rendering " +
+        "modes and route rules, data fetching with useFetch and useAsyncData, " +
+        "state and middleware, server routes in Nitro, modules, deployment " +
+        "targets, and every configuration key with its default.",
+    },
+    children: [
+      {
+        slug: "nuxt-api",
+        title: "Nuxt \u00b7 API",
+        goal:
+          "Answer questions about the Nuxt API exactly as specified: every " +
+          "composable, component, utility, command and configuration key " +
+          "with its signature, options and default value.",
+        areas: ["4.api"],
+      },
+      {
+        slug: "nuxt-guide",
+        title: "Nuxt \u00b7 Guide",
+        goal:
+          "Answer questions about how Nuxt works: the directory structure " +
+          "and the meaning of each folder, rendering modes, auto-imports, " +
+          "server engine and Nitro, modules and plugins, and how to extend " +
+          "the framework.",
+        areas: ["3.guide", "2.directory-structure"],
+      },
+      {
+        slug: "nuxt-start",
+        title: "Nuxt \u00b7 Getting started",
+        goal:
+          "Answer questions about starting and debugging a Nuxt app: " +
+          "installation, views and routing, data fetching, state, styling, " +
+          "deployment and upgrade \u2014 and what each documented error " +
+          "message actually means.",
+        areas: ["1.getting-started", "errors", "7.migration"],
+      },
+    ],
+  },
+  {
+    // Small, and among the highest value per page in the catalogue: Zod 4
+    // moved the API and most training data is Zod 3, so an agent writes
+    // schemas that no longer compile.
+    key: "zod",
+    repo: "colinhacks/zod",
+    prefix: "packages/docs/content/",
+    endings: [".md", ".mdx"],
+    topic: "web",
+    parent: {
+      slug: "zod",
+      title: "Zod",
+      goal:
+        "Answer questions about Zod 4 as documented today: defining schemas " +
+        "for every type, refinements and transforms, parsing versus safe " +
+        "parsing, error handling and customising messages, type inference, " +
+        "JSON Schema output, the mini build, ecosystem integrations, and " +
+        "exactly what changed from Zod 3 and how to migrate it.",
+    },
+    children: [],
+  },
+  {
+    key: "trpc",
+    repo: "trpc/trpc",
+    prefix: "www/docs/",
+    endings: [".md", ".mdx"],
+    topic: "web",
+    parent: {
+      slug: "trpc",
+      title: "tRPC",
+      goal:
+        "Answer questions about tRPC as documented today: defining routers " +
+        "and procedures, input and output validation, context and " +
+        "middleware, error handling and formatting, the React Query and " +
+        "TanStack integrations, server adapters for each framework, " +
+        "subscriptions, and end-to-end type inference.",
+    },
+    children: [],
+  },
+  {
+    // Desktop apps are where an agent's guesses are least testable and most
+    // dangerous: the security model is the whole subject. Development docs
+    // are for people working ON Electron, not with it.
+    key: "electron",
+    repo: "electron/electron",
+    prefix: "docs/",
+    endings: [".md"],
+    skip: ["docs/development"],
+    topic: "web",
+    parent: {
+      slug: "electron",
+      title: "Electron",
+      goal:
+        "Answer questions about Electron as documented today: the main and " +
+        "renderer processes and what may run where, context isolation and " +
+        "the security checklist, IPC patterns, native APIs and system " +
+        "integration, packaging and code signing, auto-update, and every " +
+        "module in the API with its methods, events and options.",
+    },
+    children: [
+      {
+        slug: "electron-api",
+        title: "Electron \u00b7 API",
+        goal:
+          "Answer questions about the Electron API exactly as specified: " +
+          "every main-process and renderer module, its methods, events, " +
+          "properties and platform differences.",
+        areas: ["api"],
+      },
+      {
+        slug: "electron-tutorial",
+        title: "Electron \u00b7 Tutorial",
+        goal:
+          "Answer questions about building an Electron app: process model " +
+          "and context isolation, IPC, the security checklist and why each " +
+          "item exists, packaging, code signing, distribution and " +
+          "auto-update, performance and native modules.",
+        areas: ["tutorial"],
+      },
+    ],
+  },
+  {
+    // _snippets is seven hundred code fragments with no prose around them \u2014
+    // they are included by the pages that need them and answer nothing alone.
+    key: "storybook",
+    repo: "storybookjs/storybook",
+    prefix: "docs/",
+    endings: [".md", ".mdx"],
+    skip: ["docs/_snippets"],
+    topic: "web",
+    parent: {
+      slug: "storybook",
+      title: "Storybook",
+      goal:
+        "Answer questions about Storybook as documented today: writing " +
+        "stories with CSF, args and decorators, configuring main.js and " +
+        "preview.js, the essential addons and what each provides, testing " +
+        "with the test runner and play functions, visual and accessibility " +
+        "testing, building and publishing, and the API of every core " +
+        "package.",
+    },
+    children: [
+      {
+        slug: "storybook-api",
+        title: "Storybook \u00b7 API",
+        goal:
+          "Answer questions about the Storybook API exactly as specified: " +
+          "CSF fields, main and preview configuration keys, parameters, " +
+          "the CLI commands and portable stories.",
+        areas: ["api"],
+      },
+      {
+        slug: "storybook-writing",
+        title: "Storybook \u00b7 Writing and testing",
+        goal:
+          "Answer questions about writing stories and testing with " +
+          "Storybook: args, decorators, loaders, play functions, the test " +
+          "runner, interaction, visual and accessibility testing, and " +
+          "snapshot testing.",
+        areas: ["writing-stories", "writing-tests", "writing-docs"],
+      },
+      {
+        slug: "storybook-configure",
+        title: "Storybook \u00b7 Setup",
+        goal:
+          "Answer questions about setting Storybook up: installation per " +
+          "framework, configuring the builder and framework options, " +
+          "styling and assets, addons, sharing and publishing, and " +
+          "migrating between major versions.",
+        areas: ["get-started", "configure", "addons", "sharing", "migration-guide"],
+      },
+    ],
+  },
+  {
+    // The translated copies are the same pages again in ja, zh-cn, es and fr:
+    // four more chances to retrieve the same answer, none of them new.
+    key: "tauri",
+    repo: "tauri-apps/tauri-docs",
+    prefix: "src/content/docs/",
+    endings: [".md", ".mdx"],
+    skip: [
+      "src/content/docs/ja",
+      "src/content/docs/zh-cn",
+      "src/content/docs/es",
+      "src/content/docs/fr",
+      "src/content/docs/it",
+      "src/content/docs/ko",
+      "src/content/docs/blog",
+    ],
+    topic: "web",
+    parent: {
+      slug: "tauri",
+      title: "Tauri",
+      goal:
+        "Answer questions about Tauri 2 as documented today: the Rust and " +
+        "webview process model, commands and events between them, the " +
+        "capability and permission system, the official plugins and what " +
+        "each allows, building and bundling per platform, code signing, " +
+        "updater, and mobile targets.",
+    },
+    children: [
+      {
+        slug: "tauri-develop",
+        title: "Tauri \u00b7 Develop",
+        goal:
+          "Answer questions about developing with Tauri: calling Rust from " +
+          "the frontend and back, state management, window customisation, " +
+          "embedding external binaries, debugging and testing.",
+        areas: ["develop", "start", "concept"],
+      },
+      {
+        slug: "tauri-plugins",
+        title: "Tauri \u00b7 Plugins and security",
+        goal:
+          "Answer questions about Tauri plugins and its security model: " +
+          "each official plugin and its API, the capability and permission " +
+          "files, scopes, and how to write a plugin.",
+        areas: ["plugin", "security", "reference"],
+      },
+    ],
+  },
+  {
+    // RTK Query is the half agents reconstruct wrongly most often \u2014 the
+    // generated hooks, tag invalidation and the difference between a query
+    // and a mutation are all guessable and all specific.
+    key: "redux-toolkit",
+    repo: "reduxjs/redux-toolkit",
+    prefix: "docs/",
+    endings: [".md", ".mdx"],
+    topic: "web",
+    parent: {
+      slug: "redux-toolkit",
+      title: "Redux Toolkit",
+      goal:
+        "Answer questions about Redux Toolkit as documented today: " +
+        "configureStore and its middleware defaults, createSlice and " +
+        "reducers with Immer, createAsyncThunk, entity adapters, listener " +
+        "middleware, and the whole of RTK Query \u2014 endpoints, generated " +
+        "hooks, cache tags and invalidation, optimistic updates, " +
+        "streaming updates and code generation.",
+    },
+    children: [
+      {
+        slug: "redux-toolkit-rtk-query",
+        title: "Redux Toolkit \u00b7 RTK Query",
+        goal:
+          "Answer questions about RTK Query exactly as specified: defining " +
+          "endpoints and base queries, the generated hooks and their return " +
+          "shapes, cache tags and invalidation, polling, optimistic and " +
+          "streaming updates, error handling, and code generation from an " +
+          "OpenAPI schema.",
+        areas: ["rtk-query"],
+      },
+      {
+        slug: "redux-toolkit-api",
+        title: "Redux Toolkit \u00b7 API",
+        goal:
+          "Answer questions about the Redux Toolkit API exactly as " +
+          "specified: every exported function with its arguments, options " +
+          "and return type, including configureStore, createSlice, " +
+          "createAsyncThunk, createEntityAdapter and the listener " +
+          "middleware.",
+        areas: ["api", "usage", "tutorials"],
+      },
+    ],
+  },
+  {
+    // Durable execution is the subject an agent is least able to reason its
+    // way to: determinism constraints and versioning are rules, not
+    // deductions, and getting them wrong corrupts running workflows.
+    key: "temporal",
+    repo: "temporalio/documentation",
+    prefix: "docs/",
+    endings: [".md", ".mdx"],
+    skip: ["docs/cloud", "docs/production-deployment", "docs/evaluate"],
+    topic: "backend",
+    parent: {
+      slug: "temporal",
+      title: "Temporal",
+      goal:
+        "Answer questions about Temporal as documented today: workflows, " +
+        "activities and workers, the determinism constraints on workflow " +
+        "code and what breaks them, signals queries and updates, timers and " +
+        "retries, child workflows, versioning and patching a running " +
+        "workflow, and testing \u2014 for each supported SDK.",
+    },
+    children: [
+      {
+        slug: "temporal-develop",
+        title: "Temporal \u00b7 Develop",
+        goal:
+          "Answer questions about writing Temporal code: defining workflows " +
+          "and activities per SDK, workers and task queues, signals, " +
+          "queries and updates, timers, retry policies, child workflows, " +
+          "versioning and patching, testing and debugging.",
+        areas: ["develop"],
+      },
+      {
+        slug: "temporal-concepts",
+        title: "Temporal \u00b7 Concepts",
+        goal:
+          "Answer questions about how Temporal works underneath: event " +
+          "history and replay, determinism, task queues and workers, " +
+          "namespaces, retention and visibility, and the design patterns " +
+          "the documentation recommends.",
+        areas: ["encyclopedia", "design-patterns"],
+      },
+    ],
+  },
 ];
 
 interface Args {
