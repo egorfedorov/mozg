@@ -379,12 +379,27 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     // it on every rewritten page would pay three votes to learn "two checks
     // flipped".
     if (brain.goal) {
+      // Across the FAMILY, not this brain alone. A parent's exam draws its
+      // questions from every brain under it, so a parent whose own two pages
+      // finished while its children still held four hundred used to sit — and
+      // score against an empty shelf. Vite came out at 12% with 682 notes in
+      // its children, and the number stuck: nothing re-sits a brain that has
+      // stopped learning.
+      const root = brain.parent_id ?? brain.id;
       const { pending } = await one<{ pending: number }>(
-        `select count(*)::int as pending from sources
-          where brain_id = $1 and status in ('queued', 'processing')`,
-        [brain.id],
+        `select count(*)::int as pending
+           from sources s join brains b on b.id = s.brain_id
+          where (b.id = $1 or b.parent_id = $1)
+            and s.status in ('queued', 'processing')`,
+        [root],
       );
-      if (pending === 0) await enqueueExam(brain.id, wasRefresh ? { mini: true } : undefined);
+      if (pending === 0) {
+        const opts = wasRefresh ? { mini: true } : undefined;
+        await enqueueExam(brain.id, opts);
+        // The parent is scored on the family, so it sits when the family is
+        // done — which is not an event any of its own sources can observe.
+        if (root !== brain.id) await enqueueExam(root, opts);
+      }
     }
 
     return { status: "ready", notes: inserted, costCents: extracted.usage.costCents };
