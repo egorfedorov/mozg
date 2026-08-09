@@ -19,10 +19,23 @@ import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
 
 /**
  * Below this the cross-encoder is saying the passage does not answer the
- * question. bge-reranker-v2-m3 emits logits, so zero is the model's own
- * decision boundary rather than a number picked to look reasonable.
+ * question.
+ *
+ * Measured against the live service rather than reasoned about, twice, after
+ * two wrong guesses. bge-reranker-v2-m3 behind this deployment returns
+ * SIGMOID-normalised scores in 0..1, not the raw logits the model emits — so a
+ * threshold of zero, which is the model's own boundary, can never fire.
+ *
+ * The real separation is enormous. One query, "how do I write a Playwright
+ * test that runs on webkit", against two passages:
+ *
+ *   the Playwright note   0.851
+ *   a PixiJS note         0.00011
+ *
+ * 0.1 sits three orders of magnitude above the irrelevant one and eight times
+ * below the relevant one, so it is nowhere near either edge.
  */
-const RERANK_IRRELEVANT = 0;
+const RERANK_IRRELEVANT = 0.1;
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";

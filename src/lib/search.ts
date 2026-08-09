@@ -48,8 +48,9 @@ export interface SearchHit {
   score: number;
   /**
    * The cross-encoder's verdict on this passage against this query, when the
-   * reranker ran. Unlike `score` it is absolute: below zero the model is
-   * saying the passage does not answer the question, whatever else came back.
+   * reranker ran. Unlike `score` it is absolute — 0..1, where a genuinely
+   * relevant passage lands near 1 and an off-topic one near 0, whatever else
+   * came back in the same result set.
    */
   rerank?: number;
   /** Which retriever(s) surfaced it — useful when debugging a bad answer. */
