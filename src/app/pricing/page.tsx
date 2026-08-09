@@ -222,8 +222,8 @@ export default async function PricingPage() {
                       href={user ? "/settings#plan" : `/sign-in?next=/settings%23plan`}
                     >
                       {markup(t("Subscribe to <0/> <1/>"), [
-                      p.key === "pro" ? "Pro" : "Team",
-                      spots > 0 ? " · half price" : "",
+                      p.key === "pro" ? t("Pro") : t("Team"),
+                      spots > 0 ? t(" · half price") : "",
                     ])}</Link>
                   )}
                 </div>

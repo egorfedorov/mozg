@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/db";
@@ -10,6 +11,7 @@ import { limitsFor, upgradesFrom } from "@/lib/plans";
 import { pendingPlanRequest } from "@/lib/upgrade";
 import { env } from "@/lib/env";
 import PushToggle from "@/components/PushToggle";
+import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,8 @@ export const metadata = { title: "Account — mozg" };
  */
 
 export default async function SettingsPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings");
 
@@ -57,24 +61,19 @@ export default async function SettingsPage() {
   const targets = upgradesFrom(user.plan);
 
   return (
-    <AppShell active="/settings" eyebrow={user.email} title="Plan & profile">
+    <AppShell active="/settings" eyebrow={user.email} title={t("Plan & profile")}>
       <section>
         <h2 className="h2" style={{ marginBottom: ".75rem" }}>
-          Profile
-        </h2>
+          {t("Profile")}</h2>
         <ProfileForm name={user.name ?? ""} handle={user.handle ?? ""} />
       </section>
 
       {env.VAPID_PUBLIC_KEY && (
         <section style={{ marginTop: "2.5rem" }}>
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            Notifications
-          </h2>
+            {t("Notifications")}</h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            A browser notification when mozg replies to you in chatmozg — even
-            with the site closed. Per browser; works in Chrome, Safari 16.4+
-            and Firefox.
-          </p>
+            {t("A browser notification when mozg replies to you in chatmozg — even with the site closed. Per browser; works in Chrome, Safari 16.4+ and Firefox.")}</p>
           <PushToggle
             vapidPublicKey={env.VAPID_PUBLIC_KEY}
             enabledNote="✓ this browser gets notified when mozg replies"
@@ -84,19 +83,17 @@ export default async function SettingsPage() {
 
       <section style={{ marginTop: "2.5rem" }}>
         <h2 className="h2" style={{ marginBottom: ".75rem" }}>
-          Plan and usage
-        </h2>
+          {t("Plan and usage")}</h2>
 
         <div className="scorecard">
           <div className="score-head">
             <div>
               <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
-                Current plan
-              </p>
+                {t("Current plan")}</p>
               <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
                 {user.paidUntil
-                  ? `paid until ${new Date(user.paidUntil).toISOString().slice(0, 10)}`
-                  : "resets on the 1st"}
+                  ? fill(t("paid until <0/>"), [new Date(user.paidUntil).toISOString().slice(0, 10)])
+                  : t("resets on the 1st")}
               </span>
             </div>
             <div className="score-big" style={{ textTransform: "lowercase" }}>
@@ -104,18 +101,18 @@ export default async function SettingsPage() {
             </div>
           </div>
 
-          <Usage label="Brains" used={counts.brains} limit={limits.brains} />
-          <Usage label="Sources" used={counts.sources} limit={limits.sources} />
-          <Usage label="MCP calls this month" used={counts.calls} limit={limits.calls} />
+          <Usage label={t("Brains")} used={counts.brains} limit={limits.brains} />
+          <Usage label={t("Sources")} used={counts.sources} limit={limits.sources} />
+          <Usage label={t("MCP calls this month")} used={counts.calls} limit={limits.calls} />
           <div className="score-row" data-state={limits.write ? "pass" : "fail"}>
             <span className="sig">{limits.write ? "✓" : "✕"}</span>
-            <span>Agents can write back</span>
-            <span className="count">{limits.write ? "on" : "Pro"}</span>
+            <span>{t("Agents can write back")}</span>
+            <span className="count">{limits.write ? "on" : t("Pro")}</span>
           </div>
           <div className="score-row" data-state={limits.exports ? "pass" : "fail"}>
             <span className="sig">{limits.exports ? "✓" : "✕"}</span>
-            <span>Export to CLAUDE.md, Skill, AGENTS.md</span>
-            <span className="count">{limits.exports ? "on" : "Pro"}</span>
+            <span>{t("Export to CLAUDE.md, Skill, AGENTS.md")}</span>
+            <span className="count">{limits.exports ? "on" : t("Pro")}</span>
           </div>
         </div>
 
@@ -132,19 +129,14 @@ export default async function SettingsPage() {
 
       <section style={{ marginTop: "2.5rem" }}>
         <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-          Connecting an agent
-        </h2>
+          {t("Connecting an agent")}</h2>
         <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "60ch" }}>
-          One token works across every brain you can reach. The setup lines for
-          Claude Code, Codex, Cursor, Kimi and the rest are on the connect page.
-        </p>
+          {t("One token works across every brain you can reach. The setup lines for Claude Code, Codex, Cursor, Kimi and the rest are on the connect page.")}</p>
         <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}>
           <Link className="btn" href="/settings/tokens">
-            Your tokens
-          </Link>
+            {t("Your tokens")}</Link>
           <Link className="btn btn-ghost" href="/connect">
-            How to connect
-          </Link>
+            {t("How to connect")}</Link>
         </div>
       </section>
     </AppShell>

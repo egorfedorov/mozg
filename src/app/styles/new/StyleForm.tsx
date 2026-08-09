@@ -74,7 +74,7 @@ export default function StyleForm() {
           name="name"
           required
           maxLength={80}
-          placeholder="e.g. Ink & Paper Fables"
+          placeholder={t("e.g. Ink & Paper Fables")}
           style={{ padding: ".65rem .8rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }}
         />
       </label>

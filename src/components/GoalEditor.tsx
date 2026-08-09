@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useActionState, useState } from "react";
 import { saveGoal } from "@/app/brains/[slug]/exam-actions";
 
@@ -15,6 +16,8 @@ export default function GoalEditor({
   slug: string;
   goal: string | null;
 }) {
+  const t = useT();
+
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(saveGoal, null);
 
@@ -22,7 +25,7 @@ export default function GoalEditor({
     return (
       <div>
         <p style={{ color: "var(--ink-2)", margin: ".6rem 0 0", maxWidth: "60ch" }}>
-          {goal ?? "No goal set — the brain can store notes but cannot be examined."}
+          {goal ?? t("No goal set — the brain can store notes but cannot be examined.")}
         </p>
         <button
           onClick={() => setEditing(true)}
@@ -35,15 +38,14 @@ export default function GoalEditor({
             cursor: "pointer",
           }}
         >
-          {goal ? "edit goal" : "set a goal"} →
+          {goal ? t("edit goal") : t("set a goal")} →
         </button>
         {state?.requeued && (
           <p
             className="mono"
             style={{ fontSize: ".75rem", color: "var(--color-riso-green)", marginTop: ".4rem" }}
           >
-            Goal changed — the exam was cleared and re-queued.
-          </p>
+            {t("Goal changed — the exam was cleared and re-queued.")}</p>
         )}
       </div>
     );
@@ -60,7 +62,7 @@ export default function GoalEditor({
         rows={4}
         defaultValue={goal ?? ""}
         autoFocus
-        placeholder="What should this brain be able to do? Be concrete — vague goals produce vague checks."
+        placeholder={t("What should this brain be able to do? Be concrete — vague goals produce vague checks.")}
         style={{
           width: "100%",
           padding: ".7rem .85rem",
@@ -71,11 +73,10 @@ export default function GoalEditor({
         }}
       />
       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: 0 }}>
-        Changing this clears the exam and starts a new one.
-      </p>
+        {t("Changing this clears the exam and starts a new one.")}</p>
       <div style={{ display: "flex", gap: ".5rem" }}>
         <button className="btn" disabled={pending} style={{ padding: ".45rem .9rem" }}>
-          {pending ? "Saving…" : "Save goal"}
+          {pending ? t("Saving…") : t("Save goal")}
         </button>
         <button
           type="button"
@@ -83,8 +84,7 @@ export default function GoalEditor({
           style={{ padding: ".45rem .9rem" }}
           onClick={() => setEditing(false)}
         >
-          Cancel
-        </button>
+          {t("Cancel")}</button>
       </div>
       {state?.error && (
         <p className="mono" style={{ color: "var(--color-riso-red)", fontSize: ".8125rem" }}>

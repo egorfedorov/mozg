@@ -202,13 +202,13 @@ export default async function ExplorePage({
           <div className="panel" style={{ marginTop: "2rem", maxWidth: "58ch" }}>
             <p className="eyebrow">
               {topic
-                ? `Nothing in ${topicLabel(topic)} yet`
+                ? markup(t("Nothing in <0/> yet"), [topicLabel(topic)])
                 : price === "all"
-                  ? "Nothing public yet"
-                  : `No ${price} brains yet`}
+                  ? t("Nothing public yet")
+                  : markup(t("No <0/> brains yet"), [price])}
             </p>
             <h2 className="h2" style={{ margin: ".5rem 0 .75rem" }}>
-              {topic || price !== "all" ? "Try the whole catalogue." : "Be the first."}
+              {topic || price !== "all" ? t("Try the whole catalogue.") : t("Be the first.")}
             </h2>
             <p style={{ color: "var(--ink-2)", marginTop: 0 }}>
               {t("Publishing a brain makes it readable by anyone and gives it a page search engines can find. Set a price and it earns every time someone buys it.")}</p>
@@ -247,7 +247,7 @@ export default async function ExplorePage({
                 </span>
 
                 <h2 className="card-title">{brain.title}</h2>
-                <p className="card-goal">{brain.goal ?? "No goal set."}</p>
+                <p className="card-goal">{brain.goal ?? t("No goal set.")}</p>
 
                 <div
                   className="readout"

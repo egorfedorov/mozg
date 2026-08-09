@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -36,11 +38,15 @@ export default async function TokensPage({
 }: {
   searchParams: Promise<{ t?: string }>;
 }) {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/tokens");
 
-  const { t } = await searchParams;
-  const tab: Tab = t === "ichi" ? "ichi" : "mozg";
+  // ?t= is the tab, not the translator. Renamed on the way in so the two
+  // cannot be confused by the next person or by scripts/i18n-wrap.ts.
+  const { t: tabParam } = await searchParams;
+  const tab: Tab = tabParam === "ichi" ? "ichi" : "mozg";
 
   const [tokens, remaining, used, ichiTokens] = await Promise.all([
     query<McpToken>(
@@ -70,54 +76,58 @@ export default async function TokensPage({
   return (
     <AppShell
       active="/settings/tokens"
-      eyebrow={`${used} calls this month · ${remaining} left on ${user.plan}`}
-      title="Access tokens"
+      eyebrow={fill(t("<0/> calls this month · <1/> left on <2/>"), [used, remaining, user.plan])}
+      title={t("Access tokens")}
       narrow
     >
       <div className="stack">
-        <nav style={{ display: "flex", gap: ".5rem" }} aria-label="Which product">
+        <nav style={{ display: "flex", gap: ".5rem" }} aria-label={t("Which product")}>
           <Link href="/settings/tokens" style={tabStyle(tab === "mozg")}>
-            mozg{tokens.length ? ` · ${tokens.length}` : ""}
-          </Link>
+            {markup(t("mozg<0/>"), [
+            tokens.length ? ` · ${tokens.length}` : "",
+          ])}</Link>
           <Link href="/settings/tokens?t=ichi" style={tabStyle(tab === "ichi")}>
-            ichi{ichiTokens.length ? ` · ${ichiTokens.length}` : ""}
-          </Link>
+            {markup(t("ichi<0/>"), [
+            ichiTokens.length ? ` · ${ichiTokens.length}` : "",
+          ])}</Link>
         </nav>
 
         {tab === "mozg" ? (
           <>
             <div>
               <p className="lede">
-                One token per machine. Each token can reach every brain you own or
-                have been given access to. Revoking one takes effect on the next
-                call. <Link href="/settings/usage">Usage</Link> shows where the
-                calls went.
-              </p>
+                {markup(t("One token per machine. Each token can reach every brain you own or have been given access to. Revoking one takes effect on the next call. <0>Usage</0> shows where the calls went."), [
+                <Link href="/settings/usage" key="s0" />,
+              ])}</p>
               <TokenForm />
             </div>
 
             {tokens.length > 0 && (
-              <Section title="Live tokens" aside={`${tokens.length} active`}>
+              <Section title={t("Live tokens")} aside={fill(t("<0/> active"), [tokens.length])}>
                 <Rows>
-                  {tokens.map((t) => (
+                  {tokens.map((token) => (
                     <Row
-                      key={t.id}
-                      title={`${t.prefix}…`}
-                      sub={t.name ?? undefined}
+                      key={token.id}
+                      title={`${token.prefix}…`}
+                      sub={token.name ?? undefined}
                       meta={
-                        t.last_used_at
-                          ? `last used ${new Date(t.last_used_at).toISOString().slice(0, 10)}`
+                        token.last_used_at
+                          ? fill(t("last used <0/>"), [
+                              new Date(token.last_used_at).toISOString().slice(0, 10),
+                            ])
                           : "never used"
                       }
                       side={
                         <ConfirmForm
                           action={revoke}
-                          message={`Revoke ${t.prefix}…? Any client using it loses access on the next call.`}
+                          message={fill(
+                            t("Revoke <0/>…? Any client using it loses access on the next call."),
+                            [token.prefix],
+                          )}
                         >
-                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="id" value={token.id} />
                           <button className="mono" style={revokeStyle}>
-                            revoke
-                          </button>
+                            {t("revoke")}</button>
                         </ConfirmForm>
                       }
                     />
@@ -130,40 +140,38 @@ export default async function TokensPage({
           <>
             <div>
               <p className="lede">
-                One token per machine, for{" "}
-                <a href="https://ichi.mozg.sh" target="_blank" rel="noreferrer">
-                  ichi
-                </a>{" "}
-                — the sibling that gives your agent a persistent character and
-                holds the standards you lay down. Same account as this one.
-                Issued here and nowhere else, so every credential you own is on
-                one page.
-              </p>
+                {markup(t("One token per machine, for <0>ichi</0> — the sibling that gives your agent a persistent character and holds the standards you lay down. Same account as this one. Issued here and nowhere else, so every credential you own is on one page."), [
+                <a href="https://ichi.mozg.sh" target="_blank" rel="noreferrer" key="s0" />,
+              ])}</p>
               <IchiTokenForm />
             </div>
 
             {ichiTokens.length > 0 && (
-              <Section title="Live ichi tokens" aside={`${ichiTokens.length} active`}>
+              <Section title={t("Live ichi tokens")} aside={fill(t("<0/> active"), [ichiTokens.length])}>
                 <Rows>
-                  {ichiTokens.map((t) => (
+                  {ichiTokens.map((token) => (
                     <Row
-                      key={t.id}
-                      title={`${t.prefix}…`}
-                      sub={t.name ?? undefined}
+                      key={token.id}
+                      title={`${token.prefix}…`}
+                      sub={token.name ?? undefined}
                       meta={
-                        t.last_used_at
-                          ? `last used ${new Date(t.last_used_at).toISOString().slice(0, 10)}`
+                        token.last_used_at
+                          ? fill(t("last used <0/>"), [
+                              new Date(token.last_used_at).toISOString().slice(0, 10),
+                            ])
                           : "never used"
                       }
                       side={
                         <ConfirmForm
                           action={revokeIchi}
-                          message={`Revoke ${t.prefix}…? Any agent using it stops reaching ichi on the next call.`}
+                          message={fill(
+                            t("Revoke <0/>…? Any agent using it stops reaching ichi on the next call."),
+                            [token.prefix],
+                          )}
                         >
-                          <input type="hidden" name="id" value={t.id} />
+                          <input type="hidden" name="id" value={token.id} />
                           <button className="mono" style={revokeStyle}>
-                            revoke
-                          </button>
+                            {t("revoke")}</button>
                         </ConfirmForm>
                       }
                     />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useEffect, useState } from "react";
 
 /**
@@ -16,6 +17,8 @@ export default function PushToggle({
   /** The on-state line — says what, exactly, this browser now hears about. */
   enabledNote?: string;
 }) {
+  const t = useT();
+
   const [state, setState] = useState<
     "checking" | "unsupported" | "off" | "on" | "denied" | "working"
   >("checking");
@@ -82,16 +85,13 @@ export default function PushToggle({
   if (state === "unsupported") {
     return (
       <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: 0 }}>
-        This browser does not support web push.
-      </p>
+        {t("This browser does not support web push.")}</p>
     );
   }
   if (state === "denied") {
     return (
       <p className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-red)", margin: 0 }}>
-        Notifications are blocked for mozg.sh in this browser — allow them in
-        site settings, then come back here.
-      </p>
+        {t("Notifications are blocked for mozg.sh in this browser — allow them in site settings, then come back here.")}</p>
     );
   }
 
@@ -103,12 +103,11 @@ export default function PushToggle({
             {enabledNote}
           </span>
           <button className="btn btn-ghost" style={{ padding: ".35rem .8rem" }} onClick={disable}>
-            Turn off
-          </button>
+            {t("Turn off")}</button>
         </>
       ) : (
         <button className="btn" disabled={state === "working"} onClick={enable}>
-          {state === "working" ? "Asking the browser…" : "Notify this browser"}
+          {state === "working" ? t("Asking the browser…") : t("Notify this browser")}
         </button>
       )}
     </div>

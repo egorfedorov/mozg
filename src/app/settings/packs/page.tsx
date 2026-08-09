@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -28,6 +30,8 @@ export const metadata = { title: "Packs — mozg" };
  * give away.
  */
 export default async function PacksSettingsPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/packs");
 
@@ -62,21 +66,20 @@ export default async function PacksSettingsPage() {
       active="/settings/packs"
       eyebrow={
         owned
-          ? `${owned} pack${owned === 1 ? "" : "s"} bought · balance ${formatCents(balanceRow)}`
-          : `balance ${formatCents(balanceRow)}`
+          ? fill(owned === 1 ? t("<0/> pack bought · balance <1/>") : t("<0/> packs bought · balance <1/>"), [
+              owned,
+              formatCents(balanceRow),
+            ])
+          : fill(t("balance <0/>"), [formatCents(balanceRow)])
       }
-      title="Packs"
+      title={t("Packs")}
       narrow
     >
       <div className="stack">
         <p className="lede">
-          A pack is a trade&rsquo;s brains bought together, once — it does not
-          renew and it does not expire. Each one comes with seats you hand to
-          colleagues by email; their own plan still decides how much they can
-          teach and how many calls they may make, so a busy colleague ends up
-          on their own <Link href="/settings#plan">pro or team</Link> rather
-          than quietly eating yours.
-        </p>
+          {markup(t("A pack is a trade’s brains bought together, once — it does not renew and it does not expire. Each one comes with seats you hand to colleagues by email; their own plan still decides how much they can teach and how many calls they may make, so a busy colleague ends up on their own <0>pro or team</0> rather than quietly eating yours."), [
+          <Link href="/settings#plan" key="s0" />,
+        ])}</p>
 
         {rows.map(({ pack, holding, seats, buyer, stats }) => {
           const given = seats.length;
@@ -88,19 +91,19 @@ export default async function PacksSettingsPage() {
               title={pack.title}
               aside={
                 holding?.own
-                  ? `${given + 1} of ${pack.seats} seats used`
+                  ? fill(t("<0/> of <1/> seats used"), [given + 1, pack.seats])
                   : holding
                     ? "on a colleague's purchase"
                     : formatCents(pack.priceCents)
               }
             >
               <p style={{ color: "var(--ink-2)", margin: "0 0 .75rem" }}>
-                {stats.brains} brains · {stats.notes.toLocaleString("en-US")} notes
-                {stats.median !== null && ` · ${stats.median}% median exam score`} ·{" "}
-                <Link href={`/packs/${pack.slug}`} style={{ textDecoration: "underline" }}>
-                  what is in it
-                </Link>
-              </p>
+                {markup(t("<0/> brains · <1/> notes <2/> · <3>what is in it</3>"), [
+                stats.brains,
+                stats.notes.toLocaleString(t("en-US")),
+                stats.median !== null && ` · ${stats.median}% median exam score`,
+                <Link href={`/packs/${pack.slug}`} style={{ textDecoration: "underline" }} key="s3" />,
+              ])}</p>
 
               {!holding && (
                 <BuyPack
@@ -114,8 +117,8 @@ export default async function PacksSettingsPage() {
                 <Rows>
                   <Row
                     title={buyer?.name ?? buyer?.handle ?? buyer?.email ?? "a colleague"}
-                    sub="bought this pack and gave you a seat on it."
-                    meta="your own plan still decides your calls and how much you can teach"
+                    sub={t("bought this pack and gave you a seat on it.")}
+                    meta={t("your own plan still decides your calls and how much you can teach")}
                   />
                 </Rows>
               )}
@@ -128,13 +131,14 @@ export default async function PacksSettingsPage() {
                       className="mono"
                       style={{ color: "var(--ink-2)", fontSize: ".8125rem", marginTop: ".5rem" }}
                     >
-                      All {pack.seats} seats are taken — yours and {given} given
-                      out. Take one back to move it.
-                    </p>
+                      {markup(t("All <0/> seats are taken — yours and <1/> given out. Take one back to move it."), [
+                      pack.seats,
+                      given,
+                    ])}</p>
                   )}
 
                   <div style={{ marginTop: "1rem" }}>
-                    <Rows empty="Nobody yet. Give a seat and they read the whole pack.">
+                    <Rows empty={t("Nobody yet. Give a seat and they read the whole pack.")}>
                       {seats.map((s) => (
                         <Row
                           key={s.id}
@@ -147,7 +151,10 @@ export default async function PacksSettingsPage() {
                           side={
                             <ConfirmForm
                               action={removePackSeat}
-                              message={`Take back ${s.email}'s seat on ${pack.title}? They lose the pack on their next call.`}
+                              message={fill(
+                                t("Take back <0/>’s seat on <1/>? They lose the pack on their next call."),
+                                [s.email, pack.title],
+                              )}
                             >
                               <input type="hidden" name="id" value={s.id} />
                               <button
@@ -162,8 +169,7 @@ export default async function PacksSettingsPage() {
                                   textDecoration: "underline",
                                 }}
                               >
-                                remove
-                              </button>
+                                {t("remove")}</button>
                             </ConfirmForm>
                           }
                         />

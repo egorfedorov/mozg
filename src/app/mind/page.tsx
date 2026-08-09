@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
@@ -15,6 +17,8 @@ export const metadata = { title: "Your mind — mozg" };
  * gets from brain_list, drawn for the human who pays for it.
  */
 export default async function MindPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/mind");
 
@@ -141,19 +145,20 @@ export default async function MindPage() {
   );
 
   return (
-    <AppShell active="/mind" eyebrow="Everything your agents can know" title="Your mind">
+    <AppShell active="/mind" eyebrow={t("Everything your agents can know")} title={t("Your mind")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {brains.length} brain{brains.length === 1 ? "" : "s"} ·{" "}
-        {totals.notes.toLocaleString()} notes · {totals.calls} of your asks this
-        week. Green — proven on its exam; red — where it honestly fails. Type
-        to find who knows what.
-      </p>
+        {markup(t("<0/> brain<1/> · <2/> notes · <3/> of your asks this week. Green — proven on its exam; red — where it honestly fails. Type to find who knows what."), [
+        brains.length,
+        brains.length === 1 ? "" : "s",
+        totals.notes.toLocaleString(),
+        totals.calls,
+      ])}</p>
 
       {handoffs.length > 0 && (
         <section style={{ margin: "0 0 1.75rem" }}>
           <div className="section-head">
-            <h2 className="h2">Handoffs</h2>
-            <span className="eyebrow">work left mid-flight, any agent can take it</span>
+            <h2 className="h2">{t("Handoffs")}</h2>
+            <span className="eyebrow">{t("work left mid-flight, any agent can take it")}</span>
           </div>
           <div className="rows" style={{ maxWidth: "52rem" }}>
             {handoffs.map((h, i) => (
@@ -161,9 +166,12 @@ export default async function MindPage() {
                 <span style={{ minWidth: 0 }}>
                   <strong>{h.title}</strong>
                   <span className="row-meta">
-                    {h.handle} · left by {h.agent_client ?? "an agent"} · {h.at}
-                    {h.status === "taken" && ` · taken by ${h.taken_by ?? "an agent"}`}
-                  </span>
+                    {markup(t("<0/> · left by <1/> · <2/> <3/>"), [
+                    h.handle,
+                    h.agent_client ?? t("an agent"),
+                    h.at,
+                    h.status === "taken" && ` · taken by ${h.taken_by ?? t("an agent")}`,
+                  ])}</span>
                 </span>
                 <span className="row-side mono" style={{ fontSize: ".75rem", color: h.status === "open" ? "var(--color-riso-orange)" : "var(--ink-3)" }}>
                   {h.status}

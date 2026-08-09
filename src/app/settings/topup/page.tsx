@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/session";
@@ -19,35 +20,37 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function TopUpPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/topup");
 
   const topups = await recentTopups(user.id, 8);
 
   return (
-    <AppShell active="/settings/balance" eyebrow={user.email} title="Top up balance">
+    <AppShell active="/settings/balance" eyebrow={user.email} title={t("Top up balance")}>
       <div className="stack">
         <TopUpMethods
           ready={anyCryptoReady}
           coins={(await availableCoins()).map((c) => ({ key: c.key, label: c.label, note: c.note }))}
         />
 
-        <Section title="Recent top-ups" aside={<Link href="/settings/balance">balance →</Link>}>
-          <Rows empty="Nothing yet. A top-up appears here the moment it is started, and turns into balance when the payment lands.">
-            {topups.map((t) => (
+        <Section title={t("Recent top-ups")} aside={<Link href="/settings/balance">{t("balance →")}</Link>}>
+          <Rows empty={t("Nothing yet. A top-up appears here the moment it is started, and turns into balance when the payment lands.")}>
+            {topups.map((topup) => (
               <Row
-                key={t.reference}
-                title={formatCents(t.amount_cents)}
-                sub={STATUS_LABEL[t.status] ?? t.status}
-                meta={t.created_at}
+                key={topup.reference}
+                title={formatCents(topup.amount_cents)}
+                sub={STATUS_LABEL[topup.status] ?? topup.status}
+                meta={topup.created_at}
                 side={
-                  t.status === "pending" ? (
+                  topup.status === "pending" ? (
                     <a
-                      href={t.pay_url ?? `/pay/${t.reference}`}
-                      target={t.pay_url ? "_blank" : undefined}
+                      href={topup.pay_url ?? `/pay/${topup.reference}`}
+                      target={topup.pay_url ? "_blank" : undefined}
                       rel="noreferrer noopener"
                     >
-                      pay →
+                      {t("pay →")}
                     </a>
                   ) : undefined
                 }

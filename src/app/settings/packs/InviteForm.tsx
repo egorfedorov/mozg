@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState } from "react";
 import { invitePackSeat } from "./actions";
 
@@ -14,6 +16,8 @@ export default function InviteForm({
   pack: string;
   disabled?: boolean;
 }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(invitePackSeat, null);
 
   return (
@@ -25,7 +29,7 @@ export default function InviteForm({
           type="email"
           required
           disabled={disabled}
-          placeholder="colleague@studio.com"
+          placeholder={t("colleague@studio.com")}
           autoComplete="off"
           style={{
             flex: "1 1 14rem",
@@ -38,7 +42,7 @@ export default function InviteForm({
           }}
         />
         <button className="btn" type="submit" disabled={pending || disabled}>
-          {pending ? "Adding…" : "Give a seat"}
+          {pending ? t("Adding…") : t("Give a seat")}
         </button>
       </div>
 
@@ -49,9 +53,9 @@ export default function InviteForm({
       )}
       {state?.ok && (
         <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem" }}>
-          {state.email} has a seat. It opens the moment they sign in with that
-          address and verify it — there is nothing for them to accept.
-        </p>
+          {markup(t("<0/> has a seat. It opens the moment they sign in with that address and verify it — there is nothing for them to accept."), [
+          state.email,
+        ])}</p>
       )}
     </form>
   );

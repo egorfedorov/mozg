@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useActionState, useState } from "react";
 import { createIchiToken } from "./actions";
 
@@ -12,6 +13,8 @@ import { createIchiToken } from "./actions";
  * read than two components with one each.
  */
 export default function IchiTokenForm() {
+  const t = useT();
+
   const [state, action, pending] = useActionState(createIchiToken, null);
   const [copied, setCopied] = useState(false);
 
@@ -23,7 +26,7 @@ export default function IchiTokenForm() {
           <span className="term-dot" />
           <span className="term-dot" />
           <span className="term-dot" />
-          <span style={{ marginLeft: ".5rem" }}>copy this now</span>
+          <span style={{ marginLeft: ".5rem" }}>{t("copy this now")}</span>
         </div>
         <div style={{ wordBreak: "break-all", marginBottom: ".9rem" }}>
           <span className="c">$</span> {command}
@@ -41,11 +44,10 @@ export default function IchiTokenForm() {
             setTimeout(() => setCopied(false), 2000);
           }}
         >
-          {copied ? "Copied" : "Copy command"}
+          {copied ? t("Copied") : t("Copy command")}
         </button>
         <div className="c" style={{ marginTop: "1rem" }}>
-          This is the only time the token is shown. Losing it means making a new one.
-        </div>
+          {t("This is the only time the token is shown. Losing it means making a new one.")}</div>
       </section>
     );
   }
@@ -57,7 +59,7 @@ export default function IchiTokenForm() {
     >
       <input
         name="name"
-        placeholder="What machine is this for? e.g. macbook"
+        placeholder={t("What machine is this for? e.g. macbook")}
         maxLength={60}
         style={{
           flex: 1,
@@ -69,7 +71,7 @@ export default function IchiTokenForm() {
         }}
       />
       <button className="btn" disabled={pending}>
-        {pending ? "Creating…" : "New ichi token"}
+        {pending ? t("Creating…") : t("New ichi token")}
       </button>
       {state && "error" in state && (
         <p role="alert" style={{ width: "100%", margin: 0, color: "var(--ink-2)" }}>

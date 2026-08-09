@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
@@ -29,6 +31,8 @@ export default async function StudyPage({
   params: Promise<{ handle: string; slug: string; category: string }>;
   searchParams: Promise<{ part?: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug, category: rawCat } = await params;
   const category = decodeURIComponent(rawCat);
   const part = Math.max(1, Number((await searchParams).part) || 1);
@@ -179,17 +183,19 @@ export default async function StudyPage({
     <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 820 }}>
       <p className="eyebrow">
-        <Link href="/learn">learn</Link> /{" "}
-        <Link href={backHref}>{brain.title}</Link> / lesson
-      </p>
+        {markup(t("<0>learn</0> / <1/> / lesson"), [
+        <Link href="/learn" key="s0" />,
+        <Link key="s1" href={backHref}>{brain.title}</Link>,
+      ])}</p>
       <h1 className="display" style={{ fontSize: "clamp(1.7rem, 5vw, 2.6rem)", margin: ".4rem 0 .5rem" }}>
         {category}
       </h1>
       <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: "0 0 1.5rem" }}>
-        {parts > 1 ? `part ${part} of ${parts} · ` : ""}
-        read a few, recall the same few{closing > 0 ? ", then the exam asks" : ""}
-        {!compiled && " · the editor is arranging this module — this sitting teaches in raw order"}
-      </p>
+        {markup(t("<0/> read a few, recall the same few<1/> <2/>"), [
+        parts > 1 ? `part ${part} of ${parts} · ` : "",
+        closing > 0 ? t(", then the exam asks") : "",
+        !compiled && t(" · the editor is arranging this module — this sitting teaches in raw order"),
+      ])}</p>
 
       <LessonPlayer
         brainId={brain.id}

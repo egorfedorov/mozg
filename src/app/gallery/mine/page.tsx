@@ -80,7 +80,7 @@ export default async function MyGenerations() {
                   <img src={`/api/generations/${j.id}/image`} alt={j.prompt} loading="lazy" />
                 ) : (
                   <span className="gen-placeholder mono" data-failed={j.status === "failed"}>
-                    {j.status === "failed" ? (j.error ?? "failed") : "drawing…"}
+                    {j.status === "failed" ? (j.error ?? "failed") : t("drawing…")}
                   </span>
                 )}
                 <figcaption className="mono">

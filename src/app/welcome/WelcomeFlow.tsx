@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { fill, markup } from "@/lib/markup";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -28,6 +30,8 @@ export default function WelcomeFlow({
   signedIn: boolean;
   steps: StepState[];
 }) {
+  const t = useT();
+
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
@@ -42,29 +46,28 @@ export default function WelcomeFlow({
     <div style={{ maxWidth: "56rem", margin: "0 auto", padding: "clamp(1rem, 4vw, 2.5rem)" }}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
         <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>
-          mozg<span>.</span>
-        </Link>
+          {markup(t("mozg<0>.</0>"), [
+          <span key="s0" />,
+        ])}</Link>
         <div style={{ display: "flex", gap: ".45rem", alignItems: "center" }}>
           {[0, 1, 2].map((i) => (
             <button
               key={i}
-              aria-label={`Step ${i + 1}`}
+              aria-label={fill(t("Step <0/>"), [i + 1])}
               onClick={() => setStage(i)}
               style={{ ...DOT, background: i <= stage ? "var(--ink)" : "var(--paper)", cursor: "pointer", padding: 0 }}
             />
           ))}
         </div>
         <Link className="mono linkish" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }} href={signedIn ? "/brains" : "/"}>
-          skip all →
-        </Link>
+          {t("skip all →")}</Link>
       </header>
 
       {stage === 0 && (
         <section>
-          <p className="eyebrow">Welcome · 28 seconds</p>
+          <p className="eyebrow">{t("Welcome · 28 seconds")}</p>
           <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1.25rem" }}>
-            The whole idea, first.
-          </h1>
+            {t("The whole idea, first.")}</h1>
           <video
             autoPlay
             muted
@@ -78,46 +81,41 @@ export default function WelcomeFlow({
           </video>
           <div style={{ display: "flex", gap: ".75rem", marginTop: "1.25rem", alignItems: "center" }}>
             <button className="btn" onClick={next}>
-              Continue →
-            </button>
+              {t("Continue →")}</button>
             <button className="btn btn-ghost" onClick={next}>
-              Skip the video
-            </button>
+              {t("Skip the video")}</button>
           </div>
         </section>
       )}
 
       {stage === 1 && (
         <section>
-          <p className="eyebrow">What this is</p>
+          <p className="eyebrow">{t("What this is")}</p>
           <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1rem" }}>
-            Teach it once.
-            <br />
-            Every agent knows.
-          </h1>
+            {markup(t("Teach it once. <0/> Every agent knows."), [
+            <br key="s0" />,
+          ])}</h1>
           <p className="lede" style={{ maxWidth: "58ch" }}>
-            mozg turns what you know — docs, screenshots, hard-won conventions
-            — into a <strong>brain</strong>: a searchable knowledge base every
-            AI agent you use reads over MCP.
-          </p>
+            {markup(t("mozg turns what you know — docs, screenshots, hard-won conventions — into a <0>brain</0>: a searchable knowledge base every AI agent you use reads over MCP."), [
+            <strong key="s0" />,
+          ])}</p>
           <ul style={{ margin: "1.25rem 0 0", paddingLeft: "1.1rem", color: "var(--ink-2)", display: "grid", gap: ".6rem", maxWidth: "58ch", lineHeight: 1.55 }}>
             <li>
-              <strong style={{ color: "var(--ink)" }}>Graded, not claimed</strong> — every brain sits an
-              exam on itself; the score you see comes from the grader.
-            </li>
+              {markup(t("<0>Graded, not claimed</0> — every brain sits an exam on itself; the score you see comes from the grader."), [
+              <strong style={{ color: "var(--ink)" }} key="s0" />,
+            ])}</li>
             <li>
-              <strong style={{ color: "var(--ink)" }}>One brain, every agent</strong> — Claude Code, Codex,
-              Cursor: teach here, all of them know.
-            </li>
+              {markup(t("<0>One brain, every agent</0> — Claude Code, Codex, Cursor: teach here, all of them know."), [
+              <strong style={{ color: "var(--ink)" }} key="s0" />,
+            ])}</li>
             <li>
-              <strong style={{ color: "var(--ink)" }}>It learns from use</strong> — unanswered questions
-              join its exam, corrections come back as notes.
-            </li>
+              {markup(t("<0>It learns from use</0> — unanswered questions join its exam, corrections come back as notes."), [
+              <strong style={{ color: "var(--ink)" }} key="s0" />,
+            ])}</li>
           </ul>
           <div style={{ display: "flex", gap: ".75rem", marginTop: "1.5rem" }}>
             <button className="btn" onClick={next}>
-              Got it — my first steps →
-            </button>
+              {t("Got it — my first steps →")}</button>
           </div>
         </section>
       )}
@@ -125,11 +123,15 @@ export default function WelcomeFlow({
       {stage === 2 && (
         <section>
           <p className="eyebrow">
-            {signedIn ? `${doneCount} of ${steps.length} done — live, they tick themselves` : "four steps, no card"}
+            {signedIn
+              ? fill(t("<0/> of <1/> done — live, they tick themselves"), [
+                  doneCount,
+                  steps.length,
+                ])
+              : t("four steps, no card")}
           </p>
           <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".5rem 0 1.25rem" }}>
-            Your first ten minutes.
-          </h1>
+            {t("Your first ten minutes.")}</h1>
           <div className="rows">
             {steps.map((s) => (
               <div key={s.n} className="row">
@@ -145,11 +147,10 @@ export default function WelcomeFlow({
                 <span className="row-side">
                   {s.done ? (
                     <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}>
-                      done
-                    </span>
+                      {t("done")}</span>
                   ) : (
                     <Link className="btn btn-ghost" style={{ padding: ".4rem .8rem" }} href={signedIn ? s.href : "/sign-in?next=/welcome"}>
-                      {signedIn ? s.ctaLabel : "Sign in"}
+                      {signedIn ? s.ctaLabel : t("Sign in")}
                     </Link>
                   )}
                 </span>
@@ -160,16 +161,14 @@ export default function WelcomeFlow({
           <div style={{ display: "flex", gap: ".75rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
             {signedIn ? (
               <Link className="btn" href={steps.find((s) => !s.done)?.href ?? "/brains"}>
-                {doneCount === steps.length ? "To your brains →" : "Start with the first open step →"}
+                {doneCount === steps.length ? t("To your brains →") : t("Start with the first open step →")}
               </Link>
             ) : (
               <Link className="btn" href="/sign-in?next=/welcome">
-                Start free — no card
-              </Link>
+                {t("Start free — no card")}</Link>
             )}
             <Link className="btn btn-ghost" href="/start">
-              Prefer the written path (~10 min)
-            </Link>
+              {t("Prefer the written path (~10 min)")}</Link>
           </div>
         </section>
       )}

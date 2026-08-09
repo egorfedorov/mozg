@@ -1,6 +1,8 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useEffect, useRef, useState } from "react";
+import { fill } from "@/lib/markup";
 
 /**
  * Watching an agent actually reach into the brain is the moment the product
@@ -46,6 +48,8 @@ export default function CallLog({
   /** Server-rendered history, so the panel is never empty on first paint. */
   recent: Call[];
 }) {
+  const t = useT();
+
   const [calls, setCalls] = useState<Call[]>(recent);
   const [live, setLive] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
@@ -86,7 +90,7 @@ export default function CallLog({
       className="term"
       style={{ maxHeight: 340, overflowY: "auto" }}
       aria-live="polite"
-      aria-label="Agent call log"
+      aria-label={t("Agent call log")}
       onScroll={(e) => {
         const el = e.currentTarget;
         atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
@@ -100,15 +104,13 @@ export default function CallLog({
         <span className="term-dot" />
         <span className="term-dot" />
         <span style={{ marginLeft: ".5rem" }}>
-          {live ? "live · agent calls" : "agent calls"}
+          {live ? t("live · agent calls") : t("agent calls")}
         </span>
       </div>
 
       {calls.length === 0 ? (
         <div className="c">
-          Nothing yet. Connect an agent and ask it something that needs this brain —
-          calls appear here as they happen.
-        </div>
+          {t("Nothing yet. Connect an agent and ask it something that needs this brain — calls appear here as they happen.")}</div>
       ) : (
         calls.map((call) => (
           <div key={call.id} style={{ display: "flex", gap: ".75rem" }}>
@@ -125,9 +127,9 @@ export default function CallLog({
                 </span>
               )}
               <span className="c">
-                {call.results !== null && ` → ${call.results} notes`}
-                {call.latency_ms !== null && ` · ${call.latency_ms} ms`}
-                {!call.ok && " · failed"}
+                {call.results !== null && fill(t(" → <0/> notes"), [call.results])}
+                {call.latency_ms !== null && fill(t(" · <0/> ms"), [call.latency_ms])}
+                {!call.ok && t(" · failed")}
               </span>
             </span>
           </div>

@@ -42,11 +42,11 @@ export default async function AuditPage() {
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
             {[
-              ["The score", "Control questions are written from your corpus's own stated goal, then answered ONLY from what retrieval returns — the same honest constraint your users live under. Weighted, majority-voted."],
-              ["Category coverage", "Not one number but a map: which subjects your base actually answers, which it fails, and which questions exposed the gaps — the fix list comes free."],
-              ["Judge agreement", "Every verdict is voted by independent judge passes; the agreement rate ships in the report. A score without its own error bars is marketing."],
-              ["Anti-bluff", "Plausible questions just outside your corpus's scope. A base that confidently answers what it cannot know fails customers quietly — this measures it loudly."],
-              ["The date", "Knowledge rots. The report is dated, and re-audits diff against the previous sitting: what was learned, what was lost."],
+              [t("The score"), t("Control questions are written from your corpus's own stated goal, then answered ONLY from what retrieval returns — the same honest constraint your users live under. Weighted, majority-voted.")],
+              [t("Category coverage"), t("Not one number but a map: which subjects your base actually answers, which it fails, and which questions exposed the gaps — the fix list comes free.")],
+              [t("Judge agreement"), t("Every verdict is voted by independent judge passes; the agreement rate ships in the report. A score without its own error bars is marketing.")],
+              [t("Anti-bluff"), t("Plausible questions just outside your corpus's scope. A base that confidently answers what it cannot know fails customers quietly — this measures it loudly.")],
+              [t("The date"), t("Knowledge rots. The report is dated, and re-audits diff against the previous sitting: what was learned, what was lost.")],
             ].map(([t, b]) => (
               <div key={t} className="row">
                 <span style={{ minWidth: 0 }}>

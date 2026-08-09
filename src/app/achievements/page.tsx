@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { currentUser } from "@/lib/session";
@@ -8,6 +9,7 @@ import {
   syncAchievements,
 } from "@/lib/achievements";
 import { Stats, Stat } from "@/components/ui";
+import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Achievements — mozg" };
@@ -19,6 +21,8 @@ export const metadata = { title: "Achievements — mozg" };
  * the mascot dock runs, and looking at the shelf marks them seen.
  */
 export default async function AchievementsPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/achievements");
 
@@ -31,16 +35,16 @@ export default async function AchievementsPage() {
   return (
     <AppShell
       active="/achievements"
-      eyebrow={`${done} of ${CATALOG.length} earned`}
-      title="Achievements"
+      eyebrow={fill(t("<0/> of <1/> earned"), [done, CATALOG.length])}
+      title={t("Achievements")}
     >
       <Stats>
-        <Stat label="Brains made" value={String(stats.brains)} />
-        <Stat label="Notes" value={stats.notes.toLocaleString()} />
-        <Stat label="Sources fed" value={String(stats.sources)} />
-        <Stat label="Agent calls" value={stats.calls.toLocaleString()} />
-        <Stat label="Duels won" value={String(stats.duels)} />
-        <Stat label="Best streak" value={`${stats.best_streak}d`} />
+        <Stat label={t("Brains made")} value={String(stats.brains)} />
+        <Stat label={t("Notes")} value={stats.notes.toLocaleString()} />
+        <Stat label={t("Sources fed")} value={String(stats.sources)} />
+        <Stat label={t("Agent calls")} value={stats.calls.toLocaleString()} />
+        <Stat label={t("Duels won")} value={String(stats.duels)} />
+        <Stat label={t("Best streak")} value={`${stats.best_streak}d`} />
       </Stats>
 
       <div className="ach-grid" style={{ marginTop: "1.5rem" }}>
@@ -68,7 +72,7 @@ export default async function AchievementsPage() {
                   ? at.toISOString().slice(0, 10)
                   : a.goal > 1
                     ? `${have} / ${a.goal}`
-                    : "not yet"}
+                    : t("not yet")}
               </span>
             </div>
           );

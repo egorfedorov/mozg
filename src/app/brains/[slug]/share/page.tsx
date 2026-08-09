@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -15,6 +17,8 @@ export default async function SharePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const t = await translator();
+
   const { slug } = await params;
   const user = await currentUser();
   if (!user) redirect("/sign-in");
@@ -43,15 +47,12 @@ export default async function SharePage({
         </Link>
 
         <h1 className="h1" style={{ margin: ".75rem 0 .5rem" }}>
-          Sharing
-        </h1>
+          {t("Sharing")}</h1>
         {brain.visibility === "public" && user.handle && (
           <p className="mono" style={{ color: "var(--ink-2)", fontSize: ".8125rem" }}>
-            Public at{" "}
-            <Link href={`/b/${user.handle}/${brain.slug}`} style={{ textDecoration: "underline" }}>
-              /b/{user.handle}/{brain.slug}
-            </Link>
-          </p>
+            {markup(t("Public at <0/>"), [
+            <Link key="s0" href={`/b/${user.handle}/${brain.slug}`} style={{ textDecoration: "underline" }}> /b/{user.handle}/{brain.slug} </Link>,
+          ])}</p>
         )}
 
         <div style={{ marginTop: "1.75rem" }}>
@@ -60,15 +61,11 @@ export default async function SharePage({
 
         <section style={{ marginTop: "2.5rem" }}>
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            Gift links
-          </h2>
+            {t("Gift links")}</h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            A link with a few uses — for seeding a community or thanking
-            someone. Each redeem grants read access{" "}
-            {brain.parent_id ? "to this brain" : "to this brain and its family"},
-            exactly like inviting them by email, and it works even on a paid
-            brain — that is the point.
-          </p>
+            {markup(t("A link with a few uses — for seeding a community or thanking someone. Each redeem grants read access <0/>, exactly like inviting them by email, and it works even on a paid brain — that is the point."), [
+            brain.parent_id ? t("to this brain") : t("to this brain and its family"),
+          ])}</p>
 
           {gifts.map((g) => (
             <div
@@ -79,8 +76,10 @@ export default async function SharePage({
                 {env.NEXT_PUBLIC_APP_URL}/gift/{g.code}
               </code>
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", flexShrink: 0 }}>
-                {g.uses_left} use{g.uses_left === 1 ? "" : "s"} left
-              </span>
+                {markup(t("<0/> use<1/> left"), [
+                g.uses_left,
+                g.uses_left === 1 ? "" : "s",
+              ])}</span>
               <form action={revokeGiftLink}>
                 <input type="hidden" name="id" value={g.id} />
                 <input type="hidden" name="slug" value={brain.slug} />
@@ -88,8 +87,7 @@ export default async function SharePage({
                   className="mono"
                   style={{ background: "none", border: 0, padding: 0, textDecoration: "underline", cursor: "pointer", fontSize: ".75rem", color: "var(--color-riso-red)" }}
                 >
-                  revoke
-                </button>
+                  {t("revoke")}</button>
               </form>
             </div>
           ))}
@@ -105,25 +103,21 @@ export default async function SharePage({
               style={{ width: 80, padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }}
             />
             <button className="btn btn-ghost" style={{ padding: ".45rem .9rem" }}>
-              Make a gift link
-            </button>
+              {t("Make a gift link")}</button>
           </form>
         </section>
 
         <section style={{ marginTop: "2.5rem" }}>
           <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-            Export
-          </h2>
+            {t("Export")}</h2>
           <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-            Take the brain with you. A file, once exported, keeps working with
-            no server and no subscription — exporting it is the Pro part.
-          </p>
+            {t("Take the brain with you. A file, once exported, keeps working with no server and no subscription — exporting it is the Pro part.")}</p>
           {limitsFor(user.plan).exports ? (
             <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
               {[
-                ["claude", "CLAUDE.md"],
-                ["skill", "Claude Skill"],
-                ["agents", "AGENTS.md"],
+                ["claude", t("CLAUDE.md")],
+                ["skill", t("Claude Skill")],
+                ["agents", t("AGENTS.md")],
               ].map(([format, label]) => (
                 <a
                   key={format}
@@ -136,12 +130,9 @@ export default async function SharePage({
             </div>
           ) : (
             <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-              🔒 CLAUDE.md · Claude Skill · AGENTS.md —{" "}
-              <Link href="/settings" style={{ textDecoration: "underline" }}>
-                on the Pro plan
-              </Link>
-              . Over MCP the brain stays fully readable on free.
-            </p>
+              {markup(t("🔒 CLAUDE.md · Claude Skill · AGENTS.md — <0>on the Pro plan</0> . Over MCP the brain stays fully readable on free."), [
+              <Link href="/settings" style={{ textDecoration: "underline" }} key="s0" />,
+            ])}</p>
           )}
         </section>
 

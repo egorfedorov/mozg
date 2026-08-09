@@ -77,11 +77,11 @@ export default async function PayPage({
       <main className="shell" style={{ paddingBlock: "clamp(3rem, 8vw, 5rem)", maxWidth: 760 }}>
         <p className="eyebrow">
           {invoice.purpose === "buy" && invoice.buy_title
-            ? `Buying “${invoice.buy_title}”`
-            : "Topping up your balance"}
+            ? markup(t("Buying “<0/>”"), [invoice.buy_title])
+            : t("Topping up your balance")}
         </p>
         <h1 className="h1" style={{ margin: ".5rem 0 1rem" }}>
-          {paid ? "Paid. You're set." : pending ? "Send the exact amount" : "This invoice expired"}
+          {paid ? t("Paid. You're set.") : pending ? t("Send the exact amount") : t("This invoice expired")}
         </h1>
 
         {paid ? (
@@ -91,11 +91,11 @@ export default async function PayPage({
               formatCents(invoice.amount_cents),
               invoice.purpose === "buy" && invoice.buy_title
                 ? ` and “${invoice.buy_title}” is unlocked for your agents.`
-                : " on your balance.",
+                : t(" on your balance."),
             ])}</p>
             <div style={{ display: "flex", gap: ".75rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
               <Link className="btn" href={invoice.purpose === "buy" ? "/brains" : "/settings/balance"}>
-                {invoice.purpose === "buy" ? "Open your brains" : "See the balance"}
+                {invoice.purpose === "buy" ? t("Open your brains") : t("See the balance")}
               </Link>
             </div>
           </>
@@ -137,7 +137,10 @@ export default async function PayPage({
               <AutoRefresh
                 active
                 intervalMs={10_000}
-                label={`Watching the network — this page updates itself on confirmation${coin.note ? ` (${coin.note})` : ""}`}
+                label={
+                  t("Watching the network — this page updates itself on confirmation") +
+                  (coin.note ? ` (${coin.note})` : "")
+                }
               />
             </div>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>

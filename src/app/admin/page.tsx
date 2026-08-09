@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import AppShell from "@/components/AppShell";
 import {
   requireAdmin,
@@ -23,6 +25,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin — mozg", robots: { index: false, follow: false } };
 
 export default async function AdminPage() {
+  const t = await translator();
+
   await requireAdmin();
 
   const [h, money, ledger, brains, payouts, requests, payments, totals, reach] = await Promise.all([
@@ -81,7 +85,7 @@ export default async function AdminPage() {
          where created_at > now() - interval '7 days') as week`,
   );
 
-  const t = totals[0];
+  const totalsRow = totals[0];
   const attention = brains.filter((b) => b.failed_sources > 0).slice(0, 8);
 
   // Wallet overrides: value shown is the override; the env address (if any)
@@ -98,40 +102,40 @@ export default async function AdminPage() {
   ];
 
   return (
-    <AppShell active="/admin" eyebrow="Operator" title="System">
+    <AppShell active="/admin" eyebrow={t("Operator")} title={t("System")}>
       <div className="stack">
         {/* Is anything broken right now? Nothing else on this page matters if
             the answer is yes. */}
-        <Section title="Right now">
+        <Section title={t("Right now")}>
           <Stats>
-            <Stat label="Database" dot={h.database ? "ok" : "down"} value={h.database ? "up" : "down"} />
+            <Stat label={t("Database")} dot={h.database ? "ok" : "down"} value={h.database ? "up" : "down"} />
             <Stat
-              label="Embeddings"
+              label={t("Embeddings")}
               dot={h.embeddings ? "ok" : "down"}
               value={h.embeddings ? "up" : "down"}
             />
             <Stat
-              label="Model spend 24h"
+              label={t("Model spend 24h")}
               value={`$${(Number(cost?.day ?? 0) / 100).toFixed(2)}`}
             />
             <Stat
-              label="…last 7 days"
+              label={t("…last 7 days")}
               value={`$${(Number(cost?.week ?? 0) / 100).toFixed(2)}`}
             />
             <Stat
-              label="Ingest queue"
+              label={t("Ingest queue")}
               dot={h.stuck > 0 ? "down" : "ok"}
               value={h.stuck > 0 ? `${h.stuck} stuck` : `${h.pending} pending`}
             />
             <Stat
-              label="MCP · 5 min"
+              label={t("MCP · 5 min")}
               dot={h.callsLive > 0 ? "ok" : "idle"}
               value={h.callsLive > 0 ? `${h.callsLive} calls` : "quiet"}
             />
             <Stat
-              label="MCP · 24 h"
+              label={t("MCP · 24 h")}
               dot={h.failuresDay > 0 ? "down" : "ok"}
-              value={`${h.callsDay} calls${h.failuresDay ? `, ${h.failuresDay} failed` : ""}`}
+              value={`${h.callsDay} calls${h.failuresDay ? fill(t(", <0/> failed"), [h.failuresDay]) : ""}`}
             />
           </Stats>
         </Section>
@@ -142,55 +146,53 @@ export default async function AdminPage() {
             has a brain it never asks, which a total call count hides because
             listing is itself a call. */}
         <Section
-          title="Do connected agents actually use it? · 7 days"
-          aside="distinct accounts, not calls"
+          title={t("Do connected agents actually use it? · 7 days")}
+          aside={t("distinct accounts, not calls")}
         >
           <Stats>
-            <Stat label="Agents calling" value={String(reach.active)} note="any tool" />
+            <Stat label={t("Agents calling")} value={String(reach.active)} note={t("any tool")} />
             <Stat
-              label="…that searched"
+              label={t("…that searched")}
               value={reach.active ? `${reach.searched} · ${Math.round((reach.searched / reach.active) * 100)}%` : "0"}
               dot={reach.active && reach.searched / reach.active >= 0.5 ? "ok" : "down"}
-              note="asked before answering"
+              note={t("asked before answering")}
             />
             <Stat
-              label="…that wrote back"
+              label={t("…that wrote back")}
               value={String(reach.wrote)}
-              note="taught it something"
+              note={t("taught it something")}
             />
             <Stat
-              label="…that left a baton"
+              label={t("…that left a baton")}
               value={String(reach.handed)}
-              note="handoff for the next session"
+              note={t("handoff for the next session")}
             />
           </Stats>
         </Section>
 
-        <Section title="Size of the thing">
+        <Section title={t("Size of the thing")}>
           <Stats>
-            <Stat label="People" value={String(t.users)} href="/admin/users" />
-            <Stat label="Brains" value={String(t.brains)} href="/admin/brains" />
-            <Stat label="Notes" value={t.notes.toLocaleString()} />
-            <Stat label="Public" value={String(t.public_brains)} />
-            <Stat label="On sale" value={String(t.paid_brains)} />
+            <Stat label={t("People")} value={String(totalsRow.users)} href="/admin/users" />
+            <Stat label={t("Brains")} value={String(totalsRow.brains)} href="/admin/brains" />
+            <Stat label={t("Notes")} value={totalsRow.notes.toLocaleString()} />
+            <Stat label={t("Public")} value={String(totalsRow.public_brains)} />
+            <Stat label={t("On sale")} value={String(totalsRow.paid_brains)} />
           </Stats>
         </Section>
 
         {payouts.length > 0 && (
-          <Section title="Withdrawals waiting" aside={`${payouts.length} to send`}>
+          <Section title={t("Withdrawals waiting")} aside={fill(t("<0/> to send"), [payouts.length])}>
             <p className="lede" style={{ marginBottom: ".75rem" }}>
-              Send the transfer first, then mark it paid — marking it is what
-              debits the balance.
-            </p>
+              {t("Send the transfer first, then mark it paid — marking it is what debits the balance.")}</p>
             <div className="adm-scroll">
               <table className="adm">
                 <thead>
                   <tr>
-                    <th>Asked</th>
-                    <th>Who</th>
-                    <th style={{ textAlign: "right" }}>Amount</th>
-                    <th style={{ textAlign: "right" }}>Balance</th>
-                    <th>Send to</th>
+                    <th>{t("Asked")}</th>
+                    <th>{t("Who")}</th>
+                    <th style={{ textAlign: "right" }}>{t("Amount")}</th>
+                    <th style={{ textAlign: "right" }}>{t("Balance")}</th>
+                    <th>{t("Send to")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -212,14 +214,13 @@ export default async function AdminPage() {
                           <form action={settleWithdrawal}>
                             <input type="hidden" name="id" value={p.id} />
                             <input type="hidden" name="paid" value="yes" />
-                            <button type="submit">Mark paid</button>
+                            <button type="submit">{t("Mark paid")}</button>
                           </form>
                           <form action={settleWithdrawal}>
                             <input type="hidden" name="id" value={p.id} />
                             <input type="hidden" name="paid" value="no" />
                             <button type="submit" data-danger="true">
-                              Reject
-                            </button>
+                              {t("Reject")}</button>
                           </form>
                         </span>
                       </td>
@@ -232,20 +233,17 @@ export default async function AdminPage() {
         )}
 
         {requests.length > 0 && (
-          <Section title="Plan requests" aside={`${requests.length} waiting`}>
+          <Section title={t("Plan requests")} aside={`${requests.length} waiting`}>
             <p className="lede" style={{ marginBottom: ".75rem" }}>
-              Approving grants the plan for 30 days without touching the
-              balance — the door for people who paid off-band. A user with
-              enough on the balance can skip this queue and pay in settings.
-            </p>
+              {t("Approving grants the plan for 30 days without touching the balance — the door for people who paid off-band. A user with enough on the balance can skip this queue and pay in settings.")}</p>
             <div className="adm-scroll">
               <table className="adm">
                 <thead>
                   <tr>
-                    <th>Asked</th>
-                    <th>Who</th>
-                    <th>Plan</th>
-                    <th style={{ textAlign: "right" }}>Balance</th>
+                    <th>{t("Asked")}</th>
+                    <th>{t("Who")}</th>
+                    <th>{t("Plan")}</th>
+                    <th style={{ textAlign: "right" }}>{t("Balance")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -261,14 +259,13 @@ export default async function AdminPage() {
                           <form action={resolveUpgrade}>
                             <input type="hidden" name="id" value={r.id} />
                             <input type="hidden" name="approve" value="yes" />
-                            <button type="submit">Approve</button>
+                            <button type="submit">{t("Approve")}</button>
                           </form>
                           <form action={resolveUpgrade}>
                             <input type="hidden" name="id" value={r.id} />
                             <input type="hidden" name="approve" value="no" />
                             <button type="submit" data-danger="true">
-                              Reject
-                            </button>
+                              {t("Reject")}</button>
                           </form>
                         </span>
                       </td>
@@ -281,17 +278,17 @@ export default async function AdminPage() {
         )}
 
         <div id="payments">
-        <Section title="Payments" aside="who paid, who is waiting">
+        <Section title={t("Payments")} aside={t("who paid, who is waiting")}>
           {/* Live money first. An invoice that expired unpaid is not news —
               seven red rows of old test attempts buried the one pending
               payment worth watching, so the noise folds shut below. */}
-          <Rows empty="No invoices yet. The first one shows up the moment someone opens a payment page.">
+          <Rows empty={t("No invoices yet. The first one shows up the moment someone opens a payment page.")}>
             {payments.filter((p) => p.status !== "failed" && p.status !== "expired").map((p, i) => (
               <div key={i} className="row-block">
                 <Row
                   title={`${formatCents(p.amount_cents)} · ${p.email}`}
                   sub={
-                    (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
+                    (p.purpose === "buy" && p.brain_title ? fill(t("buying “<0/>” · "), [p.brain_title]) : "") +
                     `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
                   }
                   meta={p.created_at}
@@ -308,9 +305,9 @@ export default async function AdminPage() {
           {payments.some((p) => p.status === "failed" || p.status === "expired") && (
             <details style={{ marginTop: ".75rem" }}>
               <summary className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", cursor: "pointer" }}>
-                {payments.filter((p) => p.status === "failed" || p.status === "expired").length}{" "}
-                expired without payment — show
-              </summary>
+                {markup(t("<0/> expired without payment — show"), [
+                payments.filter((p) => p.status === "failed" || p.status === "expired").length,
+              ])}</summary>
               <div style={{ marginTop: ".5rem" }}>
                 <Rows>
                   {payments.filter((p) => p.status === "failed" || p.status === "expired").map((p, i) => (
@@ -318,7 +315,7 @@ export default async function AdminPage() {
                       <Row
                         title={`${formatCents(p.amount_cents)} · ${p.email}`}
                         sub={
-                          (p.purpose === "buy" && p.brain_title ? `buying “${p.brain_title}” · ` : "") +
+                          (p.purpose === "buy" && p.brain_title ? fill(t("buying “<0/>” · "), [p.brain_title]) : "") +
                           `${p.provider}${p.pay_coin ? ` · ${p.pay_coin}` : ""}`
                         }
                         meta={p.created_at}
@@ -335,12 +332,9 @@ export default async function AdminPage() {
         </Section>
         </div>
 
-        <Section title="Notifications" aside="Chrome · Safari 16.4+ · Firefox">
+        <Section title={t("Notifications")} aside={t("Chrome · Safari 16.4+ · Firefox")}>
           <p className="lede" style={{ marginBottom: ".75rem" }}>
-            A browser notification the moment someone writes to chatmozg or
-            starts a payment — even with mozg closed. Per browser: enable it
-            on the laptop and the phone separately.
-          </p>
+            {t("A browser notification the moment someone writes to chatmozg or starts a payment — even with mozg closed. Per browser: enable it on the laptop and the phone separately.")}</p>
           {env.VAPID_PUBLIC_KEY ? (
             <PushToggle
               vapidPublicKey={env.VAPID_PUBLIC_KEY}
@@ -348,18 +342,13 @@ export default async function AdminPage() {
             />
           ) : (
             <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", margin: 0 }}>
-              VAPID keys are not set — generate with `npx web-push
-              generate-vapid-keys` and add to the env.
-            </p>
+              {t("VAPID keys are not set — generate with `npx web-push generate-vapid-keys` and add to the env.")}</p>
           )}
         </Section>
 
-        <Section title="mozgpay wallets" aside="where the crypto lands">
+        <Section title={t("mozgpay wallets")} aside={t("where the crypto lands")}>
           <p className="lede" style={{ marginBottom: ".75rem" }}>
-            Overrides the env addresses without a deploy. Empty field = fall
-            back to env. Only NEW invoices use a changed address — open ones
-            are watched at the address they were issued with.
-          </p>
+            {t("Overrides the env addresses without a deploy. Empty field = fall back to env. Only NEW invoices use a changed address — open ones are watched at the address they were issued with.")}</p>
           <WalletsForm
             wallets={wallets.map((w) => ({
               field: w.field,
@@ -370,18 +359,18 @@ export default async function AdminPage() {
           />
         </Section>
 
-        <Section title="Money" aside="the ledger, not the balances">
+        <Section title={t("Money")} aside={t("the ledger, not the balances")}>
           <Stats>
-            <Stat label="Topped up" value={formatCents(money.topped_up)} />
-            <Stat label="Spent" value={formatCents(money.spent)} />
-            <Stat label="To authors" value={formatCents(money.to_authors)} />
-            <Stat label="Our cut" value={formatCents(money.platform_cut)} />
-            <Stat label="Held by users" value={formatCents(money.outstanding)} note="what we owe" />
-            <Stat label="Purchases" value={String(money.purchases)} />
+            <Stat label={t("Topped up")} value={formatCents(money.topped_up)} />
+            <Stat label={t("Spent")} value={formatCents(money.spent)} />
+            <Stat label={t("To authors")} value={formatCents(money.to_authors)} />
+            <Stat label={t("Our cut")} value={formatCents(money.platform_cut)} />
+            <Stat label={t("Held by users")} value={formatCents(money.outstanding)} note={t("what we owe")} />
+            <Stat label={t("Purchases")} value={String(money.purchases)} />
           </Stats>
 
           <div style={{ marginTop: "1.25rem" }}>
-            <Rows empty="No movements yet. The first one will be a top-up.">
+            <Rows empty={t("No movements yet. The first one will be a top-up.")}>
               {ledger.map((row) => (
                 <Row
                   key={row.id}
@@ -397,13 +386,9 @@ export default async function AdminPage() {
         </Section>
 
         {attention.length > 0 && (
-          <Section title="Brains with failed sources" aside={`${attention.length} affected`}>
+          <Section title={t("Brains with failed sources")} aside={`${attention.length} affected`}>
             <p className="lede" style={{ marginBottom: ".75rem" }}>
-              Fix the cause first — budget errors mean the owner&apos;s plan ran out
-              of extraction money, so grant a plan or wait for the window —
-              then requeue. Budget-paused sources also resume themselves on the
-              next maintenance pass.
-            </p>
+              {t("Fix the cause first — budget errors mean the owner's plan ran out of extraction money, so grant a plan or wait for the window — then requeue. Budget-paused sources also resume themselves on the next maintenance pass.")}</p>
             <Rows>
               {attention.map((b) => (
                 <div key={b.id} className="row-block">
@@ -415,7 +400,9 @@ export default async function AdminPage() {
                   />
                   <form action={requeueBrainSources} style={{ padding: "0 1.1rem .7rem" }}>
                     <input type="hidden" name="brain_id" value={b.id} />
-                    <button type="submit">Requeue {b.failed_sources} failed</button>
+                    <button type="submit">{markup(t("Requeue <0/> failed"), [
+                      b.failed_sources,
+                    ])}</button>
                   </form>
                 </div>
               ))}

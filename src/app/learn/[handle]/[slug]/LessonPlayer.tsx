@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { gradeCard } from "./actions";
@@ -75,6 +77,8 @@ export default function LessonPlayer({
   adapted?: boolean;
   sections?: { key: string; itemIds: string[] }[];
 }) {
+  const t = useT();
+
   const [queue, setQueue] = useState(items);
   const [step, setStep] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -168,17 +172,16 @@ export default function LessonPlayer({
   if (!item) {
     return (
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem", textAlign: "center" }}>
-        <p className="h2" style={{ margin: 0 }}>Lesson done.</p>
+        <p className="h2" style={{ margin: 0 }}>{t("Lesson done.")}</p>
         <p style={{ color: "var(--ink-2)" }}>
-          {total} steps{misses > 0 ? `, ${misses} relearned on the spot` : ", clean run"}.
-          Everything you graded is now on a schedule — it comes back right
-          before you would forget it.
-        </p>
+          {markup(t("<0/> steps<1/>. Everything you graded is now on a schedule — it comes back right before you would forget it."), [
+          total,
+          misses > 0 ? `, ${misses} relearned on the spot` : t(", clean run"),
+        ])}</p>
         <span style={{ display: "inline-flex", gap: ".6rem" }}>
-          {nextHref && <Link className="btn" href={nextHref}>Next part →</Link>}
+          {nextHref && <Link className="btn" href={nextHref}>{t("Next part →")}</Link>}
           <Link className={nextHref ? "btn btn-ghost" : "btn"} href={backHref}>
-            Back to the course
-          </Link>
+            {t("Back to the course")}</Link>
         </span>
       </div>
     );
@@ -204,8 +207,8 @@ export default function LessonPlayer({
       )}
       {hasDepths && (
         <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .75rem" }}>
-          depth:{" "}
-          {DEPTHS.map((d) => (
+          {markup(t("depth: <0/>"), [
+          DEPTHS.map((d) => (
             <button
               key={d}
               onClick={() => pickDepth(d)}
@@ -223,8 +226,8 @@ export default function LessonPlayer({
             >
               {d}
             </button>
-          ))}
-        </p>
+          )),
+        ])}</p>
       )}
       {/* One thin bar, always moving — finishing must feel near. */}
       <div style={{ height: 8, border: "1.5px solid var(--ink)", background: "var(--paper)", marginBottom: ".6rem" }}>
@@ -233,7 +236,7 @@ export default function LessonPlayer({
       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .75rem" }}>
         {step + 1} / {total} ·{" "}
         <span style={{ color: item.type === "read" ? "var(--ink-3)" : "var(--color-riso-red)" }}>{label}</span>
-        {adapted && <span title="Sections you struggle with lead the lesson"> · weak first</span>}
+        {adapted && <span title={t("Sections you struggle with lead the lesson")}> {t("· weak first")}</span>}
       </p>
 
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.5rem" }}>
@@ -255,25 +258,29 @@ export default function LessonPlayer({
 
       <div style={{ display: "flex", gap: ".6rem", marginTop: "1rem", flexWrap: "wrap", alignItems: "center" }}>
         {item.type === "read" ? (
-          <button className="btn" onClick={advance}>Got it →</button>
+          <button className="btn" onClick={advance}>{t("Got it →")}</button>
         ) : !revealed ? (
-          <button className="btn" onClick={() => setRevealed(true)}>Show the answer</button>
+          <button className="btn" onClick={() => setRevealed(true)}>{t("Show the answer")}</button>
         ) : (
           <>
             <button className="btn btn-ghost" style={{ borderColor: "var(--color-riso-red)" }} onClick={() => grade("again")}>
-              again <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>1</span>
-            </button>
+              {markup(t("again <0>1</0>"), [
+              <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }} key="s0" />,
+            ])}</button>
             <button className="btn btn-ghost" style={{ borderColor: "var(--color-riso-green)" }} onClick={() => grade("good")}>
-              good <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>2</span>
-            </button>
+              {markup(t("good <0>2</0>"), [
+              <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }} key="s0" />,
+            ])}</button>
             <button className="btn btn-ghost" onClick={() => grade("easy")}>
-              easy <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>3</span>
-            </button>
+              {markup(t("easy <0>3</0>"), [
+              <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }} key="s0" />,
+            ])}</button>
           </>
         )}
         <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", marginLeft: "auto" }}>
-          space{item.type !== "read" && revealed ? " · 1 2 3" : ""}
-        </span>
+          {markup(t("space<0/>"), [
+          item.type !== "read" && revealed ? " · 1 2 3" : "",
+        ])}</span>
       </div>
     </div>
   );

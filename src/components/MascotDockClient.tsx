@@ -1,5 +1,6 @@
 "use client";
 
+import { markup } from "@/lib/markup";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ChatForm from "@/app/chat/ChatForm";
@@ -128,8 +129,7 @@ export default function MascotDockClient({
           <header className="dock-head">
             <div>
               <p className="eyebrow" style={{ margin: 0 }}>
-                chatmozg
-              </p>
+                {t("chatmozg")}</p>
               <p className="mono dock-sub">{t("a person reads this, not a bot")}</p>
             </div>
             <button
@@ -169,23 +169,27 @@ export default function MascotDockClient({
                     {operator.unread > 0 && (
                       <Link href="/admin/chat" className="dock-ach">
                         <span>
-                          <strong>chatmozg</strong>
+                          <strong>{t("chatmozg")}</strong>
                           <span className="dock-ach-blurb">
-                            {operator.unread} message{operator.unread === 1 ? "" : "s"} waiting for you
-                          </span>
+                            {markup(t("<0/> message<1/> waiting for you"), [
+                            operator.unread,
+                            operator.unread === 1 ? "" : "s",
+                          ])}</span>
                         </span>
-                        <span className="mono dock-ach-new">reply →</span>
+                        <span className="mono dock-ach-new">{t("reply →")}</span>
                       </Link>
                     )}
                     {operator.payments > 0 && (
                       <Link href="/admin#payments" className="dock-ach">
                         <span>
-                          <strong>Payments</strong>
+                          <strong>{t("Payments")}</strong>
                           <span className="dock-ach-blurb">
-                            {operator.payments} new invoice{operator.payments === 1 ? "" : "s"} since you last looked
-                          </span>
+                            {markup(t("<0/> new invoice<1/> since you last looked"), [
+                            operator.payments,
+                            operator.payments === 1 ? "" : "s",
+                          ])}</span>
                         </span>
-                        <span className="mono dock-ach-new">see →</span>
+                        <span className="mono dock-ach-new">{t("see →")}</span>
                       </Link>
                     )}
                   </div>

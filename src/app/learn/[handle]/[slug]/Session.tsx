@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useState } from "react";
 import Link from "next/link";
 import { gradeCard } from "./actions";
@@ -25,6 +27,8 @@ const GRADES = [
  * off to tomorrow.
  */
 export default function Session({ brainId, cards, backHref }: { brainId: string; cards: Card[]; backHref: string }) {
+  const t = useT();
+
   const [queue, setQueue] = useState(cards);
   const [revealed, setRevealed] = useState(false);
   const [done, setDone] = useState(0);
@@ -35,12 +39,14 @@ export default function Session({ brainId, cards, backHref }: { brainId: string;
   if (!card) {
     return (
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem", textAlign: "center" }}>
-        <p className="h2" style={{ margin: 0 }}>Sitting done.</p>
+        <p className="h2" style={{ margin: 0 }}>{t("Sitting done.")}</p>
         <p style={{ color: "var(--ink-2)" }}>
-          {done} card{done === 1 ? "" : "s"}, {lapses} relearned. The ones you
-          missed come back sooner — that is the whole method.
-        </p>
-        <Link className="btn" href={backHref}>Back to the brain</Link>
+          {markup(t("<0/> card<1/>, <2/> relearned. The ones you missed come back sooner — that is the whole method."), [
+          done,
+          done === 1 ? "" : "s",
+          lapses,
+        ])}</p>
+        <Link className="btn" href={backHref}>{t("Back to the brain")}</Link>
       </div>
     );
   }
@@ -62,11 +68,12 @@ export default function Session({ brainId, cards, backHref }: { brainId: string;
   return (
     <div>
       <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)" }}>
-        {queue.length} left
-        {card.category ? ` · ${card.category}` : ""}
-        {card.isNew ? " · new" : " · review"}
-        {card.kind === "check" ? " · exam question" : ""}
-      </p>
+        {markup(t("<0/> left <1/> <2/> <3/>"), [
+        queue.length,
+        card.category ? ` · ${card.category}` : "",
+        card.isNew ? t(" · new") : t(" · review"),
+        card.kind === "check" ? t(" · exam question") : "",
+      ])}</p>
 
       <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.5rem" }}>
         <p style={{ margin: 0, fontWeight: 650, fontSize: "1.125rem", whiteSpace: "pre-wrap" }}>{card.front}</p>
@@ -80,8 +87,7 @@ export default function Session({ brainId, cards, backHref }: { brainId: string;
       <div style={{ display: "flex", gap: ".6rem", marginTop: "1rem", flexWrap: "wrap" }}>
         {!revealed ? (
           <button className="btn" onClick={() => setRevealed(true)}>
-            Show the answer
-          </button>
+            {t("Show the answer")}</button>
         ) : (
           GRADES.map((g) => (
             <button

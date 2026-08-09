@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { markup } from "./markup";
+import { fill, markup } from "./markup";
 
 // JSX would need a .tsx file, and the test runner's glob is *.test.ts. The
 // call sites are JSX; this is the same tree written the long way.
@@ -52,4 +52,22 @@ test("English falls through unchanged when no translation exists", () => {
     render("Open the <0>catalogue</0>.", [h("a", { href: "/explore" })]),
     '<p>Open the <a href="/explore">catalogue</a>.</p>',
   );
+});
+
+/**
+ * fill() is the string half of the same slots.
+ *
+ * It exists because `alt`, `aria-label` and every prop typed `string` cannot
+ * take nodes, and the alternative people reach for — a template literal — hides
+ * the sentence from the translator completely.
+ */
+test("fill puts values into the slots and leaves a plain string", () => {
+  assert.equal(fill("A work in <0/>", ["Ink & Paper"]), "A work in Ink & Paper");
+  assert.equal(fill("<0/> of <1/> earned", [3, 12]), "3 of 12 earned");
+  // Word order is the translator's to change; the slots carry the values there.
+  assert.equal(fill("<1/> из <0/> заработано", [12, 3]), "3 из 12 заработано");
+  // A sentence with no slots is returned untouched, so a translation that
+  // dropped one degrades to a missing value rather than to a crash.
+  assert.equal(fill("no slots here", [1]), "no slots here");
+  assert.equal(fill("missing <0/>", []), "missing ");
 });

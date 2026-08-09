@@ -1,7 +1,10 @@
+import { translator } from "@/lib/t";
 /** Skeleton of the brain page: header, then the connect/exam panel pair. */
-export default function Loading() {
+export default async function Loading() {
+  const t = await translator();
+
   return (
-    <div className="app-main" aria-busy="true" aria-label="Loading brain">
+    <div className="app-main" aria-busy="true" aria-label={t("Loading brain")}>
       <div className="skel" style={{ height: ".75rem", width: "6rem", marginBottom: "1rem" }} />
 
       <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start", margin: "1rem 0 2.5rem" }}>

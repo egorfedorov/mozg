@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useState } from "react";
 import { mintTokenForCopy } from "./token-action";
 
@@ -18,6 +19,8 @@ export default function CopyMcpCommand({
   /** Builds the full command around a token value. */
   commandFor: string;
 }) {
+  const t = useT();
+
   const [copied, setCopied] = useState(false);
   const [minted, setMinted] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,10 +70,10 @@ export default function CopyMcpCommand({
         {busy
           ? "…"
           : copied
-            ? "copied ✓ — now paste it in your terminal"
+            ? t("copied ✓ — now paste it in your terminal")
             : signedIn
-              ? "copy with my token"
-              : "copy command"}
+              ? t("copy with my token")
+              : t("copy command")}
       </button>
       {error && (
         <span className="mono" style={{ marginTop: "1rem", fontSize: ".75rem", color: "var(--color-riso-red)" }}>

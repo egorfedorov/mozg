@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState } from "react";
 import type { Brain, Grant } from "@/db/types";
 // money-math, not money: this is a client component and @/lib/money drags in pg.
@@ -51,6 +53,8 @@ export default function ShareForm({
   brain: Brain;
   grants: Grant[];
 }) {
+  const t = useT();
+
   const [settings, saveSettings, savingSettings] = useActionState(updateSharing, null);
   const [invite, sendInvite, inviting] = useActionState(inviteByEmail, null);
   const [cover, saveCover, savingCover] = useActionState(uploadCover, null);
@@ -69,8 +73,7 @@ export default function ShareForm({
 
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".75rem" }}>
           <legend className="eyebrow" style={{ padding: 0 }}>
-            Who can read it
-          </legend>
+            {t("Who can read it")}</legend>
           {VISIBILITY.map((v) => (
             <Radio
               key={v.value}
@@ -85,13 +88,9 @@ export default function ShareForm({
 
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".75rem" }}>
           <legend className="eyebrow" style={{ padding: 0 }}>
-            Licence
-          </legend>
+            {t("Licence")}</legend>
           <p style={{ margin: "0 0 .25rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-            A licence is a legal boundary, not a technical one. Anyone who can read a
-            brain can copy it — what keeps a shared brain worth subscribing to is that
-            you keep updating it.
-          </p>
+            {t("A licence is a legal boundary, not a technical one. Anyone who can read a brain can copy it — what keeps a shared brain worth subscribing to is that you keep updating it.")}</p>
           {LICENSES.map((l) => (
             <Radio
               key={l.value}
@@ -106,11 +105,9 @@ export default function ShareForm({
 
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
           <legend className="eyebrow" style={{ padding: 0 }}>
-            Field
-          </legend>
+            {t("Field")}</legend>
           <p style={{ margin: "0 0 .25rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-            Which shelf of the catalogue it sits on. Only matters once it is public.
-          </p>
+            {t("Which shelf of the catalogue it sits on. Only matters once it is public.")}</p>
           <select
             name="topic"
             defaultValue={brain.topic}
@@ -122,9 +119,9 @@ export default function ShareForm({
               maxWidth: 320,
             }}
           >
-            {TOPICS.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.label}
+            {TOPICS.map((field) => (
+              <option key={field.key} value={field.key}>
+                {t(field.label)}
               </option>
             ))}
           </select>
@@ -132,22 +129,16 @@ export default function ShareForm({
 
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
           <legend className="eyebrow" style={{ padding: 0 }}>
-            Price
-          </legend>
+            {t("Price")}</legend>
           <p style={{ margin: "0 0 .25rem", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-            Leave at 0 to keep it free. A paid brain is listed publicly with its
-            note titles visible, and the contents unlock when someone buys it.
-            Paid once — buyers keep access as you keep adding to it. You receive{" "}
-            {100 - PLATFORM_FEE_PERCENT}% of each sale.
-          </p>
+            {markup(t("Leave at 0 to keep it free. A paid brain is listed publicly with its note titles visible, and the contents unlock when someone buys it. Paid once — buyers keep access as you keep adding to it. You receive <0/>% of each sale."), [
+            100 - PLATFORM_FEE_PERCENT,
+          ])}</p>
           <p
             className="mono"
             style={{ margin: "0 0 .5rem", fontSize: ".75rem", color: "var(--ink-3)", maxWidth: "58ch" }}
           >
-            Sell only what is yours to sell. Upload work you made, or that you
-            hold a licence for — a brain built from someone else&apos;s material
-            is taken down, and selling it is theft with extra steps.
-          </p>
+            {t("Sell only what is yours to sell. Upload work you made, or that you hold a licence for — a brain built from someone else's material is taken down, and selling it is theft with extra steps.")}</p>
           <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
             <span className="mono" style={{ color: "var(--ink-2)" }}>
               $
@@ -169,8 +160,9 @@ export default function ShareForm({
             />
             {brain.sales_count > 0 && (
               <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-                {brain.sales_count} sold
-              </span>
+                {markup(t("<0/> sold"), [
+                brain.sales_count,
+              ])}</span>
             )}
           </div>
         </fieldset>
@@ -183,11 +175,9 @@ export default function ShareForm({
             style={{ marginTop: ".25rem" }}
           />
           <span>
-            <strong>Review notes written by agents</strong>
+            <strong>{t("Review notes written by agents")}</strong>
             <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-              Agent-written notes wait for your approval before they can be found by
-              search. Turn this off and they go straight in.
-            </span>
+              {t("Agent-written notes wait for your approval before they can be found by search. Turn this off and they go straight in.")}</span>
           </span>
         </label>
 
@@ -195,19 +185,19 @@ export default function ShareForm({
             not a catalogue label. Placed above the cover because the two
             belong together: a style is the thing that needs a picture. */}
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
-          <legend className="eyebrow" style={{ padding: 0 }}>What this brain is</legend>
+          <legend className="eyebrow" style={{ padding: 0 }}>{t("What this brain is")}</legend>
           {[
             {
               value: "knowledge",
-              label: "Knowledge",
+              label: t("Knowledge"),
               detail:
-                "Facts, conventions, APIs, decisions. Read as documentation; examined on what it can answer.",
+                t("Facts, conventions, APIs, decisions. Read as documentation; examined on what it can answer."),
             },
             {
               value: "style",
-              label: "A style",
+              label: t("A style"),
               detail:
-                "A way of working — palette, line, light, the hard nevers. Uploads are read by an art director rather than a documentation reader, the exam asks whether the style can actually be reproduced from it, and it appears in the gallery.",
+                t("A way of working — palette, line, light, the hard nevers. Uploads are read by an art director rather than a documentation reader, the exam asks whether the style can actually be reproduced from it, and it appears in the gallery."),
             },
           ].map((k) => (
             <label key={k.value} style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>
@@ -233,18 +223,15 @@ export default function ShareForm({
             the correct incentive, and the reason this sits in the sharing
             settings rather than three clicks away. */}
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".6rem" }}>
-          <legend className="eyebrow" style={{ padding: 0 }}>Gallery cover</legend>
+          <legend className="eyebrow" style={{ padding: 0 }}>{t("Gallery cover")}</legend>
           <p style={{ color: "var(--ink-2)", fontSize: ".9375rem", margin: 0, maxWidth: "56ch" }}>
-            One image, shown on the catalogue and the style gallery. It is the
-            only upload that becomes public — everything you taught the brain
-            with stays private.
-          </p>
+            {t("One image, shown on the catalogue and the style gallery. It is the only upload that becomes public — everything you taught the brain with stays private.")}</p>
           <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
             {existingCover && (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={existingCover}
-                alt="Current cover"
+                alt={t("Current cover")}
                 width={120}
                 height={90}
                 style={{ width: 120, height: 90, objectFit: "cover", border: "1.5px solid var(--ink)" }}
@@ -254,13 +241,13 @@ export default function ShareForm({
               <input type="file" name="cover" accept="image/*" form="cover-form" />
               <span style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}>
                 <button className="btn btn-ghost" form="cover-form" disabled={savingCover} style={{ padding: ".4rem .8rem" }}>
-                  {savingCover ? "Uploading…" : existingCover ? "Replace cover" : "Upload cover"}
+                  {savingCover ? t("Uploading…") : existingCover ? t("Replace cover") : t("Upload cover")}
                 </button>
                 {cover?.error && (
                   <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-red)" }}>{cover.error}</span>
                 )}
                 {cover?.ok && (
-                  <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}>Saved</span>
+                  <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}>{t("Saved")}</span>
                 )}
               </span>
             </span>
@@ -275,13 +262,9 @@ export default function ShareForm({
             style={{ marginTop: ".25rem" }}
           />
           <span>
-            <strong>Take proposals from readers</strong>
+            <strong>{t("Take proposals from readers")}</strong>
             <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".9375rem" }}>
-              Someone whose agent learns something about this brain mid-task can send
-              it to you. Proposals always wait for your approval — they are invisible
-              to search and absent from the exam until you take them — so this cannot
-              change what the brain answers, only what is in your review queue.
-            </span>
+              {t("Someone whose agent learns something about this brain mid-task can send it to you. Proposals always wait for your approval — they are invisible to search and absent from the exam until you take them — so this cannot change what the brain answers, only what is in your review queue.")}</span>
           </span>
         </label>
 
@@ -293,28 +276,24 @@ export default function ShareForm({
         {settings?.ok && (
           <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem", margin: 0 }}>
             {settings.moderation
-              ? "Saved — publication sent for review. The brain stays as it is until an operator approves; everything else applied."
-              : "Saved"}
+              ? t("Saved — publication sent for review. The brain stays as it is until an operator approves; everything else applied.")
+              : t("Saved")}
           </p>
         )}
 
         <div>
           <button className="btn" disabled={savingSettings}>
-            {savingSettings ? "Saving…" : "Save"}
+            {savingSettings ? t("Saving…") : t("Save")}
           </button>
         </div>
       </form>
 
       <section style={{ marginTop: "2rem" }}>
         <h2 className="h2" style={{ marginBottom: ".75rem" }}>
-          People
-        </h2>
+          {t("People")}</h2>
 
         <p style={{ color: "var(--ink-2)", marginTop: 0, fontSize: ".9375rem", maxWidth: "58ch" }}>
-          Access is granted to the address, and only once that address is proven
-          — signing in with GitHub proves it. Until then the invitation sits here
-          and grants nothing.
-        </p>
+          {t("Access is granted to the address, and only once that address is proven — signing in with GitHub proves it. Until then the invitation sits here and grants nothing.")}</p>
 
         <form action={sendInvite} style={{ display: "flex", gap: ".6rem", flexWrap: "wrap" }}>
           <input type="hidden" name="slug" value={brain.slug} />
@@ -322,7 +301,7 @@ export default function ShareForm({
             name="email"
             type="email"
             required
-            placeholder="teammate@example.com"
+            placeholder={t("teammate@example.com")}
             style={{
               flex: 1,
               minWidth: 220,
@@ -342,11 +321,11 @@ export default function ShareForm({
               font: "inherit",
             }}
           >
-            <option value="viewer">can read</option>
-            <option value="contributor">can read and write</option>
+            <option value="viewer">{t("can read")}</option>
+            <option value="contributor">{t("can read and write")}</option>
           </select>
           <button className="btn" disabled={inviting}>
-            {inviting ? "Adding…" : "Add"}
+            {inviting ? t("Adding…") : t("Add")}
           </button>
         </form>
 
@@ -372,8 +351,8 @@ export default function ShareForm({
               >
                 <span>{g.email}</span>
                 <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-                  {g.role === "contributor" ? "read + write" : "read"}
-                  {!g.accepted_by && " · has not signed in yet"}
+                  {g.role === "contributor" ? t("read + write") : "read"}
+                  {!g.accepted_by && t(" · has not signed in yet")}
                 </span>
                 <form action={removeGrant}>
                   <input type="hidden" name="id" value={g.id} />
@@ -390,8 +369,7 @@ export default function ShareForm({
                       textDecoration: "underline",
                     }}
                   >
-                    remove
-                  </button>
+                    {t("remove")}</button>
                 </form>
               </div>
             ))}

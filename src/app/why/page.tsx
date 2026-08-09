@@ -131,12 +131,12 @@ export default async function WhyPage() {
             }}
           >
             {[
-              ["Screenshots in, knowledge out", "Drop a folder. Each image is read against the brain's goal, and comes back as searchable facts with the exact values kept — not a description of what the picture showed."],
-              ["One brain, every agent", "Claude Code, Codex, Kimi CLI, Qwen Code, Cursor, VS Code, Cline. The brain speaks MCP, so the client does not matter."],
-              ["Search that understands", "Meaning and keywords together. A Russian question finds an English note; “what if there is no data to show” finds the rule about empty states."],
-              ["Agents write back", "An agent that works out a convention saves it. It waits in a review queue, so the brain sharpens instead of drifting."],
-              ["Secrets never get in", "Terminal screenshots are full of tokens. Every source is scanned before storage, and again on whatever an agent writes. A brain that trips it cannot be shared."],
-              ["Yours to take", "Export any brain as CLAUDE.md, a Claude Skill, or AGENTS.md. It keeps working if you stop paying us — which is the point."],
+              [t("Screenshots in, knowledge out"), t("Drop a folder. Each image is read against the brain's goal, and comes back as searchable facts with the exact values kept — not a description of what the picture showed.")],
+              [t("One brain, every agent"), t("Claude Code, Codex, Kimi CLI, Qwen Code, Cursor, VS Code, Cline. The brain speaks MCP, so the client does not matter.")],
+              [t("Search that understands"), t("Meaning and keywords together. A Russian question finds an English note; “what if there is no data to show” finds the rule about empty states.")],
+              [t("Agents write back"), t("An agent that works out a convention saves it. It waits in a review queue, so the brain sharpens instead of drifting.")],
+              [t("Secrets never get in"), t("Terminal screenshots are full of tokens. Every source is scanned before storage, and again on whatever an agent writes. A brain that trips it cannot be shared.")],
+              [t("Yours to take"), t("Export any brain as CLAUDE.md, a Claude Skill, or AGENTS.md. It keeps working if you stop paying us — which is the point.")],
             ].map(([title, body]) => (
               <div key={title}>
                 <h3 className="h3" style={{ marginBottom: ".45rem" }}>

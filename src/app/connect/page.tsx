@@ -128,13 +128,13 @@ export MOZG_TOKEN=mzg_...`}
 
           <div className="panel" style={{ padding: 0, marginTop: "1.25rem" }}>
             {[
-              ["brain_list", "What brains am I allowed to read?"],
-              ["brain_brief", "What does this brain cover — and what is it known to be missing?"],
-              ["brain_search", "Find what this project actually decided, before answering from general knowledge."],
-              ["brain_read", "Open one note in full."],
-              ["brain_write", "Save a convention or a pitfall worth keeping."],
-              ["brain_create", "Start a new brain, without leaving the editor."],
-              ["brain_add_source", "Feed it documentation pages or a block of text to read."],
+              ["brain_list", t("What brains am I allowed to read?")],
+              ["brain_brief", t("What does this brain cover — and what is it known to be missing?")],
+              ["brain_search", t("Find what this project actually decided, before answering from general knowledge.")],
+              ["brain_read", t("Open one note in full.")],
+              ["brain_write", t("Save a convention or a pitfall worth keeping.")],
+              ["brain_create", t("Start a new brain, without leaving the editor.")],
+              ["brain_add_source", t("Feed it documentation pages or a block of text to read.")],
             ].map(([name, what]) => (
               <div
                 key={name}
@@ -200,7 +200,7 @@ answering anything stack- or project-specific, search them:
           }}
         >
           <Link className="btn" href={user ? "/brains" : "/sign-in"}>
-            {user ? "Your brains" : "Build a brain"}
+            {user ? t("Your brains") : t("Build a brain")}
           </Link>
           <Link className="btn btn-ghost" href="/guide">
             {t("How to build a good one")}</Link>
@@ -212,7 +212,7 @@ answering anything stack- or project-specific, search them:
     return (
       <AppShell
         active="/connect"
-        eyebrow="Model Context Protocol"
+        eyebrow={t("Model Context Protocol")}
         title={t("Connect a brain to whatever you code in.")}
       >
         {body}

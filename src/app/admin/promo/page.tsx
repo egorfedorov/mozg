@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
@@ -13,6 +15,8 @@ export const metadata = { title: "Promo — mozg admin" };
  * founding, never both.
  */
 export default async function AdminPromoPage() {
+  const t = await translator();
+
   await requireAdmin().catch(() => redirect("/"));
 
   const codes = await query<{
@@ -30,42 +34,42 @@ export default async function AdminPromoPage() {
   );
 
   return (
-    <AppShell active="/admin/promo" eyebrow="Operator" title="Promo codes">
+    <AppShell active="/admin/promo" eyebrow={t("Operator")} title={t("Promo codes")}>
       <form
         action={mintPromo}
         style={{ display: "flex", gap: ".6rem", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "1.5rem" }}
       >
         <label className="mono" style={{ fontSize: ".75rem" }}>
-          percent off
-          <input name="percent" type="number" min={1} max={100} defaultValue={20} required
-            style={{ display: "block", width: "6rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />
-        </label>
+          {markup(t("percent off <0/>"), [
+          <input key="s0" name="percent" type="number" min={1} max={100} defaultValue={20} required
+            style={{ display: "block", width: "6rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />,
+        ])}</label>
         <label className="mono" style={{ fontSize: ".75rem" }}>
-          max uses
-          <input name="uses" type="number" min={1} max={10000} defaultValue={10} required
-            style={{ display: "block", width: "6rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />
-        </label>
+          {markup(t("max uses <0/>"), [
+          <input key="s0" name="uses" type="number" min={1} max={10000} defaultValue={10} required
+            style={{ display: "block", width: "6rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />,
+        ])}</label>
         <label className="mono" style={{ fontSize: ".75rem" }}>
-          days valid (empty = forever)
-          <input name="days" type="number" min={1} max={365}
-            style={{ display: "block", width: "8rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />
-        </label>
+          {markup(t("days valid (empty = forever) <0/>"), [
+          <input key="s0" name="days" type="number" min={1} max={365}
+            style={{ display: "block", width: "8rem", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />,
+        ])}</label>
         <label className="mono" style={{ fontSize: ".75rem", flex: 1, minWidth: 160 }}>
-          note (who is it for)
-          <input name="note" placeholder="HN launch"
-            style={{ display: "block", width: "100%", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />
-        </label>
-        <button className="btn">Mint code</button>
+          {markup(t("note (who is it for) <0/>"), [
+          <input key="s0" name="note" placeholder={t("HN launch")}
+            style={{ display: "block", width: "100%", padding: ".45rem .6rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit" }} />,
+        ])}</label>
+        <button className="btn">{t("Mint code")}</button>
       </form>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".9375rem" }}>
         <thead>
           <tr className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", textAlign: "left" }}>
-            <th style={{ padding: ".4rem .6rem" }}>code</th>
-            <th style={{ padding: ".4rem .6rem" }}>off</th>
-            <th style={{ padding: ".4rem .6rem" }}>used</th>
-            <th style={{ padding: ".4rem .6rem" }}>expires</th>
-            <th style={{ padding: ".4rem .6rem" }}>note</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("code")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("off")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("used")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("expires")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("note")}</th>
           </tr>
         </thead>
         <tbody>
@@ -73,7 +77,7 @@ export default async function AdminPromoPage() {
             <tr key={c.code} style={{ borderTop: "1px solid var(--rule)" }}>
               <td className="mono" style={{ padding: ".45rem .6rem", fontWeight: 650 }}>{c.code}</td>
               <td className="mono" style={{ padding: ".45rem .6rem" }}>
-                {c.percent_off === 100 ? "free month" : `−${c.percent_off}%`}
+                {c.percent_off === 100 ? t("free month") : `−${c.percent_off}%`}
               </td>
               <td className="mono" style={{ padding: ".45rem .6rem" }}>
                 <span style={{ color: c.used >= c.max_uses ? "var(--color-riso-red)" : "inherit" }}>
@@ -87,7 +91,7 @@ export default async function AdminPromoPage() {
         </tbody>
       </table>
       {codes.length === 0 && (
-        <p style={{ color: "var(--ink-2)" }}>No codes yet — mint the first one above.</p>
+        <p style={{ color: "var(--ink-2)" }}>{t("No codes yet — mint the first one above.")}</p>
       )}
     </AppShell>
   );

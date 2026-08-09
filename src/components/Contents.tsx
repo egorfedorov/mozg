@@ -221,7 +221,7 @@ export default async function Contents({ active }: { active?: string }) {
           // :last-child of its own box and the dividers between them vanished.
           // The catalogue rides in right after Start — the one destination
           // with something to take home was two clicks deep inside "Uses".
-          return g.label === "Start"
+          return g.label === t("Start")
             ? [
                 group,
                 <Link

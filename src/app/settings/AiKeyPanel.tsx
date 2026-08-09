@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState, useState } from "react";
 
 /** Presets: pick a provider, the wire protocol and base URL come along. */
@@ -30,6 +32,8 @@ export default function AiKeyPanel({
   provider: "anthropic" | "openai";
   model: string | null;
 }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(saveAiKey, null);
   const activeHint = state && "hint" in state ? state.hint : state && "removed" in state ? null : hint;
   const [preset, setPreset] = useState(provider === "openai" ? "custom" : "anthropic");
@@ -45,22 +49,20 @@ export default function AiKeyPanel({
 
   return (
     <div className="panel" style={{ marginTop: "1.5rem" }}>
-      <p className="eyebrow">Train on your own key</p>
+      <p className="eyebrow">{t("Train on your own key")}</p>
       <p style={{ color: "var(--ink-2)", margin: ".4rem 0 0", maxWidth: "62ch" }}>
-        Building a brain spends model tokens. Set a key from{" "}
-        <strong>any</strong> provider — Claude (Anthropic), OpenAI, Kimi,
-        DeepSeek, Qwen, GLM or a compatible reseller — and extraction, exams
-        and lessons for <strong>your</strong> brains run on{" "}
-        <strong>your</strong> spend; the plan&apos;s daily training budget and
-        exam caps stop applying. Prefer no key at all? The Claude Code
-        plugin&apos;s <span className="mono">/mozg:train</span> teaches a
-        brain through your existing Claude subscription.
-      </p>
+        {markup(t("Building a brain spends model tokens. Set a key from <0>any</0> provider — Claude (Anthropic), OpenAI, Kimi, DeepSeek, Qwen, GLM or a compatible reseller — and extraction, exams and lessons for <1>your</1> brains run on <2>your</2> spend; the plan's daily training budget and exam caps stop applying. Prefer no key at all? The Claude Code plugin's <3>/mozg:train</3> teaches a brain through your existing Claude subscription."), [
+        <strong key="s0" />,
+        <strong key="s1" />,
+        <strong key="s2" />,
+        <span className="mono" key="s3" />,
+      ])}</p>
 
       {activeHint && (
         <p className="mono" style={{ fontSize: ".8125rem", margin: ".75rem 0 0", color: "var(--color-riso-green)" }}>
-          key on file: ····{activeHint} — your brains train on it
-        </p>
+          {markup(t("key on file: ····<0/> — your brains train on it"), [
+          activeHint,
+        ])}</p>
       )}
 
       <form action={action} style={{ display: "flex", gap: ".6rem", flexWrap: "wrap", marginTop: ".9rem" }}>
@@ -70,18 +72,18 @@ export default function AiKeyPanel({
           onChange={(e) => pick(e.target.value)}
           style={{ padding: ".55rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".875rem" }}
         >
-          <option value="anthropic">Claude (Anthropic)</option>
-          <option value="openai">OpenAI / Codex</option>
-          <option value="kimi">Kimi (Moonshot)</option>
-          <option value="deepseek">DeepSeek</option>
-          <option value="qwen">Qwen (DashScope)</option>
-          <option value="glm">GLM (Z.ai)</option>
-          <option value="custom">Other OpenAI-compatible…</option>
+          <option value="anthropic">{t("Claude (Anthropic)")}</option>
+          <option value="openai">{t("OpenAI / Codex")}</option>
+          <option value="kimi">{t("Kimi (Moonshot)")}</option>
+          <option value="deepseek">{t("DeepSeek")}</option>
+          <option value="qwen">{t("Qwen (DashScope)")}</option>
+          <option value="glm">{t("GLM (Z.ai)")}</option>
+          <option value="custom">{t("Other OpenAI-compatible…")}</option>
         </select>
         {preset !== "anthropic" && (
           <input
             name="model"
-            placeholder="Model id"
+            placeholder={t("Model id")}
             value={modelValue}
             onChange={(e) => setModelValue(e.target.value)}
             autoComplete="off"
@@ -97,17 +99,16 @@ export default function AiKeyPanel({
         />
         <input
           name="base_url"
-          placeholder="Base URL (https://…)"
+          placeholder={t("Base URL (https://…)")}
           value={base}
           onChange={(e) => setBase(e.target.value)}
           autoComplete="off"
           style={{ flex: 1, minWidth: 200, padding: ".55rem .7rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".875rem" }}
         />
-        <button className="btn" disabled={pending}>{pending ? "Saving…" : "Save"}</button>
+        <button className="btn" disabled={pending}>{pending ? t("Saving…") : t("Save")}</button>
         {activeHint && (
           <button className="btn btn-ghost" name="remove" value="yes" disabled={pending}>
-            Remove
-          </button>
+            {t("Remove")}</button>
         )}
       </form>
 
@@ -117,9 +118,7 @@ export default function AiKeyPanel({
         </p>
       )}
       <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".75rem 0 0" }}>
-        Stored encrypted; never shown again beyond its last four characters;
-        used only to train and examine your own brains.
-      </p>
+        {t("Stored encrypted; never shown again beyond its last four characters; used only to train and examine your own brains.")}</p>
     </div>
   );
 }

@@ -105,15 +105,15 @@ export default async function GiftPage({
       <main className="shell" style={{ paddingBlock: "clamp(3rem, 9vw, 6rem)", maxWidth: 720 }}>
         {state === "ok" || state === "already" ? (
           <>
-            <p className="eyebrow">{state === "ok" ? "Yours now" : "Already yours"}</p>
+            <p className="eyebrow">{state === "ok" ? t("Yours now") : t("Already yours")}</p>
             <h1 className="h1" style={{ margin: ".5rem 0 1rem" }}>
               {gift!.title}
             </h1>
             <p className="lede">
               {markup(t("<0/> It shows up in <1>brain_list</1> automatically."), [
               state === "ok"
-                ? "The author gifted you read access — your agents can search it the moment your address is verified."
-                : "This gift was already redeemed on your account — nothing to do.",
+                ? t("The author gifted you read access — your agents can search it the moment your address is verified.")
+                : t("This gift was already redeemed on your account — nothing to do."),
               <code className="mono" key="s1" />,
             ])}</p>
             <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1.5rem" }}>
@@ -132,11 +132,11 @@ export default async function GiftPage({
           </>
         ) : (
           <>
-            <p className="eyebrow">{state === "spent" ? "All used up" : "Not a gift"}</p>
+            <p className="eyebrow">{state === "spent" ? t("All used up") : t("Not a gift")}</p>
             <h1 className="h1" style={{ margin: ".5rem 0 1rem" }}>
               {state === "spent"
-                ? "This link's uses are spent."
-                : "This link doesn't point at anything."}
+                ? t("This link's uses are spent.")
+                : t("This link doesn't point at anything.")}
             </h1>
             <p className="lede">
               {markup(t("Ask the person who sent it for a fresh one, or browse the <0>catalogue</0> ."), [

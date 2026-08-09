@@ -119,7 +119,7 @@ export default async function ChangesPage({
                           r.lost,
                         ])}</span>
                       )}
-                      {r.gained === 0 && r.lost === 0 && "held steady"}
+                      {r.gained === 0 && r.lost === 0 && t("held steady")}
                     </span>
                   </span>
                   <span className="row-side mono">{r.score === null ? "—" : `${r.score}%`}</span>

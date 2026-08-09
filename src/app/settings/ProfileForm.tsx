@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState } from "react";
 import { updateProfile } from "./actions";
 
@@ -10,27 +12,26 @@ export default function ProfileForm({
   name: string;
   handle: string;
 }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(updateProfile, null);
 
   return (
     <form action={action} className="panel" style={{ display: "grid", gap: "1.25rem" }}>
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span style={{ fontWeight: 600 }}>Display name</span>
+        <span style={{ fontWeight: 600 }}>{t("Display name")}</span>
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-          Shown next to brains you publish.
-        </span>
+          {t("Shown next to brains you publish.")}</span>
         <input name="name" defaultValue={name} maxLength={60} required style={input} />
       </label>
 
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span style={{ fontWeight: 600 }}>Handle</span>
+        <span style={{ fontWeight: 600 }}>{t("Handle")}</span>
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-          Your public namespace. Changing it changes every link to your brains.
-        </span>
+          {t("Your public namespace. Changing it changes every link to your brains.")}</span>
         <span style={{ display: "flex", alignItems: "center", gap: ".4rem" }}>
           <span className="mono" style={{ color: "var(--ink-2)" }}>
-            mozg.sh/b/
-          </span>
+            {t("mozg.sh/b/")}</span>
           <input
             name="handle"
             defaultValue={handle}
@@ -48,13 +49,14 @@ export default function ProfileForm({
       )}
       {state?.ok && (
         <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem", margin: 0 }}>
-          Saved. Your brains now live at /b/{state.handle}/…
-        </p>
+          {markup(t("Saved. Your brains now live at /b/<0/>/…"), [
+          state.handle,
+        ])}</p>
       )}
 
       <div>
         <button className="btn" type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save profile"}
+          {pending ? t("Saving…") : t("Save profile")}
         </button>
       </div>
     </form>

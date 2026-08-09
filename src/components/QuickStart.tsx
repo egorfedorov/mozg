@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useActionState } from "react";
 import { quickStart } from "@/app/brains/actions";
 
@@ -8,18 +9,16 @@ import { quickStart } from "@/app/brains/actions";
  * dashboard because the first minute decides whether anyone stays.
  */
 export default function QuickStart() {
+  const t = useT();
+
   const [state, action, pending] = useActionState(quickStart, null);
 
   return (
     <form action={action} className="panel" style={{ display: "grid", gap: ".6rem" }}>
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span style={{ fontWeight: 600 }}>Teach it from a link</span>
+        <span style={{ fontWeight: 600 }}>{t("Teach it from a link")}</span>
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
-          Paste a documentation URL — every page is found and read, a goal is
-          drafted from the material, and the brain sits its first exam by
-          itself. For docs sites that are JavaScript apps, paste the GitHub
-          repository.
-        </span>
+          {t("Paste a documentation URL — every page is found and read, a goal is drafted from the material, and the brain sits its first exam by itself. For docs sites that are JavaScript apps, paste the GitHub repository.")}</span>
       </label>
 
       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
@@ -27,7 +26,7 @@ export default function QuickStart() {
           name="url"
           type="text"
           autoFocus
-          placeholder="https://docs.example.com — or github.com/owner/repo"
+          placeholder={t("https://docs.example.com — or github.com/owner/repo")}
           style={{
             flex: 1,
             minWidth: 260,
@@ -39,7 +38,7 @@ export default function QuickStart() {
           }}
         />
         <button className="btn" disabled={pending}>
-          {pending ? "Starting…" : "Build the brain"}
+          {pending ? t("Starting…") : t("Build the brain")}
         </button>
       </div>
 

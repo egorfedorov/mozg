@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import Contents from "@/components/Contents";
@@ -60,8 +60,8 @@ export default async function StylesPage() {
           </div>
           <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", maxWidth: "60rem" }}>
             {[
-              { src: "/styles/fa-without.webp", label: "without — the model's default taste" },
-              { src: "/styles/fa-with.webp", label: "with the style brain — the artist's actual language" },
+              { src: t("/styles/fa-without.webp"), label: t("without — the model's default taste") },
+              { src: t("/styles/fa-with.webp"), label: t("with the style brain — the artist's actual language") },
             ].map((d) => (
               <figure key={d.src} style={{ margin: 0 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,10 +90,10 @@ export default async function StylesPage() {
           </div>
           <div className="rows" style={{ maxWidth: "56rem" }}>
             {[
-              ["01", "Drop your works in", "Upload 5–15 of your pieces — mozg reads them and writes the rules it sees: palette with values, how your light behaves, line character, the composition habits. Or write the rules yourself, or both. The brain sells rules, never your images."],
-              ["02", "It sits an exam", "mozg writes control questions from your rules and grades itself — the score on the card is proof the style is actually learnable from the brain, measured by a judge, not claimed by you. Catalogue listing passes a human review; verified-artist badges are on the road."],
-              ["03", "Price it once, sell it forever", "Set a price; buyers pay once from their balance. 95% lands in yours, withdrawable in crypto. Every buyer's agent — Claude Code, Codex, any MCP client — now follows your rules when it generates or art-directs."],
-              ["04", "Stay in control", "You keep updating the brain and every buyer gets the updates. And because access runs through mozg — not through a model fine-tune someone downloaded — it is revocable. A LoRA in the wild is forever; a licence is not."],
+              ["01", t("Drop your works in"), t("Upload 5–15 of your pieces — mozg reads them and writes the rules it sees: palette with values, how your light behaves, line character, the composition habits. Or write the rules yourself, or both. The brain sells rules, never your images.")],
+              ["02", t("It sits an exam"), t("mozg writes control questions from your rules and grades itself — the score on the card is proof the style is actually learnable from the brain, measured by a judge, not claimed by you. Catalogue listing passes a human review; verified-artist badges are on the road.")],
+              ["03", t("Price it once, sell it forever"), t("Set a price; buyers pay once from their balance. 95% lands in yours, withdrawable in crypto. Every buyer's agent — Claude Code, Codex, any MCP client — now follows your rules when it generates or art-directs.")],
+              ["04", t("Stay in control"), t("You keep updating the brain and every buyer gets the updates. And because access runs through mozg — not through a model fine-tune someone downloaded — it is revocable. A LoRA in the wild is forever; a licence is not.")],
             ].map(([n, t, b]) => (
               <div key={n} className="row">
                 <span style={{ minWidth: 0 }}>
@@ -115,8 +115,13 @@ export default async function StylesPage() {
           <p className="eyebrow" style={{ margin: 0 }}>{t("The styles themselves")}</p>
           <h2 className="h2" style={{ margin: ".4rem 0 .5rem" }}>
             {styleCount > 0
-              ? `${styleCount} style${styleCount === 1 ? "" : "s"} on the shelf, by ${artistCount} artist${artistCount === 1 ? "" : "s"}.`
-              : "The first styles are being written right now."}
+              ? fill(
+                  styleCount === 1
+                    ? t("<0/> style on the shelf, by <1/> artists.")
+                    : t("<0/> styles on the shelf, by <1/> artists."),
+                  [styleCount, artistCount],
+                )
+              : t("The first styles are being written right now.")}
           </h2>
           <p style={{ color: "var(--ink-2)", margin: "0 0 1rem", maxWidth: "58ch" }}>
             {t("Browse them by artist, see what each one teaches and what it scored, and take one to your agent.")}</p>

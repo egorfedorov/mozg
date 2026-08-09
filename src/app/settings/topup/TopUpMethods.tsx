@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState, useState } from "react";
 import { startTopUp } from "../actions";
 import { formatCents } from "@/lib/money-math";
@@ -28,6 +30,8 @@ export default function TopUpMethods({
   /** mozgpay coins available for direct payment. */
   coins?: { key: string; label: string; note?: string }[];
 }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(startTopUp, null);
   const [amount, setAmount] = useState<number>(AMOUNTS[1]);
   const [coin, setCoin] = useState<string>(COINS[0]);
@@ -37,24 +41,23 @@ export default function TopUpMethods({
     <div className="stack-tight">
       {/* ── crypto: the live method ─────────────────────────────────────── */}
       <div className="panel">
-        <p className="eyebrow">Crypto — USDT, USDC, BTC and more</p>
+        <p className="eyebrow">{t("Crypto — USDT, USDC, BTC and more")}</p>
 
         {state?.payUrl ? (
           <>
             <p style={{ margin: ".4rem 0 1rem" }}>
-              {formatCents(state.amountCents ?? 0)} — the balance updates by
-              itself once the network confirms it. You can close this page.
-            </p>
+              {markup(t("<0/> — the balance updates by itself once the network confirms it. You can close this page."), [
+              formatCents(state.amountCents ?? 0),
+            ])}</p>
             <a className="btn" href={state.payUrl} target="_blank" rel="noreferrer noopener">
-              Open the payment page
-            </a>
+              {t("Open the payment page")}</a>
           </>
         ) : (
           <>
             <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
               {ready
-                ? "Pick an amount — you get an address and an exact sum, and the balance updates itself when the network confirms, usually under a minute. Paid straight to the wallet, no processor in the middle."
-                : "Pick an amount and a coin, and ask for an address — we reply the same day with where to send it, and credit the balance as soon as it lands. Same ledger the automatic gateway will write to."}
+                ? t("Pick an amount — you get an address and an exact sum, and the balance updates itself when the network confirms, usually under a minute. Paid straight to the wallet, no processor in the middle.")
+                : t("Pick an amount and a coin, and ask for an address — we reply the same day with where to send it, and credit the balance as soon as it lands. Same ledger the automatic gateway will write to.")}
             </p>
 
             {ready && coins.length > 0 && (
@@ -138,7 +141,9 @@ export default function TopUpMethods({
                   ))}
                 </div>
 
-                <a className="btn" href="/chat">Ask for a {coin} address in chatmozg</a>
+                <a className="btn" href="/chat">{markup(t("Ask for a <0/> address in chatmozg"), [
+                  coin,
+                ])}</a>
               </>
             )}
 
@@ -152,8 +157,7 @@ export default function TopUpMethods({
             )}
             {pending && (
               <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)", margin: ".75rem 0 0" }}>
-                Making an invoice…
-              </p>
+                {t("Making an invoice…")}</p>
             )}
           </>
         )}
@@ -161,26 +165,21 @@ export default function TopUpMethods({
 
       {/* ── everything else: honest mockups ─────────────────────────────── */}
       <div className="panel" style={{ opacity: 0.55 }}>
-        <p className="eyebrow">Card — Visa, Mastercard</p>
+        <p className="eyebrow">{t("Card — Visa, Mastercard")}</p>
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
-          Card payments are on the way. Until then crypto is the fast path, and
-          a manual top-up by email works with any method you can name.
-        </p>
+          {t("Card payments are on the way. Until then crypto is the fast path, and a manual top-up by email works with any method you can name.")}</p>
         <button className="btn btn-ghost" disabled>
-          Coming soon
-        </button>
+          {t("Coming soon")}</button>
       </div>
 
       <div className="panel" style={{ opacity: 0.55 }}>
-        <p className="eyebrow">PayPal · Apple Pay · Google Pay</p>
+        <p className="eyebrow">{t("PayPal · Apple Pay · Google Pay")}</p>
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
-          Also planned. If one of these is the only way you can pay, write to{" "}
-          <a href="/chat">chatmozg</a> — knowing what people need
-          decides what ships first.
-        </p>
+          {markup(t("Also planned. If one of these is the only way you can pay, write to <0>chatmozg</0> — knowing what people need decides what ships first."), [
+          <a href="/chat" key="s0" />,
+        ])}</p>
         <button className="btn btn-ghost" disabled>
-          Coming soon
-        </button>
+          {t("Coming soon")}</button>
       </div>
     </div>
   );

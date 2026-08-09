@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState, useState } from "react";
 import { deleteBrain } from "./danger-actions";
 
@@ -12,19 +14,20 @@ export default function DeleteBrain({
   title: string;
   noteCount: number;
 }) {
+  const t = useT();
+
   const [armed, setArmed] = useState(false);
   const [state, action, pending] = useActionState(deleteBrain, null);
 
   return (
     <section style={{ marginTop: "2.5rem" }}>
       <h2 className="h2" style={{ marginBottom: ".5rem" }}>
-        Delete this brain
-      </h2>
+        {t("Delete this brain")}</h2>
       <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "58ch" }}>
-        Removes {noteCount} {noteCount === 1 ? "note" : "notes"}, every source and
-        every exam result. Agents pointed at it start getting &quot;no such
-        brain&quot;. There is no undo — export first if you want a copy.
-      </p>
+        {markup(t("Removes <0/> <1/>, every source and every exam result. Agents pointed at it start getting \"no such brain\". There is no undo — export first if you want a copy."), [
+        noteCount,
+        noteCount === 1 ? "note" : "notes",
+      ])}</p>
 
       {!armed ? (
         <button
@@ -32,15 +35,15 @@ export default function DeleteBrain({
           onClick={() => setArmed(true)}
           style={{ color: "var(--color-riso-red)", borderColor: "var(--color-riso-red)" }}
         >
-          Delete brain
-        </button>
+          {t("Delete brain")}</button>
       ) : (
         <form action={action} style={{ display: "grid", gap: ".6rem", maxWidth: 420 }}>
           <input type="hidden" name="slug" value={slug} />
           <label style={{ display: "grid", gap: ".35rem" }}>
             <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-              Type <strong>{title}</strong> to confirm
-            </span>
+              {markup(t("Type <0/> to confirm"), [
+              <strong key="s0">{title}</strong>,
+            ])}</span>
             <input
               name="confirm"
               autoFocus
@@ -69,11 +72,10 @@ export default function DeleteBrain({
                 borderColor: "var(--color-riso-red)",
               }}
             >
-              {pending ? "Deleting…" : "Delete permanently"}
+              {pending ? t("Deleting…") : t("Delete permanently")}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setArmed(false)}>
-              Keep it
-            </button>
+              {t("Keep it")}</button>
           </div>
         </form>
       )}

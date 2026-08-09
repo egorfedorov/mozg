@@ -66,9 +66,9 @@ const INLINE = new Set([
  * is machinery, and a translated className is a broken page.
  */
 const HUMAN_ATTRS = new Set([
-  "alt", "aria-label", "blurb", "caption", "description", "empty", "heading",
-  "hint", "label", "lede", "legend", "note", "placeholder", "sub", "summary",
-  "title", "tooltip", "why",
+  "alt", "aria-label", "aside", "blurb", "caption", "description", "empty",
+  "eyebrow", "heading", "hint", "label", "lede", "legend", "message", "meta",
+  "note", "placeholder", "sub", "summary", "title", "tooltip", "why",
 ]);
 
 /**
@@ -162,6 +162,59 @@ function keyed(element: string, index: number): string {
 function shadowsT(node: ts.Node): boolean {
   if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return false;
   return node.parameters.some((p) => ts.isIdentifier(p.name) && p.name.text === "t");
+}
+
+/**
+ * Does the component already own a binding called `t` that is not a translator?
+ *
+ * `const t = totals[0]` on /admin, `tokens.map((t) => …)` on /settings/tokens.
+ * Splicing `const t = await translator()` in beside either of those compiles to
+ * "Cannot redeclare block-scoped variable" or, worse, to `t.users` resolving
+ * against the translator — a page that typechecked yesterday failing in five
+ * places today, none of them where the codemod ran. Refuse the file and say so;
+ * renaming somebody's variable is a decision a person makes.
+ */
+function bindsT(body: ts.Node, sf: ts.SourceFile): ts.Node | null {
+  let found: ts.Node | null = null;
+  const walk = (n: ts.Node) => {
+    if (found) return;
+    // Only the component's own scope. A `.map((t) => …)` further in shadows the
+    // translator for its own subtree and nothing else — visit() already skips
+    // those and reports them — so refusing the whole file over one would leave
+    // every other sentence on the page English, which is what it did.
+    if (
+      n !== body &&
+      (ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n))
+    ) {
+      return;
+    }
+    if (
+      ts.isVariableDeclaration(n) &&
+      ts.isIdentifier(n.name) &&
+      n.name.text === "t" &&
+      // Either binding of the real thing is fine — that is a file already
+      // wrapped, and re-running must stay a no-op.
+      !/\b(translator|useT)\(\)/.test(n.getText(sf))
+    ) {
+      found = n;
+      return;
+    }
+    // `const { t } = await searchParams` — a destructured binding, which is a
+    // BindingElement and not an Identifier on the declaration. /settings/tokens
+    // reads its tab from ?t=, and the first version of this check walked
+    // straight past it.
+    if (ts.isBindingElement(n) && ts.isIdentifier(n.name) && n.name.text === "t") {
+      found = n;
+      return;
+    }
+    if (shadowsT(n)) {
+      found = n;
+      return;
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(body);
+  return found;
 }
 
 /** Does this expression carry a sentence of its own inside some JSX? */
@@ -261,6 +314,7 @@ function transform(source: string, file: string): { output: string; wrapped: num
   const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const edits: Edit[] = [];
   const skipped: string[] = [];
+  const client = /^\s*["']use client["']/m.test(source);
 
   /**
    * Only the default-exported component is rewritten.
@@ -278,6 +332,15 @@ function transform(source: string, file: string): { output: string; wrapped: num
       Boolean(s.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)),
   );
   if (!root?.body) return { output: source, wrapped: 0, skipped };
+
+  // Before any edit, not after: a half-wrapped file that does not compile is
+  // worse than an untouched one, and the report is what a person acts on.
+  const taken = bindsT(root.body, sf);
+  if (taken) {
+    const { line } = sf.getLineAndCharacterOfPosition(taken.getStart(sf));
+    skipped.push(`${file}:${line + 1}  (something else here is already called "t" — rename it first)`);
+    return { output: source, wrapped: 0, skipped };
+  }
 
   /**
    * @param inSentence This node sits inside a paragraph that has words of its
@@ -377,6 +440,57 @@ function transform(source: string, file: string): { output: string; wrapped: num
   }
   visit(root.body);
 
+  /**
+   * The literals that live in an expression rather than in the markup.
+   *
+   *   {pending ? "Adding…" : "Add pages"}
+   *   empty={rows.length ? undefined : "Nothing here yet."}
+   *
+   * Both are words on the page, and neither is JSX text or a bare attribute
+   * value, so everything above walks straight past them. Three hundred of them
+   * survived the first sweep — every disabled-button label on the site, which
+   * is the text somebody reads exactly when they are waiting and looking.
+   *
+   * Scoped hard on purpose: only inside a JSX child expression or one of the
+   * attributes people actually read, never inside style/className/href, and
+   * never inside a call that already translates.
+   */
+  const covered = (n: ts.Node) =>
+    edits.some((e) => n.getStart(sf) >= e.start && n.getEnd() <= e.end);
+
+  const inExpression = (node: ts.Node) => {
+    if (!ts.isStringLiteral(node) || !isProseAttr(node.text) || covered(node)) return;
+    let display = false;
+    for (let p: ts.Node | undefined = node.parent; p; p = p.parent) {
+      if (ts.isCallExpression(p) && ts.isIdentifier(p.expression)) {
+        const name = p.expression.text;
+        // Already translated, or already a slot-filled sentence.
+        if (name === "t" || name === "msg" || name === "fill") return;
+      }
+      if (ts.isJsxAttribute(p)) {
+        display = HUMAN_ATTRS.has(p.name.getText(sf));
+        break;
+      }
+      if (ts.isJsxExpression(p)) {
+        display = Boolean(p.parent && (ts.isJsxElement(p.parent) || ts.isJsxFragment(p.parent)));
+        break;
+      }
+    }
+    if (display) {
+      edits.push({
+        start: node.getStart(sf),
+        end: node.getEnd(),
+        text: `t("${escape(decode(node.text))}")`,
+      });
+    }
+  };
+  const sweep = (n: ts.Node) => {
+    if (shadowsT(n)) return;
+    inExpression(n);
+    ts.forEachChild(n, sweep);
+  };
+  sweep(root.body);
+
   if (!edits.length) return { output: source, wrapped: 0, skipped };
 
   let output = source;
@@ -392,14 +506,20 @@ function transform(source: string, file: string): { output: string; wrapped: num
   // `const t = await translator();` ended up spliced through the middle of a
   // props type. The regex this replaced could not see past a parameter list
   // containing a `)` at all, which is most components.
-  if (!/\bconst t = await translator\(\)/.test(output)) {
+  //
+  // Which translator depends on which side of the boundary the file is on.
+  // lib/t.ts reads the cookie through next/headers and hashes with node:crypto,
+  // so a client component has to use the hook instead — same name, same
+  // promise, different machinery. See lib/t-client.tsx.
+  const bind = client ? "  const t = useT();\n" : "  const t = await translator();\n";
+  if (!/\bconst t = (await translator|useT)\(\)/.test(output)) {
     const bodyOpen = root.body.getStart(sf) + 1;
-    output = output.slice(0, bodyOpen) + "\n  const t = await translator();\n" + output.slice(bodyOpen);
+    output = output.slice(0, bodyOpen) + "\n" + bind + output.slice(bodyOpen);
 
-    // A server component that now awaits has to say so. One rendered from a
-    // client component cannot become async — those files are out of scope
-    // here, and the build failing is the honest way to find one.
-    if (!root.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) {
+    // A server component that now awaits has to say so. A client component must
+    // NOT become async — a hook in an async function is not a component, and
+    // React says so at runtime rather than at build time.
+    if (!client && !root.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) {
       const kw = output.indexOf("function", root.getStart(sf));
       output = output.slice(0, kw) + "async " + output.slice(kw);
     }
@@ -413,8 +533,11 @@ function transform(source: string, file: string): { output: string; wrapped: num
   // there, leaving a component calling a translator it had not imported.
   const firstImport = sf.statements.find(ts.isImportDeclaration);
   const at = firstImport ? firstImport.getStart(sf) : 0;
+  const translatorImport = client
+    ? [/from "@\/lib\/t-client"/, `import { useT } from "@/lib/t-client";\n`] as const
+    : [/from "@\/lib\/t"/, `import { translator } from "@/lib/t";\n`] as const;
   const lines =
-    (/from "@\/lib\/t"/.test(output) ? "" : `import { translator } from "@/lib/t";\n`) +
+    (translatorImport[0].test(output) ? "" : translatorImport[1]) +
     (/\bmarkup\(/.test(output) && !/from "@\/lib\/markup"/.test(output)
       ? `import { markup } from "@/lib/markup";\n`
       : "");
@@ -430,7 +553,10 @@ async function pagesWithTopBar(dir: string): Promise<string[]> {
     if (entry.isDirectory()) out.push(...(await pagesWithTopBar(path)));
     else if (entry.name === "page.tsx") {
       const src = await readFile(path, "utf8");
-      if (src.includes("TopBar") && !src.includes('"use client"')) out.push(path);
+      // Client pages are no longer excluded — they get useT() instead of the
+      // server translator, which is what the `client` branch in transform() is
+      // for.
+      if (src.includes("TopBar")) out.push(path);
     }
   }
   return out;

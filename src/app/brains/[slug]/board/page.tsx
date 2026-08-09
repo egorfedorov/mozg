@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -27,6 +29,8 @@ export default async function BoardPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const t = await translator();
+
   const { slug } = await params;
   const user = await currentUser();
   if (!user) redirect("/sign-in");
@@ -92,17 +96,16 @@ export default async function BoardPage({
       </Link>
       <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap", margin: ".75rem 0 .5rem" }}>
         <h1 className="h1" style={{ margin: 0 }}>
-          The board
-        </h1>
+          {t("The board")}</h1>
         <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-          {notes.length} cards · {gaps.length} empty slot{gaps.length === 1 ? "" : "s"} the exam wants filled
-        </span>
+          {markup(t("<0/> cards · <1/> empty slot<2/> the exam wants filled"), [
+          notes.length,
+          gaps.length,
+          gaps.length === 1 ? "" : "s",
+        ])}</span>
       </div>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        Every column is a category; red-edged slots are questions the exam
-        failed — write the answer straight into the slot&apos;s column and the next
-        sitting measures it.
-      </p>
+        {t("Every column is a category; red-edged slots are questions the exam failed — write the answer straight into the slot's column and the next sitting measures it.")}</p>
 
       <div
         style={{
@@ -137,7 +140,7 @@ export default async function BoardPage({
             >
               <strong style={{ fontSize: ".9375rem", overflowWrap: "anywhere" }}>{cat}</strong>
               <span
-                aria-label={`exam: ${stateOf(cat)}`}
+                aria-label={fill(t("exam: <0/>"), [stateOf(cat)])}
                 style={{
                   width: 10,
                   height: 10,
@@ -160,8 +163,7 @@ export default async function BoardPage({
                   }}
                 >
                   <span className="mono" style={{ fontSize: ".6875rem", color: "var(--color-riso-red)" }}>
-                    empty slot — the exam asks:
-                  </span>
+                    {t("empty slot — the exam asks:")}</span>
                   <br />
                   {q}
                 </div>
@@ -191,33 +193,32 @@ export default async function BoardPage({
                   style={{ fontSize: ".75rem", textDecoration: "underline" }}
                   href={`/brains/${brain.slug}/notes?category=${encodeURIComponent(cat)}`}
                 >
-                  all {byCategory.get(cat)!.length} →
-                </Link>
+                  {markup(t("all <0/> →"), [
+                  byCategory.get(cat)!.length,
+                ])}</Link>
               )}
 
               <details>
                 <summary className="mono" style={{ fontSize: ".75rem", cursor: "pointer", color: "var(--ink-2)" }}>
-                  + write a card here
-                </summary>
+                  {t("+ write a card here")}</summary>
                 <form action={addBoardNote} style={{ display: "grid", gap: ".4rem", marginTop: ".5rem" }}>
                   <input type="hidden" name="slug" value={brain.slug} />
                   <input type="hidden" name="category" value={cat} />
                   <input
                     name="title"
                     required
-                    placeholder="Searchable title"
+                    placeholder={t("Searchable title")}
                     style={{ padding: ".45rem .55rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".8125rem" }}
                   />
                   <textarea
                     name="body"
                     required
                     rows={3}
-                    placeholder="The fact, in full sentences — searchable the moment you save."
+                    placeholder={t("The fact, in full sentences — searchable the moment you save.")}
                     style={{ padding: ".45rem .55rem", border: "1.5px solid var(--ink)", background: "var(--paper)", font: "inherit", fontSize: ".8125rem" }}
                   />
                   <button className="btn btn-ghost" style={{ padding: ".35rem .7rem", justifySelf: "start", fontSize: ".8125rem" }}>
-                    Pin it
-                  </button>
+                    {t("Pin it")}</button>
                 </form>
               </details>
             </div>

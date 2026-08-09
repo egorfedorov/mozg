@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState } from "react";
 import { saveWallets } from "./actions";
 
@@ -17,6 +19,8 @@ export interface WalletField {
 }
 
 export default function WalletsForm({ wallets }: { wallets: WalletField[] }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(saveWallets, null);
 
   const label = (f: string) => wallets.find((w) => w.field === f)?.label ?? f;
@@ -27,7 +31,7 @@ export default function WalletsForm({ wallets }: { wallets: WalletField[] }) {
         <label key={w.field} style={{ display: "grid", gap: ".25rem" }}>
           <span className="eyebrow" style={state?.rejected.includes(w.field) ? { color: "var(--color-riso-red)" } : undefined}>
             {w.label}
-            {state?.rejected.includes(w.field) && " — rejected, not saved"}
+            {state?.rejected.includes(w.field) && t(" — rejected, not saved")}
           </span>
           <input
             type="text"
@@ -50,19 +54,21 @@ export default function WalletsForm({ wallets }: { wallets: WalletField[] }) {
 
       <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
         <button className="btn" disabled={pending}>
-          {pending ? "Saving…" : "Save wallets"}
+          {pending ? t("Saving…") : t("Save wallets")}
         </button>
         {state && state.rejected.length === 0 && (
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-green)" }}>
-            saved ✓ {state.at}
-            {state.saved.length > 0 && ` · ${state.saved.length} address${state.saved.length > 1 ? "es" : ""}`}
-            {state.cleared.length > 0 && ` · ${state.cleared.map(label).join(", ")} back to env`}
-          </span>
+            {markup(t("saved ✓ <0/> <1/> <2/>"), [
+            state.at,
+            state.saved.length > 0 && ` · ${state.saved.length} address${state.saved.length > 1 ? "es" : ""}`,
+            state.cleared.length > 0 && ` · ${state.cleared.map(label).join(", ")} back to env`,
+          ])}</span>
         )}
         {state && state.rejected.length > 0 && (
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-red)" }}>
-            {state.rejected.map(label).join(", ")}: not a valid address — everything else saved
-          </span>
+            {markup(t("<0/>: not a valid address — everything else saved"), [
+            state.rejected.map(label).join(", "),
+          ])}</span>
         )}
       </div>
     </form>

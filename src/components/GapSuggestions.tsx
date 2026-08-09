@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import { useActionState, useState } from "react";
 import { addUrls } from "@/app/brains/[slug]/source-actions";
 import { dismissGapSuggestion } from "@/app/brains/[slug]/exam-actions";
@@ -22,6 +24,8 @@ export default function GapSuggestions({
   slug: string;
   suggestions: { id: string; question: string; kind: GapKind }[];
 }) {
+  const t = useT();
+
   if (!suggestions.length) return null;
   return (
     <section style={{ marginTop: "2rem" }}>
@@ -33,17 +37,15 @@ export default function GapSuggestions({
           marginBottom: "1rem",
         }}
       >
-        <h2 className="h2">Gaps the exam keeps hitting</h2>
+        <h2 className="h2">{t("Gaps the exam keeps hitting")}</h2>
         <span className="eyebrow">
-          {suggestions.length} suggestion{suggestions.length === 1 ? "" : "s"}
-        </span>
+          {markup(t("<0/> suggestion<1/>"), [
+          suggestions.length,
+          suggestions.length === 1 ? "" : "s",
+        ])}</span>
       </div>
       <p style={{ color: "var(--ink-2)", marginTop: 0, maxWidth: "62ch" }}>
-        These questions were asked — by the exam or by real agents — and the
-        brain got them wrong. Each says which kind of gap it is, because the fix
-        differs: only the missing ones want a new source. Dismiss the ones not
-        worth filling.
-      </p>
+        {t("These questions were asked — by the exam or by real agents — and the brain got them wrong. Each says which kind of gap it is, because the fix differs: only the missing ones want a new source. Dismiss the ones not worth filling.")}</p>
       <div className="panel" style={{ padding: 0 }}>
         {suggestions.map((s) => (
           <GapRow key={s.id} slug={slug} suggestion={s} />
@@ -60,6 +62,7 @@ function GapRow({
   slug: string;
   suggestion: { id: string; question: string; kind: GapKind };
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [crawl, setCrawl] = useState(false);
   const [state, action, pending] = useActionState(addUrls, null);
@@ -86,14 +89,14 @@ function GapRow({
           <span style={{ display: "flex", gap: "1rem", flexShrink: 0 }}>
             {suggestion.kind === "missing" && (
               <button className="mono" style={linkButton} onClick={() => setOpen((o) => !o)}>
-                {open ? "close" : "add a source →"}
+                {open ? t("close") : t("add a source →")}
               </button>
             )}
             <form action={dismissGapSuggestion}>
               <input type="hidden" name="id" value={suggestion.id} />
               <input type="hidden" name="slug" value={slug} />
               <button className="mono" style={linkButton}>
-                dismiss
+                {t("dismiss")}
               </button>
             </form>
           </span>
@@ -103,8 +106,8 @@ function GapRow({
       {added ? (
         <p className="mono" style={{ fontSize: ".8125rem", margin: ".5rem 0 0", color: "var(--color-riso-green)" }}>
           {state?.site
-            ? "Reading the whole site — the exam re-runs when it lands."
-            : "Queued — the exam re-runs when the page is read."}
+            ? t("Reading the whole site — the exam re-runs when it lands.")
+            : t("Queued — the exam re-runs when the page is read.")}
         </p>
       ) : (
         open && (
@@ -121,7 +124,7 @@ function GapRow({
                 checked={crawl}
                 onChange={(e) => setCrawl(e.target.checked)}
               />
-              Learn the whole site from one link
+              {t("Learn the whole site from one link")}
             </label>
             <textarea
               name="urls"
@@ -159,7 +162,7 @@ function GapRow({
               disabled={pending}
               style={{ padding: ".4rem .8rem", justifySelf: "start" }}
             >
-              {pending ? "Adding…" : "Add and re-examine"}
+              {pending ? t("Adding…") : t("Add and re-examine")}
             </button>
           </form>
         )

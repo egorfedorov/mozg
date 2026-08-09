@@ -1,7 +1,10 @@
+import { translator } from "@/lib/t";
 /** Skeleton of the dashboard: stat strip, then the card grid. */
-export default function Loading() {
+export default async function Loading() {
+  const t = await translator();
+
   return (
-    <div className="app-main" aria-busy="true" aria-label="Loading your brains">
+    <div className="app-main" aria-busy="true" aria-label={t("Loading your brains")}>
       <div className="skel" style={{ height: "2.5rem", width: "14rem", marginBottom: "1.75rem" }} />
 
       <div className="stats" style={{ marginBottom: "2.5rem" }}>

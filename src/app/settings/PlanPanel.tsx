@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { fill, markup } from "@/lib/markup";
 import { useState, useTransition } from "react";
 import { useActionState } from "react";
 import { requestUpgrade, payUpgrade, checkPromoAction } from "./actions";
@@ -40,6 +42,8 @@ export default function PlanPanel({
   /** Plans above the current one, in order. */
   targets: PaidPlan[];
 }) {
+  const t = useT();
+
   const [reqState, reqAction, reqPending] = useActionState(requestUpgrade, null);
   const [payState, payAction, payPending] = useActionState(payUpgrade, null);
 
@@ -68,20 +72,17 @@ export default function PlanPanel({
     // #plan: the pricing page's Subscribe buttons link straight here, so the
     // button and the thing it promises are one click apart.
     <div id="plan" className="panel" style={{ marginTop: "1.5rem", scrollMarginTop: "6rem" }}>
-      <p className="eyebrow">Need more room</p>
+      <p className="eyebrow">{t("Need more room")}</p>
 
       {pending ? (
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 0" }}>
-          You asked for <strong>{pending.plan}</strong> on{" "}
-          {new Date(pending.createdAt).toISOString().slice(0, 10)} — it is
-          waiting for a human, usually the same day. Paying from the balance
-          below upgrades immediately and closes the request.
-        </p>
+          {markup(t("You asked for <0/> on <1/> — it is waiting for a human, usually the same day. Paying from the balance below upgrades immediately and closes the request."), [
+          <strong key="s0">{pending.plan}</strong>,
+          new Date(pending.createdAt).toISOString().slice(0, 10),
+        ])}</p>
       ) : (
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 0" }}>
-          A month at a time, no subscription — pay from your balance and it is
-          live immediately, or ask and we switch the account by hand.
-        </p>
+          {t("A month at a time, no subscription — pay from your balance and it is live immediately, or ask and we switch the account by hand.")}</p>
       )}
 
       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", alignItems: "center", marginTop: "1rem" }}>
@@ -89,7 +90,7 @@ export default function PlanPanel({
           value={promo}
           onChange={(e) => { setPromo(e.target.value.toUpperCase()); setPromoResult(null); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
-          placeholder="Promo code"
+          placeholder={t("Promo code")}
           autoComplete="off"
           style={{
             width: "11rem",
@@ -101,11 +102,13 @@ export default function PlanPanel({
           }}
         />
         <button type="button" className="btn btn-ghost" onClick={applyPromo} disabled={checking || !promo.trim()} style={{ padding: ".45rem .8rem" }}>
-          {checking ? "Checking…" : "Apply"}
+          {checking ? t("Checking…") : t("Apply")}
         </button>
         {promoResult?.ok && (
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--color-riso-green)" }}>
-            {promoResult.percentOff === 100 ? "free month applied" : `−${promoResult.percentOff}% applied`}
+            {promoResult.percentOff === 100
+              ? t("free month applied")
+              : fill(t("−<0/>% applied"), [promoResult.percentOff])}
           </span>
         )}
         {promoResult && !promoResult.ok && (
@@ -129,8 +132,10 @@ export default function PlanPanel({
           >
             <div>
               <strong style={{ textTransform: "capitalize" }}>
-                {plan} — {formatCents(PLAN_PRICE_CENTS[plan])}/mo
-              </strong>
+                {markup(t("<0/> — <1/>/mo"), [
+                plan,
+                formatCents(PLAN_PRICE_CENTS[plan]),
+              ])}</strong>
               <span
                 className="mono"
                 style={{ display: "block", fontSize: ".75rem", color: "var(--ink-2)", marginTop: ".2rem" }}
@@ -148,10 +153,10 @@ export default function PlanPanel({
                 <input type="hidden" name="promo" value={activeCode} />
                 <button className="btn" type="submit" disabled={payPending}>
                   {payPending
-                    ? "Paying…"
+                    ? t("Paying…")
                     : priceFor(plan) === 0
-                      ? "Activate the free month"
-                      : `Pay ${formatCents(priceFor(plan))} from balance`}
+                      ? t("Activate the free month")
+                      : fill(t("Pay <0/> from balance"), [formatCents(priceFor(plan))])}
                 </button>
                 {promoResult?.ok && priceFor(plan) > 0 && (
                   <s className="mono" style={{ alignSelf: "center", fontSize: ".75rem", color: "var(--ink-3)" }}>
@@ -167,7 +172,7 @@ export default function PlanPanel({
                     type="submit"
                     disabled={reqPending}
                   >
-                    {reqPending ? "Asking…" : `Request ${plan}`}
+                    {reqPending ? t("Asking…") : fill(t("Request <0/>"), [plan])}
                   </button>
                 </form>
               )}
@@ -183,13 +188,16 @@ export default function PlanPanel({
       )}
       {reqState?.ok && (
         <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem", margin: ".75rem 0 0" }}>
-          Requested {reqState.plan}. We switch accounts by hand, usually the same day.
-        </p>
+          {markup(t("Requested <0/>. We switch accounts by hand, usually the same day."), [
+          reqState.plan,
+        ])}</p>
       )}
       {payState?.ok && (
         <p className="mono" style={{ color: "var(--color-riso-green)", fontSize: ".8125rem", margin: ".75rem 0 0" }}>
-          Paid {formatCents(payState.paidCents)} — {payState.plan} is live for the next 30 days.
-        </p>
+          {markup(t("Paid <0/> — <1/> is live for the next 30 days."), [
+          formatCents(payState.paidCents),
+          payState.plan,
+        ])}</p>
       )}
     </div>
   );

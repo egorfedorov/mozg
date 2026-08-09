@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { createBrain } from "../actions";
@@ -19,6 +20,8 @@ export default function NewBrainForm({
 }: {
   parents: { id: string; title: string }[];
 }) {
+  const t = useT();
+
   const [state, action, pending] = useActionState(createBrain, null);
   const [kind, setKind] = useState<"knowledge" | "style">("knowledge");
   const style = kind === "style";
@@ -32,19 +35,19 @@ export default function NewBrainForm({
             whether the style can be reproduced rather than what it can
             answer. Asking this at the end would be asking after the answer
             stopped mattering. */}
-        <Field label="What are you building?" hint="It decides how mozg reads what you feed it.">
+        <Field label={t("What are you building?")} hint={t("It decides how mozg reads what you feed it.")}>
           <div style={{ display: "grid", gap: ".5rem" }}>
             {[
               {
                 value: "knowledge" as const,
-                label: "A knowledge brain",
-                detail: "Conventions, APIs, decisions, documentation — anything with facts in it.",
+                label: t("A knowledge brain"),
+                detail: t("Conventions, APIs, decisions, documentation — anything with facts in it."),
               },
               {
                 value: "style" as const,
-                label: "A style brain",
+                label: t("A style brain"),
                 detail:
-                  "A way of working: palette, light, line, the hard nevers. Drop your own work in and mozg writes the rules it measures. Sells in the gallery.",
+                  t("A way of working: palette, light, line, the hard nevers. Drop your own work in and mozg writes the rules it measures. Sells in the gallery."),
               },
             ].map((k) => (
               <label key={k.value} style={{ display: "flex", gap: ".6rem", alignItems: "flex-start" }}>
@@ -68,8 +71,8 @@ export default function NewBrainForm({
         </Field>
 
         <Field
-          label="Name"
-          hint="What you'll call it in your editor, e.g. mozg:design"
+          label={t("Name")}
+          hint={t("What you'll call it in your editor, e.g. mozg:design")}
         >
           <input
             name="title"
@@ -82,13 +85,13 @@ export default function NewBrainForm({
         </Field>
 
         <Field
-          label="Field"
-          hint="How people find it in the catalogue if you ever publish it."
+          label={t("Field")}
+          hint={t("How people find it in the catalogue if you ever publish it.")}
         >
           <select name="topic" key={kind} defaultValue={style ? "art" : "web"} style={inputStyle}>
-            {TOPICS.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.label}
+            {TOPICS.map((field) => (
+              <option key={field.key} value={field.key}>
+                {t(field.label)}
               </option>
             ))}
           </select>
@@ -96,11 +99,11 @@ export default function NewBrainForm({
 
         {parents.length > 0 && (
           <Field
-            label="Group it under"
-            hint="For a big subject split into parts. Searching the parent searches every child."
+            label={t("Group it under")}
+            hint={t("For a big subject split into parts. Searching the parent searches every child.")}
           >
             <select name="parent" defaultValue="" style={inputStyle}>
-              <option value="">on its own</option>
+              <option value="">{t("on its own")}</option>
               {parents.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title}
@@ -111,8 +114,8 @@ export default function NewBrainForm({
         )}
 
         <Field
-          label="What should it be able to do?"
-          hint="This becomes the exam. Be concrete — vague goals produce vague checks."
+          label={t("What should it be able to do?")}
+          hint={t("This becomes the exam. Be concrete — vague goals produce vague checks.")}
         >
           <textarea
             name="goal"
@@ -124,8 +127,8 @@ export default function NewBrainForm({
         </Field>
 
         <Field
-          label="Price (optional)"
-          hint="In USD. A price makes the brain public in the catalogue right away — buyers pay once and keep access as it updates. Leave 0 to keep it private."
+          label={t("Price (optional)")}
+          hint={t("In USD. A price makes the brain public in the catalogue right away — buyers pay once and keep access as it updates. Leave 0 to keep it private.")}
         >
           <input
             name="price"
@@ -137,21 +140,20 @@ export default function NewBrainForm({
         </Field>
 
         <Field
-          label="Documentation link (optional)"
-          hint="One link is enough — every page of that documentation is found and read. For docs sites that are JavaScript apps, paste the GitHub repository instead."
+          label={t("Documentation link (optional)")}
+          hint={t("One link is enough — every page of that documentation is found and read. For docs sites that are JavaScript apps, paste the GitHub repository instead.")}
         >
           <input
             name="docs"
             type="url"
-            placeholder="https://example.com/docs — or github.com/owner/repo"
+            placeholder={t("https://example.com/docs — or github.com/owner/repo")}
             style={inputStyle}
           />
         </Field>
 
         <div>
           <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
-            Examples
-          </p>
+            {t("Examples")}</p>
           <ul
             style={{
               margin: 0,
@@ -179,11 +181,10 @@ export default function NewBrainForm({
 
         <div style={{ display: "flex", gap: ".75rem" }}>
           <button className="btn" type="submit" disabled={pending}>
-            {pending ? "Creating…" : "Create brain"}
+            {pending ? t("Creating…") : t("Create brain")}
           </button>
           <Link className="btn btn-ghost" href="/brains">
-            Cancel
-          </Link>
+            {t("Cancel")}</Link>
         </div>
       </form>
     </>

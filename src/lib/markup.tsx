@@ -56,3 +56,24 @@ export function markup(sentence: string, slots: ReactNode[]): ReactNode[] {
   if (last < sentence.length) out.push(sentence.slice(last));
   return out;
 }
+
+/**
+ * The same numbered slots, for the places that need a plain string.
+ *
+ * `alt`, `aria-label`, `title` and every component prop typed `string` cannot
+ * take the nodes markup() returns. Without this the only options were a
+ * template literal — which hides the sentence from the translator entirely —
+ * or splitting it into `t("of")` and `t("earned")` around the numbers, which
+ * is the fragment problem markup() exists to avoid, just spelled differently.
+ *
+ *   alt={fill(t("A work in <0/>"), [brain.title])}
+ *
+ * Only `<0/>`-style slots: a `<0>text</0>` run wraps its inner text in an
+ * element, and there is no element here to wrap it in.
+ */
+export function fill(sentence: string, slots: (string | number)[]): string {
+  return sentence.replace(/<(\d+)\/>/g, (_, i: string) => {
+    const slot = slots[Number(i)];
+    return slot === undefined ? "" : String(slot);
+  });
+}

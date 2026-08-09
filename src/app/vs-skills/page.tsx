@@ -178,13 +178,13 @@ export default async function VsSkillsPage() {
         <section style={{ marginTop: "clamp(3rem, 7vw, 4.5rem)" }}>
           <div className="rows">
             {[
-              ["Cost per session", "whole file in context, every time", "three notes, only when asked"],
-              ["When docs change", "silently wrong", "re-read, re-examined, score moves"],
-              ["Coverage", "unknowable", "a number, with the gaps named"],
-              ["Corrections", "die with the conversation", "written back, approved once, kept forever"],
-              ["Team", "copies that drift", "one URL, one truth"],
-              ["Selling it", "not a thing", "storefront, exam score, 95% to you"],
-              ["Running scripts", "✓ skills win", "not a brain's job — keep the skill"],
+              [t("Cost per session"), t("whole file in context, every time"), t("three notes, only when asked")],
+              [t("When docs change"), t("silently wrong"), t("re-read, re-examined, score moves")],
+              [t("Coverage"), "unknowable", t("a number, with the gaps named")],
+              [t("Corrections"), t("die with the conversation"), t("written back, approved once, kept forever")],
+              [t("Team"), t("copies that drift"), t("one URL, one truth")],
+              [t("Selling it"), t("not a thing"), t("storefront, exam score, 95% to you")],
+              [t("Running scripts"), t("✓ skills win"), t("not a brain's job — keep the skill")],
             ].map(([what, skill, brain]) => (
               <div key={what} className="row">
                 <span style={{ minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr", gap: "1rem", width: "100%" }}>

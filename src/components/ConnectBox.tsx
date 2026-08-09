@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createTokenInline } from "@/app/brains/[slug]/token-action";
@@ -19,6 +21,8 @@ export default function ConnectBox({
   slug: string;
   hasToken: boolean;
 }) {
+  const t = useT();
+
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pending, start] = useTransition();
@@ -45,7 +49,7 @@ export default function ConnectBox({
         <span className="term-dot" />
         <span className="term-dot" />
         <span className="term-dot" />
-        <span style={{ marginLeft: ".5rem" }}>use this brain</span>
+        <span style={{ marginLeft: ".5rem" }}>{t("use this brain")}</span>
       </div>
 
       <div style={{ marginBottom: ".9rem", wordBreak: "break-all" }}>
@@ -55,19 +59,18 @@ export default function ConnectBox({
       {token ? (
         <>
           <button className="btn" onClick={copy} style={yellow}>
-            {copied ? "Copied" : "Copy command"}
+            {copied ? t("Copied") : t("Copy command")}
           </button>
           <div className="c" style={{ marginTop: ".75rem" }}>
-            copy it now — the token is stored hashed and cannot be shown again
-          </div>
+            {t("copy it now — the token is stored hashed and cannot be shown again")}</div>
         </>
       ) : hasToken ? (
         <>
           <button className="btn" onClick={copy} style={yellow}>
-            {copied ? "Copied" : "Copy command"}
+            {copied ? t("Copied") : t("Copy command")}
           </button>
           <div className="c" style={{ marginTop: ".75rem" }}>
-            paste your token over YOUR_TOKEN, or{" "}
+            {t("paste your token over YOUR_TOKEN, or")}{" "}
             <button
               onClick={() => start(async () => setToken((await createTokenInline()).token))}
               disabled={pending}
@@ -81,7 +84,7 @@ export default function ConnectBox({
                 textDecoration: "underline",
               }}
             >
-              {pending ? "making one…" : "make a new one"}
+              {pending ? t("making one…") : t("make a new one")}
             </button>
           </div>
         </>
@@ -92,24 +95,23 @@ export default function ConnectBox({
           disabled={pending}
           onClick={() => start(async () => setToken((await createTokenInline()).token))}
         >
-          {pending ? "Creating…" : "Create token and show command"}
+          {pending ? t("Creating…") : t("Create token and show command")}
         </button>
       )}
 
       <div style={{ marginTop: "1.1rem" }} className="c">
-        then, in your editor:
-      </div>
+        {t("then, in your editor:")}</div>
       <div>
-        <span className="u">&gt;</span> use mozg:{slug} — …
-      </div>
+        {markup(t("<0>&gt;</0> use mozg:<1/> — …"), [
+        <span className="u" key="s0" />,
+        slug,
+      ])}</div>
 
       {/* The command above is Claude Code only; everyone else lands on /connect. */}
       <div className="c" style={{ marginTop: "1.1rem" }}>
-        not Claude Code?{" "}
-        <Link href="/connect" style={{ color: "var(--color-riso-yellow)", textDecoration: "underline" }}>
-          setup for Codex, Cursor, Kimi and the rest →
-        </Link>
-      </div>
+        {markup(t("not Claude Code? <0>setup for Codex, Cursor, Kimi and the rest →</0>"), [
+        <Link href="/connect" style={{ color: "var(--color-riso-yellow)", textDecoration: "underline" }} key="s0" />,
+      ])}</div>
     </section>
   );
 }

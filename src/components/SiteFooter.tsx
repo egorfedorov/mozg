@@ -106,7 +106,7 @@ export default async function SiteFooter() {
               ))}
               {/* Withdrawing consent has to be reachable from the same place
                   it was given, and that place is every page's footer. */}
-              {col.title === "Legal" && (
+              {col.title === t("Legal") && (
                 <li>
                   <CookieSettingsLink />
                 </li>

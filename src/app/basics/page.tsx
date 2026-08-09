@@ -160,7 +160,7 @@ export default async function BasicsPage() {
                     <path d="M0 0 L10 5 L0 10 z" fill="currentColor" />
                   </marker>
                 </defs>
-                {["Claude Code", "Cursor", "Codex"].map((name, i) => (
+                {[t("Claude Code"), t("Cursor"), t("Codex")].map((name, i) => (
                   <g key={name}>
                     <rect
                       x="10"

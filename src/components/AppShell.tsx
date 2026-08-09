@@ -125,7 +125,7 @@ export default async function AppShell({
             React state on purpose: the shell is a server component, and a
             phone that has not finished hydrating still has to be able to open
             the only navigation the workspace has. Desktop never shows it. */}
-        <input type="checkbox" id="app-nav-open" className="app-nav-check" aria-label="Menu" />
+        <input type="checkbox" id="app-nav-open" className="app-nav-check" aria-label={t("Menu")} />
 
         <div className="app-rail-head">
           <Link href="/" className="wordmark" style={{ fontSize: "1.25rem" }}>

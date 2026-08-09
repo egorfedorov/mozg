@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/t-client";
+import { fill } from "@/lib/markup";
 
 /**
  * The whole triage page as plain text, on the clipboard.
@@ -14,6 +16,7 @@ import { useState } from "react";
  * re-derive what the page renders, or the paste and the screen drift apart.
  */
 export default function CopyErrors({ text, count }: { text: string; count: number }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   return (
@@ -27,7 +30,9 @@ export default function CopyErrors({ text, count }: { text: string; count: numbe
         setTimeout(() => setCopied(false), 3000);
       }}
     >
-      {copied ? `copied ✓ — ${count} rows, paste it to an agent` : "Copy errors"}
+      {copied
+        ? fill(t("copied ✓ — <0/> rows, paste it to an agent"), [count])
+        : t("Copy errors")}
     </button>
   );
 }

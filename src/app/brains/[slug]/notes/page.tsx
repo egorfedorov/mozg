@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -50,6 +52,8 @@ export default async function NotesPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ q?: string; category?: string }>;
 }) {
+  const t = await translator();
+
   const { slug } = await params;
   const { q, category } = await searchParams;
   const user = await currentUser();
@@ -100,30 +104,25 @@ export default async function NotesPage({
       </Link>
 
       <div className="app-head" style={{ marginTop: ".5rem" }}>
-        <h1 className="h1">Inside this brain</h1>
+        <h1 className="h1">{t("Inside this brain")}</h1>
         <span className="eyebrow">
-          {brain.note_count} active
-          {history.length > 0 && ` · ${history.length} replaced`}
-        </span>
+          {markup(t("<0/> active <1/>"), [
+          brain.note_count,
+          history.length > 0 && ` · ${history.length} replaced`,
+        ])}</span>
       </div>
 
       <div className="stack">
-        <Section title="Coverage" aside="what the exam asks vs what you hold">
+        <Section title={t("Coverage")} aside={t("what the exam asks vs what you hold")}>
           <p className="lede" style={{ marginBottom: ".75rem" }}>
-            A category the exam asks about with no notes behind it is the most
-            useful row here — it names the material to add next. Click one to see
-            only its notes.
-          </p>
+            {t("A category the exam asks about with no notes behind it is the most useful row here — it names the material to add next. Click one to see only its notes.")}</p>
 
           <div className="rows">
             {groups.length === 0 ? (
               <p className="row-empty">
-                Nothing yet. Upload sources on the{" "}
-                <Link href={`/brains/${brain.slug}`} style={{ textDecoration: "underline" }}>
-                  brain page
-                </Link>
-                .
-              </p>
+                {markup(t("Nothing yet. Upload sources on the <0>brain page</0> ."), [
+                <Link href={`/brains/${brain.slug}`} style={{ textDecoration: "underline" }} key="s0" />,
+              ])}</p>
             ) : (
               groups.map((g) => (
                 <Link
@@ -151,10 +150,11 @@ export default async function NotesPage({
                     </strong>
                     <span className="row-meta">
                       {g.notes === 0
-                        ? "no notes cover this"
-                        : `${g.notes} note${g.notes === 1 ? "" : "s"}`}
-                      {g.total !== null && ` · exam ${g.passed} of ${g.total}`}
-                      {g.total === null && g.notes > 0 && " · not on the exam"}
+                        ? t("no notes cover this")
+                        : fill(g.notes === 1 ? t("<0/> note") : t("<0/> notes"), [g.notes])}
+                      {g.total !== null &&
+                        fill(t(" · exam <0/> of <1/>"), [g.passed ?? 0, g.total])}
+                      {g.total === null && g.notes > 0 && t(" · not on the exam")}
                     </span>
                   </span>
                   <span className="row-side">
@@ -170,21 +170,19 @@ export default async function NotesPage({
 
         {duplicates.length > 0 && (
           <Section
-            title="Saying the same thing twice"
+            title={t("Saying the same thing twice")}
             aside={`${duplicates.length} pair${duplicates.length === 1 ? "" : "s"}`}
           >
             <p className="lede" style={{ marginBottom: ".75rem" }}>
-              Two notes this close crowd each other out of search results and make
-              the brain look fuller than it is. Keep the one that says it better —
-              the other is superseded, not deleted, and stays in the history below.
-            </p>
+              {t("Two notes this close crowd each other out of search results and make the brain look fuller than it is. Keep the one that says it better — the other is superseded, not deleted, and stays in the history below.")}</p>
 
             <div className="stack-tight">
               {duplicates.map((pair) => (
                 <div key={`${pair.a.id}-${pair.b.id}`} className="panel">
                   <p className="eyebrow" style={{ margin: "0 0 .6rem" }}>
-                    {Math.round((1 - pair.distance) * 100)}% alike
-                  </p>
+                    {markup(t("<0/>% alike"), [
+                    Math.round((1 - pair.distance) * 100),
+                  ])}</p>
                   <div
                     style={{
                       display: "grid",
@@ -207,14 +205,15 @@ export default async function NotesPage({
                             {note.body}
                           </p>
                           <span className="row-meta" style={{ marginBottom: ".6rem" }}>
-                            {note.category ?? "uncategorised"} · added {isoDate(note.created_at)}
-                          </span>
+                            {markup(t("<0/> · added <1/>"), [
+                            note.category ?? "uncategorised",
+                            isoDate(note.created_at),
+                          ])}</span>
                           <form action={mergeNotes}>
                             <input type="hidden" name="keep" value={note.id} />
                             <input type="hidden" name="drop" value={other.id} />
                             <button className="btn btn-ghost" style={{ fontSize: ".8125rem" }}>
-                              Keep this one
-                            </button>
+                              {t("Keep this one")}</button>
                           </form>
                         </div>
                       );
@@ -227,14 +226,14 @@ export default async function NotesPage({
         )}
 
         <Section
-          title={category ? `Notes in ${category}` : term ? "Search results" : "Every note"}
+          title={category ? fill(t("Notes in <0/>"), [category]) : term ? "Search results" : "Every note"}
           aside={`${notes.length}${notes.length === 400 ? "+" : ""} shown`}
         >
           <form style={{ display: "flex", gap: ".6rem", flexWrap: "wrap", marginBottom: "1rem" }}>
             <input
               name="q"
               defaultValue={term}
-              placeholder="Search titles and bodies"
+              placeholder={t("Search titles and bodies")}
               style={{
                 flex: 1,
                 minWidth: 240,
@@ -245,11 +244,10 @@ export default async function NotesPage({
               }}
             />
             {category && <input type="hidden" name="category" value={category} />}
-            <button className="btn">Search</button>
+            <button className="btn">{t("Search")}</button>
             {filtered && (
               <Link className="btn btn-ghost" href={`/brains/${brain.slug}/notes`}>
-                Clear
-              </Link>
+                {t("Clear")}</Link>
             )}
           </form>
 
@@ -257,14 +255,20 @@ export default async function NotesPage({
             <div className="rows">
               <p className="row-empty">
                 {filtered
-                  ? "Nothing matches that."
-                  : "This brain has no notes yet. Upload sources on the brain page."}
+                  ? t("Nothing matches that.")
+                  : t("This brain has no notes yet. Upload sources on the brain page.")}
               </p>
             </div>
           ) : term ? (
             <div className="rows">
               {notes.map((note) => (
-                <NoteRow key={note.id} note={note} slug={brain.slug} categories={allCategories} />
+                <NoteRow
+                  key={note.id}
+                  t={t}
+                  note={note}
+                  slug={brain.slug}
+                  categories={allCategories}
+                />
               ))}
             </div>
           ) : (
@@ -277,6 +281,7 @@ export default async function NotesPage({
                   <div className="rows">
                     {list.map((note) => (
                       <NoteRow
+                        t={t}
                         key={note.id}
                         note={note}
                         slug={brain.slug}
@@ -291,14 +296,13 @@ export default async function NotesPage({
         </Section>
 
         {history.length > 0 && (
-          <Section title="What it used to say" aside={`${history.length} replaced`}>
+          <Section title={t("What it used to say")} aside={`${history.length} replaced`}>
             <details>
               <summary
                 className="mono"
                 style={{ cursor: "pointer", fontSize: ".8125rem", color: "var(--ink-2)" }}
               >
-                Show replaced notes
-              </summary>
+                {t("Show replaced notes")}</summary>
               <div className="rows" style={{ marginTop: ".75rem" }}>
                 {history.map((h) => (
                   <div key={h.id} className="row">
@@ -314,7 +318,7 @@ export default async function NotesPage({
                     </span>
                     <form action={restoreNote}>
                       <input type="hidden" name="id" value={h.id} />
-                      <button className="linkish">bring back</button>
+                      <button className="linkish">{t("bring back")}</button>
                     </form>
                   </div>
                 ))}
@@ -328,10 +332,12 @@ export default async function NotesPage({
 }
 
 function NoteRow({
+  t,
   note,
   slug,
   categories,
 }: {
+  t: (english: string) => string;
   note: Note & { source_name: string | null };
   slug: string;
   categories: string[];
@@ -348,14 +354,14 @@ function NoteRow({
           <span style={{ color: KIND_TINT[note.kind] ?? "var(--ink-3)" }}>{note.kind}</span>
           <span>
             {note.author === "agent"
-              ? `written by ${note.agent_client ?? "an agent"}`
+              ? fill(t("written by <0/>"), [note.agent_client ?? t("an agent")])
               : note.author === "human"
-                ? "added by hand"
-                : `from ${note.source_name ?? "a source"}`}
+                ? t("added by hand")
+                : fill(t("from <0/>"), [note.source_name ?? t("a source")])}
           </span>
           {note.status === "pending" && (
             <span style={{ color: "var(--color-riso-orange)" }}>
-              awaiting review — not searchable
+              {t("awaiting review — not searchable")}
             </span>
           )}
 
@@ -364,7 +370,7 @@ function NoteRow({
           <form action={recategorise} style={{ display: "flex", gap: ".3rem" }}>
             <input type="hidden" name="id" value={note.id} />
             <select name="category" defaultValue={note.category ?? ""} className="row-select">
-              <option value="">uncategorised</option>
+              <option value="">{t("uncategorised")}</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -374,18 +380,18 @@ function NoteRow({
                 <option value={note.category}>{note.category}</option>
               )}
             </select>
-            <button className="linkish">move</button>
+            <button className="linkish">{t("move")}</button>
           </form>
 
           <ConfirmForm
             action={deleteNote}
-            message={`Delete "${note.title}"? This cannot be undone.`}
+            message={fill(t("Delete “<0/>”? This cannot be undone."), [note.title])}
             style={{ marginLeft: "auto" }}
           >
             <input type="hidden" name="id" value={note.id} />
             <input type="hidden" name="slug" value={slug} />
             <button className="linkish" data-danger="true">
-              delete
+              {t("delete")}
             </button>
           </ConfirmForm>
         </span>

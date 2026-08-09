@@ -596,11 +596,11 @@ export default async function Home() {
                     {t(topicLabel(b.topic))} · {b.owner_handle}
                   </span>
                   <h3 className="card-title">{b.title}</h3>
-                  <p className="card-goal">{b.goal ?? "No goal set."}</p>
+                  <p className="card-goal">{b.goal ?? t("No goal set.")}</p>
                   <div className="card-foot">
                     <span style={{ opacity: 0.8 }}>
                       {markup(t("<0/> · <1/> notes"), [
-                      b.price_cents ? formatCents(b.price_cents) : "Free",
+                      b.price_cents ? formatCents(b.price_cents) : t("Free"),
                       b.note_count,
                     ])}</span>
                     {b.score !== null && (
@@ -629,9 +629,9 @@ export default async function Home() {
           }}
         >
           {[
-            ["Open source", "AGPL-3.0", "the whole product on GitHub — run it yourself with your own keys, everything works"],
-            ["The catalogue", "free, all of it", "every official brain costs nothing: Next.js, Expo, Svelte 5, Stake Engine, the MCP spec"],
-            ["Your own brains", "your key or ours", "train on your own API key for free, or let our cloud spend so you don't think about it"],
+            [t("Open source"), t("AGPL-3.0"), t("the whole product on GitHub — run it yourself with your own keys, everything works")],
+            [t("The catalogue"), t("free, all of it"), t("every official brain costs nothing: Next.js, Expo, Svelte 5, Stake Engine, the MCP spec")],
+            [t("Your own brains"), t("your key or ours"), t("train on your own API key for free, or let our cloud spend so you don't think about it")],
           ].map(([t, price, d]) => (
             <div key={t} style={{ background: "var(--paper-2)", padding: "1.25rem" }}>
               <p className="eyebrow" style={{ margin: 0 }}>
@@ -666,6 +666,8 @@ export default async function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/about/portrait.webp"
+            // A bare personal name: nothing in it to translate, and asking for one
+            // got two different Arabic spellings of the same person.
             alt="Egor Fedorov"
             width={132}
             height={176}
@@ -704,7 +706,7 @@ export default async function Home() {
               {t("Open source, and the whole catalogue is free — connect your agents in a minute. Build your own on our inference, or bring your own API key and pay nobody.")}</p>
           </div>
           <Link className="btn" href={user ? "/brains" : "/sign-in"}>
-            {user ? "Open your brains" : "Build a brain"}
+            {user ? t("Open your brains") : t("Build a brain")}
           </Link>
         </section>
       </main>

@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
@@ -23,6 +25,8 @@ export default async function ReviewPage({
   params: Promise<{ handle: string; slug: string }>;
   searchParams: Promise<{ category?: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const { category = null } = await searchParams;
   const user = await currentUser();
@@ -114,20 +118,20 @@ export default async function ReviewPage({
     <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 820 }}>
       <p className="eyebrow">
-        <Link href="/learn">learn</Link> /{" "}
+        <Link href="/learn">{t("learn")}</Link> /{" "}
         <Link href={backHref}>{brain.title}</Link> / {category ?? "review"}
         {brain.score != null && (
           <span className="mono" style={{ marginLeft: ".75rem", color: "var(--ink-3)" }}>
-            the agent scores {brain.score}% — beat it
-          </span>
+            {markup(t("the agent scores <0/>% — beat it"), [
+            brain.score,
+          ])}</span>
         )}
       </p>
 
       {sectionReviews.length > 0 && (
         <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "1.25rem 1.5rem", marginBottom: "1.5rem" }}>
           <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: "0 0 .5rem" }}>
-            sections due for a re-read
-          </p>
+            {t("sections due for a re-read")}</p>
           {sectionReviews.map((s) => (
             <p key={s.key} style={{ margin: ".25rem 0" }}>
               <Link
@@ -145,11 +149,11 @@ export default async function ReviewPage({
       {cards.length === 0 ? (
         sectionReviews.length === 0 && (
           <div style={{ border: "1.5px solid var(--ink)", background: "var(--paper-2)", padding: "2rem" }}>
-            <p className="h2" style={{ margin: 0 }}>Nothing due here.</p>
+            <p className="h2" style={{ margin: 0 }}>{t("Nothing due here.")}</p>
             <p style={{ color: "var(--ink-2)", marginBottom: 0 }}>
-              Every card in this module is scheduled for later — that is the
-              system working. <Link href={backHref} style={{ textDecoration: "underline" }}>Back to the course.</Link>
-            </p>
+              {markup(t("Every card in this module is scheduled for later — that is the system working. <0>Back to the course.</0>"), [
+              <Link href={backHref} style={{ textDecoration: "underline" }} key="s0" />,
+            ])}</p>
           </div>
         )
       ) : (

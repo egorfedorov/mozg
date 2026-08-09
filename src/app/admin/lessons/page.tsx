@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
@@ -13,6 +15,8 @@ export const metadata = { title: "Lessons — mozg admin" };
  * (npm run lesson -- --brain <slug>).
  */
 export default async function AdminLessonsPage() {
+  const t = await translator();
+
   await requireAdmin().catch(() => redirect("/"));
 
   const rows = await query<{
@@ -43,20 +47,21 @@ export default async function AdminLessonsPage() {
   const total = rows.reduce((n, r) => n + r.modules, 0);
 
   return (
-    <AppShell active="/admin/lessons" eyebrow="Operator" title="Lessons">
+    <AppShell active="/admin/lessons" eyebrow={t("Operator")} title={t("Lessons")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {done} of {total} public modules have a compiled lesson. The rest
-        compile on first study, or now:{" "}
-        <span className="mono">npm run lesson -- --brain &lt;slug&gt;</span>
-      </p>
+        {markup(t("<0/> of <1/> public modules have a compiled lesson. The rest compile on first study, or now: <2>npm run lesson -- --brain &lt;slug&gt;</2>"), [
+        done,
+        total,
+        <span className="mono" key="s2" />,
+      ])}</p>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".9375rem" }}>
         <thead>
           <tr className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", textAlign: "left" }}>
-            <th style={{ padding: ".4rem .6rem" }}>brain</th>
-            <th style={{ padding: ".4rem .6rem" }}>modules</th>
-            <th style={{ padding: ".4rem .6rem" }}>compiled</th>
-            <th style={{ padding: ".4rem .6rem" }}>latest</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("brain")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("modules")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("compiled")}</th>
+            <th style={{ padding: ".4rem .6rem" }}>{t("latest")}</th>
           </tr>
         </thead>
         <tbody>

@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -17,6 +19,8 @@ export const metadata = { title: "Errors — mozg admin" };
  * every deploy — this page is what survives them.
  */
 export default async function AdminErrorsPage() {
+  const t = await translator();
+
   await requireAdmin().catch(() => redirect("/"));
 
   const groups = await query<{
@@ -113,13 +117,14 @@ export default async function AdminErrorsPage() {
   ].join("\n");
 
   return (
-    <AppShell active="/admin/errors" eyebrow="Operator" title="Errors">
+    <AppShell active="/admin/errors" eyebrow={t("Operator")} title={t("Errors")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        {open} open across {groups.length} kind
-        {groups.length === 1 ? "" : "s"}. Resolving acknowledges — rows stay
-        for postmortems.{" "}
-        <AutoRefresh active intervalMs={30_000} label="live" />
-      </p>
+        {markup(t("<0/> open across <1/> kind <2/>. Resolving acknowledges — rows stay for postmortems. <3/>"), [
+        open,
+        groups.length,
+        groups.length === 1 ? "" : "s",
+        <AutoRefresh key="s3" active intervalMs={30_000} label="live" />,
+      ])}</p>
 
       <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
         {(open > 0 || failedCalls.length > 0) && (
@@ -129,14 +134,13 @@ export default async function AdminErrorsPage() {
           <form action={resolveErrors}>
             <input type="hidden" name="source" value="*" />
             <button className="btn btn-ghost" style={{ padding: ".4rem .8rem" }}>
-              Resolve everything
-            </button>
+              {t("Resolve everything")}</button>
           </form>
         )}
       </div>
 
       {groups.length === 0 && (
-        <p className="lede">Nothing open. The next failure from any layer lands here.</p>
+        <p className="lede">{t("Nothing open. The next failure from any layer lands here.")}</p>
       )}
 
       {groups.map((g) => (
@@ -177,23 +181,24 @@ export default async function AdminErrorsPage() {
               <input type="hidden" name="source" value={g.source} />
               <input type="hidden" name="kind" value={g.kind} />
               <button className="btn" style={{ padding: ".35rem .8rem" }}>
-                Resolve {g.n}
-              </button>
+                {markup(t("Resolve <0/>"), [
+                g.n,
+              ])}</button>
             </form>
           </div>
         </details>
       ))}
 
-      <Section title="Failed MCP calls · 24h" aside="reasons ride on the metering rows">
+      <Section title={t("Failed MCP calls · 24h")} aside={t("reasons ride on the metering rows")}>
         {failedCalls.length === 0 ? (
-          <p className="lede">None. Agents are getting answers.</p>
+          <p className="lede">{t("None. Agents are getting answers.")}</p>
         ) : (
           <div className="rows">
             {failedCalls.map((c, i) => (
               <div key={i} className="row">
                 <span style={{ minWidth: 0 }}>
                   <strong className="mono" style={{ fontSize: ".875rem" }}>{c.tool}</strong>
-                  <span className="row-sub">{c.error ?? "no reason recorded (pre-0065 row)"}</span>
+                  <span className="row-sub">{c.error ?? t("no reason recorded (pre-0065 row)")}</span>
                   <span className="row-meta">
                     {c.at}
                     {c.email ? ` · ${c.email}` : ""}

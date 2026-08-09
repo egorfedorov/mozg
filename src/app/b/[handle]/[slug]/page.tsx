@@ -341,7 +341,7 @@ export default async function PublicBrainPage({
               {brain.title}
             </h1>
             <p style={{ color: "var(--ink-2)", margin: ".6rem 0 0", maxWidth: "60ch" }}>
-              {brain.goal ?? "No goal set."}
+              {brain.goal ?? t("No goal set.")}
             </p>
             <p
               className="mono"
@@ -351,7 +351,7 @@ export default async function PublicBrainPage({
               (brain.note_count + children.reduce((n, c) => n + c.note_count, 0)).toLocaleString(),
               children.length > 0 ? ` across ${children.length + 1} brains` : "",
               isoDate(brain.updated_at),
-              brain.score === null ? "not examined" : `trained ${brain.score}%`,
+              brain.score === null ? t("not examined") : `trained ${brain.score}%`,
               rating.n > 0 && ` · ★ ${rating.avg} (${rating.n})`,
             ])}</p>
             {(examDiff.gained > 0 || examDiff.lost > 0) && (
@@ -424,7 +424,7 @@ export default async function PublicBrainPage({
                   <span style={{ marginLeft: ".5rem" }}>{t("use this brain")}</span>
                 </div>
                 <div className="c">
-                  {user ? "# your token from /settings/tokens" : "# sign in to get a token"}
+                  {user ? t("# your token from /settings/tokens") : t("# sign in to get a token")}
                 </div>
                 <div style={{ wordBreak: "break-all" }}>
                   {markup(t("<0>$</0> claude mcp add --transport http mozg \\"), [
@@ -529,12 +529,21 @@ export default async function PublicBrainPage({
             <div className="section-head">
               <h2 className="h2">{t("Ask it things like")}</h2>
               <span className="eyebrow">
-                {examTotals && examTotals.pos_total > 0
-                  ? `answers ${examTotals.pos_passed}/${examTotals.pos_total} on its latest exam` +
-                    (examTotals.neg_total > 0
-                      ? ` · anti-bluff ${examTotals.neg_passed}/${examTotals.neg_total}`
-                      : "")
-                  : "passed on its latest exam — graded, not claimed"}
+                {examTotals && examTotals.pos_total > 0 ? (
+                  <>
+                    {markup(t("answers <0/>/<1/> on its latest exam"), [
+                      examTotals.pos_passed,
+                      examTotals.pos_total,
+                    ])}
+                    {examTotals.neg_total > 0 &&
+                      markup(t(" · anti-bluff <0/>/<1/>"), [
+                        examTotals.neg_passed,
+                        examTotals.neg_total,
+                      ])}
+                  </>
+                ) : (
+                  t("passed on its latest exam — graded, not claimed")
+                )}
               </span>
             </div>
             <div className="rows">
@@ -609,7 +618,7 @@ export default async function PublicBrainPage({
                 <Link key={c.id} className="row" href={`/b/${handle}/${c.slug}`}>
                   <span style={{ minWidth: 0 }}>
                     <strong>{c.title}</strong>
-                    <span className="row-sub">{c.goal ?? "No goal set."}</span>
+                    <span className="row-sub">{c.goal ?? t("No goal set.")}</span>
                     <span className="row-meta">{markup(t("<0/> notes"), [
                       c.note_count,
                     ])}</span>
@@ -639,7 +648,7 @@ export default async function PublicBrainPage({
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
                   {categories.length
                     ? `${categories.reduce((n, c) => n + c.total, 0)} checks`
-                    : "not examined"}
+                    : t("not examined")}
                 </span>
               </div>
               {brain.score !== null && (
@@ -705,7 +714,7 @@ export default async function PublicBrainPage({
         <section style={{ marginTop: "3rem", display: "grid", gap: "2rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <div>
             <h2 className="h2" style={{ marginBottom: "1rem" }}>
-              {preview ? "What is inside" : "Inside"}
+              {preview ? t("What is inside") : t("Inside")}
             </h2>
             {preview && (
               <p style={{ color: "var(--ink-2)", marginTop: 0, fontSize: ".9375rem" }}>

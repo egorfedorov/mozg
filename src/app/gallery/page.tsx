@@ -1,5 +1,5 @@
 import { translator } from "@/lib/t";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import GalleryShell from "./GalleryShell";
 import { query } from "@/db";
@@ -115,7 +115,7 @@ export default async function GalleryPage() {
                     <span className="gal-cover">
                       {cover ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover} alt={`A work in ${s.title}`} loading="lazy" />
+                        <img src={cover} alt={fill(t("A work in <0/>"), [s.title])} loading="lazy" />
                       ) : (
                         <span className="gal-cover-empty mono">{t("no cover yet")}</span>
                       )}

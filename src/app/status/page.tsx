@@ -131,7 +131,7 @@ export default async function StatusPage() {
                     <strong>{s.title}</strong>
                     <span className="row-meta">
                       {s.kind}
-                      {s.live && s.kind === "maintenance" ? " · in progress" : ""} · {s.at}
+                      {s.live && s.kind === "maintenance" ? t(" · in progress") : ""} · {s.at}
                     </span>
                   </span>
                 </div>

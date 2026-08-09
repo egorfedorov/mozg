@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 import { ImageResponse } from "next/og";
 import { maybeOne } from "@/db";
 import type { Brain } from "@/db/types";
@@ -39,6 +40,8 @@ export default async function OgImage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const brain = await maybeOne<Brain & { owner_handle: string }>(
     `select b.*, u.handle as owner_handle
@@ -108,7 +111,7 @@ export default async function OgImage({
                 marginTop: 24,
               }}
             >
-              {brain?.title ?? "One brain, every agent"}
+              {brain?.title ?? t("One brain, every agent")}
             </div>
             {brain?.goal && (
               <div
@@ -164,11 +167,11 @@ export default async function OgImage({
           <div style={{ display: "flex" }}>
             {brain
               ? `${brain.note_count} notes${
-                  brain.score === null ? " · not examined yet" : " · exam score"
+                  brain.score === null ? t(" · not examined yet") : t(" · exam score")
                 }`
-              : "Build a knowledge brain, connect it over MCP."}
+              : t("Build a knowledge brain, connect it over MCP.")}
           </div>
-          <div style={{ display: "flex" }}>one brain, every agent</div>
+          <div style={{ display: "flex" }}>{t("one brain, every agent")}</div>
         </div>
       </div>
     ),

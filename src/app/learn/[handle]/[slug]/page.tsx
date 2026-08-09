@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
@@ -21,6 +23,8 @@ export default async function CoursePage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=/learn/${handle}/${slug}`);
@@ -135,8 +139,9 @@ export default async function CoursePage({
     <LearnShell>
     <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
       <p className="eyebrow">
-        <Link href="/learn">learn</Link> / course
-      </p>
+        {markup(t("<0>learn</0> / course"), [
+        <Link href="/learn" key="s0" />,
+      ])}</p>
       <h1 className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: ".4rem 0 .75rem" }}>
         {brain.title}
       </h1>
@@ -160,26 +165,26 @@ export default async function CoursePage({
         }}
       >
         <div>
-          <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>YOU</p>
+          <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>{t("YOU")}</p>
           <p className="h2" style={{ margin: 0 }}>{pct}%</p>
         </div>
         {brain.score != null && (
           <div>
-            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>YOUR AGENT</p>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>{t("YOUR AGENT")}</p>
             <p className="h2" style={{ margin: 0, color: "var(--ink-2)" }}>{brain.score}%</p>
           </div>
         )}
         {brain.score != null && (
           <div>
-            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>CHALLENGE</p>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>{t("CHALLENGE")}</p>
             {wonAt ? (
               <p style={{ margin: 0, fontWeight: 650, color: "var(--color-riso-green)" }}>
-                ★ You beat your agent
-              </p>
+                {t("★ You beat your agent")}</p>
             ) : (
               <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)", margin: ".35rem 0 0" }}>
-                pass {brain.score}% to beat it
-              </p>
+                {markup(t("pass <0/>% to beat it"), [
+                brain.score,
+              ])}</p>
             )}
           </div>
         )}
@@ -188,34 +193,40 @@ export default async function CoursePage({
             <div style={{ height: "100%", width: `${pct}%`, background: "var(--color-riso-green)" }} />
           </div>
           <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".3rem 0 0" }}>
-            {totalLearned} of {totalCards} cards learned
-          </p>
+            {markup(t("<0/> of <1/> cards learned"), [
+            totalLearned,
+            totalCards,
+          ])}</p>
         </div>
         {streak > 0 && (
           <div>
-            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>STREAK</p>
+            <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: 0 }}>{t("STREAK")}</p>
             <p className="h2" style={{ margin: 0 }}>
-              {streak}<span style={{ fontSize: ".8em" }}> day{streak === 1 ? "" : "s"}</span>
+              {streak}<span style={{ fontSize: ".8em" }}> {markup(t("day<0/>"), [
+                        streak === 1 ? "" : "s",
+                      ])}</span>
             </p>
           </div>
         )}
         {due > 0 && (
           <Link className="btn" href={`/learn/${handle}/${slug}/review`}>
-            Review {due} due
-          </Link>
+            {markup(t("Review <0/> due"), [
+            due,
+          ])}</Link>
         )}
         {pct >= 80 && (
           <Link className="btn btn-ghost" href={`/learn/${handle}/${slug}/certificate`}>
-            Certificate →
-          </Link>
+            {t("Certificate →")}</Link>
         )}
       </div>
 
       {path.length > 0 && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "2rem 0 1rem" }}>
-            <h2 className="h2" style={{ margin: 0 }}>Path</h2>
-            <span className="eyebrow">{pathPct}% of the family learned</span>
+            <h2 className="h2" style={{ margin: 0 }}>{t("Path")}</h2>
+            <span className="eyebrow">{markup(t("<0/>% of the family learned"), [
+              pathPct,
+            ])}</span>
           </div>
           <div style={{ height: 10, border: "1.5px solid var(--ink)", background: "var(--paper)", marginBottom: "1rem" }}>
             <div style={{ height: "100%", width: `${pathPct}%`, background: "var(--color-riso-green)" }} />
@@ -241,13 +252,14 @@ export default async function CoursePage({
                     {p.title}
                     {p.id === brain.id && (
                       <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                        {" "}· this course
-                      </span>
+                        {t("· this course")}</span>
                     )}
                   </p>
                   <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".15rem 0 0" }}>
-                    {p.cards} cards · {p.pct}% learned
-                  </p>
+                    {markup(t("<0/> cards · <1/>% learned"), [
+                    p.cards,
+                    p.pct,
+                  ])}</p>
                 </div>
                 <div style={{ width: 90, height: 8, border: "1px solid var(--ink)", background: "var(--paper)" }}>
                   <div style={{ height: "100%", width: `${p.pct}%`, background: p.pct === 100 ? "var(--color-riso-green)" : "var(--color-riso-red)" }} />
@@ -267,7 +279,7 @@ export default async function CoursePage({
                 </span>
                 {p.id !== brain.id && (
                   <Link className="btn btn-ghost" style={{ padding: ".4rem .8rem" }} href={`/learn/${handle}/${p.slug}`}>
-                    {statuses[i] === "done" ? "Review" : "Open"}
+                    {statuses[i] === "done" ? t("Review") : t("Open")}
                   </Link>
                 )}
               </div>
@@ -276,7 +288,7 @@ export default async function CoursePage({
         </>
       )}
 
-      <h2 className="h2" style={{ margin: "2rem 0 1rem" }}>Syllabus</h2>
+      <h2 className="h2" style={{ margin: "2rem 0 1rem" }}>{t("Syllabus")}</h2>
       <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)" }}>
         {modules.map((m, i) => {
           const mpct = m.total ? Math.round((m.learned / m.total) * 100) : 0;
@@ -298,15 +310,17 @@ export default async function CoursePage({
               <div style={{ flex: 1, minWidth: 200 }}>
                 <p style={{ margin: 0, fontWeight: 650 }}>{m.cat}</p>
                 <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".15rem 0 0" }}>
-                  {m.notes} notes · {m.checks} exam questions
-                  {m.learned > 0 && ` · ${mpct}% learned`}
-                </p>
+                  {markup(t("<0/> notes · <1/> exam questions <2/>"), [
+                  m.notes,
+                  m.checks,
+                  m.learned > 0 && ` · ${mpct}% learned`,
+                ])}</p>
               </div>
               <div style={{ width: 90, height: 8, border: "1px solid var(--ink)", background: "var(--paper)" }}>
                 <div style={{ height: "100%", width: `${mpct}%`, background: mpct === 100 ? "var(--color-riso-green)" : "var(--color-riso-red)" }} />
               </div>
               <Link className="btn btn-ghost" style={{ padding: ".4rem .8rem" }} href={`/learn/${handle}/${slug}/study/${encodeURIComponent(m.cat)}`}>
-                {m.learned > 0 ? "Continue" : "Study"}
+                {m.learned > 0 ? t("Continue") : t("Study")}
               </Link>
             </div>
           );
@@ -314,11 +328,7 @@ export default async function CoursePage({
       </div>
 
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: "1.5rem" }}>
-        Each module is the same material your agent searches — read it as a
-        lesson, then a short quiz seals it, and spaced review brings each card
-        back just before you would forget. Cards you miss return within
-        minutes; cards you know retreat for days.
-      </p>
+        {t("Each module is the same material your agent searches — read it as a lesson, then a short quiz seals it, and spaced review brings each card back just before you would forget. Cards you miss return within minutes; cards you know retreat for days.")}</p>
     </main>
     </LearnShell>
   );

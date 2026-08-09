@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
@@ -45,6 +47,8 @@ function Block({ title, hint, text }: { title: string; hint?: string; text: stri
 }
 
 export default async function MarketingPage() {
+  const t = await translator();
+
   await requireAdmin().catch(() => redirect("/"));
 
   const s = await query<{ brains: number; avg: number; paid: number }>(
@@ -228,108 +232,104 @@ export default async function MarketingPage() {
     `${s.paid} paid.`;
 
   return (
-    <AppShell active="/admin/marketing" eyebrow="Operator" title="Marketing kit">
+    <AppShell active="/admin/marketing" eyebrow={t("Operator")} title={t("Marketing kit")}>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        Everything here is written to be pasted as-is. Numbers are pulled live
-        from the catalogue ({s.brains} public brains, avg score {s.avg}%). The
-        rule of the voice: no claim a database row or an exam score can&apos;t
-        back. Two audiences now — developers who want an agent that can prove
-        what it knows, and artists who want paying for their style instead of
-        losing it. Posts that mention a subreddit carry its posting rule with
-        them, because the copy is not what got the last one auto-removed.
-      </p>
+        {markup(t("Everything here is written to be pasted as-is. Numbers are pulled live from the catalogue (<0/> public brains, avg score <1/>%). The rule of the voice: no claim a database row or an exam score can't back. Two audiences now — developers who want an agent that can prove what it knows, and artists who want paying for their style instead of losing it. Posts that mention a subreddit carry its posting rule with them, because the copy is not what got the last one auto-removed."), [
+        s.brains,
+        s.avg,
+      ])}</p>
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Launch runbook — go top to bottom</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Launch runbook — go top to bottom")}</h2>
       <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)", marginBottom: "1.5rem" }}>
         {[
           {
-            when: "Day 1",
-            what: "glama.ai — MCP server directory",
-            how: "glama.ai/mcp/servers → Add server. Paste the «MCP directory listing» block below.",
+            when: t("Day 1"),
+            what: t("glama.ai — MCP server directory"),
+            how: t("glama.ai/mcp/servers → Add server. Paste the «MCP directory listing» block below."),
             art: "—",
           },
           {
-            when: "Day 1",
-            what: "smithery.ai",
-            how: "smithery.ai → Submit/Add server (GitHub sign-in). Same listing block.",
+            when: t("Day 1"),
+            what: t("smithery.ai"),
+            how: t("smithery.ai → Submit/Add server (GitHub sign-in). Same listing block."),
             art: "—",
           },
           {
-            when: "Day 1",
-            what: "mcp.so",
-            how: "mcp.so → Submit. Same listing block.",
+            when: t("Day 1"),
+            what: t("mcp.so"),
+            how: t("mcp.so → Submit. Same listing block."),
             art: "—",
           },
           {
-            when: "Day 1",
-            what: "pulsemcp.com + mcpservers.org",
-            how: "Both have a Submit form/repo. Same listing block, shorter description field takes the ~160-char one.",
+            when: t("Day 1"),
+            what: t("pulsemcp.com + mcpservers.org"),
+            how: t("Both have a Submit form/repo. Same listing block, shorter description field takes the ~160-char one."),
             art: "—",
           },
           {
-            when: "Day 1",
-            what: "awesome-mcp-servers (GitHub PR)",
-            how: "github.com/punkpeye/awesome-mcp-servers → edit README → section «Knowledge & Memory» → add the PR line from the block below, alphabetical order. PR title: Add mozg.",
+            when: t("Day 1"),
+            what: t("awesome-mcp-servers (GitHub PR)"),
+            how: t("github.com/punkpeye/awesome-mcp-servers → edit README → section «Knowledge & Memory» → add the PR line from the block below, alphabetical order. PR title: Add mozg."),
             art: "—",
           },
           {
-            when: "Day 1",
-            what: "awesome-selfhosted + r/selfhosted",
-            how: "github.com/awesome-selfhosted/awesome-selfhosted → PR (section: Knowledge Management, AGPL badge). Then a r/selfhosted post: story-first, self-host instructions up top — that crowd converts on 'docker compose up'.",
+            when: t("Day 1"),
+            what: t("awesome-selfhosted + r/selfhosted"),
+            how: t("github.com/awesome-selfhosted/awesome-selfhosted → PR (section: Knowledge Management, AGPL badge). Then a r/selfhosted post: story-first, self-host instructions up top — that crowd converts on 'docker compose up'."),
             art: "—",
           },
           {
-            when: "Day 2",
-            what: "r/mcp",
-            how: "reddit.com/r/mcp → post the «r/mcp post» block. Reply to every comment within the hour.",
-            art: "social-exam.jpg",
+            when: t("Day 2"),
+            what: t("r/mcp"),
+            how: t("reddit.com/r/mcp → post the «r/mcp post» block. Reply to every comment within the hour."),
+            art: t("social-exam.jpg"),
           },
           {
-            when: "Day 3",
-            what: "r/ClaudeAI",
-            how: "reddit.com/r/ClaudeAI → the «r/ClaudeAI post» block. Don't post both subreddits the same day.",
-            art: "social-exam.jpg",
+            when: t("Day 3"),
+            what: t("r/ClaudeAI"),
+            how: t("reddit.com/r/ClaudeAI → the «r/ClaudeAI post» block. Don't post both subreddits the same day."),
+            art: t("social-exam.jpg"),
           },
           {
-            when: "Day 4-5",
-            what: "Dev.to article",
-            how: "dev.to/new → paste the full markdown block (front-matter included) → cover image devto-cover.jpg → publish. Cross-post to Hashnode after, canonical = dev.to.",
-            art: "devto-cover.jpg",
+            when: t("Day 4-5"),
+            what: t("Dev.to article"),
+            how: t("dev.to/new → paste the full markdown block (front-matter included) → cover image devto-cover.jpg → publish. Cross-post to Hashnode after, canonical = dev.to."),
+            art: t("devto-cover.jpg"),
           },
           {
-            when: "Week 2 · Tue-Thu",
-            what: "Show HN",
-            how: "news.ycombinator.com/submit at 14:00-16:00 UTC. Title+URL from the «Show HN» block; post the first comment yourself immediately. Answer everything for 2 hours. Never ask for upvotes.",
+            when: t("Week 2 · Tue-Thu"),
+            what: t("Show HN"),
+            how: t("news.ycombinator.com/submit at 14:00-16:00 UTC. Title+URL from the «Show HN» block; post the first comment yourself immediately. Answer everything for 2 hours. Never ask for upvotes."),
             art: "—",
           },
           {
-            when: "Week 2, day after HN",
-            what: "X thread",
-            how: "Three tweets from the «X thread» block, image on the first tweet.",
-            art: "social-exam.jpg",
+            when: t("Week 2, day after HN"),
+            what: t("X thread"),
+            how: t("Three tweets from the «X thread» block, image on the first tweet."),
+            art: t("social-exam.jpg"),
           },
           {
-            when: "Week 2",
-            what: "Stake Engine Discord",
-            how: "The RU block below, in the community/showcase channel. You're a known member — post as yourself, not as an ad.",
+            when: t("Week 2"),
+            what: t("Stake Engine Discord"),
+            how: t("The RU block below, in the community/showcase channel. You're a known member — post as yourself, not as an ad."),
             art: "—",
           },
           {
-            when: "Week 3 · Tue-Wed",
-            what: "Product Hunt",
-            how: "producthunt.com/posts/new at 00:01 PT. Name/tagline/description from LAUNCH.md. First comment: the founder story. Gallery: all three images + screenshots of a brain page and learn course.",
-            art: "all three",
+            when: t("Week 3 · Tue-Wed"),
+            what: t("Product Hunt"),
+            how: t("producthunt.com/posts/new at 00:01 PT. Name/tagline/description from LAUNCH.md. First comment: the founder story. Gallery: all three images + screenshots of a brain page and learn course."),
+            art: t("all three"),
           },
           {
-            when: "Week 3",
-            what: "learn angle",
-            how: "r/learnprogramming-style communities, story-first: «I turned my agent's knowledge base into a course and tried to beat its exam score». Link learn.mozg.sh only when asked or at the bottom.",
-            art: "learn-social.jpg",
+            when: t("Week 3"),
+            what: t("learn angle"),
+            how: t("r/learnprogramming-style communities, story-first: «I turned my agent's knowledge base into a course and tried to beat its exam score». Link learn.mozg.sh only when asked or at the bottom."),
+            art: t("learn-social.jpg"),
           },
           {
-            when: "Always",
-            what: "Every new brain = a post",
-            how: "One brain a week to ≥85%, announce with the X thread pattern. Every external link gets ?utm_source=<platform> so PostHog can name the winner.",
+            when: t("Always"),
+            what: t("Every new brain = a post"),
+            how: t("One brain a week to ≥85%, announce with the X thread pattern. Every external link gets ?utm_source=<platform> so PostHog can name the winner."),
             art: "rotate",
           },
         ].map((s, i) => (
@@ -346,29 +346,29 @@ export default async function MarketingPage() {
         ))}
       </div>
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Positioning</h2>
-      <Block title="One-liner" text={oneLiner} />
-      <Block title="Boilerplate (100 words)" hint="press kits, directories" text={boilerplate} />
-      <Block title="Bios & taglines" text={bio} />
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Positioning")}</h2>
+      <Block title={t("One-liner")} text={oneLiner} />
+      <Block title={t("Boilerplate (100 words)")} hint={t("press kits, directories")} text={boilerplate} />
+      <Block title={t("Bios & taglines")} text={bio} />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Launch posts</h2>
-      <Block title="Show HN" hint="post 15:00–17:00 CET" text={showHn} />
-      <Block title="X thread" hint="3 tweets" text={xThread} />
-      <Block title="Reddit r/ClaudeAI" text={redditClaude} />
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Launch posts")}</h2>
+      <Block title={t("Show HN")} hint={t("post 15:00–17:00 CET")} text={showHn} />
+      <Block title={t("X thread")} hint={t("3 tweets")} text={xThread} />
+      <Block title={t("Reddit r/ClaudeAI")} text={redditClaude} />
       <Block
-        title="For artists — the anti-scraping post"
-        hint="r/SideProject, r/artbusiness · lead with the concession, not the product"
+        title={t("For artists — the anti-scraping post")}
+        hint={t("r/SideProject, r/artbusiness · lead with the concession, not the product")}
         text={artistPost}
       />
       <Block
-        title="The manifesto post"
-        hint="X / LinkedIn / HN comment — the argument, no feature list"
+        title={t("The manifesto post")}
+        hint={t("X / LinkedIn / HN comment — the argument, no feature list")}
         text={manifestoPost}
       />
-      <Block title="Stake Engine Discord" hint="RU" text={discordStake} />
+      <Block title={t("Stake Engine Discord")} hint="RU" text={discordStake} />
       <Block
-        title="Stake Engine Discord — EN"
-        hint="showcase/community channel, post as yourself"
+        title={t("Stake Engine Discord — EN")}
+        hint={t("showcase/community channel, post as yourself")}
         text={
           "Building on Stake Engine with coding agents? I got tired of mine " +
           "answering RGS questions from year-old memory, so I turned the " +
@@ -392,8 +392,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="Русский геймдев-канал"
-        hint="чат/канал разработчиков игр, тон — свой, история"
+        title={t("Русский геймдев-канал")}
+        hint={t("чат/канал разработчиков игр, тон — свой, история")}
         text={
           "Расскажу про инструмент, который сделал для себя, а получился " +
           "продукт.\n\n" +
@@ -422,10 +422,10 @@ export default async function MarketingPage() {
         }
       />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Week 1 — MCP ecosystem</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Week 1 — MCP ecosystem")}</h2>
       <Block
-        title="MCP directory listing"
-        hint="glama.ai · smithery.ai · mcp.so · pulsemcp.com · mcpservers.org"
+        title={t("MCP directory listing")}
+        hint={t("glama.ai · smithery.ai · mcp.so · pulsemcp.com · mcpservers.org")}
         text={
           "Name: mozg\n" +
           "Category: Knowledge & Memory\n" +
@@ -451,8 +451,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="awesome-mcp-servers — PR line"
-        hint="section: Knowledge & Memory; PR title: Add mozg"
+        title={t("awesome-mcp-servers — PR line")}
+        hint={t("section: Knowledge & Memory; PR title: Add mozg")}
         text={
           "- [mozg](https://mozg.sh) — Exam-scored knowledge brains: paste a docs " +
           "URL, get a searchable brain with a measured score and known gaps; " +
@@ -466,8 +466,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="r/mcp post"
-        hint="flair: Show & Tell, no link shorteners"
+        title={t("r/mcp post")}
+        hint={t("flair: Show & Tell, no link shorteners")}
         text={
           "Title: I built an MCP server where every knowledge base has to pass " +
           "an exam\n\n" +
@@ -497,8 +497,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="r/ClaudeAI post"
-        hint="conversational, story first"
+        title={t("r/ClaudeAI post")}
+        hint={t("conversational, story first")}
         text={
           "Title: I got tired of my agent's confident wrong answers, so my " +
           "docs now sit an exam\n\n" +
@@ -519,10 +519,10 @@ export default async function MarketingPage() {
         }
       />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Week 3 — Dev.to article</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Week 3 — Dev.to article")}</h2>
       <Block
-        title="Dev.to — full article (markdown)"
-        hint="tags: ai, productivity, claudecode, mcp · canonical: none"
+        title={t("Dev.to — full article (markdown)")}
+        hint={t("tags: ai, productivity, claudecode, mcp · canonical: none")}
         text={
           "---\n" +
           "title: I measured how much my coding agent actually knows about my stack. It was 40%.\n" +
@@ -604,10 +604,10 @@ export default async function MarketingPage() {
         }
       />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Community posts — per ecosystem</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Community posts — per ecosystem")}</h2>
       <Block
-        title="Claude Discord — #built-with-claude"
-        hint="tags: MCP Server, Open Source · attach social-exam.jpg"
+        title={t("Claude Discord — #built-with-claude")}
+        hint={t("tags: MCP Server, Open Source · attach social-exam.jpg")}
         text={
           "mozg — open-source, exam-scored knowledge brains for Claude Code (and " +
           "any MCP client)\n\n" +
@@ -632,8 +632,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="Codex / OpenAI community post"
-        hint="OpenAI dev forum / r/OpenAI — Codex angle"
+        title={t("Codex / OpenAI community post")}
+        hint={t("OpenAI dev forum / r/OpenAI — Codex angle")}
         text={
           "I built an open-source MCP server that makes Codex answer from " +
           "current docs — with a measured score\n\n" +
@@ -652,8 +652,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="Kimi / CN-ecosystem community post"
-        hint="Kimi Discord / r/LocalLLaMA angle — BYOK first"
+        title={t("Kimi / CN-ecosystem community post")}
+        hint={t("Kimi Discord / r/LocalLLaMA angle — BYOK first")}
         text={
           "Open-source knowledge brains for coding agents — works with Kimi, " +
           "DeepSeek, Qwen keys out of the box\n\n" +
@@ -674,10 +674,10 @@ export default async function MarketingPage() {
         }
       />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Evergreen</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Evergreen")}</h2>
       <Block
-        title="Star ask — tweet-length"
-        hint="pick one; first is strongest"
+        title={t("Star ask — tweet-length")}
+        hint={t("pick one; first is strongest")}
         text={
           "EN:\n" +
           "We open-sourced a brain that has to pass an exam before your AI " +
@@ -696,8 +696,8 @@ export default async function MarketingPage() {
         }
       />
       <Block
-        title="The star ask"
-        hint="X / Discord / end of any post — never begs, always trades"
+        title={t("The star ask")}
+        hint={t("X / Discord / end of any post — never begs, always trades")}
         text={
           "We open-sourced everything yesterday: the exam engine, the crawler, " +
           "the collective-mind loop, the spaced-repetition courses — the whole " +
@@ -714,20 +714,17 @@ export default async function MarketingPage() {
           "worth more: https://mozg.sh/chat"
         }
       />
-      <Block title="The collective-mind post" hint="X / LinkedIn / blog intro" text={collectivePost} />
-      <Block title="Cold DM" hint="personalise the brackets" text={dm} />
+      <Block title={t("The collective-mind post")} hint={t("X / LinkedIn / blog intro")} text={collectivePost} />
+      <Block title={t("Cold DM")} hint={t("personalise the brackets")} text={dm} />
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Post art</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Post art")}</h2>
       <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        Generated in the house riso style, no baked text — captions belong to
-        the platform, not the pixels. Cover for Dev.to, square for
-        Reddit/X, green one for anything learn.
-      </p>
+        {t("Generated in the house riso style, no baked text — captions belong to the platform, not the pixels. Cover for Dev.to, square for Reddit/X, green one for anything learn.")}</p>
       <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginBottom: "1.5rem" }}>
         {[
-          { src: "/brand/devto-cover.jpg", label: "devto-cover.jpg — article cover, 16:9" },
-          { src: "/brand/social-exam.jpg", label: "social-exam.jpg — the exam, 1:1" },
-          { src: "/brand/learn-social.jpg", label: "learn-social.jpg — learn posts, 16:9" },
+          { src: t("/brand/devto-cover.jpg"), label: t("devto-cover.jpg — article cover, 16:9") },
+          { src: t("/brand/social-exam.jpg"), label: t("social-exam.jpg — the exam, 1:1") },
+          { src: t("/brand/learn-social.jpg"), label: t("learn-social.jpg — learn posts, 16:9") },
         ].map((img) => (
           <a key={img.src} href={img.src} download style={{ display: "block" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -737,31 +734,30 @@ export default async function MarketingPage() {
         ))}
       </div>
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Brand</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Brand")}</h2>
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-start" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/mozg-wordmark.svg" alt="mozg wordmark" width={255} height={83} style={{ border: "1.5px solid var(--ink)" }} />
+        <img src="/brand/mozg-wordmark.svg" alt={t("mozg wordmark")} width={255} height={83} style={{ border: "1.5px solid var(--ink)" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/mozg-icon.svg" alt="mozg icon" width={83} height={83} style={{ border: "1.5px solid var(--ink)" }} />
+        <img src="/brand/mozg-icon.svg" alt={t("mozg icon")} width={83} height={83} style={{ border: "1.5px solid var(--ink)" }} />
         <div className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
           <p style={{ margin: "0 0 .4rem" }}>
-            <a href="/brand/mozg-wordmark.svg" download>wordmark.svg</a> ·{" "}
-            <a href="/brand/mozg-icon.svg" download>icon.svg</a> ·{" "}
-            <a href="/opengraph-image" target="_blank">social card (1200×630)</a>
+            <a href="/brand/mozg-wordmark.svg" download>{t("wordmark.svg")}</a> ·{" "}
+            <a href="/brand/mozg-icon.svg" download>{t("icon.svg")}</a> ·{" "}
+            <a href="/opengraph-image" target="_blank">{t("social card (1200×630)")}</a>
           </p>
           <p style={{ margin: 0 }}>
-            paper #eceee7 · ink #14161a · riso red #f15060
-            <br />
-            The wordmark is lowercase, always with the red full stop.
-          </p>
+            {markup(t("paper #eceee7 · ink #14161a · riso red #f15060 <0/> The wordmark is lowercase, always with the red full stop."), [
+            <br key="s0" />,
+          ])}</p>
         </div>
       </div>
 
-      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>Before posting anything</h2>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Before posting anything")}</h2>
       <ul style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0 }}>
-        <li>Open /pricing and one paid brain in a private window — eyes, not trust.</li>
-        <li>Healthwatch alerts arriving? If we fall under traffic, we hear it first.</li>
-        <li>First-comment answers live at /vs and /why: &ldquo;why not RAG&rdquo;, &ldquo;why not CLAUDE.md&rdquo;.</li>
+        <li>{t("Open /pricing and one paid brain in a private window — eyes, not trust.")}</li>
+        <li>{t("Healthwatch alerts arriving? If we fall under traffic, we hear it first.")}</li>
+        <li>{t("First-comment answers live at /vs and /why: “why not RAG”, “why not CLAUDE.md”.")}</li>
       </ul>
     </AppShell>
   );

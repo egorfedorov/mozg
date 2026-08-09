@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/db";
@@ -25,6 +27,8 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export default async function BalancePage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/balance");
 
@@ -55,36 +59,33 @@ export default async function BalancePage() {
   ]);
 
   return (
-    <AppShell active="/settings/balance" eyebrow={user.email} title="Balance">
+    <AppShell active="/settings/balance" eyebrow={user.email} title={t("Balance")}>
       <div className="stack">
         <Stats>
-          <Stat label="Available" value={formatCents(balance)} big />
+          <Stat label={t("Available")} value={formatCents(balance)} big />
           <Stat
-            label="Earned"
+            label={t("Earned")}
             value={formatCents(earned.total)}
             note={`${earned.sales} sale${earned.sales === 1 ? "" : "s"}`}
           />
-          <Stat label="Spent on brains" value={formatCents(earned.spent)} />
+          <Stat label={t("Spent on brains")} value={formatCents(earned.spent)} />
         </Stats>
 
         <div className="stack-tight">
           <div className="panel">
-            <p className="eyebrow">Topping up</p>
+            <p className="eyebrow">{t("Topping up")}</p>
             <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem" }}>
-              Crypto — USDT, USDC, BTC and more. Card and other methods are on
-              the way.
-            </p>
+              {t("Crypto — USDT, USDC, BTC and more. Card and other methods are on the way.")}</p>
             <Link className="btn" href="/settings/topup">
-              Top up balance
-            </Link>
+              {t("Top up balance")}</Link>
           </div>
 
           <PayoutForm balanceCents={balance} minCents={MIN_PAYOUT_CENTS} open={openPayout} />
         </div>
 
-        <Section title="History" aside="every movement, nothing hidden">
+        <Section title={t("History")} aside={t("every movement, nothing hidden")}>
           <Rows
-            empty="Nothing yet. Money appears here the moment it moves — top-ups, purchases, and sales of your own brains."
+            empty={t("Nothing yet. Money appears here the moment it moves — top-ups, purchases, and sales of your own brains.")}
           >
             {entries.map((e) => (
               <Row
@@ -99,19 +100,16 @@ export default async function BalancePage() {
           </Rows>
         </Section>
 
-        <Section title="Selling a brain">
+        <Section title={t("Selling a brain")}>
           <p className="lede">
-            Set a price on the sharing page of any public brain. Buyers pay once
-            and keep access as you keep updating it. You receive{" "}
-            {100 - PLATFORM_FEE_PERCENT}% of each sale on this balance.
-          </p>
+            {markup(t("Set a price on the sharing page of any public brain. Buyers pay once and keep access as you keep updating it. You receive <0/>% of each sale on this balance."), [
+            100 - PLATFORM_FEE_PERCENT,
+          ])}</p>
           <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap", marginTop: "1rem" }}>
             <Link className="btn btn-ghost" href="/brains">
-              Your brains
-            </Link>
+              {t("Your brains")}</Link>
             <Link className="btn btn-ghost" href="/guide#selling">
-              How to build one worth paying for
-            </Link>
+              {t("How to build one worth paying for")}</Link>
           </div>
         </Section>
       </div>

@@ -119,7 +119,7 @@ export default async function LearnHome() {
         )}
 
         <h2 className="h2" style={{ margin: "2.5rem 0 1rem" }}>
-          {user ? "Your shelf" : "Free brains to start with"}
+          {user ? t("Your shelf") : t("Free brains to start with")}
         </h2>
 
         <div className="grid-brains">
@@ -135,14 +135,14 @@ export default async function LearnHome() {
                 topicLabel(b.topic),
               ])}</span>
               <h3 className="card-title">{b.title}</h3>
-              <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
+              <p className="card-goal">{b.goal?.split("\n")[0] ?? t("No goal set.")}</p>
               <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
                 {markup(t("<0/> cards <1/> <2/> <3/> <4/>"), [
                 b.cards,
                 b.score != null ? ` · agent ${b.score}%` : "",
                 b.due > 0 ? ` · ${b.due} due` : "",
                 b.seen > 0 ? ` · ${b.seen} seen` : "",
-                beaten.has(b.id) ? " · ★ you beat the agent" : "",
+                beaten.has(b.id) ? t(" · ★ you beat the agent") : "",
               ])}</p>
             </Link>
           ))}
@@ -158,7 +158,7 @@ export default async function LearnHome() {
         {free.length > 0 && (
           <>
             <h2 className="h2" style={{ margin: "2.5rem 0 1rem" }}>
-              {user ? "Free brains to add" : "More free brains"}
+              {user ? t("Free brains to add") : t("More free brains")}
             </h2>
             {[...new Map(free.map((b) => [topicLabel(b.topic), true])).keys()].map((label) => (
               <section key={label} style={{ marginBottom: "1.75rem" }}>
@@ -176,12 +176,12 @@ export default async function LearnHome() {
                     topicLabel(b.topic),
                   ])}</span>
                   <h3 className="card-title">{b.title}</h3>
-                  <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
+                  <p className="card-goal">{b.goal?.split("\n")[0] ?? t("No goal set.")}</p>
                   <p className="mono" style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}>
                     {markup(t("<0/> cards <1/> <2/>"), [
                     b.cards,
                     b.score != null ? ` · agent ${b.score}%` : "",
-                    beaten.has(b.id) ? " · ★ you beat the agent" : "",
+                    beaten.has(b.id) ? t(" · ★ you beat the agent") : "",
                   ])}</p>
                 </Link>
               ))}

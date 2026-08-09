@@ -176,10 +176,10 @@ export default async function GuidePage() {
               </div>
             </div>
             {[
-              ["partial", "▲", "Colour and elevation", "3 / 6", null],
-              ["partial", "▲", "Components", "2 / 7", "not enough material"],
-              ["partial", "▲", "Empty and error states", "1 / 5", "not enough material"],
-              ["fail", "✕", "Applying the system", "0 / 2", "no source covers this"],
+              ["partial", "▲", t("Colour and elevation"), "3 / 6", null],
+              ["partial", "▲", t("Components"), "2 / 7", t("not enough material")],
+              ["partial", "▲", t("Empty and error states"), "1 / 5", t("not enough material")],
+              ["fail", "✕", t("Applying the system"), "0 / 2", t("no source covers this")],
             ].map(([state, sigil, name, count, gap]) => (
               <div key={name as string} className="score-row" data-state={state as string}>
                 <span className="sig">{sigil}</span>

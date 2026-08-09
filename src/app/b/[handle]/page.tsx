@@ -165,7 +165,7 @@ export default async function ProfilePage({
       <Contents />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)" }}>
-        <p className="eyebrow">{isMe ? "Your public page" : "Person"}</p>
+        <p className="eyebrow">{isMe ? t("Your public page") : t("Person")}</p>
         <h1
           className="display"
           style={{ fontSize: "clamp(2rem, 5.5vw, 3.4rem)", margin: ".4rem 0 .5rem" }}
@@ -178,7 +178,7 @@ export default async function ProfilePage({
           who.joined,
           published.length > 0
             ? `${published.length} brain${published.length === 1 ? "" : "s"} in the catalogue.`
-            : "Nothing published yet.",
+            : t("Nothing published yet."),
         ])}</p>
 
         <Stats>
@@ -217,17 +217,17 @@ export default async function ProfilePage({
                 >
                   <span className="eyebrow" style={{ color: "inherit", opacity: 0.75 }}>
                     {topicLabel(b.topic)}
-                    {b.price_cents > 0 ? " · paid" : " · free"}
+                    {b.price_cents > 0 ? t(" · paid") : t(" · free")}
                   </span>
                   <h3 className="card-title">{b.title}</h3>
-                  <p className="card-goal">{b.goal?.split("\n")[0] ?? "No goal set."}</p>
+                  <p className="card-goal">{b.goal?.split("\n")[0] ?? t("No goal set.")}</p>
                   <p
                     className="mono"
                     style={{ fontSize: ".75rem", marginTop: "auto", marginBottom: 0, opacity: 0.9 }}
                   >
                     {markup(t("<0/> notes <1/>"), [
                     b.note_count,
-                    b.score != null ? ` · exam ${b.score}%` : " · unexamined",
+                    b.score != null ? ` · exam ${b.score}%` : t(" · unexamined"),
                   ])}</p>
                 </Link>
               ))}
@@ -263,16 +263,16 @@ export default async function ProfilePage({
                         <strong>{b.title}</strong>
                         <span className="row-sub">
                           {b.access === "own"
-                            ? "yours"
-                            : `${b.access} from ${b.owner_handle}`}
-                          {b.score != null ? ` · exam ${b.score}%` : ""}
+                            ? t("yours")
+                            : markup(t("<0/> from <1/>"), [b.access, b.owner_handle])}
+                          {b.score != null && markup(t(" · exam <0/>%"), [b.score])}
                         </span>
                         <span className="row-meta">
                           {markup(t("<0/> cards <1/>"), [
                           b.cards,
                           b.learned > 0
                             ? ` · you have studied ${Math.round((Math.min(b.learned, b.cards) / Math.max(b.cards, 1)) * 100)}%`
-                            : " · not studied yet",
+                            : t(" · not studied yet"),
                         ])}</span>
                       </span>
                       <span className="row-side mono" style={{ fontSize: ".75rem" }}>
@@ -356,7 +356,7 @@ export default async function ProfilePage({
                             {markup(t("<0/> of <1/> cards <2/>"), [
                             b.learned,
                             b.cards,
-                            pct >= 80 ? " · certificate unlocked" : "",
+                            pct >= 80 ? t(" · certificate unlocked") : "",
                           ])}</span>
                         </span>
                         <span className="row-side mono" style={{ fontSize: ".75rem" }}>

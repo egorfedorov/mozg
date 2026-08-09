@@ -72,8 +72,9 @@ export default function SignInForm({
   return (
     <main className="shell" style={{ paddingBlock: "clamp(3rem, 9vw, 6rem)", maxWidth: 460 }}>
       <Link href="/" className="wordmark" style={{ display: "inline-block" }}>
-        mozg<span style={{ color: "var(--color-riso-red)" }}>.</span>
-      </Link>
+        {markup(t("mozg<0>.</0>"), [
+        <span style={{ color: "var(--color-riso-red)" }} key="s0" />,
+      ])}</Link>
 
       <h1 className="h1" style={{ margin: "1.5rem 0 .5rem" }}>
         {mode === "in" ? t("Sign in") : t("Create an account")}
@@ -99,8 +100,7 @@ export default function SignInForm({
               style={{ textDecoration: "underline" }}
               key="s0"
             >
-              github.com/egorfedorov/mozg
-            </a>,
+              {t("github.com/egorfedorov/mozg")}</a>,
           ],
         )}
       </p>
@@ -151,7 +151,7 @@ export default function SignInForm({
           type="email"
           required
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t("you@example.com")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={field}

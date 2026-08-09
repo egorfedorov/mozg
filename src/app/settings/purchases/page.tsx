@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { query } from "@/db";
@@ -36,6 +38,8 @@ interface Sold {
 }
 
 export default async function PurchasesPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/purchases");
 
@@ -66,26 +70,22 @@ export default async function PurchasesPage() {
   ]);
 
   return (
-    <AppShell active="/settings/purchases" eyebrow={user.email} title="Your brain library">
+    <AppShell active="/settings/purchases" eyebrow={user.email} title={t("Your brain library")}>
       <div className="stack">
         <Section
-          title="Added from the catalogue"
-          aside={library.length ? `${library.length} in your set` : undefined}
+          title={t("Added from the catalogue")}
+          aside={library.length ? fill(t("<0/> in your set"), [library.length]) : undefined}
         >
           <p className="lede" style={{ marginBottom: ".75rem" }}>
-            These appear in the list your agents read. Nothing was copied to
-            your machine — each stays with its author and keeps improving as
-            they add to it.
-          </p>
+            {t("These appear in the list your agents read. Nothing was copied to your machine — each stays with its author and keeps improving as they add to it.")}</p>
           <Rows
             empty={
-              <>
-                Nothing added yet.{" "}
-                <Link href="/explore" style={{ textDecoration: "underline" }}>
-                  Browse the catalogue
-                </Link>{" "}
-                and add a brain; your agents see it immediately.
-              </>
+              markup(
+                t(
+                  "Nothing added yet. <0>Browse the catalogue</0> and add a brain; your agents see it immediately.",
+                ),
+                [<Link href="/explore" style={{ textDecoration: "underline" }} key="s0" />],
+              )
             }
           >
             {library.map((b) => (
@@ -94,11 +94,16 @@ export default async function PurchasesPage() {
                 href={`/b/${b.owner_handle}/${b.slug}`}
                 title={b.title}
                 sub={b.still_public ? undefined : "the author unpublished it — your agents can no longer read it"}
-                meta={`${b.handle} · ${b.note_count} notes · ${b.score === null ? "not examined" : `trained ${b.score}%`} · added ${b.added_at}`}
+                meta={fill(t("<0/> · <1/> notes · <2/> · added <3/>"), [
+                  b.handle,
+                  b.note_count,
+                  b.score === null ? t("not examined") : fill(t("trained <0/>%"), [b.score]),
+                  b.added_at,
+                ])}
                 side={
                   <form action={dropBrain}>
                     <input type="hidden" name="brainId" value={b.id} />
-                    <button className="linkish">remove</button>
+                    <button className="linkish">{t("remove")}</button>
                   </form>
                 }
               />
@@ -107,23 +112,21 @@ export default async function PurchasesPage() {
         </Section>
 
         <Section
-          title="Brains you bought"
+          title={t("Brains you bought")}
           aside={
             bought.length > 0
-              ? `${formatCents(bought.reduce((n, b) => n + b.price_cents, 0))} in total`
+              ? fill(t("<0/> in total"), [formatCents(bought.reduce((n, b) => n + b.price_cents, 0))])
               : undefined
           }
         >
           <Rows
             empty={
-              <>
-                Nothing yet. A bought brain connects to your agent exactly like
-                your own — one token reaches everything you can read.{" "}
-                <Link href="/explore?price=paid" style={{ textDecoration: "underline" }}>
-                  See what is on sale
-                </Link>
-                .
-              </>
+              markup(
+                t(
+                  "Nothing yet. A bought brain connects to your agent exactly like your own — one token reaches everything you can read. <0>See what is on sale</0>.",
+                ),
+                [<Link href="/explore?price=paid" style={{ textDecoration: "underline" }} key="s0" />],
+              )
             }
           >
             {bought.map((b) => (
@@ -135,9 +138,14 @@ export default async function PurchasesPage() {
                     : undefined
                 }
                 title={b.title}
-                meta={`${topicLabel(b.topic)} · ${b.owner_handle ?? "—"} · ${b.note_count} notes · bought ${b.bought_at}${
-                  b.visibility !== "public" ? " · author unpublished it" : ""
-                }`}
+                meta={
+                  fill(t("<0/> · <1/> · <2/> notes · bought <3/>"), [
+                    topicLabel(b.topic),
+                    b.owner_handle ?? "—",
+                    b.note_count,
+                    b.bought_at,
+                  ]) + (b.visibility !== "public" ? t(" · author unpublished it") : "")
+                }
                 side={formatCents(b.price_cents)}
               />
             ))}
@@ -145,20 +153,23 @@ export default async function PurchasesPage() {
         </Section>
 
         <Section
-          title="Brains you sold"
+          title={t("Brains you sold")}
           aside={
             sold.length > 0
-              ? `${formatCents(sold.reduce((n, s) => n + s.earned, 0))} earned`
+              ? fill(t("<0/> earned"), [formatCents(sold.reduce((n, s) => n + s.earned, 0))])
               : undefined
           }
         >
-          <Rows empty="No sales yet. A brain has to be public and priced before anyone can buy it — the price field is on its sharing page, next to the licence.">
+          <Rows empty={t("No sales yet. A brain has to be public and priced before anyone can buy it — the price field is on its sharing page, next to the licence.")}>
             {sold.map((s) => (
               <Row
                 key={s.brain_id}
                 href={`/brains/${s.slug}`}
                 title={s.title}
-                meta={`${s.sales} sale${s.sales === 1 ? "" : "s"} · last ${s.last_sale}`}
+                meta={fill(s.sales === 1 ? t("<0/> sale · last <1/>") : t("<0/> sales · last <1/>"), [
+                  s.sales,
+                  s.last_sale,
+                ])}
                 side={`+${formatCents(s.earned)}`}
                 sign="up"
               />

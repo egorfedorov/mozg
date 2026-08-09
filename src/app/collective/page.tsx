@@ -179,10 +179,10 @@ export default async function CollectivePage({
               <g key={i}>
                 <rect x={40 + i * 170} y={55} width={120} height={44} fill={i === 3 ? "#3ec300" : "none"} opacity={i === 3 ? 0.16 : 1} stroke="#14161a" strokeWidth="2" />
                 <text x={100 + i * 170} y={73} textAnchor="middle" fontSize="10" fontFamily="monospace" fill="#14161a">
-                  {i === 3 ? "active note" : "superseded"}
+                  {i === 3 ? t("active note") : "superseded"}
                 </text>
                 <text x={100 + i * 170} y={89} textAnchor="middle" fontSize="10" fontFamily="monospace" fill="#14161a">
-                  {["exam 55%", "exam 71%", "exam 86%", "exam 92%"][i]}
+                  {[t("exam 55%"), t("exam 71%"), t("exam 86%"), t("exam 92%")][i]}
                 </text>
                 {i < 3 && <path d={`M ${165 + i * 170} 77 L ${205 + i * 170} 77`} stroke="#14161a" strokeWidth="2" />}
               </g>

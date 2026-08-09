@@ -1,9 +1,11 @@
+import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { Chip, Row, Rows, Section, Stat, Stats } from "@/components/ui";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { limitsFor } from "@/lib/plans";
+import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +43,7 @@ function isRange(v: string | undefined): v is RangeKey {
 
 /** Buckets come back only where something happened; a chart with the quiet
  *  days missing reads as busier than the week actually was. */
-function fill(
+function fillGaps(
   rows: { bucket: Date; n: number }[],
   { unit, ticks }: { unit: "hour" | "day"; ticks: number },
 ): { at: Date; n: number }[] {
@@ -65,6 +67,8 @@ export default async function UsagePage({
 }: {
   searchParams: Promise<{ range?: string }>;
 }) {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/settings/usage");
 
@@ -138,25 +142,25 @@ export default async function UsagePage({
     ).then((r) => r[0]?.n ?? 0),
   ]);
 
-  const series = fill(buckets, range);
+  const series = fillGaps(buckets, range);
   const peak = Math.max(1, ...series.map((s) => s.n));
   const limit = limitsFor(user.plan).calls;
 
   return (
     <AppShell
       active="/settings/usage"
-      eyebrow={`${month} of ${limit.toLocaleString("en-US")} calls this month on ${user.plan}`}
-      title="Usage"
+      eyebrow={fill(t("<0/> of <1/> calls this month on <2/>"), [
+        month,
+        limit.toLocaleString("en-US"),
+        user.plan,
+      ])}
+      title={t("Usage")}
       narrow
     >
       <div className="stack">
         <div>
           <p className="lede">
-            Every MCP call your tokens made — when, which tool, which brain, and
-            whether it found anything. Metering is by call, not by token, so
-            there is no bill to read here: the number that runs out is the one
-            in the corner above.
-          </p>
+            {t("Every MCP call your tokens made — when, which tool, which brain, and whether it found anything. Metering is by call, not by token, so there is no bill to read here: the number that runs out is the one in the corner above.")}</p>
           <div className="chips">
             {(Object.keys(RANGES) as RangeKey[]).map((r) => (
               <Chip key={r} href={`/settings/usage?range=${r}`} on={r === key}>
@@ -167,31 +171,34 @@ export default async function UsagePage({
         </div>
 
         <Stats>
-          <Stat label="Calls" value={String(totals?.calls ?? 0)} big />
-          <Stat label="Brains touched" value={String(totals?.brains ?? 0)} />
+          <Stat label={t("Calls")} value={String(totals?.calls ?? 0)} big />
+          <Stat label={t("Brains touched")} value={String(totals?.brains ?? 0)} />
           <Stat
-            label="Empty searches"
+            label={t("Empty searches")}
             value={String(totals?.empty ?? 0)}
-            note="became exam questions"
+            note={t("became exam questions")}
           />
           <Stat
-            label="Median latency"
-            value={totals?.median_ms != null ? `${totals.median_ms} ms` : "—"}
+            label={t("Median latency")}
+            value={totals?.median_ms != null ? `${totals.median_ms} ${t("ms")}` : "—"}
           />
           <Stat
-            label="Failed"
+            label={t("Failed")}
             value={String(totals?.failed ?? 0)}
             dot={totals?.failed ? "down" : "ok"}
           />
         </Stats>
 
-        <Section title="When" aside={`peak ${peak} · UTC`}>
-          <div className="usage-chart" role="img" aria-label={`Calls per ${range.unit}`}>
+        <Section title={t("When")} aside={fill(t("peak <0/> · UTC"), [peak])}>
+          <div className="usage-chart" role="img" aria-label={fill(t("Calls per <0/>"), [range.unit])}>
             {series.map((s) => (
               <div
                 className="usage-col"
                 key={s.at.toISOString()}
-                title={`${tick(s.at, range.unit)} — ${s.n} call${s.n === 1 ? "" : "s"}`}
+                title={fill(s.n === 1 ? t("<0/> — <1/> call") : t("<0/> — <1/> calls"), [
+                  tick(s.at, range.unit),
+                  s.n,
+                ])}
               >
                 <div className="usage-bar" style={{ height: `${(s.n / peak) * 100}%` }} />
                 <span className="usage-tick">{tick(s.at, range.unit)}</span>
@@ -200,21 +207,25 @@ export default async function UsagePage({
           </div>
         </Section>
 
-        <Section title="What" aside={`${tools.length} tool${tools.length === 1 ? "" : "s"}`}>
-          <Rows empty="No calls in this window. Connect an agent and ask it something that needs a brain.">
-            {tools.map((t) => (
+        <Section title={t("What")} aside={fill(tools.length === 1 ? t("<0/> tool") : t("<0/> tools"), [tools.length])}>
+          <Rows empty={t("No calls in this window. Connect an agent and ask it something that needs a brain.")}>
+            {tools.map((row) => (
               <Row
-                key={t.tool}
-                title={t.tool}
-                meta={t.median_ms != null ? `${t.median_ms} ms median` : undefined}
-                side={String(t.n)}
+                key={row.tool}
+                title={row.tool}
+                meta={
+                  row.median_ms != null
+                    ? fill(t("<0/> ms median"), [row.median_ms])
+                    : undefined
+                }
+                side={String(row.n)}
               />
             ))}
           </Rows>
         </Section>
 
-        <Section title="Which brains">
-          <Rows empty="Nothing reached a brain in this window.">
+        <Section title={t("Which brains")}>
+          <Rows empty={t("Nothing reached a brain in this window.")}>
             {brains.map((b) => (
               <Row
                 key={`${b.handle}/${b.slug}`}
@@ -227,8 +238,8 @@ export default async function UsagePage({
           </Rows>
         </Section>
 
-        <Section title="Recent calls" aside="newest first">
-          <Rows empty="Nothing yet.">
+        <Section title={t("Recent calls")} aside={t("newest first")}>
+          <Rows empty={t("Nothing yet.")}>
             {recent.map((c, i) => (
               <Row
                 key={`${c.created_at}-${i}`}

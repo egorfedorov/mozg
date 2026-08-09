@@ -135,7 +135,7 @@ export default async function StartPage() {
             <p style={{ fontWeight: 800, fontSize: "1.2rem", margin: ".25rem 0" }}>{t("Next.js App Router")}</p>
             <p className="mono" style={{ fontSize: ".8125rem", margin: 0 }}>
               <span style={{ color: "var(--color-riso-green)" }}>{t("trained 84%")}</span>
-              {" · 1,213 notes · free"}
+              {t(" · 1,213 notes · free")}
             </p>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", margin: ".5rem 0 0" }}>
               {t("still learning: middleware edge cases · turbopack config")}</p>
@@ -203,7 +203,7 @@ export default async function StartPage() {
               <span style={{ color: "var(--color-riso-green)" }}>{t("✓ 19 passed")}</span>
               {"  ·  "}
               <span style={{ color: "var(--color-riso-red)" }}>{t("✕ 7 failed")}</span>
-              {"  ·  trained 73%"}
+              {t("  ·  trained 73%")}
             </p>
             <div style={{ height: 8, border: "1px solid var(--ink)", background: "var(--paper)", margin: ".6rem 0" }}>
               <div style={{ height: "100%", width: "73%", background: "var(--color-riso-green)" }} />

@@ -1,5 +1,5 @@
 import { translator } from "@/lib/t";
-import { markup } from "@/lib/markup";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import GalleryShell from "../../GalleryShell";
@@ -85,7 +85,7 @@ export default async function StyleRoom({
         <div className="room-head">
           {cover && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="room-cover" src={cover} alt={`A work in ${brain.title}`} />
+            <img className="room-cover" src={cover} alt={fill(t("A work in <0/>"), [brain.title])} />
           )}
           <div style={{ minWidth: 0 }}>
             <h1 className="display room-title">{brain.title}</h1>

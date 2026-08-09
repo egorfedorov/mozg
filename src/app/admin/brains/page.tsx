@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { requireAdmin, adminBrains } from "@/lib/admin";
@@ -11,6 +13,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Brains — admin", robots: { index: false, follow: false } };
 
 export default async function AdminBrainsPage() {
+  const t = await translator();
+
   await requireAdmin();
   const brains = await adminBrains();
 
@@ -34,30 +38,33 @@ export default async function AdminBrainsPage() {
   );
 
   return (
-    <AppShell active="/admin/brains" eyebrow="Operator" title="Brains">
+    <AppShell active="/admin/brains" eyebrow={t("Operator")} title={t("Brains")}>
       {pendingPublish.length > 0 && (
         <div style={{ border: "1.5px solid var(--color-riso-red)", background: "var(--paper-2)", padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
           <p className="eyebrow" style={{ color: "var(--color-riso-red)", margin: "0 0 .6rem" }}>
-            Waiting to go public — read before approving
-          </p>
+            {t("Waiting to go public — read before approving")}</p>
           {pendingPublish.map((r) => (
             <div key={r.id} style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap", padding: ".4rem 0", borderTop: "1px solid var(--rule)" }}>
               <div style={{ flex: 1, minWidth: 220 }}>
                 <strong>{r.title}</strong>
                 <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                  {r.email} · {r.note_count} notes · {r.score === null ? "not examined" : `${r.score}%`}
-                  {r.price_cents > 0 && ` · wants ${formatCents(r.price_cents)}`} · asked {r.asked}
-                </span>
+                  {markup(t("<0/> · <1/> notes · <2/> <3/> · asked <4/>"), [
+                  r.email,
+                  r.note_count,
+                  r.score === null ? t("not examined") : `${r.score}%`,
+                  r.price_cents > 0 && ` · wants ${formatCents(r.price_cents)}`,
+                  r.asked,
+                ])}</span>
               </div>
               <form action={settlePublish}>
                 <input type="hidden" name="id" value={r.id} />
                 <input type="hidden" name="approve" value="yes" />
-                <button className="btn" style={{ padding: ".35rem .7rem" }}>Publish</button>
+                <button className="btn" style={{ padding: ".35rem .7rem" }}>{t("Publish")}</button>
               </form>
               <form action={settlePublish}>
                 <input type="hidden" name="id" value={r.id} />
                 <input type="hidden" name="approve" value="no" />
-                <button className="btn btn-ghost" style={{ padding: ".35rem .7rem" }}>Reject</button>
+                <button className="btn btn-ghost" style={{ padding: ".35rem .7rem" }}>{t("Reject")}</button>
               </form>
             </div>
           ))}
@@ -65,23 +72,23 @@ export default async function AdminBrainsPage() {
       )}
 
       <p className="lede">
-          {brains.length} brain{brains.length === 1 ? "" : "s"}. Changing
-          visibility away from public also clears the price — a listing nobody
-          can reach cannot be bought.
-        </p>
+          {markup(t("<0/> brain<1/>. Changing visibility away from public also clears the price — a listing nobody can reach cannot be bought."), [
+        brains.length,
+        brains.length === 1 ? "" : "s",
+      ])}</p>
 
         <div className="adm-scroll" style={{ marginTop: "1rem" }}>
           <table className="adm">
             <thead>
               <tr>
-                <th>Brain</th>
-                <th>Owner</th>
-                <th style={{ textAlign: "right" }}>Notes</th>
-                <th style={{ textAlign: "right" }}>Sources</th>
-                <th style={{ textAlign: "right" }}>Score</th>
-                <th style={{ textAlign: "right" }}>Price</th>
-                <th style={{ textAlign: "right" }}>Sold</th>
-                <th>Listing</th>
+                <th>{t("Brain")}</th>
+                <th>{t("Owner")}</th>
+                <th style={{ textAlign: "right" }}>{t("Notes")}</th>
+                <th style={{ textAlign: "right" }}>{t("Sources")}</th>
+                <th style={{ textAlign: "right" }}>{t("Score")}</th>
+                <th style={{ textAlign: "right" }}>{t("Price")}</th>
+                <th style={{ textAlign: "right" }}>{t("Sold")}</th>
+                <th>{t("Listing")}</th>
                 <th />
               </tr>
             </thead>
@@ -89,8 +96,7 @@ export default async function AdminBrainsPage() {
               {brains.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ color: "var(--ink-2)" }}>
-                    No brains yet.
-                  </td>
+                    {t("No brains yet.")}</td>
                 </tr>
               ) : (
                 brains.map((b) => (
@@ -128,9 +134,9 @@ export default async function AdminBrainsPage() {
                       <form action={setListing} style={{ display: "flex", gap: ".3rem" }}>
                         <input type="hidden" name="id" value={b.id} />
                         <select name="visibility" defaultValue={b.visibility}>
-                          <option value="private">private</option>
-                          <option value="link">link</option>
-                          <option value="public">public</option>
+                          <option value="private">{t("private")}</option>
+                          <option value="link">{t("link")}</option>
+                          <option value="public">{t("public")}</option>
                         </select>
                         <select name="topic" defaultValue={b.topic}>
                           {TOPICS.map((t) => (
@@ -139,7 +145,7 @@ export default async function AdminBrainsPage() {
                             </option>
                           ))}
                         </select>
-                        <button type="submit">Set</button>
+                        <button type="submit">{t("Set")}</button>
                       </form>
                     </td>
 
@@ -148,13 +154,11 @@ export default async function AdminBrainsPage() {
                         <form action={deleteBrain}>
                           <input type="hidden" name="id" value={b.id} />
                           <button type="submit" data-danger="true">
-                            Delete
-                          </button>
+                            {t("Delete")}</button>
                         </form>
                       ) : (
                         <span className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                          sold — kept
-                        </span>
+                          {t("sold — kept")}</span>
                       )}
                     </td>
                   </tr>

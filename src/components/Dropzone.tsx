@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/lib/t-client";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
@@ -8,6 +9,8 @@ import { useCallback, useRef, useState } from "react";
  * rows appear immediately and fill in as the worker gets to them.
  */
 export default function Dropzone({ brainId }: { brainId: string }) {
+  const t = useT();
+
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -102,11 +105,10 @@ export default function Dropzone({ brainId }: { brainId: string }) {
         ↓
       </span>
       <span className="mono" style={{ fontSize: ".8125rem" }}>
-        {busy ? "Uploading…" : "Drop screenshots here"}
+        {busy ? t("Uploading…") : t("Drop screenshots here")}
       </span>
       <span style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
-        Screenshots, PDFs, Markdown or text · up to 20 MB each
-      </span>
+        {t("Screenshots, PDFs, Markdown or text · up to 20 MB each")}</span>
 
       {message && (
         <span className="mono" style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}>

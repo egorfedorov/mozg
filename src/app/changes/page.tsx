@@ -102,7 +102,7 @@ export default async function GlobalChangesPage() {
                           s.lost,
                         ])}</span>
                       )}
-                      {s.gained === 0 && s.lost === 0 && "held steady"}
+                      {s.gained === 0 && s.lost === 0 && t("held steady")}
                     </span>
                     <span className="row-meta">{s.at}</span>
                   </span>

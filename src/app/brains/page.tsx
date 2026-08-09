@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -25,6 +27,8 @@ const ATTENTION: Record<string, { tint: "red" | "blue" | "violet" | "orange"; ac
 };
 
 export default async function BrainsPage() {
+  const t = await translator();
+
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/brains");
 
@@ -41,7 +45,7 @@ export default async function BrainsPage() {
     redirect("/welcome");
   }
 
-  if (!brains.length) return <FirstRun />;
+  if (!brains.length) return <FirstRun t={t} />;
 
   const trend = stats.callsWeek - stats.callsPrevWeek;
 
@@ -55,36 +59,37 @@ export default async function BrainsPage() {
   return (
     <AppShell
       active="/brains"
-      eyebrow="Dashboard"
-      title="Your brains"
+      eyebrow={t("Dashboard")}
+      title={t("Your brains")}
       action={
         <Link className="btn" href="/brains/new">
-          New brain
-        </Link>
+          {t("New brain")}</Link>
       }
     >
       <div className="stack">
         {/* Numbers that change what you do, not vanity counters. */}
         <Stats>
-          <Stat label="Brains" value={String(stats.brains)} />
-          <Stat label="Notes" value={stats.notes.toLocaleString()} />
+          <Stat label={t("Brains")} value={String(stats.brains)} />
+          <Stat label={t("Notes")} value={stats.notes.toLocaleString()} />
           <Stat
-            label="Agent calls · 7d"
+            label={t("Agent calls · 7d")}
             value={stats.callsWeek.toLocaleString()}
             note={
               stats.callsPrevWeek || stats.callsWeek
                 ? trend === 0
-                  ? "same as last week"
-                  : `${trend > 0 ? "+" : "−"}${Math.abs(trend)} vs last week`
-                : "connect an agent"
+                  ? t("same as last week")
+                  : fill(t("<0/> vs last week"), [
+                      `${trend > 0 ? "+" : "−"}${Math.abs(trend)}`,
+                    ])
+                : t("connect an agent")
             }
           />
-          <Stat label="Balance" value={formatCents(stats.balanceCents)} href="/settings/balance" />
+          <Stat label={t("Balance")} value={formatCents(stats.balanceCents)} href="/settings/balance" />
         </Stats>
 
         {attention.length > 0 && (
           <Section
-            title="Needs you"
+            title={t("Needs you")}
             aside={`${attention.length} thing${attention.length === 1 ? "" : "s"}`}
           >
             <Rows>
@@ -102,7 +107,7 @@ export default async function BrainsPage() {
           </Section>
         )}
 
-        <Section title="All brains" aside={`${brains.length} in total`}>
+        <Section title={t("All brains")} aside={fill(t("<0/> in total"), [brains.length])}>
           {/* Families are rendered as families: a parent with its children
               indented under it, because that is how the owner thinks about
               them and how an agent is told they behave. */}
@@ -110,9 +115,10 @@ export default async function BrainsPage() {
             <div key={parent.id} style={{ marginBottom: "1.5rem" }}>
               {children.length > 0 && (
                 <p className="eyebrow" style={{ marginBottom: ".5rem" }}>
-                  {parent.title} · {children.length} inside · searching the parent
-                  searches all of them
-                </p>
+                  {markup(t("<0/> · <1/> inside · searching the parent searches all of them"), [
+                  parent.title,
+                  children.length,
+                ])}</p>
               )}
               <div className="grid-brains">
                 <BrainCard brain={parent} />
@@ -127,25 +133,21 @@ export default async function BrainsPage() {
             <Link href="/brains/new" className="card-new">
               <span className="plus">+</span>
               <span className="mono" style={{ fontSize: ".8125rem" }}>
-                New brain
-              </span>
+                {t("New brain")}</span>
             </Link>
           </div>
         </Section>
 
-        <Section title="What your agents did" aside="across every brain">
+        <Section title={t("What your agents did")} aside={t("across every brain")}>
           {activity.length === 0 ? (
             <Rows
               empty={
-                <>
-                  Nothing yet. Once a brain is connected, every tool call an agent
-                  makes shows up here — the fastest way to see whether it is
-                  actually being read.{" "}
-                  <Link href="/connect" style={{ textDecoration: "underline" }}>
-                    Connect one
-                  </Link>
-                  .
-                </>
+                markup(
+                  t(
+                    "Nothing yet. Once a brain is connected, every tool call an agent makes shows up here — the fastest way to see whether it is actually being read. <0>Connect one</0>.",
+                  ),
+                  [<Link href="/connect" style={{ textDecoration: "underline" }} key="s0" />],
+                )
               }
             />
           ) : (
@@ -154,7 +156,7 @@ export default async function BrainsPage() {
                 <span className="term-dot" />
                 <span className="term-dot" />
                 <span className="term-dot" />
-                <span style={{ marginLeft: ".5rem" }}>live from your agents</span>
+                <span style={{ marginLeft: ".5rem" }}>{t("live from your agents")}</span>
               </div>
               {activity.map((call) => (
                 <div key={call.id} style={{ display: "flex", gap: ".75rem" }}>
@@ -195,18 +197,18 @@ export default async function BrainsPage() {
 }
 
 /** An empty screen is an invitation to act, not a shrug. */
-function FirstRun() {
+function FirstRun({ t }: { t: (english: string) => string }) {
   return (
     <AppShell
       active="/brains"
-      eyebrow="Nothing here yet"
-      title="Give your agents a brain."
+      eyebrow={t("Nothing here yet")}
+      title={t("Give your agents a brain.")}
       narrow
     >
       <p className="lede">
-        Pick something your agents keep getting wrong — an API you keep
-        re-reading, docs newer than the model, a convention nobody wrote down —
-        and feed it in. One link is enough to start.
+        {t(
+          "Pick something your agents keep getting wrong — an API you keep re-reading, docs newer than the model, a convention nobody wrote down — and feed it in. One link is enough to start.",
+        )}
       </p>
 
       <div style={{ marginTop: "1.75rem" }}>
@@ -215,13 +217,13 @@ function FirstRun() {
 
       <div style={{ display: "flex", gap: ".75rem", marginTop: "1rem", flexWrap: "wrap" }}>
         <Link className="btn btn-ghost" href="/brains/new">
-          Or build one by hand
+          {t("Or build one by hand")}
         </Link>
         <Link className="btn btn-ghost" href="/guide">
-          How to build a good one
+          {t("How to build a good one")}
         </Link>
         <Link className="btn btn-ghost" href="/explore">
-          See public brains
+          {t("See public brains")}
         </Link>
       </div>
     </AppShell>

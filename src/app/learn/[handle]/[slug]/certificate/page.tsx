@@ -1,3 +1,5 @@
+import { translator } from "@/lib/t";
+import { markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { query } from "@/db";
@@ -17,6 +19,8 @@ export default async function CertificatePage({
 }: {
   params: Promise<{ handle: string; slug: string }>;
 }) {
+  const t = await translator();
+
   const { handle, slug } = await params;
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=/learn/${handle}/${slug}`);
@@ -44,13 +48,12 @@ export default async function CertificatePage({
     return (
       <LearnShell>
         <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3.5rem)", maxWidth: 720 }}>
-          <p className="eyebrow"><Link href={`/learn/${handle}/${slug}`}>back to the course</Link></p>
-          <h1 className="h1">Not yet.</h1>
+          <p className="eyebrow"><Link href={`/learn/${handle}/${slug}`}>{t("back to the course")}</Link></p>
+          <h1 className="h1">{t("Not yet.")}</h1>
           <p className="lede">
-            The certificate unlocks at 80% of the course learned — you are at{" "}
-            {pct}%. It is a claim about knowledge, so it has to be earned the
-            slow way.
-          </p>
+            {markup(t("The certificate unlocks at 80% of the course learned — you are at <0/>%. It is a claim about knowledge, so it has to be earned the slow way."), [
+            pct,
+          ])}</p>
         </main>
       </LearnShell>
     );
@@ -87,34 +90,30 @@ export default async function CertificatePage({
               boxShadow: "3px -3px 0 rgba(20,22,26,.18)",
             }}
           />
-          <p className="eyebrow" style={{ margin: 0 }}>learn. — a mozg service</p>
+          <p className="eyebrow" style={{ margin: 0 }}>{t("learn. — a mozg service")}</p>
           <h1 className="display" style={{ fontSize: "clamp(1.9rem, 5.5vw, 3rem)", margin: "1rem 0" }}>
-            Certificate of completion
-          </h1>
+            {t("Certificate of completion")}</h1>
           <p className="lede" style={{ margin: "0 0 1.5rem" }}>
-            <strong>{user.name ?? user.email}</strong> completed the course
-          </p>
+            {markup(t("<0/> completed the course"), [
+            <strong key="s0">{user.name ?? user.email}</strong>,
+          ])}</p>
           <p className="h1" style={{ margin: "0 0 1.5rem" }}>{brain.title}</p>
           <p style={{ color: "var(--ink-2)", maxWidth: "52ch" }}>
-            {pct}% of {total} cards learned through spaced retrieval, including
-            the brain&apos;s own exam questions
-            {brain.score != null ? ` — the same exam the AI agent scores ${brain.score}% on` : ""}.
-            Material kept current at mozg.sh; this knowledge was measured, not
-            attended.
-          </p>
+            {markup(t("<0/>% of <1/> cards learned through spaced retrieval, including the brain's own exam questions <2/>. Material kept current at mozg.sh; this knowledge was measured, not attended."), [
+            pct,
+            total,
+            brain.score != null ? ` — the same exam the AI agent scores ${brain.score}% on` : "",
+          ])}</p>
           <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)", marginBottom: 0 }}>
-            {date} · mozg.sh/learn · verify: the course page shows live progress
-          </p>
+            {markup(t("<0/> · mozg.sh/learn · verify: the course page shows live progress"), [
+            date,
+          ])}</p>
         </div>
 
         <p style={{ color: "var(--ink-2)", marginTop: "1.5rem" }}>
-          Screenshot it, print it, put it in a README. And since the brain
-          keeps learning, so can you —{" "}
-          <Link href={`/learn/${handle}/${slug}`} style={{ textDecoration: "underline" }}>
-            the course grows with it
-          </Link>
-          .
-        </p>
+          {markup(t("Screenshot it, print it, put it in a README. And since the brain keeps learning, so can you — <0>the course grows with it</0> ."), [
+          <Link href={`/learn/${handle}/${slug}`} style={{ textDecoration: "underline" }} key="s0" />,
+        ])}</p>
       </main>
     </LearnShell>
   );
