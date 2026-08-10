@@ -27,6 +27,26 @@ export const metadata = {
  */
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
+    date: "2026-08-10",
+    title: msg("Workflows: the order the brains are read in"),
+    body: msg("A brain answers a question. A workflow is the order the questions get asked in to build a whole thing — concept, then math, then the front end, then the checks that decide whether it ships. Build one on a canvas in your workspace: each step names the brain to read, the prompt to ask it in that brain's own words, the rules that hold while the step runs, and the check that ends it. Then run it from any agent with /mozg:build. Nothing executes on our side — we store the route, your agent walks it, and it can go back a step when a check fails. Published routes are readable by anyone: the first is a Stake Engine slot game end to end, twelve steps across ten brains."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("A brain with nothing to say now says nothing"),
+    body: msg("Ask a brain something outside its subject and hybrid search almost never came back empty — it handed over its five least-unrelated passages, and the agent reading them answered confidently from material about something else. Measured across the catalogue, ordinary questions passed at 82% while the probes that ask a brain to admit a subject is not covered passed at 64%. The cross-encoder always knew the difference; its verdict is now enforced for every search, so an off-topic question gets \"no matches\" and the name of a brain that does hold the subject."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("A dense reference page no longer costs itself"),
+    body: msg("Pages like Electron's window API or Loki's configuration produce more notes than one model reply can hold. That used to fail the whole page — the answer was cut off, and everything in it was lost. Now the segment is halved and both halves are read, so the densest pages in a repository, which are the ones worth having, actually land. The same rule covers exam generation: a brain too big for a hundred questions in one reply sits an exam of fifty instead of none."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("A repository's plumbing is not its documentation"),
+    body: msg("Pointing a brain at a GitHub repository read every markdown file in the tree, which meant a brain about a product also swallowed the repository's own tooling: code-review agent prompts, skill files, licence text, and CHANGELOG files whose four hundred notes say which release fixed what. Those are skipped now, and the crawl says how many it skipped. Directories named build or test are deliberately not on the list — real chapters live there."),
+  },
+  {
     date: "2026-08-07",
     title: msg("Where two brains in a pack disagree, both sides show"),
     body: msg("The brains in a pack are read as one, so a conflict between two of them used to reach you as one confident answer with the argument invisible. Every night they are now read against each other; a real conflict is published on the pack page and flagged inside brain_search, naming both claims and the brain each came from. Nothing is merged and nothing is quietly picked — an agent that meets one is told to report both."),
