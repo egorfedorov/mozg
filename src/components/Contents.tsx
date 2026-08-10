@@ -51,6 +51,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     pages: [
       { href: "/about", label: msg("The manifesto"), note: msg("what this is for, and who by") },
       { href: "/why", label: msg("Why it exists"), note: msg("the problem this solves") },
+      { href: "/how-it-learns", label: msg("How a brain learns"), note: msg("the loop, step by step") },
       { href: "/vs", label: msg("Brain or file"), note: msg("and when a file wins") },
       { href: "/vs-skills", label: msg("Skills vs brain"), note: msg("the confident wrong answer") },
       { href: "/collective", label: msg("The collective mind"), note: msg("every user makes it smarter") },
