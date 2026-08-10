@@ -106,6 +106,10 @@ export interface Source {
   error: string | null;
   note_count: number;
   cost_cents: number | null;
+  /** What the cost was made of. Output bills about five times input, and on
+   *  this corpus it is two thirds of the extraction bill — see 0077. */
+  input_tokens: number | null;
+  output_tokens: number | null;
   /** Cached extraction so a queue retry skips the paid step; see 0011. */
   extract_payload: unknown;
   /** Set by the maintenance refresh when the page's text moved; compared

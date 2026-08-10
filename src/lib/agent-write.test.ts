@@ -31,3 +31,20 @@ test("no access proposes nothing", () => {
   assert.equal(canPropose(null), false);
   assert.equal(canWrite(null), false);
 });
+
+test("a note sent as one field is still a note", async () => {
+  const { firstSentenceForTest } = await import("./agent-write");
+  // Measured on production: half of every brain_write was rejected for
+  // "both title and body are required" because models write the lesson as a
+  // sentence and leave the other field empty.
+  assert.equal(
+    firstSentenceForTest("Use pnpm, never npm. The lockfile is committed."),
+    "Use pnpm, never npm",
+  );
+  // No sentence end: clipped rather than dropped, and the clip is visible.
+  const long = "x".repeat(140);
+  const clipped = firstSentenceForTest(long);
+  assert.ok(clipped.length <= 100, `${clipped.length} chars`);
+  assert.ok(clipped.endsWith("…"));
+  assert.equal(firstSentenceForTest("").length, 0);
+});

@@ -311,6 +311,10 @@ export async function recrawlSites(limit = RECRAWL_BATCH, brainId?: string): Pro
  * premature re-run costs one SQL check and fails with the same message. No
  * model is paid until the window actually has space.
  *
+ * Rate-limited sources ride the same sweep: a provider's window closing is
+ * the same kind of "not now" as a budget window, and the fix is the same —
+ * come back on the next pass rather than retry into the same wall.
+ *
  * Both prefixes, deliberately: this sweep matched only 'daily budget:%' while
  * ingest also writes 'monthly budget:%' — 41 sources on one free account sat
  * failed forever, waiting for a requeue that could never see them.
@@ -321,7 +325,8 @@ export async function requeueBudgetPaused(limit = 50): Promise<number> {
       where id in (
         select id from sources
          where status = 'failed'
-           and (error like 'daily budget:%' or error like 'monthly budget:%')
+           and (error like 'daily budget:%' or error like 'monthly budget:%'
+                or error like 'rate limit:%')
          order by processed_at
          limit $1
       )

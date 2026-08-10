@@ -30,4 +30,43 @@ export function reportError(
       meta.brainId ?? null,
     ],
   ).catch(() => {});
+
+  void alertIfNew(source, kind, message);
+}
+
+/**
+ * Tell somebody when a NEW kind of failure appears.
+ *
+ * The error page is a good place to read failures and a bad place to notice
+ * them: rows sat there for a day and a half because nobody had a reason to
+ * open it. The first occurrence is the one worth interrupting for — after
+ * that, the same message repeating is a known incident, not news.
+ *
+ * Silent by construction if push is not configured, and it never throws:
+ * an alert that can break the thing it is reporting on is a second bug.
+ */
+async function alertIfNew(source: string, kind: string, message: string): Promise<void> {
+  try {
+    const [seen] = await query<{ n: number }>(
+      `select count(*)::int as n from app_errors
+        where source = $1 and kind = $2
+          and message = $3
+          and created_at < now() - interval '10 minutes'`,
+      [source, kind.slice(0, 80), message.slice(0, 500)],
+    );
+    if (seen?.n) return;
+
+    const { sendPush } = await import("@/lib/push");
+    await sendPush(
+      {
+        title: `New failure: ${source}/${kind}`,
+        body: message.slice(0, 160),
+        url: "/admin/errors",
+      },
+      "admins",
+    );
+  } catch {
+    // An alert that cannot be delivered must not become an error of its own —
+    // that is how one broken push endpoint turns into a loop.
+  }
 }

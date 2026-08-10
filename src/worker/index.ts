@@ -23,7 +23,12 @@ async function withSourceOwner<T>(sourceId: string, fn: () => Promise<T>): Promi
 
 import { query } from "@/db";
 import { reportError } from "@/lib/errors";
-import { BudgetPausedError, ingestSource, SourceBusyError } from "@/worker/ingest";
+import {
+  BudgetPausedError,
+  ingestSource,
+  RateLimitedError,
+  SourceBusyError,
+} from "@/worker/ingest";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
@@ -97,6 +102,13 @@ async function main() {
         // carries the reason and maintenance requeues it when the window
         // rolls, so retrying now would only re-derive the same sentence three
         // more times. Swallowed on purpose: nothing here is broken.
+        // Same shape as a budget pause: nothing is broken, the window is
+        // just closed. Logged once, requeued by maintenance, no error row —
+        // an operator paged for someone else's rate limiter learns nothing.
+        if (err instanceof RateLimitedError) {
+          console.log(`[ingest] ${sourceId} rate limited — will resume`);
+          return;
+        }
         if (err instanceof BudgetPausedError) {
           console.log(`[ingest] ${sourceId} paused — ${err.message}`);
           return;

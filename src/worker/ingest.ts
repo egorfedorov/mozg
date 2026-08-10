@@ -53,6 +53,31 @@ export class SourceBusyError extends Error {
  * maintenance pass, each retried three times by pg-boss, every attempt writing
  * the same expected sentence into the operator's triage list.
  */
+/**
+ * The provider said "too many requests".
+ *
+ * Handled like a budget pause rather than like a failure: the page is fine,
+ * the key is fine, and the only useful response is to come back later. This
+ * matters most on a flat-fee subscription key (Kimi's coding plan), where the
+ * plan's window closing looks exactly like this and would otherwise burn both
+ * retries and mark good pages failed.
+ */
+/** 429 from either wire, however the SDK or a proxy dressed it up. */
+export function isRateLimit(err: unknown): boolean {
+  if (typeof err === "object" && err !== null && "status" in err) {
+    if ((err as { status?: number }).status === 429) return true;
+  }
+  const m = err instanceof Error ? err.message : String(err);
+  return /\b429\b|rate.?limit|too many requests|quota exceeded/i.test(m);
+}
+
+export class RateLimitedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RateLimitedError";
+  }
+}
+
 export class BudgetPausedError extends Error {
   constructor(message: string) {
     super(message);
@@ -257,9 +282,16 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
       await query(
         `update sources
             set status = 'rejected', reject_reason = 'secrets_detected',
-                findings = $2, processed_at = now(), cost_cents = $3
+                findings = $2, processed_at = now(), cost_cents = $3,
+                input_tokens = $4, output_tokens = $5
           where id = $1`,
-        [sourceId, JSON.stringify(findings), Math.round(extracted.usage.costCents)],
+        [
+          sourceId,
+          JSON.stringify(findings),
+          Math.round(extracted.usage.costCents),
+          extracted.usage.inputTokens,
+          extracted.usage.outputTokens,
+        ],
       );
       return { status: "rejected", notes: 0, findings };
     }
@@ -275,9 +307,15 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     if (!extracted.notes.length) {
       await query(
         `update sources
-            set status = 'ready', note_count = 0, processed_at = now(), cost_cents = $2
+            set status = 'ready', note_count = 0, processed_at = now(),
+                cost_cents = $2, input_tokens = $3, output_tokens = $4
           where id = $1`,
-        [sourceId, Math.round(extracted.usage.costCents)],
+        [
+          sourceId,
+          Math.round(extracted.usage.costCents),
+          extracted.usage.inputTokens,
+          extracted.usage.outputTokens,
+        ],
       );
       return { status: "ready", notes: 0, costCents: extracted.usage.costCents };
     }
@@ -357,9 +395,19 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
 
       await client.query(
         `update sources
-            set status = 'ready', note_count = $2, processed_at = now(), cost_cents = $3
+            set status = 'ready', note_count = $2, processed_at = now(),
+                cost_cents = $3, input_tokens = $4, output_tokens = $5
           where id = $1`,
-        [sourceId, inserted, Math.round(extracted.usage.costCents)],
+        [
+          sourceId,
+          inserted,
+          Math.round(extracted.usage.costCents),
+          // Kept beside the cost because the cost alone cannot say whether a
+          // big bill was the reading or the writing — and the answer decides
+          // whether you cut pages or note length.
+          extracted.usage.inputTokens,
+          extracted.usage.outputTokens,
+        ],
       );
     });
 
@@ -405,6 +453,21 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     return { status: "ready", notes: inserted, costCents: extracted.usage.costCents };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+
+    // "Too many requests" is the provider asking us to wait, and every
+    // response to it except waiting is wrong: retrying burns the attempt,
+    // failing the source loses a page that was never broken. Stored with the
+    // same prefix the budget pause uses, so the maintenance sweep that already
+    // resumes paused sources resumes these too.
+    if (isRateLimit(err)) {
+      await query(
+        `update sources set status = 'failed', error = $2, processed_at = now()
+          where id = $1`,
+        [sourceId, `rate limit: ${message.slice(0, 400)}`],
+      );
+      throw new RateLimitedError(message);
+    }
+
     await query(
       `update sources set status = 'failed', error = $2, processed_at = now()
         where id = $1`,

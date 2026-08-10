@@ -559,12 +559,63 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
   };
 }
 
+/**
+ * Search everything the caller can read, when they did not name a brain.
+ *
+ * Deliberately not a silent guess at which brain they meant: the answer names
+ * the brain each passage came from and repeats the call that would have gone
+ * straight there, so the next question is aimed. Scope is the caller's own
+ * shelf — owned, granted and added — never the whole catalogue, which is what
+ * brain_find is for.
+ */
+async function searchTheShelf(q: string, owner: TokenOwner): Promise<ToolOutcome> {
+  const mine = await query<{ id: string }>(
+    `select b.id from brains b
+      where b.owner_id = $1
+      union
+     select l.brain_id from library l where l.user_id = $1`,
+    [owner.userId],
+  );
+  if (!mine.length) return notFound("", owner.userId);
+
+  const { hits } = await searchBrain(mine.map((b) => b.id), q, { limit: 8 });
+  if (!hits.length) {
+    return {
+      text:
+        `Nothing on your shelf answers: ${q}\n\n` +
+        "Call brain_list to see what you have, or brain_find to look across " +
+        "the public catalogue.",
+      results: 0,
+    };
+  }
+
+  const best = hits[0].brain_slug;
+  return {
+    text:
+      `No brain was named, so this searched your whole shelf.\n\n` +
+      hits
+        .map((h) => `[${h.brain_slug}] ${h.title}\n${clipExcerpt(h.excerpt)}`)
+        .join("\n\n---\n\n") +
+      `\n\nMost of this came from "${best}" — searching it directly gives more ` +
+      `of it: brain_search {"brain": "${best}", "query": ${JSON.stringify(q)}}`,
+    results: hits.length,
+    topScore: hits[0]?.score,
+  };
+}
+
 async function brainSearch(
   args: Record<string, unknown>,
   owner: TokenOwner,
 ): Promise<ToolOutcome> {
   const handle = String(args.brain ?? "");
   const q = String(args.query ?? "");
+
+  // Called without a brain, which several clients do routinely: search the
+  // caller's whole shelf and say which brain answered. Refusing was the most
+  // common failed call on the platform, and it refused a question we could
+  // have answered — the agent had already said exactly what it needed.
+  if (!handle.trim() && q.trim()) return searchTheShelf(q, owner);
+
   const resolved = await resolveBrain(handle, owner.userId);
   if (!resolved) return notFound(handle, owner.userId);
   if (resolved.locked) {

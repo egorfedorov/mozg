@@ -35,6 +35,19 @@ cd "$DIR"
 # Waiting rather than exiting: a deploy's whole reason for calling this is to
 # have a restore point before it migrates, so it must not proceed on the
 # assumption that somebody else's backup covers it.
+# A deploy does not need its own dump — it needs a restore point. If one was
+# finished within the hour, that is a restore point, and waiting behind a
+# running dump is how a deploy came to sit for half an hour behind a nightly
+# that had been going since 02:50. Measured: 545 MB takes long enough that
+# "wait for it" is not a plan.
+if [ "${BACKUP_REUSE_MINUTES:-0}" -gt 0 ]; then
+  recent=$(find "$DEST/daily" -name 'mozg-*.sql.gz' -mmin "-${BACKUP_REUSE_MINUTES}" -size +1M 2>/dev/null | head -1)
+  if [ -n "$recent" ]; then
+    echo "$(date -Is)  SKIP  restore point already exists: $(basename "$recent")"
+    exit 0
+  fi
+fi
+
 exec 9>"$DEST/.backup.lock"
 if ! flock -w 1800 9; then
   echo "$(date -Is)  FAIL  another backup held the lock for 30 minutes"
@@ -51,7 +64,7 @@ tmp="$out.$$.tmp"
 # without hand-dropping it first, which is exactly when you are least calm.
 docker compose -f docker-compose.prod.yml exec -T db \
   pg_dump -U mozg -d mozg --clean --if-exists --no-owner --no-privileges \
-  | gzip -9 > "$tmp"
+  | gzip -6 > "$tmp"
 
 # Only replace the real file once the dump succeeded — a truncated backup that
 # looks present is worse than an obviously missing one.

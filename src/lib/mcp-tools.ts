@@ -59,7 +59,12 @@ export const TOOLS: ToolDef[] = [
     inputSchema: {
       type: "object",
       properties: {
-        brain: { type: "string", description: "Brain handle." },
+        brain: {
+          type: "string",
+          description:
+            "Brain handle. Optional: without it, your whole shelf is searched " +
+            "and the answer names the brain each passage came from.",
+        },
         query: { type: "string", description: "What you need to know." },
         limit: { type: "integer", description: "Max results, 1-25. Default 8." },
         category: {
@@ -69,7 +74,7 @@ export const TOOLS: ToolDef[] = [
             "(\"typography\") also matches everything under it.",
         },
       },
-      required: ["brain", "query"],
+      required: ["query"],
       additionalProperties: false,
     },
   },
@@ -156,7 +161,12 @@ export const TOOLS: ToolDef[] = [
       type: "object",
       properties: {
         brain: { type: "string" },
-        title: { type: "string", description: "Short and searchable." },
+        title: {
+          type: "string",
+          description:
+            "Short and searchable. Optional — sending only `body` titles the " +
+            "note by its first sentence rather than refusing it.",
+        },
         body: { type: "string", description: "The fact, in full sentences." },
         kind: {
           type: "string",
@@ -164,7 +174,7 @@ export const TOOLS: ToolDef[] = [
         },
         category: { type: "string", description: "Reuse an existing category." },
       },
-      required: ["brain", "title", "body"],
+      required: ["brain", "body"],
       additionalProperties: false,
     },
   },

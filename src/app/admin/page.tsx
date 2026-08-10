@@ -69,6 +69,15 @@ export default async function AdminPage() {
   // What today actually cost us: extraction and exams keep their cost on
   // their own rows, everything else lands in `spend`. BYOK calls are absent
   // by design — that money was never ours.
+  // What the extraction bill is made of. One number cannot say whether a big
+  // day was reading or writing, and the answer decides what you cut: fewer
+  // pages, or shorter notes. Output bills about five times input.
+  const [mix] = await query<{ in_tok: number; out_tok: number }>(
+    `select coalesce(sum(input_tokens), 0)::bigint as in_tok,
+            coalesce(sum(output_tokens), 0)::bigint as out_tok
+       from sources where processed_at > now() - interval '7 days'`,
+  );
+
   const [cost] = await query<{ day: number; week: number }>(
     `select
        (select coalesce(sum(cost_cents), 0) from sources
@@ -121,6 +130,14 @@ export default async function AdminPage() {
             <Stat
               label={t("…last 7 days")}
               value={`$${(Number(cost?.week ?? 0) / 100).toFixed(2)}`}
+              note={
+                Number(mix?.out_tok ?? 0) > 0
+                  ? `${Math.round(
+                      (Number(mix.out_tok) * 100) /
+                        (Number(mix.in_tok) + Number(mix.out_tok)),
+                    )}% of tokens are output`
+                  : undefined
+              }
             />
             <Stat
               label={t("Ingest queue")}

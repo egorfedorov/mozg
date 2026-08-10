@@ -7,6 +7,7 @@ import { maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { isAdmin } from "@/lib/admin";
+import { publishBlocker } from "@/lib/publishable";
 import { scanSecrets, scanPII, scanInjection } from "@/lib/scan";
 import { TOPIC_KEYS } from "@/lib/topics";
 import { storage, storageKey } from "@/lib/storage";
@@ -106,6 +107,15 @@ export async function updateSharing(_prev: unknown, formData: FormData) {
           `(${[...new Set(pii.map((p) => p.label))].join(", ")}). Sharing by link is still fine.`,
       };
     }
+  }
+
+  // Material and a measured score, before anything else about the listing.
+  // Checked here rather than only at moderation because an admin publishes
+  // straight through, and that is exactly how the empty shelves got onto the
+  // catalogue in the first place.
+  if (parsed.data.visibility === "public" && brain.visibility !== "public") {
+    const blocker = await publishBlocker(brain.id);
+    if (blocker) return { error: blocker };
   }
 
   // The public catalogue is curated: a user asking for public files a

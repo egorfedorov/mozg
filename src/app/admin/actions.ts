@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { publishBlocker } from "@/lib/publishable";
 import { query, maybeOne } from "@/db";
 import { adjustBalance as moveBalance, settlePayout } from "@/lib/money";
 import { resolvePlanRequest } from "@/lib/upgrade";
@@ -172,9 +173,21 @@ export async function settlePublish(formData: FormData) {
         `[admin] publish of ${req.brain_id} auto-rejected: ${dirty.map((d) => d.label).join(", ")}`,
       );
     } else {
-      await query(`update brains set visibility = 'public', updated_at = now() where id = $1`, [
-        req.brain_id,
-      ]);
+      // Same gate as the owner's switch: notes can be deleted between the ask
+      // and the answer, and an approved empty brain is an empty shelf with a
+      // moderator's blessing on it.
+      const blocker = await publishBlocker(req.brain_id);
+      if (blocker) {
+        await query(
+          `update publish_requests set status = 'rejected', resolved_by = $2 where id = $1`,
+          [parsed.data.id, `auto: ${blocker.slice(0, 60)}`],
+        );
+        console.log(`[admin] publish of ${req.brain_id} auto-rejected: ${blocker}`);
+      } else {
+        await query(`update brains set visibility = 'public', updated_at = now() where id = $1`, [
+          req.brain_id,
+        ]);
+      }
     }
   }
   revalidatePath("/admin/brains");

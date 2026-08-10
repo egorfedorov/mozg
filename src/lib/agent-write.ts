@@ -79,6 +79,21 @@ export function writeNeedsReview(brain: Brain, access: Access): boolean {
  * Throws only where the old inline handler threw: an embed failure on the
  * activate-now path. Batch callers must catch per note.
  */
+/**
+ * A searchable title out of the text itself: the first sentence, clipped to
+ * something a person would scan in a list. Not clever — a note titled by its
+ * own opening line is exactly what a human writing in a hurry produces.
+ */
+export function firstSentenceForTest(text: string): string {
+  return firstSentence(text);
+}
+
+function firstSentence(text: string): string {
+  const end = text.search(/[.!?](\s|$)/);
+  const first = (end > 0 ? text.slice(0, end) : text).trim();
+  return (first.length > 100 ? `${first.slice(0, 97)}…` : first) || text.slice(0, 100);
+}
+
 export async function writeAgentNote(
   brain: Brain,
   opts: {
@@ -96,10 +111,30 @@ export async function writeAgentNote(
   // Capped like brain_create does (80/4000), only looser — a note is longer
   // than a goal, but an agent pasting a whole log file should be stopped
   // somewhere. 200/20000 matches what a human would ever write by hand.
-  const title = String(input.title ?? "").trim().slice(0, 200);
-  const body = String(input.body ?? "").trim().slice(0, 20000);
+  let title = String(input.title ?? "").trim().slice(0, 200);
+  let body = String(input.body ?? "").trim().slice(0, 20000);
+
+  // A note sent as one field is a note, not a mistake. Half of every
+  // brain_write measured on production was rejected for "both title and body
+  // are required" — models write the lesson as a sentence and leave the other
+  // field empty, and refusing that loses the one thing this tool exists to
+  // collect. The first sentence becomes the title, the whole text stays as
+  // the body, so nothing the agent wrote is thrown away.
+  if (title && !body) {
+    body = title;
+    title = firstSentence(title);
+  } else if (!title && body) {
+    title = firstSentence(body);
+  }
+
   if (!title || !body) {
-    return { status: "rejected", title, reason: "Both title and body are required." };
+    return {
+      status: "rejected",
+      title,
+      reason:
+        "A note needs some text. Send `body` with the lesson in full sentences, " +
+        "and `title` with the words someone would search for.",
+    };
   }
 
   // Same gate as ingest. An agent paraphrasing a token into a "lesson" is a

@@ -101,6 +101,12 @@ export default async function ExplorePage({
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and u.handle is not null
         and b.parent_id is null ${where}
+        -- Never list a shelf with nothing on it. The publish gate stops new
+        -- ones; this covers whatever was published before it existed, and any
+        -- brain whose notes were deleted afterwards.
+        and (b.note_count > 0
+             or exists (select 1 from brains c
+                         where c.parent_id = b.id and c.note_count > 0))
         and ($1::text is null or b.topic = $1)
       order by ${sort.sql}
       limit ${PER_PAGE + 1} offset ${(page - 1) * PER_PAGE}`,

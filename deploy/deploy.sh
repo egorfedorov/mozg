@@ -49,7 +49,10 @@ say "4/6  backup + migrations, before the swap"
 # Never migrate against the only copy of the data: dump and restore-check the
 # database first, so a bad migration means restoring a minutes-old backup from
 # /var/backups/mozg instead of last night's.
-ssh "$HOST" "$DIR/deploy/backup.sh"
+# A dump finished within the hour is the restore point this needs; only when
+# there isn't one does the deploy pay for its own. Without this the deploy
+# queues behind whatever backup is running and can time out mid-release.
+ssh "$HOST" "BACKUP_REUSE_MINUTES=60 $DIR/deploy/backup.sh"
 # A one-off container from the image just built, not the running one: that is
 # what lets the schema move first. Migrations are additive, so the old app keeps
 # serving happily against the new schema for the seconds this takes.
@@ -82,6 +85,10 @@ echo "  running $running"
 
 say "6/6  smoke test"
 fail=0
+# Pages, not just status codes: a route that answers 200 with an empty body is
+# the failure this catches, and it shipped once because nothing looked.
+npm run -s smoke -- "$URL" || fail=1
+
 # /.well-known/mcp-registry-auth is our domain proof for the MCP Registry: if it
 # stops serving, the next publish cannot authenticate (see docs/REGISTRY.md).
 for path in / /explore /mcp /robots.txt /.well-known/mcp-registry-auth; do
