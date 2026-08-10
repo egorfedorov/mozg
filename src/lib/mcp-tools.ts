@@ -407,4 +407,33 @@ export const TOOLS: ToolDef[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "workflow_list",
+    description:
+      "List the build workflows available to you: named routes through the " +
+      "brains for whole jobs — \"a slot game for Stake Engine\", \"a Godot save " +
+      "system\". Call this when the user asks for something BUILT rather than " +
+      "answered, before planning it yourself: a workflow already names which " +
+      "brains to read, in what order, and what done looks like.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "workflow_read",
+    description:
+      "Get one workflow in full: every step, the brain each step consults, " +
+      "what to ask it, and the check that ends the step. Follow it in order " +
+      "and search each named brain before writing anything — the workflow was " +
+      "built around that material.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        workflow: {
+          type: "string",
+          description: "Workflow name, \"handle/slug\" or the bare slug.",
+        },
+      },
+      required: ["workflow"],
+      additionalProperties: false,
+    },
+  },
 ];

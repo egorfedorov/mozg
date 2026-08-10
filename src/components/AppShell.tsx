@@ -27,6 +27,7 @@ const GROUPS: {
       { href: "/brains", label: msg("Overview") },
       { href: "/mind", label: msg("Your mind") },
       { href: "/brains/new", label: msg("New brain") },
+      { href: "/workflows", label: msg("Workflows") },
       { href: "/connect", label: msg("Connect an agent") },
       { href: "/achievements", label: msg("Achievements") },
       { href: "/chat", label: msg("chatmozg") },

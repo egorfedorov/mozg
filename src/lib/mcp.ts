@@ -16,6 +16,8 @@ import {
 import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
+import { findWorkflow, listWorkflows, publicWorkflows } from "@/lib/workflow-store";
+import { renderWorkflow } from "@/lib/workflows";
 
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
@@ -218,6 +220,10 @@ export async function callTool(
       return brainRefresh(args, owner);
     case "brain_find":
       return brainFind(args, owner);
+    case "workflow_list":
+      return workflowList(owner);
+    case "workflow_read":
+      return workflowRead(args, owner);
     case "library_add":
       return libraryAdd(args, owner);
     case "library_remove":
@@ -1788,6 +1794,65 @@ async function notFound(handle: string, userId: string): Promise<ToolOutcome> {
       (near.length ? "\n\nThe first ones are the closest to what you asked for." : ""),
     isError: true,
   };
+}
+
+/**
+ * The routes, not the material.
+ *
+ * A shelf answers questions; a workflow is the order those answers get asked
+ * in to build something. Listed together with the public ones because the
+ * point of publishing a route is that somebody else's agent can run it — a
+ * private-only list would make the catalogue's best workflows invisible to
+ * exactly the agent that needs them.
+ */
+async function workflowList(owner: TokenOwner): Promise<ToolOutcome> {
+  const [mine, shared] = await Promise.all([
+    listWorkflows(owner.userId),
+    publicWorkflows(20),
+  ]);
+  const rows = [...mine, ...shared.filter((w) => w.owner_id !== owner.userId)];
+
+  if (!rows.length) {
+    return {
+      text:
+        "No workflows yet. A workflow is a named route through the brains — " +
+        "the steps for a whole job, each naming the brain to read and the " +
+        "check that ends it. Build one at mozg.sh/workflows.",
+    };
+  }
+
+  return {
+    text:
+      "Workflows you can run — call workflow_read for the steps:\n\n" +
+      rows
+        .map(
+          (w) =>
+            `- ${w.handle ? `${w.handle}/${w.slug}` : w.slug} — ${w.title}` +
+            (w.summary ? `: ${w.summary}` : "") +
+            ` (${w.steps.length} steps${w.owner_id === owner.userId ? ", yours" : ""})`,
+        )
+        .join("\n"),
+  };
+}
+
+async function workflowRead(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const name = String(args.workflow ?? "").trim();
+  if (!name) {
+    return { text: "workflow_read needs a workflow name. Call workflow_list.", isError: true };
+  }
+
+  const w = await findWorkflow(name, owner.userId);
+  if (!w) {
+    return {
+      text: `No workflow "${name}" that you can read. Call workflow_list for the ones you have.`,
+      isError: true,
+    };
+  }
+
+  return { text: renderWorkflow(w), ownerId: w.owner_id };
 }
 
 /**
