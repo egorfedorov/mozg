@@ -28,6 +28,26 @@ export const metadata = {
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
     date: "2026-08-10",
+    title: msg("A route hands you the shelf it needs"),
+    body: msg("A workflow names the brains each step reads — and now it tells your agent, before any work starts, which of them you actually have. Missing or unbought ones are named up front with what they cost, because a route run without its material still produces files and they look exactly like the ones built with it. On the route's page, one button shelves the free brains and buys the paid ones from your balance. The route itself stays free: what costs money to make is the material, and charging twice for one body of knowledge is not how this catalogue earns trust."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("Nothing empty gets on the shelf any more"),
+    body: msg("Publishing a brain now requires material and a measured score — before this, a visitor could open a public brain with zero notes and reasonably conclude the whole catalogue was empty. Twelve were in that state. The same gate sits on all three doors, and the catalogue refuses to list an empty shelf whatever published it. The listing also paginates now, so what was published last is not buried at the bottom of an endless column."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("Say it in one field, or ask without naming a brain"),
+    body: msg("Two things agents got wrong constantly, both now answered instead of refused. A note sent as a single field is titled by its own first sentence rather than rejected — half of every brain_write was being lost to \"both title and body are required\". And brain_search called without a brain searches your whole shelf and says which brain each passage came from, instead of refusing a question we could have answered."),
+  },
+  {
+    date: "2026-08-10",
+    title: msg("The catalogue, measured in public"),
+    body: msg("mozg.sh/health: how many brains are published, how many have sat an exam, what they average, how many were fed this week and how many have gone a month untouched. A young catalogue asks to be trusted, and the honest form of that argument is a number anyone can check. Gap suggestions now close themselves too — a question the brain could not answer in June and can answer today stops sitting in a list nobody reads."),
+  },
+  {
+    date: "2026-08-10",
     title: msg("Workflows: the order the brains are read in"),
     body: msg("A brain answers a question. A workflow is the order the questions get asked in to build a whole thing — concept, then math, then the front end, then the checks that decide whether it ships. Build one on a canvas in your workspace: each step names the brain to read, the prompt to ask it in that brain's own words, the rules that hold while the step runs, and the check that ends it. Then run it from any agent with /mozg:build. Nothing executes on our side — we store the route, your agent walks it, and it can go back a step when a check fails. Published routes are readable by anyone: the first is a Stake Engine slot game end to end, twelve steps across ten brains."),
   },

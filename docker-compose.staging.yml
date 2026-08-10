@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Staging: the same images, a different database, its own port.
+#
+#   ssh <host> 'cd /opt/mozg && docker compose -p mozg-staging \
+#     -f docker-compose.prod.yml -f docker-compose.staging.yml up -d'
+#
+# An overlay rather than a copy. A second full compose file would drift from
+# the real one within a week, and a staging environment that differs from
+# production in ways nobody wrote down is worse than none — it produces
+# confident green runs against a system that does not exist.
+#
+# What it changes, and nothing else:
+#   - a separate compose project name, so containers and volumes never collide
+#   - its own database volume, so a bad migration is tested on throwaway data
+#   - port 3301 on localhost, behind whatever the host's nginx points at it
+#   - no crawler concurrency worth mentioning, because staging is for shape
+#
+# What it deliberately does NOT change: the images, the migrations, the embed
+# and rerank services. Those are the parts a deploy can break.
+#
+# Cost, stated because it is the reason this is opt-in rather than always on:
+# a second Postgres and a second app, on a box whose disk is already 79% full.
+# Bring it up before a risky migration, take it down after.
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  db:
+    volumes:
+      - pgdata-staging:/var/lib/postgresql/data
+
+  app:
+    ports:
+      - "127.0.0.1:3301:3300"
+    environment:
+      # Anything that talks to the outside world in production must not, here.
+      # A staging box that can send email or take a payment will eventually do
+      # both, to a real person, from data somebody pasted in to test with.
+      NEXT_PUBLIC_URL: http://localhost:3301
+      MOZGPAY_ENABLED: "false"
+      RESEND_API_KEY: ""
+
+  worker:
+    environment:
+      # One job at a time: staging exists to prove a deploy runs, not to read
+      # the internet twice.
+      INGEST_CONCURRENCY: "1"
+
+volumes:
+  pgdata-staging: {}

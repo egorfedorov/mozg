@@ -115,28 +115,36 @@ const RUNTIME: { k: string; v: string }[] = [
   },
 ];
 
-function Canvas({ steps }: { steps: { title: string; brain?: string; done_when?: string }[] }) {
+function Canvas({
+  steps,
+  t,
+}: {
+  steps: { title: string; brain?: string; done_when?: string }[];
+  // Threaded rather than awaited here: a helper beside an async page is a
+  // plain function, and every string it prints still has to translate.
+  t: (english: string) => string;
+}) {
   return (
     <div className="wf-canvas" style={{ marginBlock: "1.5rem" }}>
       <div className="wf-node wf-node-end">
-        <span className="eyebrow">Start</span>
-        <strong>What the user asked for</strong>
+        <span className="eyebrow">{t("Start")}</span>
+        <strong>{t("What the user asked for")}</strong>
       </div>
       {steps.map((s, i) => (
         <div key={i} className="wf-chain">
           <span className="wf-edge" aria-hidden />
           <div className="wf-node" style={{ cursor: "default" }}>
-            <span className="eyebrow">Step {i + 1}</span>
+            <span className="eyebrow">{t("Step")} {i + 1}</span>
             <strong>{s.title}</strong>
-            {s.brain && <code className="mono wf-node-brain">reads {s.brain}</code>}
+            {s.brain && <code className="mono wf-node-brain">{t("reads")} {s.brain}</code>}
             {s.done_when && <span className="wf-node-check">✓ {s.done_when}</span>}
           </div>
         </div>
       ))}
       <span className="wf-edge" aria-hidden />
       <div className="wf-node wf-node-end">
-        <span className="eyebrow">Done</span>
-        <strong>The thing exists, and its checks passed</strong>
+        <span className="eyebrow">{t("Done")}</span>
+        <strong>{t("The thing exists, and its checks passed")}</strong>
       </div>
     </div>
   );
@@ -230,7 +238,7 @@ export default async function BuildPage() {
             <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
               {t("Not a screenshot — this is read from the route, so what you see is what your agent gets.")}
             </p>
-            <Canvas steps={featured.steps.slice(0, 6)} />
+            <Canvas steps={featured.steps.slice(0, 6)} t={t} />
             {featured.handle && (
               <p className="mono" style={{ fontSize: ".8125rem" }}>
                 <Link href={`/w/${featured.handle}/${featured.slug}`}>

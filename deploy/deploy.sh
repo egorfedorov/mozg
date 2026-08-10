@@ -20,6 +20,9 @@ say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 say "1/6  local checks"
 npm run typecheck
 npm test 2>&1 | tail -3
+# A sentence that reaches a reader in English because somebody forgot to wrap
+# it is invisible to whoever wrote it and obvious to everyone else.
+npm run -s check:i18n
 
 if [ -n "$(git status --porcelain)" ]; then
   echo "✗ working tree is dirty — commit or stash first"
