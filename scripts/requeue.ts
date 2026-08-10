@@ -4,6 +4,7 @@
  *   npm run requeue -- --brain mcp-spec           # everything not ready
  *   npm run requeue -- --failed                   # every failed source, any brain
  *   npm run requeue -- --brain mcp-spec --reread  # ready sources too, re-extracted
+ *   npm run requeue -- --source <uuid> --reread   # exactly one page, re-extracted
  *
  * Resetting a source's status in SQL does not re-run it: the queue job was
  * consumed when it first ran, and the row is only a record of the outcome.
@@ -26,17 +27,22 @@ function arg(name: string): string | undefined {
 
 async function main() {
   const slug = arg("brain");
+  // One source by id. The other two selectors are "a brain" and "everything
+  // that failed", and neither can re-read the single page you are actually
+  // looking at — checking one prompt change meant re-reading 299 sources or
+  // requeuing 41 unrelated failures.
+  const id = arg("source");
   const onlyFailed = process.argv.includes("--failed");
   const reread = process.argv.includes("--reread");
 
-  if (!slug && !onlyFailed) {
-    console.error("\nPass --brain <slug>, or --failed.\n");
+  if (!slug && !onlyFailed && !id) {
+    console.error("\nPass --brain <slug>, --source <id>, or --failed.\n");
     process.exit(1);
   }
-  if (reread && !slug) {
+  if (reread && !slug && !id) {
     // Re-reading is a paid re-extraction of every source it touches; "all
     // brains" is a bill nobody meant to run up with one flag.
-    console.error("\n--reread needs --brain <slug>.\n");
+    console.error("\n--reread needs --brain <slug> or --source <id>.\n");
     process.exit(1);
   }
 
@@ -44,11 +50,15 @@ async function main() {
     `select s.id, coalesce(s.original_name, s.url) as name, s.status
        from sources s join brains b on b.id = s.brain_id
       where ($1::text is null or b.slug = $1)
-        and ($2 = false or s.status in ('failed', 'rejected'))
-        and ($3 = true or s.status <> 'ready')
-        and s.kind <> 'site'
+        and ($4::uuid is null or s.id = $4)
+        -- A source asked for by id is asked for by name: none of the filters
+        -- below get to decide it is not interesting enough to requeue.
+        and ($4::uuid is not null or (
+              ($2 = false or s.status in ('failed', 'rejected'))
+          and ($3 = true or s.status <> 'ready')
+          and s.kind <> 'site'))
       order by s.created_at`,
-    [slug ?? null, onlyFailed, reread],
+    [slug ?? null, onlyFailed, reread, id ?? null],
   );
 
   if (!sources.length) {
