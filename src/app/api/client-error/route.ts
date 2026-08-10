@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
+import { fromExtension } from "@/lib/client-error";
 
 /**
  * The browser's lane into the error center. Anonymous reports are accepted —
@@ -18,6 +19,11 @@ export async function POST(req: Request) {
 
   const message = String(body?.message ?? "").trim().slice(0, 500);
   if (!message) return NextResponse.json({ ok: false }, { status: 400 });
+
+  // Someone's extension throwing inside their browser is not this app's error.
+  // Accepted and dropped, rather than rejected: the reporter cannot do
+  // anything useful with a failure either way.
+  if (fromExtension(body?.stack)) return NextResponse.json({ ok: true });
 
   await query(
     `insert into app_errors (source, kind, message, detail, user_id)

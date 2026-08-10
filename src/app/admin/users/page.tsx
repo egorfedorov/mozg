@@ -1,7 +1,8 @@
+import { Fragment } from "react";
 import { translator } from "@/lib/t";
 import { fill, markup } from "@/lib/markup";
 import AppShell from "@/components/AppShell";
-import { requireAdmin, adminUsers } from "@/lib/admin";
+import { requireAdmin, adminUsers, adminUserMovements } from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
 import { setPlan, adjustBalance, revokeTokens, deleteUser } from "../actions";
 import MessageUserForm from "../MessageUserForm";
@@ -18,6 +19,15 @@ export default async function AdminUsersPage() {
 
   const admin = await requireAdmin();
   const users = await adminUsers();
+  // One query for every account's money, grouped here — the alternative is a
+  // query per row, and this table renders two hundred of them.
+  const movements = await adminUserMovements(users.map((u) => u.id));
+  const history = new Map<string, typeof movements>();
+  for (const m of movements) {
+    const list = history.get(m.user_id);
+    if (list) list.push(m);
+    else history.set(m.user_id, [m]);
+  }
   // A server component renders once per request, so the clock cannot drift
   // between renders the way the purity rule guards against on the client.
   // eslint-disable-next-line react-hooks/purity
@@ -43,6 +53,8 @@ export default async function AdminUsersPage() {
                 <th style={{ textAlign: "right" }}>{t("Notes")}</th>
                 <th style={{ textAlign: "right" }}>{t("Calls 7d")}</th>
                 <th>{t("Plan")}</th>
+                <th style={{ textAlign: "right" }}>{t("Paid in")}</th>
+                <th style={{ textAlign: "right" }}>{t("Spent")}</th>
                 <th style={{ textAlign: "right" }}>{t("Balance")}</th>
                 <th>{t("Adjust")}</th>
                 <th />
@@ -56,8 +68,11 @@ export default async function AdminUsersPage() {
                 const canDelete =
                   u.id !== admin.id && u.balance_cents === 0 && u.brains === 0;
 
+                const spending = history.get(u.id) ?? [];
+
                 return (
-                  <tr key={u.id}>
+                  <Fragment key={u.id}>
+                  <tr>
                     <td>
                       <strong>{u.handle ?? u.email.split("@")[0]}</strong>
                       <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".75rem" }}>
@@ -98,6 +113,10 @@ export default async function AdminUsersPage() {
                       </form>
                     </td>
 
+                    <td className="num">
+                      {u.topped_up_cents ? formatCents(u.topped_up_cents) : "—"}
+                    </td>
+                    <td className="num">{u.spent_cents ? formatCents(u.spent_cents) : "—"}</td>
                     <td className="num">{formatCents(u.balance_cents)}</td>
 
                     <td>
@@ -137,6 +156,60 @@ export default async function AdminUsersPage() {
                       </span>
                     </td>
                   </tr>
+
+                  {spending.length > 0 && (
+                    <tr>
+                      {/* Its own row rather than a cell in the one above: a
+                          <details> cannot wrap table rows, and the history
+                          needs the full width to stay readable. */}
+                      <td colSpan={11} style={{ paddingTop: 0 }}>
+                        <details>
+                          <summary className="mono" style={{ fontSize: ".75rem", cursor: "pointer" }}>
+                            {markup(t("Money · <0/> movements"), [spending.length])}</summary>
+                          <ul
+                            className="mono"
+                            style={{
+                              listStyle: "none",
+                              margin: ".5rem 0 0",
+                              padding: 0,
+                              fontSize: ".75rem",
+                              display: "grid",
+                              gap: ".25rem",
+                            }}
+                          >
+                            {spending.map((m) => (
+                              <li key={m.id} style={{ display: "flex", gap: ".6rem" }}>
+                                <span style={{ color: "var(--ink-3)" }}>
+                                  {m.created_at.slice(0, 10)}</span>
+                                <span
+                                  style={{
+                                    minWidth: "5.5rem",
+                                    textAlign: "right",
+                                    color: m.amount_cents < 0 ? "var(--ink)" : "var(--ink-2)",
+                                  }}
+                                >
+                                  {m.amount_cents < 0 ? "−" : "+"}
+                                  {formatCents(Math.abs(m.amount_cents))}
+                                </span>
+                                <span>{m.kind}</span>
+                                {/* What the money bought, which is the whole
+                                    point — the brain if it was a purchase, the
+                                    note if a human moved it by hand. */}
+                                <span style={{ color: "var(--ink-2)" }}>
+                                  {m.brain_slug ? (
+                                    <a href={`/brains/${m.brain_slug}`}>{m.brain_title}</a>
+                                  ) : (
+                                    (m.note ?? "")
+                                  )}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>

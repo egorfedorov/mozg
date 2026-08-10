@@ -19,7 +19,10 @@ export default function ClientErrorReporter() {
         keepalive: true,
       }).catch(() => {});
     };
-    const onError = (e: ErrorEvent) => send(e.message, e.error?.stack);
+    // A cross-origin throw arrives with no Error object; its filename is then
+    // the only thing naming where it came from.
+    const onError = (e: ErrorEvent) =>
+      send(e.message, e.error?.stack ?? (e.filename ? `at ${e.filename}` : undefined));
     const onReject = (e: PromiseRejectionEvent) => {
       const r = e.reason;
       send(r instanceof Error ? r.message : String(r), r instanceof Error ? r.stack : undefined);

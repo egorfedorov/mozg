@@ -93,6 +93,10 @@ export interface AdminUser {
   plan: Plan;
   email_verified: boolean;
   balance_cents: number;
+  /** Everything ever credited as a top-up — what they actually paid us. */
+  topped_up_cents: number;
+  /** What went back out of the balance again, payouts excluded. */
+  spent_cents: number;
   brains: number;
   notes: number;
   tokens: number;
@@ -106,6 +110,14 @@ export async function adminUsers(limit = 200): Promise<AdminUser[]> {
   return query<AdminUser>(
     `select u.id, u.email, u.name, u.handle, u.plan,
             u."emailVerified" as email_verified, u.balance_cents,
+            -- A balance answers "how much is left", never "what for". Both
+            -- sides of the account, so a top-up that went somewhere is visible
+            -- as a number before anyone opens the history.
+            (select coalesce(sum(l.amount_cents), 0)::int from ledger l
+              where l.user_id = u.id and l.kind = 'topup') as topped_up_cents,
+            (select coalesce(-sum(l.amount_cents), 0)::int from ledger l
+              where l.user_id = u.id and l.amount_cents < 0
+                and l.kind <> 'payout') as spent_cents,
             (select count(*)::int from brains b where b.owner_id = u.id) as brains,
             (select coalesce(sum(note_count), 0)::int from brains b
               where b.owner_id = u.id) as notes,
@@ -280,6 +292,49 @@ export async function openPlanRequests(): Promise<AdminPlanRequest[]> {
        from plan_requests r join "user" u on u.id = r.user_id
       where r.status = 'pending'
       order by r.created_at`,
+  );
+}
+
+export interface AdminUserMovement {
+  id: string;
+  user_id: string;
+  amount_cents: number;
+  kind: string;
+  note: string | null;
+  brain_title: string | null;
+  brain_slug: string | null;
+  created_at: string;
+}
+
+/**
+ * Every account's money, in one query rather than one per row.
+ *
+ * The People table said someone was holding $21 and nothing about where it
+ * went — the global feed on /admin answers "what happened lately", never "what
+ * did this person buy". Newest `perUser` movements each, so one heavy buyer
+ * cannot push everybody else's history out of the page.
+ */
+export async function adminUserMovements(
+  userIds: string[],
+  perUser = 12,
+): Promise<AdminUserMovement[]> {
+  if (!userIds.length) return [];
+  return query<AdminUserMovement>(
+    `select id::text, user_id, amount_cents, kind, note, brain_title, brain_slug,
+            created_at
+       from (
+         select l.id, l.user_id, l.amount_cents, l.kind, l.note,
+                b.title as brain_title, b.slug as brain_slug,
+                to_char(l.created_at at time zone 'UTC',
+                        'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
+                row_number() over (partition by l.user_id order by l.id desc) as rn
+           from ledger l
+           left join brains b on b.id = l.brain_id
+          where l.user_id = any($1::text[])
+       ) m
+      where rn <= $2
+      order by user_id, id desc`,
+    [userIds, perUser],
   );
 }
 
