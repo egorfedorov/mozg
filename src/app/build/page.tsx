@@ -13,38 +13,37 @@ export const metadata = {
     "A workflow is a named route through your brains: the steps of a whole job, each naming the brain to read, the prompt, the rules and the check. Your agent runs it with /mozg:build.",
 };
 
-/** The canvas, drawn from the same classes the editor uses — a screenshot of
- *  the product goes stale the week after it ships; this cannot. */
-function Canvas() {
-  const steps = [
-    { n: 1, title: "Concept and theme", brain: "slot-design", check: "a one-page spec exists" },
-    { n: 2, title: "Math model", brain: "stake-engine-math-sdk", check: "RTP within 0.1% of target" },
-    { n: 3, title: "Books and LUTs", brain: "stake-engine-canonical-books", check: "validator exits zero" },
-    { n: 4, title: "Front end", brain: "pixijs-casino", check: "runs at 60fps on the mid profile" },
-    { n: 5, title: "Publish checks", brain: "stake-engine-approval", check: "/checkgame says GO" },
-  ];
-
+/**
+ * The illustration is a real route, not a drawing of one.
+ *
+ * The first version of this page invented its own five steps, and within an
+ * hour they were wrong in both directions: they named brains that do not
+ * exist in the catalogue and a check that only runs on one laptop. A picture
+ * of the product that nobody has to keep in step with the product is the only
+ * kind that stays true, so this renders whichever route is published.
+ */
+function Canvas({ steps }: { steps: { title: string; brain?: string; done_when?: string }[] }) {
   return (
     <div className="wf-canvas" style={{ marginBlock: "1.5rem" }}>
       <div className="wf-node wf-node-end">
         <span className="eyebrow">Start</span>
-        <strong>&ldquo;Make me a slot game for Stake Engine&rdquo;</strong>
+        <strong>What the user asked for</strong>
       </div>
-      {steps.map((s) => (
-        <div key={s.n} className="wf-chain">
+      {steps.map((s, i) => (
+        <div key={i} className="wf-chain">
           <span className="wf-edge" aria-hidden />
           <div className="wf-node" style={{ cursor: "default" }}>
-            <span className="eyebrow">Step {s.n}</span>
+            <span className="eyebrow">Step {i + 1}</span>
             <strong>{s.title}</strong>
-            <code className="mono wf-node-brain">reads {s.brain}</code>
-            <span className="wf-node-check">✓ {s.check}</span>
+            {s.brain && <code className="mono wf-node-brain">reads {s.brain}</code>}
+            {s.done_when && <span className="wf-node-check">✓ {s.done_when}</span>}
           </div>
         </div>
       ))}
       <span className="wf-edge" aria-hidden />
       <div className="wf-node wf-node-end">
         <span className="eyebrow">Done</span>
-        <strong>The game exists, and its checks passed</strong>
+        <strong>The thing exists, and its checks passed</strong>
       </div>
     </div>
   );
@@ -53,6 +52,10 @@ function Canvas() {
 export default async function BuildPage() {
   const t = await translator();
   const published = await publicWorkflows(12);
+  // Whatever is published leads the page. No route published yet means no
+  // canvas — an illustration of a product with nothing in it would be a
+  // drawing again, and drawings drift.
+  const featured = published[0];
 
   return (
     <>
@@ -82,7 +85,20 @@ export default async function BuildPage() {
           )}
         </p>
 
-        <Canvas />
+        {featured && (
+          <>
+            <Canvas steps={featured.steps} />
+            <p className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+              {featured.handle ? (
+                <Link href={`/w/${featured.handle}/${featured.slug}`}>
+                  {featured.title} — {featured.steps.length} {t("steps, with every prompt and rule")}
+                </Link>
+              ) : (
+                featured.title
+              )}
+            </p>
+          </>
+        )}
 
         <h2 className="h2">{t("Every step carries four things")}</h2>
         <ul style={{ maxWidth: "60ch", lineHeight: 1.7 }}>
@@ -113,7 +129,9 @@ export default async function BuildPage() {
           )}
         </p>
         <pre className="mono panel" style={{ padding: "1rem", overflowX: "auto" }}>
-          <code>/mozg:build stake-slot</code>
+          <code>
+            /mozg:build {featured?.slug ?? "your-route"}
+          </code>
         </pre>
 
         {published.length > 0 && (
