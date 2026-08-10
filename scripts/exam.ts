@@ -3,6 +3,7 @@
  *
  *   npm run exam -- --brain stake-engine
  *   npm run exam -- --all
+ *   npm run exam -- --brain vite --mini   # cheap probe, does not publish a score
  *
  * The worker re-examines a brain whenever it learns something, so this is for
  * when the exam itself changed — a rewritten goal, a wider retrieval scope —
@@ -21,7 +22,11 @@ async function sit(id: string, slug: string) {
     `select score from brains where id = $1`,
     [id],
   );
-  const result = await runExam(id, { force: true });
+  // --mini: one judge vote instead of three, and only the checks whose
+  // material moved. A full sitting costs ~12¢ and three votes per check, which
+  // is right for a published score and far too heavy for "did that change
+  // help?" — the answer to that is worth having every day.
+  const result = await runExam(id, { force: true, mini: process.argv.includes("--mini") });
   if (!result) {
     console.log(`  ${slug.padEnd(26)} skipped — no goal`);
     return;

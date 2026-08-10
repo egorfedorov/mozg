@@ -61,6 +61,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     summary: msg("what people do with it"),
     pages: [
       { href: "/build", label: msg("Workflows"), note: msg("the order the brains are read in") },
+      { href: "/health", label: msg("Catalogue health"), note: msg("what was read and examined this week") },
       { href: "/stories", label: msg("How people use it"), note: msg("an artist, a company, a game studio") },
       // A sibling product rather than a use case, but this is where a reader
       // asking "what else is there" actually looks.

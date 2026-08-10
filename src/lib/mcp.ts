@@ -17,7 +17,7 @@ import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
 import { findWorkflow, listWorkflows, publicWorkflows } from "@/lib/workflow-store";
-import { renderWorkflow } from "@/lib/workflows";
+import { renderWorkflow, stepReportSchema } from "@/lib/workflows";
 
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
@@ -224,6 +224,8 @@ export async function callTool(
       return workflowList(owner);
     case "workflow_read":
       return workflowRead(args, owner);
+    case "workflow_report":
+      return workflowReport(args, owner);
     case "library_add":
       return libraryAdd(args, owner);
     case "library_remove":
@@ -633,7 +635,7 @@ async function brainSearch(
   // let a public parent answer from its private or unpurchased children.
   const scope = await familyScopeFor(resolved.brain, owner.userId);
 
-  const { hits, degraded, reranked } = await searchBrain(scope, q, {
+  const { hits, degraded, reranked, withheld } = await searchBrain(scope, q, {
     limit: typeof args.limit === "number" ? args.limit : undefined,
     category: typeof args.category === "string" ? args.category : null,
   });
@@ -661,6 +663,11 @@ async function brainSearch(
       brainId: resolved.brain.id,
       ownerId: resolved.brain.owner_id,
       results: 0,
+      // What the floor cut, when it cut everything. On a metering row this is
+      // the difference between "the brain holds nothing on this" and "it held
+      // something and we judged it off-topic" — and the second one is the
+      // regression a threshold change could cause, so it has to be visible.
+      topScore: withheld ?? undefined,
     };
   }
 
@@ -1942,6 +1949,58 @@ async function workflowRead(
       : `\n\n## Before you start\n\nAll ${wanted.length} brains this route reads are on your shelf.`;
 
   return { text: renderWorkflow(w) + readiness, ownerId: w.owner_id };
+}
+
+/**
+ * What the run was actually like.
+ *
+ * The only feedback a route has. A brain learns from its exam; a route learns
+ * from the agent that just walked it and knows which step had nothing behind
+ * it — while it is still holding the context that makes the answer specific.
+ * Stored verbatim for the author; no score, because a rating tells nobody
+ * which step to fix.
+ */
+async function workflowReport(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const w = await findWorkflow(String(args.workflow ?? "").trim(), owner.userId);
+  if (!w) {
+    return { text: "No workflow by that name that you can read.", isError: true };
+  }
+
+  const raw = Array.isArray(args.steps) ? args.steps : [];
+  const steps = raw.flatMap((item) => {
+    const parsed = stepReportSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
+  if (!steps.length) {
+    return { text: "Send at least one step entry — step number, and what happened.", isError: true };
+  }
+
+  await query(
+    `insert into workflow_runs (workflow_id, runner_id, steps, summary)
+     values ($1, $2, $3::jsonb, $4)`,
+    [
+      w.id,
+      owner.userId,
+      JSON.stringify(steps),
+      String(args.summary ?? "").slice(0, 500) || null,
+    ],
+  );
+
+  const dry = steps.filter((s) => s.found === false).length;
+  const failed = steps.filter((s) => s.passed === false).length;
+  return {
+    text:
+      `Recorded for ${w.title}: ${steps.length} step(s)` +
+      (dry ? `, ${dry} with no material` : "") +
+      (failed ? `, ${failed} whose check did not pass` : "") +
+      ".\n\nThe author sees this on the workflow's page. If a step had no " +
+      "material and you worked the answer out yourself, brain_write it into " +
+      "that step's brain — the next run gets it for free.",
+    ownerId: w.owner_id,
+  };
 }
 
 /**

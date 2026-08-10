@@ -47,6 +47,15 @@ const PER_PAGE = 24;
 /** Routes get their own ink so a card is never mistaken for a brain. */
 const ROUTE_TINTS = ["violet", "orange", "green"] as const;
 
+/** "read 3d ago" — short enough for a card foot, exact enough to matter. */
+function freshness(when: Date, t: (s: string) => string): string {
+  const days = Math.floor((Date.now() - new Date(when).getTime()) / 86_400_000);
+  if (days <= 0) return t("today");
+  if (days === 1) return t("yesterday");
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
 const SORTS: { key: Sort; label: string; sql: string }[] = [
   { key: "score", label: msg("Best measured"), sql: "b.score desc nulls last, b.updated_at desc" },
   { key: "new", label: msg("Newest"), sql: "b.created_at desc" },
@@ -81,7 +90,9 @@ export default async function ExplorePage({
   // Families are one entry, not eight. A parent already covers its children
   // when searched, so listing each child beside it fills the catalogue with
   // rows that are the same purchase and the same connection.
-  const brains = await query<PublicBrain & { calls_week: number; readers_week: number }>(
+  const brains = await query<
+    PublicBrain & { calls_week: number; readers_week: number; last_read: Date | null }
+  >(
     `select b.*, u.handle as owner_handle, u.name as owner_name,
             (select count(*)::int from brains c
               where c.parent_id = b.id and c.visibility = 'public') as children,
@@ -97,6 +108,13 @@ export default async function ExplorePage({
             -- make a brain look busy; two readers cannot be faked by one caller,
             -- and "asked by four people this week" is the sentence that means
             -- something to somebody deciding whether to connect it.
+            -- Freshness: when this family last read a source. A score says
+            -- how well the material answers its goal and nothing about
+            -- whether the material is current, and "read yesterday" is the
+            -- other half of why you would trust a brain.
+            (select max(s.processed_at) from sources s
+              where s.brain_id = b.id
+                 or s.brain_id in (select id from brains c4 where c4.parent_id = b.id)) as last_read,
             (select count(distinct k.caller_id)::int from calls k
               where k.created_at > now() - interval '7 days'
                 and (k.brain_id = b.id or k.brain_id in
@@ -307,6 +325,7 @@ export default async function ExplorePage({
                     brain.price_cents > 0 && brain.sales_count > 0 && ` · ${brain.sales_count} sold`,
                     brain.calls_week > 0 && ` · ${brain.calls_week} asks/wk`,
                     brain.readers_week > 1 && ` · ${brain.readers_week} people`,
+                    brain.last_read && ` · read ${freshness(brain.last_read, t)}`,
                   ])}</span>
                   {brain.score !== null && (
                     <span className="card-score">

@@ -64,6 +64,25 @@ export const MAX_STEPS = 12;
 
 export const stepsSchema = z.array(stepSchema).max(MAX_STEPS);
 
+/** One step, as the agent that just walked it reports back. */
+export interface StepReport {
+  step: number;
+  /** Did the named brain actually have material for this step? */
+  found?: boolean;
+  /** Did the step's own check pass? */
+  passed?: boolean;
+  /** One line, in the agent's words. What was missing, or what tripped. */
+  note?: string;
+}
+
+export const stepReportSchema = z.object({
+  step: z.coerce.number().int().min(1).max(MAX_STEPS),
+  found: z.coerce.boolean().optional(),
+  passed: z.coerce.boolean().optional(),
+  note: z.string().trim().max(400).optional(),
+});
+
+
 /**
  * Form values to steps, salvaging per item.
  *

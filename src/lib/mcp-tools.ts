@@ -428,6 +428,39 @@ export const TOOLS: ToolDef[] = [
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
+    name: "workflow_report",
+    description:
+      "After running a workflow, say how it went — one entry per step: whether " +
+      "the brain had material, whether the step's check passed, and one line " +
+      "about anything that tripped. This is how a route gets fixed: its author " +
+      "otherwise never learns which step sent you looking somewhere else. Call " +
+      "it once, at the end, whether the run succeeded or not.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        workflow: { type: "string", description: "The workflow you ran, \"handle/slug\"." },
+        summary: { type: "string", description: "One line about the run as a whole." },
+        steps: {
+          type: "array",
+          description: "One entry per step you attempted.",
+          items: {
+            type: "object",
+            properties: {
+              step: { type: "integer", description: "Step number, from 1." },
+              found: { type: "boolean", description: "Did its brain have material?" },
+              passed: { type: "boolean", description: "Did its check pass?" },
+              note: { type: "string", description: "One line: what was missing or wrong." },
+            },
+            required: ["step"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["workflow", "steps"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "workflow_read",
     description:
       "Get one workflow in full: every step, the brain each step consults, " +

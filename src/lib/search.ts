@@ -74,7 +74,19 @@ export async function searchBrain(
   brainIds: string | string[],
   q: string,
   opts: SearchOptions = {},
-): Promise<{ hits: SearchHit[]; degraded: boolean; reranked: boolean }> {
+): Promise<{
+  hits: SearchHit[];
+  degraded: boolean;
+  reranked: boolean;
+  /**
+   * The best score the relevance floor threw away, when it threw away
+   * everything. Null whenever something survived. This is the only way to
+   * tell "the brain holds nothing on this" from "the brain held something and
+   * we judged it off-topic" — and the second one, if it starts happening to
+   * real questions, is the regression the floor could cause.
+   */
+  withheld?: number | null;
+}> {
   const ids = Array.isArray(brainIds) ? brainIds : [brainIds];
   const limit = Math.min(Math.max(opts.limit ?? 8, 1), 25);
   // Normalised the same way the write paths store it, so an agent asking for
@@ -221,7 +233,14 @@ export async function searchBrain(
   // it: brain_search answers "no matches" and points at a brain that does hold
   // the subject, and the exam counts an unanswered out-of-scope probe as the
   // pass it is.
-  return { hits: keepRelevant(applyRerank(hits, scores, limit)), degraded, reranked: true };
+  const ranked = applyRerank(hits, scores, limit);
+  const kept = keepRelevant(ranked);
+  return {
+    hits: kept,
+    degraded,
+    reranked: true,
+    withheld: kept.length === 0 && ranked.length > 0 ? ranked[0].rerank : null,
+  };
 }
 
 /**

@@ -1,4 +1,7 @@
-import { query } from "@/db";
+import { maybeOne, query } from "@/db";
+import type { Brain } from "@/db/types";
+import { familyIds } from "@/lib/families";
+import { searchBrain } from "@/lib/search";
 import { env } from "@/lib/env";
 import { redteamBrain } from "@/lib/redteam";
 import { notifyGaps } from "@/lib/operator-chat";
@@ -279,6 +282,48 @@ const RECRAWL_AFTER = "7 days";
 const RECRAWL_BATCH = 10;
 
 /**
+ * Close the gaps the brain has since learned to answer.
+ *
+ * Every failed check and every empty search files one, and nothing ever took
+ * them off the list: 1074 rows sat pending, which is not a queue of work but a
+ * wall nobody reads. A gap is a question the brain could not answer *then* —
+ * once the material lands, the row is stale, and the only honest way to know
+ * is to ask the question again.
+ *
+ * Cheap on purpose: it is a retrieval, not a model call, and it runs on the
+ * oldest rows first so the wall drains from the bottom.
+ */
+export async function closeAnsweredGaps(limit = 40): Promise<number> {
+  const open = await query<{ id: string; brain_id: string; question: string }>(
+    `select g.id, g.brain_id, g.question
+       from gap_suggestions g
+      where g.status = 'pending'
+      order by g.created_at
+      limit $1`,
+    [limit],
+  );
+
+  let closed = 0;
+  for (const gap of open) {
+    const brain = await maybeOne<Brain>(`select * from brains where id = $1`, [gap.brain_id]);
+    if (!brain) continue;
+
+    const scope = await familyIds(brain);
+    const { hits, reranked } = await searchBrain(scope, gap.question, { limit: 3 });
+    // Without the reranker there is no absolute score, so "found something"
+    // means nothing — leave the row rather than close it on a guess.
+    if (!reranked || !hits.length) continue;
+
+    await query(
+      `update gap_suggestions set status = 'answered', resolved_at = now() where id = $1`,
+      [gap.id],
+    );
+    closed++;
+  }
+  return closed;
+}
+
+/**
  * Re-run old site crawls so a docs site that grew a chapter grows the brain
  * with it. Cheap by construction: the crawl skips every page that is already
  * a source, so an unchanged site costs one discovery pass and zero
@@ -432,6 +477,8 @@ export async function runMaintenance(): Promise<{
   recrawled: number;
   resumed: number;
   gapChecks: number;
+  /** Gaps the material answered since they were filed — see closeAnsweredGaps. */
+  gapsClosed: number;
   abandoned: number;
 }> {
   const resumed = await requeueBudgetPaused();
@@ -467,12 +514,16 @@ export async function runMaintenance(): Promise<{
   // examStaleBrains deliberately: a check added now is graded by the exam
   // this pass just queued, not by one a pass away.
   const gapChecks = await growSearchGapChecks();
+  // After the refresh and the exam: a gap closed by material that landed this
+  // pass should leave the list in the same pass, not a day later.
+  const gapsClosed = await closeAnsweredGaps();
   return {
     refresh,
     examined: examined.length,
     recrawled,
     resumed,
     gapChecks: gapChecks.added,
+    gapsClosed,
     abandoned,
   };
 }

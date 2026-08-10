@@ -72,6 +72,31 @@ export default async function AdminPage() {
   // What the extraction bill is made of. One number cannot say whether a big
   // day was reading or writing, and the answer decides what you cut: fewer
   // pages, or shorter notes. Output bills about five times input.
+  // Signup → first brain_search, the one activation step that matters: a
+  // person who never made a search never met the product. Logged since the
+  // beginning and never looked at, which is how "35 users, 3 purchases" stays
+  // a mystery instead of a funnel.
+  const [funnel] = await query<{
+    signed_up: number;
+    connected: number;
+    searched: number;
+    median_minutes: number | null;
+  }>(
+    `with first_search as (
+       select caller_id, min(created_at) as at
+         from calls where tool = 'brain_search' group by caller_id
+     )
+     select
+       (select count(*)::int from "user")                                    as signed_up,
+       (select count(distinct user_id)::int from mcp_tokens
+         where revoked_at is null)                                           as connected,
+       (select count(*)::int from first_search)                              as searched,
+       (select round(percentile_cont(0.5) within group (
+                 order by extract(epoch from (fs.at - u."createdAt")) / 60))::int
+          from first_search fs join "user" u on u.id = fs.caller_id
+         where fs.at > u."createdAt")                                        as median_minutes`,
+  );
+
   const [mix] = await query<{ in_tok: number; out_tok: number }>(
     `select coalesce(sum(input_tokens), 0)::bigint as in_tok,
             coalesce(sum(output_tokens), 0)::bigint as out_tok
@@ -190,6 +215,24 @@ export default async function AdminPage() {
         <Section title={t("Size of the thing")}>
           <Stats>
             <Stat label={t("People")} value={String(totalsRow.users)} href="/admin/users" />
+            <Stat
+              label={t("Connected an agent")}
+              value={`${funnel?.connected ?? 0}`}
+              note={
+                funnel?.signed_up
+                  ? `${Math.round(((funnel.connected ?? 0) * 100) / funnel.signed_up)}% of signups`
+                  : undefined
+              }
+            />
+            <Stat
+              label={t("Searched once")}
+              value={`${funnel?.searched ?? 0}`}
+              note={
+                funnel?.median_minutes != null
+                  ? `median ${funnel.median_minutes} min after signup`
+                  : t("nobody yet")
+              }
+            />
             <Stat label={t("Brains")} value={String(totalsRow.brains)} href="/admin/brains" />
             <Stat label={t("Notes")} value={totalsRow.notes.toLocaleString()} />
             <Stat label={t("Public")} value={String(totalsRow.public_brains)} />

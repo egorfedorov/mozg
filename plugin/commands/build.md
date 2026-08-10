@@ -55,7 +55,16 @@ One line per step: what the brain gave you that changed what you did, and
 whether the check passed. Then the state of the whole thing — what exists now,
 what is left, and what the user should look at.
 
-## 5. Leave the route better than you found it
+## 5. Send the report back
+
+Call `workflow_report` once, at the end, run succeeded or not: one entry per
+step you attempted, with `found` (did its brain have material), `passed` (did
+its check pass) and one line when something tripped. This is the only signal a
+route has — its author otherwise never learns which step sent you looking
+elsewhere. Do not skip it because the run went well; "every step found what it
+needed" is the result that tells an author to leave the route alone.
+
+## 6. Leave the route better than you found it
 
 Two things are worth sending back, and both are cheap:
 
