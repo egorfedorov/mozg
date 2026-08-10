@@ -505,6 +505,59 @@ const FULL_INTERVAL = "6 hours";
 
 const MINI_INTERVAL = "1 day";
 
+/**
+ * Has the material moved on so far that the exam no longer measures it?
+ *
+ * The test is what share of today's notes did not exist when the questions
+ * were written. Half is the line: a brain that has doubled is a different
+ * subject to examine, and one that gained a tenth is the same brain with more
+ * detail — which is what the incremental re-sit is for.
+ *
+ * Deliberately not "did anything change": rewriting an exam throws away the
+ * sitting history that makes a diff between runs readable, so it has to be
+ * worth it.
+ */
+async function examOutgrown(brain: Brain, checks: Check[]): Promise<boolean> {
+  const writtenAt = checks
+    .map((c) => new Date(c.created_at).getTime())
+    .reduce((a, b) => Math.max(a, b), 0);
+  if (!writtenAt) return false;
+
+  const scope = await familyIds(brain);
+  const { total, after } = await one<{ total: number; after: number }>(
+    `select count(*)::int as total,
+            count(*) filter (where created_at > $2)::int as after
+       from notes where brain_id = any($1::uuid[]) and status = 'active'`,
+    [scope, new Date(writtenAt)],
+  );
+  return total > 0 && after / total >= 0.5;
+}
+
+/**
+ * May a passing verdict be reused instead of re-judged?
+ *
+ * The old test compared the CHECK's category against the categories of notes
+ * that had moved — two different vocabularies. A check is grouped by the exam
+ * writer ("Rendering"), a note by extraction ("scene graph"), and they almost
+ * never match, so "nothing moved" came back true after 543 notes arrived and
+ * the whole exam was carried for free.
+ *
+ * The honest test is the evidence: a pass stands while the notes the judge
+ * actually read are still active. New material can only add — it does not turn
+ * a pass into a fail — but a superseded note can, and that is exactly the case
+ * worth spending a judge on.
+ */
+export function carryable(
+  prev: { passed: boolean; evidence: string[] | null },
+  supersededSince: Set<string>,
+): boolean {
+  if (!prev.passed) return false;
+  // No evidence recorded (rows from before it was stored) is not proof of
+  // anything, so it is re-judged rather than assumed.
+  if (!prev.evidence?.length) return false;
+  return prev.evidence.every((id) => !supersededSince.has(id));
+}
+
 export async function runExam(
   brainId: string,
   opts: ExamOptions = {},
@@ -593,10 +646,21 @@ export async function runExam(
     [brainId],
   );
 
-  if (!checks.length) {
+  // An exam written for 43 notes does not measure a brain that now holds 586.
+  // pixijs-casino read 51 pages of documentation, grew thirteenfold, and
+  // re-sat the SAME thirty-two questions written before any of it arrived —
+  // then published 100% without a single judge call. A score has to be about
+  // the material that exists, so an exam the material has outgrown is rewritten
+  // rather than re-used.
+  const outgrown = !mini && checks.length ? await examOutgrown(brain, checks) : false;
+
+  if (!checks.length || outgrown) {
     // A probe never writes the exam — without checks there is nothing to
     // re-judge, and generating them is the expensive path mini exists to avoid.
     if (mini) return null;
+    if (outgrown) {
+      console.log(`[exam] ${brain.slug}: material outgrew the exam — rewriting it`);
+    }
     await generateChecks(brain);
     checks = await query<Check>(`select * from checks where brain_id = $1 and enabled`, [
       brainId,
@@ -644,19 +708,18 @@ export async function runExam(
         }>(`select * from check_results where run_id = $1`, [prev.id])
       : [];
 
-    // A mini probe re-judges everything: carrying a pass because "the
-    // category did not move" is exactly the assumption a refresh disproved.
-    const touched = !mini && prev
+    // A mini probe re-judges everything: carrying a pass because "nothing
+    // moved" is exactly the assumption a refresh disproved.
+    const supersededSince = !mini && prev
       ? new Set(
           (
-            await query<{ category: string }>(
-              `select distinct category from notes
-                where brain_id = any($1::uuid[]) and category is not null
-                  and (created_at > $2
-                       or (superseded_at is not null and superseded_at > $2))`,
+            await query<{ id: string }>(
+              `select id from notes
+                where brain_id = any($1::uuid[])
+                  and superseded_at is not null and superseded_at > $2`,
               [scope, prev.started_at],
             )
-          ).map((r) => r.category),
+          ).map((r) => r.id),
         )
       : new Set<string>();
 
@@ -667,7 +730,7 @@ export async function runExam(
     if (prev && !mini) {
       for (const r of prevResults) {
         const check = checks.find((c) => c.id === r.check_id);
-        if (check && r.passed && !touched.has(check.category)) {
+        if (check && carryable(r, supersededSince)) {
           carried.set(check.id, {
             passed: true,
             reason: r.reason ?? "carried from the previous run (material unchanged)",

@@ -160,6 +160,9 @@ export interface Check {
   /** negative = out-of-scope probe: passing means the brain has NO answer. */
   kind: "positive" | "negative";
   enabled: boolean;
+  /** When the question was written. An exam is rewritten once most of the
+   *  brain's notes postdate it — see examOutgrown. */
+  created_at: Date;
 }
 
 /** A failed "material missing" check surfaced to the owner (0043). */
