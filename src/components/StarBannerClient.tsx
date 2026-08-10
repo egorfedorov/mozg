@@ -11,7 +11,8 @@ import { useT } from "@/lib/t-client";
  * Rendered on the server and hidden before paint by the inline script in
  * StarBanner: deciding in an effect instead would either flash the bar at
  * people who dismissed it, or shift the whole page down once hydration
- * lands. The markup ships; the script only ever removes it.
+ * lands. The markup ships either way; the script only flags <html>, so what
+ * hydration finds is always what the server sent.
  */
 export default function StarBannerClient({ stars, repo }: { stars: number | null; repo: string }) {
   const [shown, setShown] = useState(true);

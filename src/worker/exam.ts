@@ -130,6 +130,14 @@ export async function generateChecks(brain: Brain): Promise<number> {
     toolName: "save_checks",
     toolDescription: "Save the exam. Call once with every check you wrote.",
     schema: GEN_SCHEMA,
+    // Every other call here answers with one note or one verdict; this one
+    // answers with a hundred checks in a single tool call, and 16k — the
+    // default written for the other calls — is the wrong ceiling for it. On
+    // prod it cut the answer off, the halving loop walked target down to its
+    // floor of 30, and the sitting died having spent three full generations.
+    // Sonnet and Opus both allow 64k out, so this stays well inside the model
+    // while leaving the halving loop as the backstop it was meant to be.
+    maxTokens: 32_000,
     system:
           (brain.kind === "style"
             ? // A style is not a subject to be quizzed about, it is a

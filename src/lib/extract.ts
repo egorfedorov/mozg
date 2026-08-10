@@ -493,6 +493,12 @@ export async function extractFromText(
   const notes: ExtractedNote[] = [];
   let usage = { inputTokens: 0, outputTokens: 0, costCents: 0 };
   let failed = 0;
+  // Why the segments failed, kept for the error the source is marked with.
+  // "every segment failed (1 of 1)" is unactionable: a 400 from the model, a
+  // reseller's rate limit and an answer cut off mid-JSON all reduce to the
+  // same sentence, and the only place the difference was written down was a
+  // console.warn nobody reads next to a stack trace everybody does.
+  const reasons: string[] = [];
 
   const extractPart = async (
     part: string,
@@ -536,10 +542,9 @@ export async function extractFromText(
       // One bad segment should not lose the other eleven. A page that fails
       // entirely still throws, so the source is marked failed rather than
       // stored as a partial nobody knows is partial.
-      console.warn(
-        `[extract] ${opts.label ?? "text"}${where} failed: ` +
-          (err instanceof Error ? err.message : String(err)),
-      );
+      const why = err instanceof Error ? err.message : String(err);
+      reasons.push(why);
+      console.warn(`[extract] ${opts.label ?? "text"}${where} failed: ${why}`);
       return null;
     }
   };
@@ -570,7 +575,12 @@ export async function extractFromText(
   // that were never going to yield anything. Only an all-segments failure is
   // an actual failure.
   if (!notes.length && failed) {
-    throw new Error(`every segment failed (${failed} of ${parts.length})`);
+    // Distinct reasons only: a segment halved twice fails four times with the
+    // same sentence, and four copies of it teach nothing the first did not.
+    const why = [...new Set(reasons)].slice(0, 3).join("; ");
+    throw new Error(
+      `every segment failed (${failed} of ${parts.length})${why ? `: ${why}` : ""}`,
+    );
   }
 
   if (failed) {

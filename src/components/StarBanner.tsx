@@ -35,11 +35,14 @@ export default async function StarBanner() {
       <StarBannerClient stars={stars} repo={REPO} />
       {/* Runs before paint, immediately after the bar's markup: a returning
           visitor who dismissed it never sees it, and a first-timer gets no
-          layout shift. */}
+          layout shift. Flags <html> instead of removing the bar — the node is
+          React's, and deleting it before hydration cost the page its whole
+          tree (see the banner-star-off rule in globals.css). */}
       <script
         dangerouslySetInnerHTML={{
           __html:
-            "try{if(localStorage.getItem('star-banner-dismissed')){var e=document.getElementById('star-banner');if(e)e.remove()}}catch(e){}",
+            "try{if(localStorage.getItem('star-banner-dismissed'))" +
+            "document.documentElement.classList.add('banner-star-off')}catch(e){}",
         }}
       />
     </>

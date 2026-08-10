@@ -19,8 +19,8 @@ export default async function AnnouncementBanner() {
       <script
         dangerouslySetInnerHTML={{
           __html:
-            `try{if(localStorage.getItem('mozg-notice-${live.id}')){` +
-            `var e=document.getElementById('mozg-notice');if(e)e.remove()}}catch(e){}`,
+            `try{if(localStorage.getItem('mozg-notice-${live.id}'))` +
+            `document.documentElement.classList.add('banner-notice-off')}catch(e){}`,
         }}
       />
     </>

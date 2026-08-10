@@ -95,7 +95,12 @@ export async function structured<T>(opts: {
       toolName: opts.toolName,
       toolDescription: opts.toolDescription,
       schema: opts.schema,
-      maxTokens: opts.maxTokens,
+      // A stranger's model is a stranger's limit: gpt-4o-mini tops out at
+      // 16k output and 400s on anything larger, so a caller asking for the
+      // room a Claude model has must not turn into a hard error here. Cutting
+      // the ask short is recoverable — callers that can shrink their request
+      // catch OutputCutoff and do; a 400 is recoverable by nobody.
+      maxTokens: Math.min(opts.maxTokens ?? 16_000, 16_000),
     });
     return { data: unstringify(out.data, opts.schema) as T, usage: out.usage };
   }

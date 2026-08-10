@@ -1650,6 +1650,26 @@ a.row:hover {
 /* Blocks, not a spinner: the page's own shapes arriving is calmer than a
    wheel, and it makes the wait look like progress. */
 
+/*
+ * Banners a returning visitor already dismissed.
+ *
+ * The flag goes on <html> from an inline script before paint, and the bar is
+ * hidden by CSS rather than taken out of the DOM. Removing it was a structural
+ * hydration mismatch: React had rendered the bar into the stream, found it
+ * missing when it hydrated, and threw the whole tree away to re-render on the
+ * client — which is when a segment still arriving from the server ($RS) went
+ * looking for a placeholder that no longer existed and crashed on a null
+ * parentNode. Hiding keeps the markup exactly where React left it.
+ *
+ * !important because the bar carries an inline `visibility` that React rewrites
+ * on every scroll tick, and an inline style outranks any selector we could
+ * write here.
+ */
+html.banner-star-off #star-banner,
+html.banner-notice-off #mozg-notice {
+  display: none !important;
+}
+
 .skel {
   background: var(--paper-2);
   border: 1.5px solid var(--rule);
