@@ -44,6 +44,9 @@ const PRICES: { key: Price; label: string }[] = [
 /** Brains per page. Two dozen fills a screen without asking for a scroll. */
 const PER_PAGE = 24;
 
+/** Routes get their own ink so a card is never mistaken for a brain. */
+const ROUTE_TINTS = ["violet", "orange", "green"] as const;
+
 const SORTS: { key: Sort; label: string; sql: string }[] = [
   { key: "score", label: msg("Best measured"), sql: "b.score desc nulls last, b.updated_at desc" },
   { key: "new", label: msg("Newest"), sql: "b.created_at desc" },
@@ -337,42 +340,82 @@ export default async function ExplorePage({
         )}
 
         {routes.length > 0 && (
-          <section style={{ marginTop: "3rem" }}>
+          <section style={{ marginTop: "3.5rem" }}>
             {/* Routes live in the catalogue, not on a page of their own: the
                 person browsing brains is the person who wants the order they
                 go in, and asking them to find a second page for it is asking
-                them to know the product first. */}
+                them to know the product first. Same card language as the
+                brains — a route is a thing you take off the shelf too. */}
             <p className="eyebrow">{t("Workflows · the order the brains are read in")}</p>
-            <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
+            <h2 className="h1" style={{ margin: ".4rem 0 .6rem", fontSize: "clamp(1.5rem, 4vw, 2.2rem)" }}>
               {t("Whole jobs, not single answers.")}
             </h2>
             <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
-              {t("A route names the brain each step reads, the prompt, the rules and the check that ends it. Your agent walks it with /mozg:build — nothing runs on our side.")}
+              {t("A route names the brain each step reads, the prompt, the rules and the check that ends it. Your agent walks it — nothing runs on our side.")}
             </p>
 
-            <div className="rows" style={{ marginTop: "1rem" }}>
-              {routes.map((w) => (
-                <Link
-                  key={w.id}
-                  className="row"
-                  href={w.handle ? `/w/${w.handle}/${w.slug}` : "/build"}
-                >
-                  <span style={{ minWidth: 0 }}>
-                    <strong>{w.title}</strong>
-                    {w.summary && <span className="row-sub">{w.summary}</span>}
-                    <span className="row-meta">
-                      {w.handle ?? "—"}/{w.slug} · {w.steps.length} {t("steps")} ·{" "}
-                      {new Set(w.steps.map((s) => s.brain).filter(Boolean)).size} {t("brains")}
+            <div className="grid-brains" style={{ marginTop: "1.5rem" }}>
+              {routes.map((w, i) => {
+                const brains = new Set(w.steps.map((s) => s.brain).filter(Boolean));
+                const checks = w.steps.filter((s) => s.done_when).length;
+                return (
+                  <Link
+                    key={w.id}
+                    href={w.handle ? `/w/${w.handle}/${w.slug}` : "/build"}
+                    className="card"
+                    data-tint={ROUTE_TINTS[i % ROUTE_TINTS.length]}
+                  >
+                    <span
+                      className="eyebrow"
+                      style={{
+                        color: "inherit",
+                        opacity: 0.75,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: ".5rem",
+                      }}
+                    >
+                      <span>{t("Workflow")} · {w.handle}</span>
+                      <span>{t("Free")}</span>
                     </span>
-                  </span>
-                  <span className="row-side">{t("Open")}</span>
-                </Link>
-              ))}
+
+                    <h3 className="card-title">{w.title}</h3>
+                    <p className="card-goal">{w.summary ?? ""}</p>
+
+                    {/* One cell per step, filled where the step ends in a
+                        check — the same readout grammar the brains use for
+                        exam categories, so the shelf reads as one thing. */}
+                    <div
+                      className="readout"
+                      role="img"
+                      aria-label={`${w.steps.length} steps, ${checks} with a check`}
+                    >
+                      {w.steps.slice(0, 12).map((s, n) => (
+                        <span
+                          key={n}
+                          className="readout-cell"
+                          data-state={s.done_when ? "pass" : "empty"}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="card-foot">
+                      <span style={{ opacity: 0.8 }}>
+                        {w.steps.length} {t("steps")} · {brains.size} {t("brains")}
+                      </span>
+                      <span className="card-score">
+                        {checks}
+                        <sup>✓</sup>
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
 
-            <p style={{ marginTop: ".75rem" }}>
+            <p style={{ marginTop: "1rem" }}>
               <Link href="/build" className="mono" style={{ fontSize: ".8125rem" }}>
-                {t("What workflows are")}
+                {t("How a workflow is built →")}
               </Link>
             </p>
           </section>

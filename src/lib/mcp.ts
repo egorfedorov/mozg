@@ -1903,7 +1903,45 @@ async function workflowRead(
     };
   }
 
-  return { text: renderWorkflow(w), ownerId: w.owner_id };
+  // Which of the brains this route names the caller can actually read. A
+  // route is only as good as the shelf under it: running one whose material
+  // is missing produces confident work built on guesses, which is the exact
+  // failure the route was written to prevent. Said before the steps, so the
+  // agent can stop and tell the user what to buy instead of finding out at
+  // step nine.
+  const wanted = [...new Set(w.steps.map((s) => s.brain).filter(Boolean))].map(String);
+  const shelf: string[] = [];
+  const missing: string[] = [];
+  const locked: string[] = [];
+
+  for (const handle of wanted) {
+    const found = await resolveBrain(handle, owner.userId);
+    if (!found) missing.push(handle);
+    else if (found.locked) locked.push(handle);
+    else shelf.push(handle);
+  }
+
+  const readiness =
+    missing.length || locked.length
+      ? "\n\n## Before you start\n\n" +
+        `${shelf.length} of ${wanted.length} brains this route reads are on your shelf.\n` +
+        (locked.length
+          ? `\nPaid, and your free preview is used up — these answer nothing until bought:\n` +
+            locked.map((h) => `- ${h} — https://mozg.sh/b/${h.replace("/", "/")}`).join("\n") +
+            "\n"
+          : "") +
+        (missing.length
+          ? `\nNot on your shelf at all:\n` +
+            missing.map((h) => `- ${h} — add it with library_add, or buy it at https://mozg.sh/explore`).join("\n") +
+            "\n"
+          : "") +
+        "\nTell the user which ones are missing and what they cost BEFORE doing any " +
+        "of the work. A step whose brain is missing still runs, but it runs on your " +
+        "training data — say so plainly in the report rather than passing a guess " +
+        "off as this route's answer."
+      : `\n\n## Before you start\n\nAll ${wanted.length} brains this route reads are on your shelf.`;
+
+  return { text: renderWorkflow(w) + readiness, ownerId: w.owner_id };
 }
 
 /**

@@ -3039,3 +3039,79 @@ a.row:hover {
     position: static;
   }
 }
+
+/* ─── a route, read as a list ─────────────────────────────────────────────
+   The editor draws a canvas because you are arranging steps there. A reader
+   is doing something else — reading twelve prompts in order — and a numbered
+   column with a rule down its left is what that wants. */
+
+.wf-steps {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wf-step {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.wf-step:first-child { border-top: 1.5px solid var(--ink); }
+
+.wf-step-n {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  opacity: 0.32;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-step-body { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+
+.wf-step-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.wf-step-brain {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+
+.wf-step-line {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0 0.75rem;
+  align-items: baseline;
+}
+
+.wf-step-tag {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border-left: 2px solid var(--rule);
+  padding-left: 0.5rem;
+}
+.wf-step-tag[data-kind="rule"] { border-left-color: var(--color-riso-red); }
+.wf-step-tag[data-kind="check"] { border-left-color: var(--color-riso-green); }
+
+@media (max-width: 40rem) {
+  .wf-step-line { grid-template-columns: 1fr; gap: 0.15rem; }
+  .wf-step-tag { border-left: 0; padding-left: 0; }
+}

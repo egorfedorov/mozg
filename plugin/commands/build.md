@@ -15,7 +15,22 @@ for — if none does, say so and offer to work without one rather than forcing
 the closest match. Show the user which workflow you picked and its steps
 before you start, so a wrong pick costs a sentence and not an afternoon.
 
-## 2. Work the steps in order
+## 2. Check the shelf before doing any work
+
+`workflow_read` ends with a **Before you start** block naming which of the
+route's brains you can actually read. Act on it first:
+
+- Everything present: say so in one line and begin.
+- Something missing or locked: **tell the user before you build anything** —
+  name each brain, what it costs, and which step it was for. A route run
+  without its material still produces files, and they look exactly like the
+  ones built with it; that is precisely why this is said up front rather than
+  discovered at step nine.
+- If the user wants to proceed anyway, that is their call. Then say at each
+  affected step that it ran on your own knowledge, and repeat it in the final
+  report. Never let a guess wear this route's authority.
+
+## 3. Work the steps in order
 
 For each step:
 
@@ -34,13 +49,13 @@ For each step:
 Steps with no brain are ordinary work: run the build, show the result, wait
 for the user.
 
-## 3. Report
+## 4. Report
 
 One line per step: what the brain gave you that changed what you did, and
 whether the check passed. Then the state of the whole thing — what exists now,
 what is left, and what the user should look at.
 
-## 4. Leave the route better than you found it
+## 5. Leave the route better than you found it
 
 Two things are worth sending back, and both are cheap:
 
