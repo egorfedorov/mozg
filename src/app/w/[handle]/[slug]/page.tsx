@@ -8,6 +8,7 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { findWorkflow } from "@/lib/workflow-store";
 import { formatCents } from "@/lib/money-math";
+import EquipRoute from "./EquipRoute";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,28 @@ export default async function PublicWorkflowPage({
       )
     : [];
 
+  // What the viewer already holds, so the offer is honest about what is left
+  // to get rather than quoting the full price to somebody who owns half of it.
+  const held = user
+    ? new Set(
+        (
+          await query<{ slug: string }>(
+            `select b.slug from brains b
+              where lower(b.slug) = any($1::text[])
+                and (exists (select 1 from library l
+                              where l.brain_id = b.id and l.user_id = $2)
+                     or exists (select 1 from purchases p
+                                 where p.brain_id = b.id and p.buyer_id = $2)
+                     or b.owner_id = $2)`,
+            [wanted, user.id],
+          )
+        ).map((r) => r.slug.toLowerCase()),
+      )
+    : new Set<string>();
+
   const bySlug = new Map(brains.map((b) => [b.slug.toLowerCase(), b]));
+  const missing = brains.filter((b) => !held.has(b.slug.toLowerCase()));
+  const missingCost = missing.reduce((n, b) => n + b.price_cents, 0);
   const toBuy = brains.filter((b) => b.price_cents > 0);
   const steps = w.steps;
   const withChecks = steps.filter((s) => s.done_when).length;
@@ -171,12 +193,23 @@ export default async function PublicWorkflowPage({
                   </span>
                 </span>
                 <span className="row-side">
-                  {b.price_cents > 0 ? formatCents(b.price_cents) : t("Free")}
+                  {held.has(slugKey)
+                    ? t("On your shelf")
+                    : b.price_cents > 0
+                      ? formatCents(b.price_cents)
+                      : t("Free")}
                 </span>
               </Link>
             );
           })}
         </div>
+
+        <EquipRoute
+          handle={handle}
+          slug={slug}
+          costCents={missingCost}
+          missing={missing.length}
+        />
 
         {/* ── the route itself ──────────────────────────────────────────── */}
         <h2 className="h2" style={{ marginTop: "2.5rem" }}>
