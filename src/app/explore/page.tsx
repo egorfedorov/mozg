@@ -12,6 +12,7 @@ import { currentUser } from "@/lib/session";
 import { formatCents, PLATFORM_FEE_PERCENT } from "@/lib/money-math";
 import { TOPICS, topicLabel, isTopic } from "@/lib/topics";
 import { Chip } from "@/components/ui";
+import { publicWorkflows } from "@/lib/workflow-store";
 
 // Reads the database and the session on every request. Without this Next
 // prerenders it at build time — which fails in a Docker build (no database)
@@ -40,6 +41,9 @@ const PRICES: { key: Price; label: string }[] = [
   { key: "paid", label: msg("Paid") },
 ];
 
+/** Brains per page. Two dozen fills a screen without asking for a scroll. */
+const PER_PAGE = 24;
+
 const SORTS: { key: Sort; label: string; sql: string }[] = [
   { key: "score", label: msg("Best measured"), sql: "b.score desc nulls last, b.updated_at desc" },
   { key: "new", label: msg("Newest"), sql: "b.created_at desc" },
@@ -49,7 +53,7 @@ const SORTS: { key: Sort; label: string; sql: string }[] = [
 export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ price?: string; sort?: string; topic?: string }>;
+  searchParams: Promise<{ price?: string; sort?: string; topic?: string; page?: string }>;
 }) {
   const t = await translator();
 
@@ -57,6 +61,10 @@ export default async function ExplorePage({
   const price = (PRICES.find((p) => p.key === params.price)?.key ?? "all") as Price;
   const sort = SORTS.find((s) => s.key === params.sort) ?? SORTS[0];
   const topic = isTopic(params.topic) ? params.topic : null;
+  // Pages, not one endless column. A catalogue that grows past a screenful of
+  // scrolling stops reading as a shelf and starts reading as a dump, and the
+  // brains at the bottom are never seen — which is the ones published last.
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
 
   const user = await currentUser();
 
@@ -95,9 +103,14 @@ export default async function ExplorePage({
         and b.parent_id is null ${where}
         and ($1::text is null or b.topic = $1)
       order by ${sort.sql}
-      limit 60`,
+      limit ${PER_PAGE + 1} offset ${(page - 1) * PER_PAGE}`,
     [topic],
   );
+
+  // One row past the page tells us whether a next page exists without a
+  // second count(*) over the same filters.
+  const hasNext = brains.length > PER_PAGE;
+  if (hasNext) brains.pop();
 
   // Counts come from the whole catalogue, not the filtered set — a field with
   // nothing in it should say so rather than quietly vanish.
@@ -113,19 +126,28 @@ export default async function ExplorePage({
     ).map((r) => [r.topic, r.n]),
   );
 
-  const href = (over: { price?: Price; sort?: Sort; topic?: string | null }) => {
+  const href = (over: { price?: Price; sort?: Sort; topic?: string | null; page?: number }) => {
     const q = new URLSearchParams();
     const p = over.price ?? price;
     const s = over.sort ?? sort.key;
     const t = over.topic === undefined ? topic : over.topic;
+    // Changing a filter goes back to page one: page 3 of the old filter is
+    // almost never page 3 of the new one, and landing on an empty page reads
+    // as "nothing here" rather than "you were on page 3".
+    const n = over.page ?? (over.price || over.sort || over.topic !== undefined ? 1 : page);
     if (p !== "all") q.set("price", p);
     if (s !== "score") q.set("sort", s);
     if (t) q.set("topic", t);
+    if (n > 1) q.set("page", String(n));
     const qs = q.toString();
     return qs ? `/explore?${qs}` : "/explore";
   };
 
   const scores = await categoryScores(brains.map((b) => b.id));
+
+  // Routes ride along with the shelf: the person browsing brains is the one
+  // who wants to know what order they go in.
+  const routes = page === 1 ? await publicWorkflows(8) : [];
 
   // What the viewer already paid for, so a bought brain never shows a price tag.
   const owned = new Set<string>();
@@ -287,6 +309,67 @@ export default async function ExplorePage({
               </Link>
             ))}
           </div>
+        )}
+
+        {(page > 1 || hasNext) && (
+          <nav
+            className="chips"
+            style={{ marginTop: "1.5rem", alignItems: "center" }}
+            aria-label={t("Pages")}
+          >
+            {page > 1 && <Chip href={href({ page: page - 1 })}>{t("Previous")}</Chip>}
+            {/* Numbered, because "next" alone hides how much there is. Pages
+                past the last one are unknowable without a count over the whole
+                filter, so the run stops at the first page we know exists. */}
+            {Array.from({ length: page + (hasNext ? 1 : 0) }, (_, i) => i + 1).map((n) => (
+              <Chip key={n} href={href({ page: n })} on={n === page}>
+                {String(n)}
+              </Chip>
+            ))}
+            {hasNext && <Chip href={href({ page: page + 1 })}>{t("Next")}</Chip>}
+          </nav>
+        )}
+
+        {routes.length > 0 && (
+          <section style={{ marginTop: "3rem" }}>
+            {/* Routes live in the catalogue, not on a page of their own: the
+                person browsing brains is the person who wants the order they
+                go in, and asking them to find a second page for it is asking
+                them to know the product first. */}
+            <p className="eyebrow">{t("Workflows · the order the brains are read in")}</p>
+            <h2 className="h2" style={{ margin: ".4rem 0 .75rem" }}>
+              {t("Whole jobs, not single answers.")}
+            </h2>
+            <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
+              {t("A route names the brain each step reads, the prompt, the rules and the check that ends it. Your agent walks it with /mozg:build — nothing runs on our side.")}
+            </p>
+
+            <div className="rows" style={{ marginTop: "1rem" }}>
+              {routes.map((w) => (
+                <Link
+                  key={w.id}
+                  className="row"
+                  href={w.handle ? `/w/${w.handle}/${w.slug}` : "/build"}
+                >
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{w.title}</strong>
+                    {w.summary && <span className="row-sub">{w.summary}</span>}
+                    <span className="row-meta">
+                      {w.handle ?? "—"}/{w.slug} · {w.steps.length} {t("steps")} ·{" "}
+                      {new Set(w.steps.map((s) => s.brain).filter(Boolean)).size} {t("brains")}
+                    </span>
+                  </span>
+                  <span className="row-side">{t("Open")}</span>
+                </Link>
+              ))}
+            </div>
+
+            <p style={{ marginTop: ".75rem" }}>
+              <Link href="/build" className="mono" style={{ fontSize: ".8125rem" }}>
+                {t("What workflows are")}
+              </Link>
+            </p>
+          </section>
         )}
 
         <section
