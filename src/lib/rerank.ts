@@ -33,6 +33,26 @@ export function clipDocument(text: string): string {
   return text.length <= MAX_DOC_CHARS ? text : text.slice(0, MAX_DOC_CHARS);
 }
 
+/**
+ * Below this the cross-encoder is saying the passage does not answer the
+ * question.
+ *
+ * Measured against the live service rather than reasoned about, twice, after
+ * two wrong guesses. bge-reranker-v2-m3 behind this deployment returns
+ * SIGMOID-normalised scores in 0..1, not the raw logits the model emits — so a
+ * threshold of zero, which is the model's own boundary, can never fire.
+ *
+ * The real separation is enormous. One query, "how do I write a Playwright
+ * test that runs on webkit", against two passages:
+ *
+ *   the Playwright note   0.851
+ *   a PixiJS note         0.00011
+ *
+ * 0.1 sits three orders of magnitude above the irrelevant one and eight times
+ * below the relevant one, so it is nowhere near either edge.
+ */
+export const RERANK_IRRELEVANT = 0.1;
+
 export interface RerankScore {
   index: number;
   score: number;
@@ -61,6 +81,17 @@ export function applyRerank<T extends object>(
   // median of 0.0320, indistinguishable, while a cross-encoder rates that pair
   // far below anything it considers relevant.
   return valid.slice(0, limit).map((s) => ({ ...items[s.index], rerank: s.score }));
+}
+
+/**
+ * Keep only what the cross-encoder considers an answer to this query.
+ *
+ * Separate from applyRerank, which stays a pure reorder: this one is a
+ * judgement about the corpus — a brain that holds nothing on a subject must
+ * return nothing rather than its least-unrelated passages.
+ */
+export function keepRelevant<T extends { rerank: number }>(hits: T[]): T[] {
+  return hits.filter((h) => h.rerank >= RERANK_IRRELEVANT);
 }
 
 /**

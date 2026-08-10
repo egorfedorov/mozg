@@ -61,3 +61,19 @@ test("out-of-range and fractional indices are dropped, not fatal", async () => {
   ];
   assert.deepEqual(applyRerank(items, scores, 2), [{ id: "b", rerank: 0.2 }]);
 });
+
+test("a brain with nothing on the subject returns nothing", async () => {
+  const { applyRerank, keepRelevant } = await load();
+  // The pair the threshold was measured on: "how do I write a Playwright test
+  // that runs on webkit", asked of a brain that holds both notes.
+  const items = [{ id: "playwright-note" }, { id: "pixi-note" }];
+  const ranked = applyRerank(items, [
+    { index: 0, score: 0.851 },
+    { index: 1, score: 0.00011 },
+  ], 5);
+  assert.deepEqual(keepRelevant(ranked), [{ id: "playwright-note", rerank: 0.851 }]);
+
+  // Asked the same question, a brain that holds only the PixiJS note must not
+  // answer with it — this is the bluff the anti-bluff probes measure.
+  assert.deepEqual(keepRelevant(applyRerank([{ id: "pixi-note" }], [{ index: 0, score: 0.00011 }], 5)), []);
+});

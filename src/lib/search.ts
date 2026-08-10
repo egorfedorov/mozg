@@ -1,6 +1,6 @@
 import { query, toVector } from "@/db";
 import { embedQuery } from "@/lib/embed";
-import { applyRerank, rerank } from "@/lib/rerank";
+import { applyRerank, keepRelevant, rerank } from "@/lib/rerank";
 import { toTsQuery } from "@/lib/tsquery";
 import { normalizeCategory, topLevelCategory } from "@/lib/category";
 import {
@@ -207,7 +207,21 @@ export async function searchBrain(
   const scores = await rerank(text, hits.map((h) => `${h.title}\n${h.excerpt}`));
   if (!scores) return { hits: hits.slice(0, limit), degraded, reranked: false };
 
-  return { hits: applyRerank(hits, scores, limit), degraded, reranked: true };
+  // The cross-encoder's floor is enforced here, once, for everyone who
+  // searches: MCP, the exam, chat.
+  //
+  // Hybrid retrieval nearly always returns SOMETHING — a true zero almost
+  // never happens — so a brain asked a question outside its scope used to hand
+  // back its five least-unrelated passages, and whoever read them answered
+  // from adjacent material with full confidence. Measured across the
+  // catalogue: ordinary checks pass at 82%, the probes that ask a brain to
+  // admit a subject is not covered pass at 64%. That gap is this behaviour.
+  //
+  // A brain with nothing to say has to say nothing. The callers already handle
+  // it: brain_search answers "no matches" and points at a brain that does hold
+  // the subject, and the exam counts an unanswered out-of-scope probe as the
+  // pass it is.
+  return { hits: keepRelevant(applyRerank(hits, scores, limit)), degraded, reranked: true };
 }
 
 /**

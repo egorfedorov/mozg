@@ -17,25 +17,6 @@ import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
 
-/**
- * Below this the cross-encoder is saying the passage does not answer the
- * question.
- *
- * Measured against the live service rather than reasoned about, twice, after
- * two wrong guesses. bge-reranker-v2-m3 behind this deployment returns
- * SIGMOID-normalised scores in 0..1, not the raw logits the model emits — so a
- * threshold of zero, which is the model's own boundary, can never fire.
- *
- * The real separation is enormous. One query, "how do I write a Playwright
- * test that runs on webkit", against two passages:
- *
- *   the Playwright note   0.851
- *   a PixiJS note         0.00011
- *
- * 0.1 sits three orders of magnitude above the irrelevant one and eight times
- * below the relevant one, so it is nowhere near either edge.
- */
-const RERANK_IRRELEVANT = 0.1;
 import { clipExcerpt } from "@/lib/excerpt";
 import { refreshNoteWeight } from "@/lib/note-weight";
 import { familyScopeFor, accessibleChildren } from "@/lib/families";
@@ -692,22 +673,19 @@ async function brainSearch(
     : "";
 
   // A weak best hit means the brain answered and the answer is not worth
-  // trusting — the same line the usage harvest draws, so there is one
-  // definition of weak rather than two that drift. This is where a suggestion
-  // belongs: a true zero almost never happens (hybrid retrieval nearly always
-  // returns SOMETHING), so gating discovery on an empty result set would have
-  // fired approximately never. Measured by trying it.
-  // Prefer the cross-encoder's verdict, which is absolute: below zero it is
-  // saying this passage does not answer this question. The fused RRF score
-  // cannot carry that — it ranks within the candidate set, so the best of five
-  // bad answers scores like a good one. Only when the reranker did not run does
-  // this fall back to WEAK_TOP_SCORE, which the usage harvest calibrated for
-  // "found nothing" rather than for "found the wrong thing".
+  // trusting, so the reply should name a brain that holds the subject.
+  //
+  // The cross-encoder's own irrelevance floor now runs inside searchBrain, so
+  // anything it judged off-topic never arrives here — that case leaves the
+  // result set empty and is handled above, with the same suggestion. What is
+  // left for this line is the reranker being down: then the only number
+  // available is the fused RRF score, which ranks within the candidate set and
+  // cannot tell a good answer from the best of twelve bad ones. WEAK_TOP_SCORE
+  // is the usage harvest's line for "found nothing", which is the closest
+  // honest reading of it.
   const top = hits[0];
   const weak =
-    top?.rerank !== undefined
-      ? top.rerank < RERANK_IRRELEVANT
-      : top?.score !== undefined && top.score < WEAK_TOP_SCORE;
+    top?.rerank === undefined && top?.score !== undefined && top.score < WEAK_TOP_SCORE;
   const elsewhere = weak
     ? (await searchCollective(q)).filter((r) => r.slug !== resolved.brain.slug).slice(0, 2)
     : [];
