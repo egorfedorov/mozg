@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { one, query, maybeOne } from "@/db";
+import { one, query, maybeOne, exists } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { slugify } from "@/lib/brains";
@@ -74,7 +74,7 @@ export async function createBrain(_prev: unknown, formData: FormData) {
   const base = slugify(parsed.data.title);
   let slug = base;
   for (let i = 2; i < 50; i++) {
-    const taken = await maybeOne(
+    const taken = await exists(
       `select 1 from brains where owner_id = $1 and slug = $2`,
       [user.id, slug],
     );
@@ -169,7 +169,7 @@ export async function quickStart(_prev: unknown, formData: FormData) {
   const base = slugify(title);
   let slug = base;
   for (let i = 2; i < 50; i++) {
-    const taken = await maybeOne(
+    const taken = await exists(
       `select 1 from brains where owner_id = $1 and slug = $2`,
       [user.id, slug],
     );

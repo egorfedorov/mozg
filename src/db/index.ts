@@ -37,6 +37,23 @@ export async function maybeOne<T extends object = Record<string, unknown>>(
   return rows[0] ?? null;
 }
 
+/**
+ * Is there any such row?
+ *
+ * Its own function because the obvious spelling is wrong: a dozen call sites
+ * asked `maybeOne("select 1 from … where …")`, which throws "Expected at most
+ * 1 row, got 2" the moment a second row exists — and for an existence check
+ * the second row is the least surprising thing in the world. It took down an
+ * exam (two sittings inside the cooldown window) and stood between a reader
+ * and a brain they had paid for twice over.
+ *
+ * Pass the query without a limit; this adds it.
+ */
+export async function exists(text: string, params: unknown[] = []): Promise<boolean> {
+  const rows = await query(`${text}\nlimit 1`, params);
+  return rows.length > 0;
+}
+
 /** Exactly one row. Throws if zero. */
 export async function one<T extends object = Record<string, unknown>>(
   text: string,

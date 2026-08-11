@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pool, query, one, maybeOne } from "@/db";
+import { pool, query, one, exists } from "@/db";
 import type { Brain, Source } from "@/db/types";
 import { discoverPages } from "@/lib/crawl";
 import { limitsFor } from "@/lib/plans";
@@ -82,7 +82,7 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
     for (const pageUrl of found.pages) {
       // Re-crawling a site must not duplicate pages that are already sources —
       // that is how a crawl stays re-runnable after the site grows.
-      const seen = await maybeOne(
+      const seen = await exists(
         `select 1 from sources where brain_id = $1 and url = $2`,
         [brain.id, pageUrl],
       );

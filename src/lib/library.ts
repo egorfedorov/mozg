@@ -1,4 +1,4 @@
-import { query, maybeOne } from "@/db";
+import { query, maybeOne, exists } from "@/db";
 import type { Brain } from "@/db/types";
 
 /**
@@ -22,7 +22,7 @@ export async function addToLibrary(userId: string, brainId: string): Promise<Add
 
   // A paid brain reaches the library through a purchase, not around it.
   if (brain.price_cents > 0) {
-    const bought = await maybeOne(
+    const bought = await exists(
       `select 1 from purchases where brain_id = $1 and buyer_id = $2`,
       [brain.id, userId],
     );
@@ -63,11 +63,10 @@ export async function removeFromLibrary(userId: string, brainId: string): Promis
 }
 
 export async function inLibrary(userId: string, brainId: string): Promise<boolean> {
-  const row = await maybeOne(`select 1 from library where user_id = $1 and brain_id = $2`, [
+  return exists(`select 1 from library where user_id = $1 and brain_id = $2`, [
     userId,
     brainId,
   ]);
-  return Boolean(row);
 }
 
 export interface LibraryBrain {

@@ -4,7 +4,7 @@ import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
-import { maybeOne, query, tx } from "@/db";
+import { exists, maybeOne, query, tx } from "@/db";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -45,11 +45,11 @@ export default async function GiftPage({
   );
 
   const already = gift
-    ? await maybeOne(
+    ? await exists(
         `select 1 from grants where brain_id = $1 and lower(email) = lower($2)`,
         [gift.brain_id, user.email],
       )
-    : null;
+    : false;
 
   let state: "ok" | "spent" | "invalid" | "already" | "own" = "invalid";
 

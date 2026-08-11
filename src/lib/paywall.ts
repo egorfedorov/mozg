@@ -1,4 +1,4 @@
-import { maybeOne } from "@/db";
+import { exists, maybeOne } from "@/db";
 import type { Brain } from "@/db/types";
 
 /**
@@ -64,9 +64,8 @@ export async function gateFor(brain: Brain): Promise<Gate | null> {
  */
 export async function hasPaid(gate: Gate, userId: string | null): Promise<boolean> {
   if (!userId) return false;
-  const bought = await maybeOne(
+  return exists(
     `select 1 from purchases where brain_id = any($1::uuid[]) and buyer_id = $2`,
     [gate.unlockedBy, userId],
   );
-  return Boolean(bought);
 }

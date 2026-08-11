@@ -1,4 +1,4 @@
-import { maybeOne, query } from "@/db";
+import { exists, maybeOne, query } from "@/db";
 
 /**
  * Pack purchases and the seats on them.
@@ -87,9 +87,8 @@ export async function seatsOn(pack: string, buyerId: string): Promise<PackSeat[]
 
 /** Has this account already bought that pack? Purchases are once per account. */
 export async function boughtPack(pack: string, buyerId: string): Promise<boolean> {
-  const row = await maybeOne(
+  return exists(
     `select 1 from pack_purchases where pack = $1 and buyer_id = $2`,
     [pack, buyerId],
   );
-  return Boolean(row);
 }

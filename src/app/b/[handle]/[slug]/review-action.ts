@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { maybeOne, query } from "@/db";
+import { exists, maybeOne, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { gateFor, hasPaid } from "@/lib/paywall";
@@ -30,7 +30,7 @@ export async function submitReview(_prev: unknown, formData: FormData) {
   }
   if (!gate) {
     // Free brain: require it in the reader's library at least.
-    const added = await maybeOne(
+    const added = await exists(
       `select 1 from library where user_id = $1 and brain_id = $2`,
       [user.id, brain.id],
     );

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { maybeOne, one, query, tx } from "@/db";
+import { exists, one, query, tx } from "@/db";
 import type { Brain, Check, Plan } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
 import { OutputCutoff } from "@/lib/cutoff";
@@ -594,7 +594,7 @@ export async function runExam(
   // whose score moved by a point. One sitting per brain per cooldown window,
   // unless a person asked.
   if (!mini && !opts.force) {
-    const recentFull = await maybeOne(
+    const recentFull = await exists(
       `select 1 from check_runs
         where brain_id = $1 and kind = 'full' and status = 'done'
           and started_at > now() - interval '${FULL_INTERVAL}'`,
@@ -609,7 +609,7 @@ export async function runExam(
   if (mini) {
     // Rate-limit the probe, not the sitting: a brain whose sources change
     // twice in a day gets re-judged once.
-    const recent = await maybeOne(
+    const recent = await exists(
       `select 1 from check_runs
         where brain_id = $1 and kind = 'mini'
           and started_at > now() - interval '${MINI_INTERVAL}'`,
