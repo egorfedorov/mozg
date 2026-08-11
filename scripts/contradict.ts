@@ -19,7 +19,8 @@ async function main() {
     const r = await runContradictions();
     console.log(
       `packs=${r.packs} candidates=${r.candidates} judged=${r.judged} ` +
-        `found=${r.found} ${r.costCents.toFixed(1)}¢ ${Date.now() - started}ms\n`,
+        `found=${r.found} retracted=${r.retracted} ` +
+        `${r.costCents.toFixed(1)}¢ ${Date.now() - started}ms\n`,
     );
   }
 

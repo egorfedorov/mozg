@@ -17,18 +17,20 @@ before you start, so a wrong pick costs a sentence and not an afternoon.
 
 ## 2. Check the shelf before doing any work
 
-`workflow_read` ends with a **Before you start** block naming which of the
-route's brains you can actually read. Act on it first:
+A route is only as good as the shelf under it, so `workflow_read` gives you the
+steps only when every brain it names is open to you. Two shapes come back:
 
-- Everything present: say so in one line and begin.
-- Something missing or locked: **tell the user before you build anything** —
-  name each brain, what it costs, and which step it was for. A route run
-  without its material still produces files, and they look exactly like the
-  ones built with it; that is precisely why this is said up front rather than
-  discovered at step nine.
-- If the user wants to proceed anyway, that is their call. Then say at each
-  affected step that it ran on your own knowledge, and repeat it in the final
-  report. Never let a guess wear this route's authority.
+- **The steps, ending in a Before you start block** saying all of them are on
+  your shelf. Say so in one line and begin.
+- **No steps, and a What opens it block** listing the pack or the brains that
+  are shut, with prices and one link that buys the lot. Tell the user exactly
+  that and **stop**. Do not reconstruct the steps from your own knowledge and
+  do not start building: a route run without its material still produces files,
+  and they look exactly like the ones built with it — which is the whole reason
+  the server withholds it rather than warning you about it.
+- If the user wants to work without the route anyway, that is their call. Do it
+  as ordinary work, say at the top that it is not this route, and never let a
+  guess wear this route's authority.
 
 ## 3. Work the steps in order
 

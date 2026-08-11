@@ -119,6 +119,64 @@ const SYSTEM =
   "When it is one, name the subject in a few words and give each side's " +
   "position in one plain sentence a reader can act on.";
 
+/**
+ * Words carrying no claim. Deliberately short, and deliberately without a
+ * single negation, quantity or comparison in it — "not", "never", "only",
+ * "all", "must", "more" are the words a real disagreement is usually made of,
+ * and dropping them is how a filter meant to catch echoes starts eating the
+ * conflicts it exists beside.
+ */
+const FILLER = new Set([
+  "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+  "and", "but", "or", "though", "although", "however", "while", "whereas",
+  "it", "its", "this", "that", "these", "those", "there",
+  "in", "on", "at", "of", "to", "for", "from", "by", "with", "as",
+  "does", "do", "did", "has", "have", "had", "used", "uses", "using",
+  "function", "when", "if", "which", "whether", "also", "then", "so",
+]);
+
+/** Anything whose presence on one side alone is a real difference. */
+const DECISIVE = /^(no|not|never|none|cannot|can't|don't|doesn't|isn't|won't|must|forbidden|required|optional|\d[\d.,%x]*)$/;
+
+function words(claim: string): string[] {
+  return claim
+    .toLowerCase()
+    .replace(/[^a-z0-9_.%]+/g, " ")
+    .split(" ")
+    .filter((w) => w && !FILLER.has(w));
+}
+
+/**
+ * Two claims that are the same claim, one of them said more fully.
+ *
+ * The judge's own worst mistake, and the one it made on the pack page: it
+ * flagged "run_freespin() is used in sample games" against "run_freespin() is
+ * used in ALL sample games" as a disagreement about some-versus-all. Nobody
+ * disagreed. One sentence was simply more complete than the other, and a page
+ * whose whole argument is "we do not cry wolf" printed it as a conflict.
+ *
+ * The test is containment rather than similarity, and that distinction is the
+ * whole safety of it: a genuine conflict is two sentences that are nearly
+ * identical *and each carry a word the other lacks* — 5 against 10, required
+ * against optional, do against do not. Those are never a subset. Only a side
+ * that adds and never contradicts is dropped, and even then not when what it
+ * adds is a negation, a number or a "must", which is where a swap hides.
+ *
+ * Run on the verdict's own claims, not on the note bodies: the judge has
+ * already said what it thinks each side's position is, and if those two
+ * positions do not differ then whatever it saw in the bodies did not survive
+ * into anything a reader could act on.
+ */
+export function sameClaim(a: string, b: string): boolean {
+  const [wa, wb] = [new Set(words(a)), new Set(words(b))];
+  const extra = (x: Set<string>, y: Set<string>) => [...x].filter((w) => !y.has(w));
+  const onlyA = extra(wa, wb);
+  const onlyB = extra(wb, wa);
+  if (onlyA.length && onlyB.length) return false;
+  if (!wa.size || !wb.size) return false;
+  return ![...onlyA, ...onlyB].some((w) => DECISIVE.test(w));
+}
+
 export interface ContradictReport {
   packs: number;
   /** Vector-close cross-brain pairs found. */
@@ -127,6 +185,8 @@ export interface ContradictReport {
   judged: number;
   /** Judged pairs that turned out to be real conflicts. */
   found: number;
+  /** Already-published conflicts retracted as echoes by this pass. */
+  retracted: number;
   costCents: number;
 }
 
@@ -136,6 +196,7 @@ export async function runContradictions(): Promise<ContradictReport> {
     candidates: 0,
     judged: 0,
     found: 0,
+    retracted: await retractEchoes(),
     costCents: 0,
   };
 
@@ -154,10 +215,33 @@ export async function runContradictions(): Promise<ContradictReport> {
   return report;
 }
 
+/**
+ * Close the ones already on the page that were never a disagreement.
+ *
+ * The filter below is new; the rows it would have stopped are live. Re-judging
+ * them would cost a model call each to be told what a set comparison answers
+ * for nothing, and leaving them is worse than either — a false conflict on the
+ * sales page is the one bug that argues against the product while it sits
+ * there. So every open row is re-read on each pass. It is a handful of rows
+ * and no tokens, and it self-heals the day the filter is tightened again.
+ */
+async function retractEchoes(): Promise<number> {
+  const open = await query<{ id: string; claim_a: string; claim_b: string }>(
+    `select id, claim_a, claim_b from contradictions
+      where status = 'open' and claim_a is not null and claim_b is not null`,
+  );
+  const echoes = open.filter((c) => sameClaim(c.claim_a, c.claim_b)).map((c) => c.id);
+  if (!echoes.length) return 0;
+  await query(`update contradictions set status = 'clear' where id = any($1::uuid[])`, [
+    echoes,
+  ]);
+  return echoes.length;
+}
+
 async function contradictionsInPack(
   pack: Pack,
   budget: number,
-): Promise<Omit<ContradictReport, "packs">> {
+): Promise<Omit<ContradictReport, "packs" | "retracted">> {
   const report = { candidates: 0, judged: 0, found: 0, costCents: 0 };
 
   // The live membership, same query the pack page renders from — a pack whose
@@ -263,8 +347,12 @@ async function judge(pair: DuplicatePair): Promise<{ contradicts: boolean; costC
 
   // A "yes" with nothing to show for it is a "no": the flag exists to tell a
   // reader what the disagreement is, and one that cannot say lands on the page
-  // as an accusation with no evidence.
-  const real = v.contradicts && Boolean(v.subject && v.claim_a && v.claim_b);
+  // as an accusation with no evidence. And a "yes" whose two sides say the
+  // same thing is a "no" for the same reason — see sameClaim.
+  const real =
+    v.contradicts &&
+    Boolean(v.subject && v.claim_a && v.claim_b) &&
+    !sameClaim(v.claim_a!, v.claim_b!);
 
   await query(
     `insert into contradictions (note_a, note_b, distance, status, subject, claim_a, claim_b)

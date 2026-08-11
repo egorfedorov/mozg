@@ -8,6 +8,9 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 import { findWorkflow } from "@/lib/workflow-store";
 import { formatCents } from "@/lib/money-math";
+import { packsFor } from "@/lib/pack-access";
+import { packsWith } from "@/lib/packs";
+import { offerFor, packFor } from "@/lib/route-cost";
 import EquipRoute from "./EquipRoute";
 
 export const dynamic = "force-dynamic";
@@ -64,14 +67,17 @@ export default async function PublicWorkflowPage({
         price_cents: number;
         note_count: number;
         child_notes: number;
+        parent_slug: string | null;
         visibility: string;
       }>(
         `select b.slug, b.title, u.handle as owner_handle, b.score, b.price_cents,
                 b.note_count,
                 (select coalesce(sum(c.note_count), 0)::int from brains c
                   where c.parent_id = b.id) as child_notes,
+                p.slug as parent_slug,
                 b.visibility
            from brains b join "user" u on u.id = b.owner_id
+           left join brains p on p.id = b.parent_id
           where lower(b.slug) = any($1::text[]) and b.visibility = 'public'`,
         [wanted],
       )
@@ -79,6 +85,9 @@ export default async function PublicWorkflowPage({
 
   // What the viewer already holds, so the offer is honest about what is left
   // to get rather than quoting the full price to somebody who owns half of it.
+  // A pack counts: it is how most of these are reached, and a page that made
+  // a pack holder buy them again would be selling the same material twice.
+  const packsHeld = user ? (await packsFor(user.id)).map((h) => h.pack) : [];
   const held = user
     ? new Set(
         (
@@ -95,13 +104,37 @@ export default async function PublicWorkflowPage({
         ).map((r) => r.slug.toLowerCase()),
       )
     : new Set<string>();
+  for (const b of brains) {
+    if (packsWith(b.slug, b.parent_slug).some((p) => packsHeld.includes(p))) {
+      held.add(b.slug.toLowerCase());
+    }
+  }
 
   const bySlug = new Map(brains.map((b) => [b.slug.toLowerCase(), b]));
   const missing = brains.filter((b) => !held.has(b.slug.toLowerCase()));
-  const missingCost = missing.reduce((n, b) => n + b.price_cents, 0);
-  const toBuy = brains.filter((b) => b.price_cents > 0);
+  const offer = offerFor(
+    missing.map((b) => ({
+      slug: b.slug,
+      parentSlug: b.parent_slug,
+      priceCents: b.price_cents,
+    })),
+  );
+  // What a reader starting from nothing would pay — the headline number, and
+  // the same arithmetic, so it can never quote more than the button charges.
+  const fullOffer = offerFor(
+    brains.map((b) => ({
+      slug: b.slug,
+      parentSlug: b.parent_slug,
+      priceCents: b.price_cents,
+    })),
+  );
   const steps = w.steps;
   const withChecks = steps.filter((s) => s.done_when).length;
+  // A route runs on its shelf. Missing material does not make a step fail
+  // loudly — it makes it answer from training data in this route's voice, and
+  // the files that come out look exactly like the ones built with it. So the
+  // page says "not ready" rather than "partially ready".
+  const ready = missing.length === 0;
 
   return (
     <>
@@ -138,14 +171,31 @@ export default async function PublicWorkflowPage({
             <span className="stat-value">{withChecks}</span>
           </div>
           <div className="stat">
-            <span className="eyebrow">{t("To buy")}</span>
+            {/* Signed in, the number is what is LEFT to get; signed out it is
+                the whole shelf. Both go through the same pack arithmetic, so
+                neither can quote more than the button charges. */}
+            <span className="eyebrow">
+              {user && ready ? t("The shelf") : t("The shelf costs")}
+            </span>
             <span className="stat-value">
-              {toBuy.length
-                ? formatCents(toBuy.reduce((n, b) => n + b.price_cents, 0))
-                : t("Free")}
+              {user && ready
+                ? t("Ready")
+                : (user ? offer : fullOffer).totalCents > 0
+                  ? formatCents((user ? offer : fullOffer).totalCents)
+                  : t("Free")}
             </span>
           </div>
         </div>
+
+        {/* The route itself is free, and saying so beside a price stops the
+            number above reading as a fee for the steps. */}
+        <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: "1rem" }}>
+          {fullOffer.totalCents === 0
+            ? t("The route is free, and so is everything it reads. Connect mozg and run it.")
+            : fullOffer.packs.length
+              ? t("The route is free — it is the order the reading happens in, and charging for an order is charging twice. What costs money is the shelf under it, and most of that comes as a pack, which is cheaper than the same brains bought one at a time.")
+              : t("The route is free — it is the order the reading happens in, and charging for an order is charging twice. What costs money is the shelf under it.")}
+        </p>
 
         <div className="panel" style={{ marginTop: "1.25rem" }}>
           <p className="eyebrow" style={{ marginTop: 0 }}>
@@ -156,6 +206,11 @@ export default async function PublicWorkflowPage({
               /mozg:build {handle}/{slug}
             </code>
           </pre>
+          <p style={{ color: "var(--ink-2)", margin: ".6rem 0 0", fontSize: ".9375rem" }}>
+            {user && ready
+              ? t("Your shelf has everything this route reads, so it runs.")
+              : t("It will not run until every brain below is open to you. A step whose brain is missing does not stop — it answers from the model's own training in this route's voice, which is the failure the route was written to prevent.")}
+          </p>
         </div>
 
         {/* ── what you need before you start ────────────────────────────── */}
@@ -163,7 +218,7 @@ export default async function PublicWorkflowPage({
           {t("The shelf this route needs")}
         </h2>
         <p style={{ color: "var(--ink-2)", maxWidth: "58ch", marginTop: 0 }}>
-          {t("Your agent reads these as it goes. A brain you do not have is not a blocker — the step still runs, it just runs on guesswork, which is the thing this route exists to avoid.")}
+          {t("Your agent reads these as it goes, so the route is held closed until all of them are open to you. One missing brain does not stop a step — it makes the step guess, and a guess wearing this route's authority is worse than no route at all.")}
         </p>
         <div className="rows">
           {wanted.map((slugKey) => {
@@ -193,11 +248,16 @@ export default async function PublicWorkflowPage({
                   </span>
                 </span>
                 <span className="row-side">
+                  {/* A brain a pack opens is never quoted its own price here:
+                      that number is one the reader would never actually pay,
+                      and five of them added up is where the $200 came from. */}
                   {held.has(slugKey)
                     ? t("On your shelf")
-                    : b.price_cents > 0
-                      ? formatCents(b.price_cents)
-                      : t("Free")}
+                    : packFor(user ? offer : fullOffer, b.slug)
+                      ? t("In the pack")
+                      : b.price_cents > 0
+                        ? formatCents(b.price_cents)
+                        : t("Free")}
                 </span>
               </Link>
             );
@@ -207,8 +267,14 @@ export default async function PublicWorkflowPage({
         <EquipRoute
           handle={handle}
           slug={slug}
-          costCents={missingCost}
+          costCents={offer.totalCents}
           missing={missing.length}
+          packs={offer.packs.map((p) => ({
+            title: t(p.title),
+            priceCents: p.priceCents,
+            covers: p.covers.length,
+          }))}
+          singles={offer.brains.length}
         />
 
         {/* ── the route itself ──────────────────────────────────────────── */}

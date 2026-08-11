@@ -1,6 +1,9 @@
 import { query } from "@/db";
 import type { TokenOwner } from "@/lib/tokens";
 import type { ToolOutcome } from "@/lib/mcp";
+import type { Resolved } from "@/lib/mcp-access";
+import { formatCents } from "@/lib/money-math";
+import { offerFor } from "@/lib/route-cost";
 import { findWorkflow, listWorkflows, publicWorkflows } from "@/lib/workflow-store";
 import { renderWorkflow, stepReportSchema } from "@/lib/workflows";
 
@@ -61,7 +64,7 @@ export async function workflowRead(
   args: Record<string, unknown>,
   owner: TokenOwner,
   /** mozg's access rules live with resolveBrain; borrowed, never copied. */
-  resolveBrain: (handle: string, userId: string) => Promise<{ locked?: boolean } | null>,
+  resolveBrain: (handle: string, userId: string) => Promise<Resolved | null>,
 ): Promise<ToolOutcome> {
   const name = String(args.workflow ?? "").trim();
   if (!name) {
@@ -76,45 +79,121 @@ export async function workflowRead(
     };
   }
 
-  // Which of the brains this route names the caller can actually read. A
-  // route is only as good as the shelf under it: running one whose material
-  // is missing produces confident work built on guesses, which is the exact
-  // failure the route was written to prevent. Said before the steps, so the
-  // agent can stop and tell the user what to buy instead of finding out at
-  // step nine.
+  // Which of the brains this route names the caller can actually read.
+  //
+  // The steps are withheld until all of them are, and that is the whole point
+  // rather than an upsell: a step whose brain is shut does not fail loudly, it
+  // answers from the model's training data in this route's voice, and the
+  // files that come out look exactly like the ones built with the material.
+  // Handing over the steps with a warning attached was tried; agents ran them
+  // anyway and reported the warning at the end. So the route stays closed and
+  // says what opens it — which the reader can act on in one click.
   const wanted = [...new Set(w.steps.map((s) => s.brain).filter(Boolean))].map(String);
   const shelf: string[] = [];
   const missing: string[] = [];
-  const locked: string[] = [];
+  const shut: Resolved[] = [];
 
   for (const handle of wanted) {
     const found = await resolveBrain(handle, owner.userId);
+    // A teaser is not access. Five preview queries do not carry a ten-step
+    // build, and letting them start one spends the preview on the first brain
+    // and guesses the other nine.
     if (!found) missing.push(handle);
-    else if (found.locked) locked.push(handle);
+    else if (found.locked || found.teaser) shut.push(found);
     else shelf.push(handle);
   }
 
-  const readiness =
-    missing.length || locked.length
-      ? "\n\n## Before you start\n\n" +
-        `${shelf.length} of ${wanted.length} brains this route reads are on your shelf.\n` +
-        (locked.length
-          ? `\nPaid, and your free preview is used up — these answer nothing until bought:\n` +
-            locked.map((h) => `- ${h} — https://mozg.sh/b/${h.replace("/", "/")}`).join("\n") +
-            "\n"
-          : "") +
-        (missing.length
-          ? `\nNot on your shelf at all:\n` +
-            missing.map((h) => `- ${h} — add it with library_add, or buy it at https://mozg.sh/explore`).join("\n") +
-            "\n"
-          : "") +
-        "\nTell the user which ones are missing and what they cost BEFORE doing any " +
-        "of the work. A step whose brain is missing still runs, but it runs on your " +
-        "training data — say so plainly in the report rather than passing a guess " +
-        "off as this route's answer."
-      : `\n\n## Before you start\n\nAll ${wanted.length} brains this route reads are on your shelf.`;
+  if (!shut.length && !missing.length) {
+    return {
+      text:
+        renderWorkflow(w) +
+        `\n\n## Before you start\n\nAll ${wanted.length} brains this route reads are on your shelf. ` +
+        "Search each step's brain before writing anything for that step.",
+      ownerId: w.owner_id,
+    };
+  }
 
-  return { text: renderWorkflow(w) + readiness, ownerId: w.owner_id };
+  return { text: await closedText(w, wanted.length, shelf.length, shut, missing), ownerId: w.owner_id };
+}
+
+/**
+ * What a route says when its shelf is short: the shape, the bill, and nothing
+ * to run on.
+ *
+ * The bill is the same arithmetic the workflow page prints — a pack where the
+ * pack is cheaper than its parts — so an agent quoting this and a user reading
+ * mozg.sh see one number. Quoting the sum of the brains' own prices here while
+ * the site sells them for half of it is how a catalogue that trades on being
+ * exact stops being believed.
+ */
+async function closedText(
+  w: { title: string; summary: string | null; slug: string; handle: string | null; steps: unknown[] },
+  wantedCount: number,
+  onShelf: number,
+  shut: Resolved[],
+  missing: string[],
+): Promise<string> {
+  const parents = shut.filter((r) => r.brain.parent_id);
+  const parentSlug = new Map<string, string>();
+  if (parents.length) {
+    const rows = await query<{ id: string; slug: string }>(
+      `select id, slug from brains where id = any($1::uuid[])`,
+      [parents.map((r) => r.brain.parent_id)],
+    );
+    for (const r of rows) parentSlug.set(r.id, r.slug);
+  }
+
+  const offer = offerFor(
+    shut.map((r) => ({
+      slug: r.brain.slug,
+      parentSlug: r.brain.parent_id ? (parentSlug.get(r.brain.parent_id) ?? null) : null,
+      priceCents: r.brain.price_cents,
+    })),
+  );
+
+  const route = w.handle ? `${w.handle}/${w.slug}` : w.slug;
+  const lines = [
+    `# ${w.title}`,
+    w.summary ?? "",
+    "",
+    `This route has ${w.steps.length} steps and reads ${wantedCount} brains. ` +
+      `${onShelf} of them are open to you, so the steps are not included: ` +
+      "running it short of its material produces work that looks grounded and is not.",
+    "",
+    "## What opens it",
+  ];
+
+  for (const p of offer.packs) {
+    lines.push(
+      `- The ${p.title} pack — ${formatCents(p.priceCents)} once, and it opens ` +
+        `${p.covers.length} of the brains this route needs (plus the rest of the pack): ` +
+        `https://mozg.sh/packs/${p.slug}`,
+    );
+  }
+  for (const b of offer.brains) {
+    lines.push(`- ${b.slug} — ${formatCents(b.priceCents)}: https://mozg.sh/explore`);
+  }
+  for (const h of missing) {
+    lines.push(`- ${h} — not in the catalogue under that name; ask the route's author.`);
+  }
+  if (offer.totalCents > 0) {
+    lines.push(
+      "",
+      `Total: ${formatCents(offer.totalCents)}, bought once. ` +
+        `One button for all of it: https://mozg.sh/w/${route}`,
+    );
+  }
+
+  lines.push(
+    "",
+    "Tell the user this, verbatim in your own words, and stop. Do NOT reconstruct " +
+      "the steps from your own knowledge and do NOT start the build — a route run " +
+      "without its brains is the exact thing this one was written to replace. If " +
+      "they want to work without it, that is their call, but it is ordinary work " +
+      "and must not be reported as this route.",
+  );
+
+  return lines.join("\n");
 }
 
 /**

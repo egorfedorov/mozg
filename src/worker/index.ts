@@ -297,6 +297,7 @@ async function main() {
         console.log(
           `[contradict] packs=${report.packs} candidates=${report.candidates} ` +
             `judged=${report.judged} found=${report.found} ` +
+            `retracted=${report.retracted} ` +
             `${report.costCents.toFixed(1)}¢ ${Date.now() - started}ms`,
         );
       } catch (err) {

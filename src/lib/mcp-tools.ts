@@ -466,7 +466,10 @@ export const TOOLS: ToolDef[] = [
       "Get one workflow in full: every step, the brain each step consults, " +
       "what to ask it, and the check that ends the step. Follow it in order " +
       "and search each named brain before writing anything — the workflow was " +
-      "built around that material.",
+      "built around that material. If any of those brains is not open to the " +
+      "caller, the steps are withheld and you get what opens the route " +
+      "instead: tell the user that and stop, rather than building it from " +
+      "your own knowledge under this route's name.",
     inputSchema: {
       type: "object",
       properties: {
