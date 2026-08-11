@@ -193,7 +193,11 @@ async function main() {
                 `${result.carried ? `, ${result.carried} carried` : ""}` +
                 `${result.negativeTotal ? `, anti-bluff ${result.negativePassed}/${result.negativeTotal}` : ""}) ` +
                 `${result.costCents.toFixed(1)}¢ ${Date.now() - started}ms`
-            : `[exam] ${brainId} skipped — brain has no goal`,
+            // Null is every skip, not one of them: the cooldown, the mini
+            // rate limit and the plan's sitting budget all return it, and
+            // runExam has already said which. Naming one reason here printed
+            // "brain has no goal" under a brain whose goal was right there.
+            : `[exam] ${brainId} skipped`,
         );
       } catch (err) {
         reportError("worker", "exam", err, {

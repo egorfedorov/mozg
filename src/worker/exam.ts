@@ -572,7 +572,11 @@ export async function runExam(
 ): Promise<ExamResult | null> {
   const mini = opts.mini ?? false;
   const brain = await one<Brain>(`select * from brains where id = $1`, [brainId]);
-  if (!brain.goal) return null;
+  if (!brain.goal) {
+    // Said here, like every other skip, now that the caller no longer guesses.
+    console.log(`[exam] ${brainId} skipped — brain has no goal`);
+    return null;
+  }
 
   // An empty corpus cannot sit an exam. Without this, a brain whose notes
   // were deleted would pass its anti-bluff probes on the void ("correctly"
