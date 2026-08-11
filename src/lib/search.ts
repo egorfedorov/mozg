@@ -63,7 +63,23 @@ export interface SearchHit {
 export interface SearchOptions {
   limit?: number;
   category?: string | null;
+  /**
+   * Wait for the reranker instead of giving up at the interactive deadline.
+   *
+   * For a background caller the 8s budget is the wrong ceiling: the reranker
+   * is one torch process shared with every other pass the worker runs, and a
+   * call that gives up at 8s makes the exam throw the whole sitting away with
+   * "graded without the reranker" — twice on the night of 2026-08-11. Nobody
+   * is watching an exam, and waiting costs less than re-running it.
+   *
+   * The caller owns the ceiling on how long it stays patient overall; see
+   * RETRIEVAL_BUDGET_MS in worker/exam.ts.
+   */
+  patient?: boolean;
 }
+
+/** The background deadline. See SearchOptions.patient. */
+const PATIENT_RERANK_MS = 60_000;
 
 /**
  * `brainIds` takes a family: searching a parent reaches its children, so an
@@ -216,7 +232,11 @@ export async function searchBrain(
 
   // Title first: an atomic note's title is the strongest topical signal in it,
   // and the cross-encoder only reads the head of what it is given.
-  const scores = await rerank(text, hits.map((h) => `${h.title}\n${h.excerpt}`));
+  const scores = await rerank(
+    text,
+    hits.map((h) => `${h.title}\n${h.excerpt}`),
+    opts.patient ? { timeoutMs: PATIENT_RERANK_MS } : {},
+  );
   if (!scores) return { hits: hits.slice(0, limit), degraded, reranked: false };
 
   // The cross-encoder's floor is enforced here, once, for everyone who

@@ -766,8 +766,23 @@ export async function runExam(
       retrievalTopScore: number | null;
       evidence: string[];
     }[] = [];
+    // Patience has a budget for the whole sitting, not per check. Waiting a
+    // minute for a contended reranker is cheap next to throwing the sitting
+    // away below — but a hundred checks each waiting a minute is a job that
+    // outlives pg-boss's fifteen-minute expiry and gets retried as if it had
+    // crashed. Past the budget the retrievals go back to the interactive
+    // deadline, and the sitting fails the honest way instead of hanging.
+    const RETRIEVAL_BUDGET_MS = 8 * 60_000;
+    const retrievalStarted = Date.now();
     for (const check of fresh) {
-      const { hits, reranked } = await searchBrain(scope, check.question, { limit: 5 });
+      // patient: one at a time keeps this sitting off its own back, but not off
+      // the maintenance and consolidation passes sharing the worker — together
+      // they pushed calls past the interactive deadline, and the check below
+      // then threw away sittings that had every answer in front of them.
+      const { hits, reranked } = await searchBrain(scope, check.question, {
+        limit: 5,
+        patient: Date.now() - retrievalStarted < RETRIEVAL_BUDGET_MS,
+      });
       contexts.push({
         check,
         context: hits.map((h) => `${h.title}\n${h.excerpt}`).join("\n\n---\n\n"),

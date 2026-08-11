@@ -102,6 +102,7 @@ export function keepRelevant<T extends { rerank: number }>(hits: T[]): T[] {
 export async function rerank(
   queryText: string,
   documents: string[],
+  opts: { timeoutMs?: number } = {},
 ): Promise<RerankScore[] | null> {
   if (!documents.length) return null;
   try {
@@ -119,7 +120,11 @@ export async function rerank(
       // it only fires when the service is genuinely contended — and then RRF
       // order in 8s beats perfect order in 30, by which time the agent has
       // given up on us.
-      signal: AbortSignal.timeout(8_000),
+      //
+      // Nobody is waiting on a background caller, though, and for the exam the
+      // fallback is not a slightly worse answer but a whole sitting thrown
+      // away — so it asks for a longer one. See PATIENT_RERANK_MS.
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 8_000),
     });
     if (!res.ok) return null;
 
