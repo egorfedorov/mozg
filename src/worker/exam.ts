@@ -457,14 +457,26 @@ export interface ExamResult {
  * all origins, enabled or not.
  */
 export async function syncUsageChecks(brain: Brain, scope: string[]): Promise<number> {
+  // Two different people, on a brain the public can buy — the same rule
+  // worker/search-gaps.ts applies to the other half of this mechanism, and it
+  // was missing here. One person's failed searches are their project, not
+  // demand: thirteen questions about two unreleased games became permanent
+  // checks on three paid brains that way. It is also how a single diagnostic
+  // search can define a brand-new brain's whole exam, since the insert below
+  // then blocks generation entirely (see the caller).
+  //
+  // A private brain keeps one: there the single caller IS the audience.
+  const minCallers = brain.visibility === "public" ? 2 : 1;
   const misses = await query<{ query: string }>(
     `select query from calls
       where brain_id = any($1::uuid[]) and tool = 'brain_search'
         and ok and results = 0 and length(trim(query)) >= 12
         and created_at > now() - interval '30 days'
       group by query
-      order by count(*) desc, max(created_at) desc limit 10`,
-    [scope],
+     having count(distinct caller_id) >= $2
+      order by count(distinct caller_id) desc, count(*) desc, max(created_at) desc
+      limit 10`,
+    [scope, minCallers],
   );
 
   let added = 0;
@@ -658,6 +670,14 @@ export async function runExam(
     [brainId],
   );
 
+  // "Has an exam" means "has checks written FROM the material", not "has any
+  // row". syncUsageChecks runs just above and files questions from searches
+  // that found nothing — so a brand-new brain someone searched once had a
+  // one-question exam and could never generate a real one, because the count
+  // below was 1 and not 0. Measured on a fresh brain with 1034 notes: 0% of 1,
+  // three sittings running.
+  const written = checks.filter((c) => !c.origin).length;
+
   // An exam written for 43 notes does not measure a brain that now holds 586.
   // pixijs-casino read 51 pages of documentation, grew thirteenfold, and
   // re-sat the SAME thirty-two questions written before any of it arrived —
@@ -666,7 +686,7 @@ export async function runExam(
   // rather than re-used.
   const outgrown = !mini && checks.length ? await examOutgrown(brain, checks) : false;
 
-  if (!checks.length || outgrown) {
+  if (!written || outgrown) {
     // A probe never writes the exam — without checks there is nothing to
     // re-judge, and generating them is the expensive path mini exists to avoid.
     if (mini) return null;
