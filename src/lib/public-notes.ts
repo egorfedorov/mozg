@@ -1,4 +1,4 @@
-import { maybeOne, query } from "@/db";
+import { maybeOne, one, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { gateFor } from "@/lib/paywall";
 
@@ -24,6 +24,17 @@ import { gateFor } from "@/lib/paywall";
 
 /** Below this a category is published but kept out of the index. */
 export const THIN_CATEGORY = 5;
+
+/**
+ * Notes on one page.
+ *
+ * Categories are not evenly sized: 2,855 hold between five and sixty notes,
+ * but 76 hold more than two hundred and the largest is 1,056 — which rendered
+ * as a single page of 49,188 words. That is slow to load, truncated by every
+ * crawler that meets it, and useless to a reader looking for one answer. Sixty
+ * is about four thousand words, which is a long article rather than a book.
+ */
+export const PER_PAGE = 60;
 
 export interface PublicCategory {
   category: string;
@@ -59,14 +70,32 @@ export interface PublicNote {
   body: string;
 }
 
-export async function notesIn(brainId: string, category: string): Promise<PublicNote[]> {
-  return query<PublicNote>(
+export async function notesIn(
+  brainId: string,
+  category: string,
+  page = 1,
+): Promise<{ notes: PublicNote[]; total: number; pages: number }> {
+  const { rows } = await countAndPage(brainId, category, page);
+  return rows;
+}
+
+async function countAndPage(brainId: string, category: string, page: number) {
+  const total = await one<{ n: number }>(
+    `select count(*)::int as n from notes
+      where brain_id = $1 and status = 'active' and category = $2`,
+    [brainId, category],
+  );
+  const pages = Math.max(1, Math.ceil(total.n / PER_PAGE));
+  const safe = Math.min(Math.max(1, page), pages);
+  const notes = await query<PublicNote>(
     `select id::text, title, body
        from notes
       where brain_id = $1 and status = 'active' and category = $2
-      order by weight desc, created_at`,
-    [brainId, category],
+      order by weight desc, created_at
+      limit ${PER_PAGE} offset $3`,
+    [brainId, category, (safe - 1) * PER_PAGE],
   );
+  return { rows: { notes, total: total.n, pages } };
 }
 
 /**

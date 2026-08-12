@@ -25,33 +25,44 @@ function decode(parts: string[]): string {
   return parts.map(decodeURIComponent).join("/");
 }
 
+function href(handle: string, slug: string, category: string[], page?: number): string {
+  const path = `/b/${handle}/${slug}/notes/${category.map(encodeURIComponent).join("/")}`;
+  return page && page > 1 ? `${path}?page=${page}` : path;
+}
+
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ handle: string; slug: string; category: string[] }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { handle, slug, category } = await params;
   const brain = await openBrain(handle, slug);
   if (!brain) return {};
+
+  const page = Number((await searchParams).page) || 1;
   const name = decode(category);
-  const notes = await notesIn(brain.id, name);
+  const { notes, total, pages } = await notesIn(brain.id, name, page);
   if (!notes.length) return {};
 
   return {
-    title: `${name} — ${brain.title}`,
+    title: pages > 1 ? `${name} (${page}/${pages}) — ${brain.title}` : `${name} — ${brain.title}`,
     description: notes[0].body.slice(0, 155),
-    alternates: {
-      canonical: `/b/${handle}/${slug}/notes/${category.map(encodeURIComponent).join("/")}`,
-    },
+    // Each page is its own canonical: they hold different notes, so folding
+    // them onto page one would ask a crawler to ignore most of the material.
+    alternates: { canonical: href(handle, slug, category, page) },
     // Thin sections are readable but not worth a crawl.
-    ...(notes.length < THIN_CATEGORY ? { robots: { index: false, follow: true } } : {}),
+    ...(total < THIN_CATEGORY ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
 export default async function CategoryNotes({
   params,
+  searchParams,
 }: {
   params: Promise<{ handle: string; slug: string; category: string[] }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const t = await translator();
   const { handle, slug, category } = await params;
@@ -59,8 +70,9 @@ export default async function CategoryNotes({
   const brain = await openBrain(handle, slug);
   if (!brain) notFound();
 
+  const page = Number((await searchParams).page) || 1;
   const name = decode(category);
-  const notes = await notesIn(brain.id, name);
+  const { notes, total, pages } = await notesIn(brain.id, name, page);
   if (!notes.length) notFound();
 
   return (
@@ -83,10 +95,15 @@ export default async function CategoryNotes({
           {name}
         </h1>
         <p style={{ maxWidth: "58ch", color: "var(--ink-2)", marginTop: 0 }}>
-          {markup(
-            t("<0/> notes, read out of <1>this brain</1> and free to use. Each one was extracted from a source and is re-checked against its exam."),
-            [notes.length, <Link href={`/b/${handle}/${slug}`} key="s1" />],
-          )}
+          {pages > 1
+            ? markup(
+                t("<0/> notes in this subject, read out of <1>this brain</1> and free to use. This is page <2/> of <3/>."),
+                [total, <Link href={`/b/${handle}/${slug}`} key="s1" />, page, pages],
+              )
+            : markup(
+                t("<0/> notes, read out of <1>this brain</1> and free to use. Each one was extracted from a source and is re-checked against its exam."),
+                [total, <Link href={`/b/${handle}/${slug}`} key="s1" />],
+              )}
         </p>
 
         <div style={{ display: "grid", gap: "1.5rem", marginTop: "2.25rem", maxWidth: "62ch" }}>
@@ -102,6 +119,27 @@ export default async function CategoryNotes({
             </article>
           ))}
         </div>
+
+        {pages > 1 && (
+          <nav
+            style={{ display: "flex", gap: "1rem", marginTop: "2.5rem", alignItems: "center" }}
+            aria-label={t("pages")}
+          >
+            {page > 1 && (
+              <Link className="navlink" href={href(handle, slug, category, page - 1)}>
+                {t("← previous")}
+              </Link>
+            )}
+            <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>
+              {page} / {pages}
+            </span>
+            {page < pages && (
+              <Link className="navlink" href={href(handle, slug, category, page + 1)}>
+                {t("next →")}
+              </Link>
+            )}
+          </nav>
+        )}
 
         <p style={{ marginTop: "3rem" }}>
           <Link className="btn" href="/connect">
