@@ -1,9 +1,9 @@
 import { query } from "@/db";
 import type { TokenOwner } from "@/lib/tokens";
 import type { ToolOutcome } from "@/lib/mcp";
-import type { Resolved } from "@/lib/mcp-access";
 import { formatCents } from "@/lib/money-math";
 import { offerFor } from "@/lib/route-cost";
+import { shelfFor, type Shelf } from "@/lib/route-shelf";
 import { findWorkflow, listWorkflows, publicWorkflows } from "@/lib/workflow-store";
 import { renderWorkflow, stepReportSchema } from "@/lib/workflows";
 
@@ -16,9 +16,14 @@ import { renderWorkflow, stepReportSchema } from "@/lib/workflows";
  * handlers, one store, nothing else in the file needs them. Split by what a
  * tool is *about* rather than by layer, so a change to routes opens one file.
  *
- * resolveBrain stays behind in mcp.ts and is passed in: it carries the access
- * rules for paid brains, teasers and families, and a second copy of those is
- * the last thing this codebase needs.
+ * Whether a route's brains are open to the caller is lib/route-shelf.ts's
+ * answer, shared with the page that prices the route and the button that buys
+ * it — three copies of "who may read this" is exactly how the page once told a
+ * granted colleague to pay for a brain the agent would have opened for them.
+ *
+ * These are the live handlers: lib/mcp.ts imports them and the dispatcher calls
+ * them. It used to hold a second copy of all three, which is worth remembering
+ * — a gating change landed on this file, shipped, and did nothing at all.
  */
 
 /**
@@ -63,8 +68,6 @@ export async function workflowList(owner: TokenOwner): Promise<ToolOutcome> {
 export async function workflowRead(
   args: Record<string, unknown>,
   owner: TokenOwner,
-  /** mozg's access rules live with resolveBrain; borrowed, never copied. */
-  resolveBrain: (handle: string, userId: string) => Promise<Resolved | null>,
 ): Promise<ToolOutcome> {
   const name = String(args.workflow ?? "").trim();
   if (!name) {
@@ -79,41 +82,30 @@ export async function workflowRead(
     };
   }
 
-  // Which of the brains this route names the caller can actually read.
+  // Which of the brains this route names the caller can actually read — the
+  // same question, answered by the same function, as the page that prices the
+  // route and the button that buys it.
   //
-  // The steps are withheld until all of them are, and that is the whole point
-  // rather than an upsell: a step whose brain is shut does not fail loudly, it
-  // answers from the model's training data in this route's voice, and the
-  // files that come out look exactly like the ones built with the material.
-  // Handing over the steps with a warning attached was tried; agents ran them
-  // anyway and reported the warning at the end. So the route stays closed and
-  // says what opens it — which the reader can act on in one click.
-  const wanted = [...new Set(w.steps.map((s) => s.brain).filter(Boolean))].map(String);
-  const shelf: string[] = [];
-  const missing: string[] = [];
-  const shut: Resolved[] = [];
+  // The steps are withheld until all of them are open, and that is the whole
+  // point rather than an upsell: a step whose brain is shut does not fail
+  // loudly, it answers from the model's training data in this route's voice,
+  // and the files that come out look exactly like the ones built with the
+  // material. Handing the steps over with a warning attached was the old
+  // behaviour; the warning is read after the work. So the route stays closed
+  // and says what opens it, which is something the reader can act on.
+  const shelf = await shelfFor(w.steps, owner.userId);
 
-  for (const handle of wanted) {
-    const found = await resolveBrain(handle, owner.userId);
-    // A teaser is not access. Five preview queries do not carry a ten-step
-    // build, and letting them start one spends the preview on the first brain
-    // and guesses the other nine.
-    if (!found) missing.push(handle);
-    else if (found.locked || found.teaser) shut.push(found);
-    else shelf.push(handle);
-  }
-
-  if (!shut.length && !missing.length) {
+  if (shelf.ready) {
     return {
       text:
         renderWorkflow(w) +
-        `\n\n## Before you start\n\nAll ${wanted.length} brains this route reads are on your shelf. ` +
-        "Search each step's brain before writing anything for that step.",
+        `\n\n## Before you start\n\nAll ${shelf.brains.length} brains this route reads are ` +
+        "open to you. Search each step's brain before writing anything for that step.",
       ownerId: w.owner_id,
     };
   }
 
-  return { text: await closedText(w, wanted.length, shelf.length, shut, missing), ownerId: w.owner_id };
+  return { text: closedText(w, shelf), ownerId: w.owner_id };
 }
 
 /**
@@ -126,38 +118,26 @@ export async function workflowRead(
  * the site sells them for half of it is how a catalogue that trades on being
  * exact stops being believed.
  */
-async function closedText(
+function closedText(
   w: { title: string; summary: string | null; slug: string; handle: string | null; steps: unknown[] },
-  wantedCount: number,
-  onShelf: number,
-  shut: Resolved[],
-  missing: string[],
-): Promise<string> {
-  const parents = shut.filter((r) => r.brain.parent_id);
-  const parentSlug = new Map<string, string>();
-  if (parents.length) {
-    const rows = await query<{ id: string; slug: string }>(
-      `select id, slug from brains where id = any($1::uuid[])`,
-      [parents.map((r) => r.brain.parent_id)],
-    );
-    for (const r of rows) parentSlug.set(r.id, r.slug);
-  }
-
+  shelf: Shelf,
+): string {
   const offer = offerFor(
-    shut.map((r) => ({
-      slug: r.brain.slug,
-      parentSlug: r.brain.parent_id ? (parentSlug.get(r.brain.parent_id) ?? null) : null,
-      priceCents: r.brain.price_cents,
+    shelf.missing.map((b) => ({
+      slug: b.slug,
+      parentSlug: b.parent_slug,
+      priceCents: b.price_cents,
     })),
   );
 
   const route = w.handle ? `${w.handle}/${w.slug}` : w.slug;
+  const open = shelf.brains.length - shelf.missing.length;
   const lines = [
     `# ${w.title}`,
     w.summary ?? "",
     "",
-    `This route has ${w.steps.length} steps and reads ${wantedCount} brains. ` +
-      `${onShelf} of them are open to you, so the steps are not included: ` +
+    `This route has ${w.steps.length} steps and reads ${shelf.named.length} brains. ` +
+      `${open} of them are open to you, so the steps are not included: ` +
       "running it short of its material produces work that looks grounded and is not.",
     "",
     "## What opens it",
@@ -173,8 +153,8 @@ async function closedText(
   for (const b of offer.brains) {
     lines.push(`- ${b.slug} — ${formatCents(b.priceCents)}: https://mozg.sh/explore`);
   }
-  for (const h of missing) {
-    lines.push(`- ${h} — not in the catalogue under that name; ask the route's author.`);
+  for (const h of shelf.unknown) {
+    lines.push(`- ${h} — not readable by you under that name; ask the route's author.`);
   }
   if (offer.totalCents > 0) {
     lines.push(

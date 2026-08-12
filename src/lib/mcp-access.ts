@@ -1,6 +1,6 @@
 import { maybeOne, one, query } from "@/db";
 import type { Brain } from "@/db/types";
-import { accessFor, type Access } from "@/lib/access";
+import type { Access } from "@/lib/access";
 import { packsWith } from "@/lib/packs";
 import { holdsAnyPack } from "@/lib/pack-access";
 import { gateFor, hasPaid } from "@/lib/paywall";
