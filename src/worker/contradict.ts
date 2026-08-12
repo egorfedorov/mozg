@@ -359,17 +359,45 @@ export async function judgePair(
   return { verdict: parsed.data, costCents: costCents(env.MODEL_JUDGE, usage) };
 }
 
-async function judge(pair: DuplicatePair): Promise<{ contradicts: boolean; costCents: number }> {
-  const { verdict: v, costCents: cost } = await judgePair(pair.a, pair.b);
-
-  // A "yes" with nothing to show for it is a "no": the flag exists to tell a
-  // reader what the disagreement is, and one that cannot say lands on the page
-  // as an accusation with no evidence. And a "yes" whose two sides say the
-  // same thing is a "no" for the same reason — see sameClaim.
-  const real =
+/**
+ * A "yes" with nothing to show for it is a "no": the flag exists to tell a
+ * reader what the disagreement is, and one that cannot say lands on the page
+ * as an accusation with no evidence. And a "yes" whose two sides say the same
+ * thing is a "no" for the same reason — see sameClaim.
+ */
+function stands(v: Verdict): boolean {
+  return (
     v.contradicts &&
     Boolean(v.subject && v.claim_a && v.claim_b) &&
-    !sameClaim(v.claim_a!, v.claim_b!);
+    !sameClaim(v.claim_a!, v.claim_b!)
+  );
+}
+
+async function judge(pair: DuplicatePair): Promise<{ contradicts: boolean; costCents: number }> {
+  const { verdict: v, costCents: first } = await judgePair(pair.a, pair.b);
+  let cost = first;
+
+  /**
+   * A yes has to be said twice.
+   *
+   * One pair on the live page kept coming back: identical input, identical
+   * prompt, judged innocent eight times running here and a conflict on the
+   * nightly pass. It is genuinely borderline — one note mentions a loop the
+   * other does not — and at a tenth of a percent of pairs it does not matter
+   * how it is judged, but it matters enormously that the answer is stable,
+   * because an unstable one appears and disappears from a sales page on its
+   * own.
+   *
+   * The second call is only bought when the first said yes, and yes is a few
+   * percent of judgements, so this costs a few percent more per run. A real
+   * conflict wins twice; a coin-flip stops being published on the toss.
+   */
+  let real = stands(v);
+  if (real) {
+    const second = await judgePair(pair.a, pair.b);
+    cost += second.costCents;
+    real = stands(second.verdict);
+  }
 
   await query(
     `insert into contradictions (note_a, note_b, distance, status, subject, claim_a, claim_b)
