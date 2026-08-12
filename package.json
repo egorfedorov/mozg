@@ -48,7 +48,8 @@
     "contradict": "tsx --env-file-if-exists=.env scripts/contradict.ts",
     "smoke": "tsx scripts/smoke.ts",
     "judge:eval": "tsx --env-file-if-exists=.env scripts/judge-eval.ts",
-    "judge:proposals": "tsx --env-file-if-exists=.env scripts/judge-proposals.ts"
+    "judge:proposals": "tsx --env-file-if-exists=.env scripts/judge-proposals.ts",
+    "judge:proposals:eval": "tsx --env-file-if-exists=.env scripts/judge-proposals-eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

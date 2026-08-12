@@ -69,14 +69,22 @@ const SYSTEM =
   "Answer general=false — and this is the common answer — when the note:\n" +
   "- names files, directories, modules or asset paths from one codebase;\n" +
   "- describes what one named product, game or app currently does;\n" +
-  "- states a value, clip name, symbol or setting chosen for one project;\n" +
+  "- names a clip, asset key, component or setting chosen for one project;\n" +
   "- would be wrong or meaningless to a reader with a different codebase;\n" +
   "- reads as a work log of what was just built or fixed.\n\n" +
-  "Answer general=true only when the note states something that holds beyond " +
-  "the author's own work: a rule, a constraint of a platform or library, a " +
+  "Answer general=true when the note states something that holds beyond the " +
+  "author's own work: a rule, a constraint of a platform or library, a " +
   "measured benchmark, a failure mode and its cause, a convention the tool " +
-  "itself imposes. A note may name a project as an EXAMPLE and still be " +
-  "general, if the lesson survives the example being removed.\n\n" +
+  "itself imposes.\n\n" +
+  "Apply one test to decide: would this still be true and useful for a " +
+  "different project of the same kind? Numbers do NOT make a note specific — " +
+  "a rule illustrated with concrete values ('rounding a 0.15 pay after a x2 " +
+  "multiplier gives 0.30 where the paytable showed 0.40') is exactly what a " +
+  "good general note looks like, and stripping the numbers would ruin it. " +
+  "What makes a note specific is that the reader needs THAT project to act " +
+  "on it — its files, its assets, its current state. A note may name a " +
+  "project as an example and stay general if the lesson survives the example " +
+  "being removed.\n\n" +
   "Being detailed, precise and well written is not evidence either way. The " +
   "best-written notes are often the most project-specific.";
 
