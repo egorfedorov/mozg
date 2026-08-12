@@ -52,6 +52,5 @@ Disallow: /settings
 Disallow: /sign-in
 Disallow: /api/
 Disallow: /mcp
-Disallow: /b/*/notes
 
 Sitemap: https://mozg.sh/sitemap.xml

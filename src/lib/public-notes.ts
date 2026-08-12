@@ -1,0 +1,101 @@
+import { maybeOne, query } from "@/db";
+import type { Brain } from "@/db/types";
+import { gateFor } from "@/lib/paywall";
+
+/**
+ * The reading surface for brains that cost nothing.
+ *
+ * 116,587 notes sit in 131 free public brains — 85% of everything the
+ * catalogue holds — and until now none of it was published anywhere. A brain's
+ * page shows fourteen note TITLES out of some nine hundred, so the entire
+ * indexable surface of the site was 184 pages of description. robots.txt even
+ * carried `Disallow: /b/*&#47;notes` for a route that did not exist.
+ *
+ * The unit is the category, not the note. A note is often two sentences —
+ * 116k pages of those is a thin-content farm, and search engines are right to
+ * treat it as one. Grouped by category the same corpus becomes 5,602 pages,
+ * 3,281 of them holding five notes or more: coherent, specific, and exactly
+ * the shape of the question somebody types.
+ *
+ * Nothing paid is ever exposed here. The test is gateFor() — the same one the
+ * paywall uses — so a free child of a paid family stays shut, and there is no
+ * second definition of "free" to drift from the first.
+ */
+
+/** Below this a category is published but kept out of the index. */
+export const THIN_CATEGORY = 5;
+
+export interface PublicCategory {
+  category: string;
+  notes: number;
+}
+
+/** The brain, only if everything in it is readable without paying. */
+export async function openBrain(handle: string, slug: string): Promise<Brain | null> {
+  const brain = await maybeOne<Brain>(
+    `select b.* from brains b join "user" u on u.id = b.owner_id
+      where u.handle = $1 and b.slug = $2 and b.visibility = 'public'`,
+    [handle, slug],
+  );
+  if (!brain) return null;
+  // A price on the brain or on its family means the notes are what was sold.
+  return (await gateFor(brain)) ? null : brain;
+}
+
+export async function categoriesOf(brainId: string): Promise<PublicCategory[]> {
+  return query<PublicCategory>(
+    `select category, count(*)::int as notes
+       from notes
+      where brain_id = $1 and status = 'active' and category is not null
+      group by category
+      order by count(*) desc, category`,
+    [brainId],
+  );
+}
+
+export interface PublicNote {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export async function notesIn(brainId: string, category: string): Promise<PublicNote[]> {
+  return query<PublicNote>(
+    `select id::text, title, body
+       from notes
+      where brain_id = $1 and status = 'active' and category = $2
+      order by weight desc, created_at`,
+    [brainId, category],
+  );
+}
+
+/**
+ * Every category page worth putting in the sitemap, across every open brain.
+ *
+ * Thin ones are deliberately absent: they still render for a person who
+ * follows a link, and they carry noindex, but asking a crawler to spend its
+ * budget on a page holding two notes is how the substantial 3,281 get seen
+ * less.
+ */
+export async function sitemapCategories(limit = 20_000): Promise<
+  { handle: string; slug: string; category: string; updated: Date }[]
+> {
+  return query(
+    `select u.handle, b.slug, n.category, max(n.created_at) as updated
+       from notes n
+       join brains b on b.id = n.brain_id
+       join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and b.price_cents = 0
+        and n.status = 'active' and n.category is not null
+        and u.handle is not null
+        -- A free child of a PAID family is not free: the parent's price
+        -- covers it, which is exactly what openBrain's gateFor() decides.
+        and not exists (select 1 from brains p
+                         where p.id = b.parent_id and p.price_cents > 0)
+      group by u.handle, b.slug, n.category
+     having count(*) >= ${THIN_CATEGORY}
+      order by count(*) desc
+      limit $1`,
+    [limit],
+  );
+}

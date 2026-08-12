@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { query } from "@/db";
 import { env } from "@/lib/env";
+import { sitemapCategories } from "@/lib/public-notes";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       where b.visibility = 'public' and u.handle is not null
       order by b.updated_at desc limit 5000`,
   ).catch(() => []);
+
+  // The reading surface: one page per subject of every free brain. This is the
+  // long tail — 3,281 pages against the 184 the site had — and it is why the
+  // notes routes exist at all.
+  const categories = await sitemapCategories().catch(() => []);
 
   return [
     { url: base, changeFrequency: "weekly", priority: 1 },
@@ -46,6 +52,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: b.updated_at,
       changeFrequency: "weekly" as const,
       priority: 0.6,
+    })),
+    ...brains.map((b) => ({
+      url: `${base}/b/${b.handle}/${b.slug}/notes`,
+      lastModified: b.updated_at,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    })),
+    ...categories.map((c) => ({
+      url:
+        `${base}/b/${c.handle}/${c.slug}/notes/` +
+        c.category.split("/").map(encodeURIComponent).join("/"),
+      lastModified: c.updated,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
     })),
   ];
 }
