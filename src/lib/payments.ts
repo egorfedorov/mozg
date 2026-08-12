@@ -162,7 +162,7 @@ export async function createOwnInvoice(opts: {
         `insert into topups
            (user_id, amount_cents, provider, reference, purpose, buy_brain_id,
             chain, pay_coin, pay_address, pay_amount, expires_at)
-         values ($1, $2, 'mozgpay', $3, $4, $5, $6, $7, $8, $9, now() + interval '3 hours')`,
+         values ($1, $2, 'mozgpay', $3, $4, $5, $6, $7, $8, $9, now() + interval '24 hours')`,
         [
           opts.userId,
           opts.amountCents,
@@ -225,6 +225,71 @@ export async function settleOwnInvoice(
       externalRef: reference,
       note: "crypto top-up (mozgpay)",
     });
+
+    return {
+      credited: true as const,
+      amountCents: row.amount_cents,
+      userId: row.user_id,
+      ...(row.purpose === "buy" && row.buy_brain_id
+        ? { followUp: { userId: row.user_id, buyBrainId: row.buy_brain_id } }
+        : {}),
+    };
+  });
+}
+
+/**
+ * Settle an invoice by hand, because the operator can see the money and we
+ * could not.
+ *
+ * There will always be payments the watcher cannot claim: a wallet that sends
+ * from a contract the explorer indexes oddly, a payer who underpays by a cent,
+ * a transfer that lands two days late. Before this existed the only remedy was
+ * an `adjustment` on the balance — which credits the person correctly and
+ * leaves the invoice reading `failed` forever, so the admin list showed a
+ * customer who had genuinely paid $50 with "paid in: —" beside it. That is how
+ * a real payment came to look like a freeloader, in our own dashboard.
+ *
+ * So this closes the invoice as what it is. `reference` is the ledger's unique
+ * key, exactly as the automatic path uses it, which makes a double press a
+ * no-op rather than a second credit.
+ */
+export async function settleManually(
+  reference: string,
+  opts: { txId?: string; by: string },
+): Promise<WebhookOutcome> {
+  return tx(async (client) => {
+    const { rows } = await client.query<{
+      id: string;
+      user_id: string;
+      amount_cents: number;
+      status: string;
+      purpose: string;
+      buy_brain_id: string | null;
+    }>(
+      `select id, user_id, amount_cents, status, purpose, buy_brain_id
+         from topups where reference = $1 for update`,
+      [reference],
+    );
+    const row = rows[0];
+    if (!row) return { credited: false as const, reason: "unknown" as const };
+    // Anything but already-paid may be settled: an expired invoice is the
+    // commonest case there is, and it is exactly the one that needs a human.
+    if (row.status === "paid") return { credited: false as const, reason: "already" as const };
+
+    await client.query(
+      `update topups set status = 'paid', settled_at = now(), provider_ref = $2
+        where id = $1`,
+      [row.id, opts.txId?.trim() || `manual:${opts.by}`],
+    );
+    const credit = await creditTopUp(client, {
+      userId: row.user_id,
+      amountCents: row.amount_cents,
+      externalRef: reference,
+      note: "marked received by an admin",
+    });
+    // The invoice is now true either way; the credit may have happened on an
+    // earlier press, and saying so beats crediting twice.
+    if (!credit.credited) return { credited: false as const, reason: "already" as const };
 
     return {
       credited: true as const,

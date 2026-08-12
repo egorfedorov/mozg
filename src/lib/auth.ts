@@ -5,6 +5,7 @@ import { mcp } from "better-auth/plugins";
 import { pool } from "../db";
 import { env, emailReady } from "./env";
 import { sendMail } from "./mail";
+import { cookies } from "next/headers";
 import { captureServer } from "./analytics";
 
 /**
@@ -102,8 +103,26 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          // Where they came from, read off the first-touch cookie the
+          // middleware set on the visit. Best effort on purpose: a signup that
+          // failed because attribution failed would be a spectacularly bad
+          // trade, so nothing here may throw.
+          let source: string | null = null;
+          try {
+            source = (await cookies()).get("mozg_src")?.value?.slice(0, 60) ?? null;
+            if (source) {
+              await pool.query(`update "user" set signup_source = $2 where id = $1`, [
+                user.id,
+                source,
+              ]);
+            }
+          } catch {
+            // No request context (a script, a test) or the column is not there
+            // yet on a stale deploy. Either way the account matters more.
+          }
+
           // The top of the v1 funnel: signup → first brain_search (PLAN.md).
-          captureServer(user.id, "user_signed_up");
+          captureServer(user.id, "user_signed_up", source ? { source } : undefined);
 
           // Public namespace for brains: /b/{handle}/{slug}. Derive from the
           // email local part, then disambiguate — the unique index is the

@@ -144,7 +144,7 @@ export default async function PayPage({
               />
             </div>
             <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>
-              {t("The invoice stays open for 3 hours. Paid straight to the author's wallet — no processor in the middle.")}</p>
+              {t("The invoice stays open for 24 hours, and paying a little over the asked amount is fine — it still lands. Paid straight to the author's wallet, no processor in the middle.")}</p>
           </>
         ) : (
           <p className="lede">

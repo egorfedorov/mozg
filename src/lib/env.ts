@@ -87,12 +87,15 @@ const schema = z.object({
   // mozgpay: our own crypto acceptance. Addresses are the owner's wallets —
   // the server watches them, it cannot spend from them. Each coin turns on
   // by its address existing. Optional TronGrid key raises rate limits;
-  // MOZGPAY_ETH_RPC overrides the public Ethereum RPC.
+  // MOZGPAY_ETH_EXPLORER overrides the Ethereum explorer the watcher reads.
   MOZGPAY_TRON_ADDRESS: z.string().optional(),
   MOZGPAY_ETH_ADDRESS: z.string().optional(),
   MOZGPAY_SOL_ADDRESS: z.string().optional(),
   MOZGPAY_BTC_ADDRESS: z.string().optional(),
-  MOZGPAY_ETH_RPC: z.string().url().default("https://eth.llamarpc.com"),
+  // Blockscout's public Ethereum instance: address-indexed, no key, no log
+  // range limit. The RPC it replaces defaulted to a host that now answers 521,
+  // and no free node tested will serve a day-wide eth_getLogs — see readEvm.
+  MOZGPAY_ETH_EXPLORER: z.string().url().default("https://eth.blockscout.com"),
   TRONGRID_API_KEY: z.string().optional(),
   // Settlement depth: a transfer counts only once this many blocks (Solana:
   // slots) sit on top of the one carrying it. Tron counts from the solidified

@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/admin";
 import { TOPIC_KEYS } from "@/lib/topics";
 import { scanSecrets, scanInjection } from "@/lib/scan";
 import { sendOperatorMessage } from "@/lib/operator-chat";
+import { settleManually, completeFollowUp } from "@/lib/payments";
 
 /**
  * Operator actions. Each one re-checks requireAdmin() — the page guard runs on
@@ -400,4 +401,36 @@ export async function resolveErrors(formData: FormData) {
   }
   console.log(`[admin] ${admin.email} resolved errors ${source}/${kind}`);
   revalidatePath("/admin/errors");
+}
+
+/**
+ * Mark a crypto invoice as received, when the operator can see the money and
+ * the watcher could not claim it.
+ *
+ * Deliberately separate from adjustBalance. A hand-moved balance is a goodwill
+ * credit and reads as one; this says "the invoice was paid", closes it, and
+ * makes the customer count as having paid in the admin list — which is the
+ * difference between a real buyer and, as it looked for a week, a freeloader.
+ */
+export async function markTopupReceived(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({ reference: z.string().min(1), txId: z.string().max(200).optional() })
+    .safeParse({
+      reference: formData.get("reference"),
+      txId: String(formData.get("txId") ?? "") || undefined,
+    });
+  if (!parsed.success) return;
+
+  const outcome = await settleManually(parsed.data.reference, {
+    txId: parsed.data.txId,
+    by: admin.email,
+  });
+  console.log(
+    `[admin] ${admin.email} marked ${parsed.data.reference} received: ` +
+      (outcome.credited ? `+${outcome.amountCents}c` : `no-op (${outcome.reason})`),
+  );
+  if (outcome.credited && outcome.followUp) await completeFollowUp(outcome);
+  revalidatePath("/admin/users");
 }

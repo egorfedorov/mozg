@@ -25,6 +25,56 @@ function isInfrastructure(pathname: string): boolean {
   );
 }
 
+
+/**
+ * First touch, remembered for the visit.
+ *
+ * `?ref=` or `utm_source=` when the link carried one, otherwise the referring
+ * host. Written once and never overwritten: by the time somebody signs up the
+ * referrer is our own sign-in page, so last touch would credit mozg.sh for
+ * every account we have.
+ *
+ * A cookie rather than a query string threaded through the auth flow, because
+ * the flow leaves the site — GitHub OAuth and back — and a parameter does not
+ * survive that. Lax and non-essential; it holds an origin, never a person.
+ */
+const SOURCE_COOKIE = "mozg_src";
+
+function rememberSource(req: NextRequest, res: NextResponse): NextResponse {
+  if (req.cookies.get(SOURCE_COOKIE)) return res;
+
+  const params = req.nextUrl.searchParams;
+  const tagged = params.get("ref") ?? params.get("utm_source");
+  let source = tagged?.trim().slice(0, 60);
+
+  if (!source) {
+    const referer = req.headers.get("referer");
+    if (referer) {
+      try {
+        const host = new URL(referer).hostname.replace(/^www\./, "");
+        // Our own pages are not a source; they are the visit continuing.
+        if (!host.endsWith("mozg.sh")) source = host.slice(0, 60);
+      } catch {
+        // A malformed Referer is not worth a 500 on every page load.
+      }
+    } else {
+      // No referrer and no tag: typed, bookmarked, or stripped by the
+      // referrer policy of wherever they came from. Worth telling apart from
+      // "we never looked", which is what null now means.
+      source = "direct";
+    }
+  }
+  if (!source) return res;
+
+  res.cookies.set(SOURCE_COOKIE, source, {
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: "lax",
+    path: "/",
+    httpOnly: false,
+  });
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
 
@@ -68,6 +118,7 @@ export function middleware(req: NextRequest) {
   }
 
   if (!host.startsWith("learn.")) {
+    // Main site: note where this visit came from before anything else.
     // Two same-name session cookies at different scopes is a real problem: one
     // left over from before the cookie widened to .mozg.sh, one current, and the
     // server reads the stale one first — which is how a successful OAuth used to
@@ -90,9 +141,9 @@ export function middleware(req: NextRequest) {
         "Set-Cookie",
         `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
       );
-      return res;
+      return rememberSource(req, res);
     }
-    return NextResponse.next();
+    return rememberSource(req, NextResponse.next());
   }
 
   const { pathname } = req.nextUrl;

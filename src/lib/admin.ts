@@ -104,11 +104,13 @@ export interface AdminUser {
   /** Null when this user has never made an MCP call. */
   last_call: string | null;
   created_at: string;
+  /** First-touch origin. Null for accounts created before it was recorded. */
+  signup_source: string | null;
 }
 
 export async function adminUsers(limit = 200): Promise<AdminUser[]> {
   return query<AdminUser>(
-    `select u.id, u.email, u.name, u.handle, u.plan,
+    `select u.id, u.email, u.name, u.handle, u.plan, u.signup_source,
             u."emailVerified" as email_verified, u.balance_cents,
             -- A balance answers "how much is left", never "what for". Both
             -- sides of the account, so a top-up that went somewhere is visible
@@ -359,5 +361,36 @@ export async function adminLedger(limit = 25): Promise<AdminLedgerRow[]> {
        left join brains b on b.id = l.brain_id
       order by l.id desc limit $1`,
     [limit],
+  );
+}
+
+export interface AdminOpenInvoice {
+  user_id: string;
+  reference: string;
+  amount_cents: number;
+  status: string;
+  pay_coin: string | null;
+  pay_amount: string | null;
+  created_at: string;
+}
+
+/**
+ * Invoices that were started and never settled — the operator's inbox.
+ *
+ * Failed ones are included, and they are the point: an expired invoice is
+ * exactly the row a human has to look at, because the money may well have
+ * arrived after the deadline or in an amount the watcher would not claim.
+ * Once a payment stops being visible here it stops being chased at all, which
+ * is how a paying customer sat in the list for a week reading "paid in: —".
+ */
+export async function adminOpenInvoices(userIds: string[]): Promise<AdminOpenInvoice[]> {
+  if (!userIds.length) return [];
+  return query<AdminOpenInvoice>(
+    `select user_id, reference, amount_cents, status, pay_coin, pay_amount::text,
+            to_char(created_at at time zone 'UTC', 'YYYY-MM-DD') as created_at
+       from topups
+      where user_id = any($1::text[]) and status <> 'paid'
+      order by created_at desc`,
+    [userIds],
   );
 }

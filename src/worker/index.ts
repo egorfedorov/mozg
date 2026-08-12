@@ -343,8 +343,11 @@ async function main() {
 
   await boss.work(QUEUES.mozgpay, { batchSize: 1, pollingIntervalSeconds: 15 }, async () => {
     const r = await runMozgpayWatch();
-    if (r.matched || r.expired) {
-      console.log(`[mozgpay] matched=${r.matched} expired=${r.expired} seen=${r.seen}`);
+    if (r.matched || r.expired || r.unmatched) {
+      console.log(
+        `[mozgpay] matched=${r.matched} expired=${r.expired} ` +
+          `unmatched=${r.unmatched} seen=${r.seen}`,
+      );
     }
   });
   await scheduleMozgpay();

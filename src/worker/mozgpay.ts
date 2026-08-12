@@ -32,7 +32,19 @@ export interface MozgpayReport {
   matched: number;
   expired: number;
   seen: number;
+  /** Transfers into our address that no open invoice claimed. */
+  unmatched: number;
 }
+
+/**
+ * How much over the asking price still counts as paying it.
+ *
+ * Two percent covers the rounding an exchange does and the margin a careful
+ * payer adds, and stays well under the gap between any two invoice amounts a
+ * person would plausibly pick. It is a ceiling rather than a licence: the
+ * closest fitting invoice is the one that gets paid.
+ */
+const OVERPAY_TOLERANCE = 0.02;
 
 // ─── chain readers ───────────────────────────────────────────────────────────
 
@@ -87,46 +99,69 @@ async function readTron(coin: Coin, address: string): Promise<Transfer[]> {
   return out;
 }
 
-const TRANSFER_TOPIC =
-  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-
+/**
+ * ERC-20 transfers in, read from a public explorer rather than an RPC node.
+ *
+ * This used to scan `eth_getLogs` over the last ~2400 blocks through
+ * MOZGPAY_ETH_RPC, whose default was https://eth.llamarpc.com. That host now
+ * answers 521 — and the failure was invisible, because the caller catches a
+ * reader's error, warns, and moves to the next chain. So ERC-20 invoices were
+ * never checked at all, silently, and the one real customer who paid had to be
+ * credited by hand.
+ *
+ * Swapping the URL does not fix it: every free node tested refuses a log range
+ * wide enough for a day of invoices — publicnode 403s, 1rpc caps at 50 blocks,
+ * ankr wants a key, cloudflare rate-limits. An address-indexed explorer answers
+ * the question we actually have ("what arrived at this address") in one call,
+ * with no range limit and no key, which is the same reason readBtc uses
+ * mempool.space.
+ */
 async function readEvm(coin: Coin, address: string): Promise<Transfer[]> {
-  const rpc = async (method: string, params: unknown[]) => {
-    const res = await fetch(env.MOZGPAY_ETH_RPC, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  const get = async (path: string) => {
+    const res = await fetch(`${env.MOZGPAY_ETH_EXPLORER}${path}`, {
       signal: AbortSignal.timeout(20_000),
+      headers: { accept: "application/json" },
     });
-    if (!res.ok) throw new Error(`eth rpc ${res.status}`);
-    const body = (await res.json()) as { result?: unknown; error?: { message?: string } };
-    if (body.error) throw new Error(`eth rpc: ${body.error.message}`);
-    return body.result;
+    if (!res.ok) throw new Error(`explorer ${res.status}`);
+    return res.json();
   };
 
-  const latest = Number(await rpc("eth_blockNumber", []));
-  // ~8 hours of blocks: invoices live 3h, and the window must outlive them.
-  const fromBlock = `0x${Math.max(0, latest - 2400).toString(16)}`;
-  const paddedTo = `0x${"0".repeat(24)}${address.slice(2).toLowerCase()}`;
+  const [transfers, blocks] = await Promise.all([
+    get(`/api/v2/addresses/${address}/token-transfers?type=ERC-20`) as Promise<{
+      items?: {
+        transaction_hash?: string;
+        log_index?: number;
+        block_number?: number;
+        timestamp?: string;
+        token?: { address_hash?: string; address?: string };
+        total?: { value?: string; decimals?: string };
+        to?: { hash?: string };
+      }[];
+    }>,
+    get(`/api/v2/blocks?type=block`) as Promise<{ items?: { height?: number }[] }>,
+  ]);
 
-  const logs = (await rpc("eth_getLogs", [
-    { fromBlock, toBlock: "latest", address: coin.contract, topics: [TRANSFER_TOPIC, null, paddedTo] },
-  ])) as { transactionHash: string; logIndex: string; data: string; blockNumber: string }[];
+  const tip = blocks.items?.[0]?.height ?? 0;
+  const want = coin.contract?.toLowerCase();
 
   const out: Transfer[] = [];
-  for (const log of logs.slice(-50)) {
-    // A log in "latest" is ~1 confirmation. Count only once enough blocks sit
-    // on top; a younger transfer just waits for the next watch tick.
-    if (!confirmedAt(Number(log.blockNumber), latest, env.MOZGPAY_EVM_CONFIRMATIONS)) continue;
-    const value = Number(BigInt(log.data)) / 10 ** coin.decimals;
-    // One block-timestamp call per candidate is fine at these volumes.
-    const block = (await rpc("eth_getBlockByNumber", [log.blockNumber, false])) as {
-      timestamp: string;
-    };
+  for (const t of (transfers.items ?? []).slice(0, 50)) {
+    const token = (t.token?.address_hash ?? t.token?.address ?? "").toLowerCase();
+    if (want && token !== want) continue;
+    if ((t.to?.hash ?? "").toLowerCase() !== address.toLowerCase()) continue;
+    if (t.block_number == null || !t.timestamp || !t.transaction_hash) continue;
+    // Same depth rule as every other chain here: an explorer lists a transfer
+    // the moment it is in a block, and a block can still be reorganised out.
+    if (!confirmedAt(t.block_number, tip, env.MOZGPAY_EVM_CONFIRMATIONS)) continue;
+
+    const decimals = Number(t.total?.decimals ?? coin.decimals);
+    const value = Number(t.total?.value ?? 0) / 10 ** decimals;
+    if (!(value > 0)) continue;
+
     out.push({
-      txId: `${log.transactionHash}:${Number(log.logIndex)}`,
+      txId: `${t.transaction_hash}:${t.log_index ?? 0}`,
       amount: value.toFixed(coin.decimals),
-      timestampMs: Number(block.timestamp) * 1000,
+      timestampMs: Date.parse(t.timestamp),
     });
   }
   return out;
@@ -236,19 +271,21 @@ const READERS: Record<Coin["chain"], (coin: Coin, address: string) => Promise<Tr
 // ─── the watch ───────────────────────────────────────────────────────────────
 
 export async function runMozgpayWatch(): Promise<MozgpayReport> {
-  if (!mozgpayReady) return { matched: 0, expired: 0, seen: 0 };
+  if (!mozgpayReady) return { matched: 0, expired: 0, seen: 0, unmatched: 0 };
 
-  const exp = await query<{ id: string }>(
-    `update topups set status = 'failed', settled_at = now()
-      where provider = 'mozgpay' and status = 'pending' and expires_at < now()
-      returning id`,
-  );
-
+  // The search runs BEFORE anything is written off, and that order is the
+  // whole point. Expiring first meant an invoice that ran out of time five
+  // minutes ago was already 'failed' by the time this pass looked at the
+  // chain, so a payment arriving near the deadline could never be matched —
+  // not on this pass, and not on any later one, because later passes only
+  // read pending rows.
   const open = await query<OpenInvoice>(
     `select reference, pay_amount::text, pay_coin, pay_address, created_at from topups
       where provider = 'mozgpay' and status = 'pending'`,
   );
-  if (!open.length) return { matched: 0, expired: exp.length, seen: 0 };
+  if (!open.length) {
+    return { matched: 0, expired: (await expireOverdue()).length, seen: 0, unmatched: 0 };
+  }
 
   // Watch every address an open invoice was issued with — not the current
   // configured address. The operator may rotate wallets while an invoice is
@@ -263,6 +300,7 @@ export async function runMozgpayWatch(): Promise<MozgpayReport> {
 
   let matched = 0;
   let seen = 0;
+  let unmatched = 0;
   for (const { coin, address } of watch.values()) {
     let transfers: Transfer[];
     try {
@@ -275,16 +313,18 @@ export async function runMozgpayWatch(): Promise<MozgpayReport> {
     seen += transfers.length;
 
     for (const tx of transfers) {
-      const invoice = open.find(
-        (i) =>
-          i.pay_coin === coin.key &&
-          i.pay_address === address &&
-          // Amounts compare as text at the coin's own precision — the DB
-          // column is wider (btc needs 8), so trailing zeros must not differ.
-          Number(i.pay_amount).toFixed(coin.decimals) === tx.amount &&
-          tx.timestampMs >= i.created_at.getTime(),
-      );
-      if (!invoice) continue;
+      const invoice = matchInvoice(open, coin, address, tx);
+      if (!invoice) {
+        // Money arrived at our address and paid nothing. Almost always a
+        // payment we should have taken, so it is said out loud rather than
+        // dropped — the alternative is finding out during an audit.
+        unmatched++;
+        console.warn(
+          `[mozgpay] unmatched ${tx.amount} ${coin.label} at ${address} ` +
+            `(${tx.txId.slice(0, 14)}…) — no open invoice fits`,
+        );
+        continue;
+      }
 
       const used = await query(
         `select 1 from topups where provider_ref = $1 and provider = 'mozgpay'`,
@@ -303,5 +343,50 @@ export async function runMozgpayWatch(): Promise<MozgpayReport> {
     }
   }
 
-  return { matched, expired: exp.length, seen };
+  // Only now: whatever is still pending and out of time is written off.
+  return { matched, expired: (await expireOverdue()).length, seen, unmatched };
+}
+
+async function expireOverdue() {
+  return query<{ id: string }>(
+    `update topups set status = 'failed', settled_at = now()
+      where provider = 'mozgpay' and status = 'pending' and expires_at < now()
+      returning id`,
+  );
+}
+
+/**
+ * Which open invoice, if any, this transfer pays.
+ *
+ * Exact equality was the rule, and it cost us the only real payment we ever
+ * took: an invoice for 50.000000 USDT was settled on-chain by a transfer of
+ * 50.050000, which did not match, expired, and was credited by hand an hour
+ * later. Overpaying is not an edge case — exchanges round, wallets add a
+ * margin, and nobody hits the sixth decimal on purpose.
+ *
+ * So a transfer pays an invoice when it covers it and does not wildly exceed
+ * it, and when two invoices both fit, the closest one wins. Underpayment is
+ * still refused: crediting a full invoice for part of its money is a hole,
+ * and the operator can settle it by hand from the admin page.
+ */
+export function matchInvoice(
+  open: OpenInvoice[],
+  coin: Coin,
+  address: string,
+  tx: Transfer,
+): OpenInvoice | undefined {
+  const paid = Number(tx.amount);
+  let best: { invoice: OpenInvoice; over: number } | undefined;
+
+  for (const i of open) {
+    if (i.pay_coin !== coin.key || i.pay_address !== address) continue;
+    if (tx.timestampMs < i.created_at.getTime()) continue;
+    const want = Number(i.pay_amount);
+    if (!(want > 0)) continue;
+    const over = paid - want;
+    if (over < 0 || over > want * OVERPAY_TOLERANCE) continue;
+    if (!best || over < best.over) best = { invoice: i, over };
+  }
+
+  return best?.invoice;
 }

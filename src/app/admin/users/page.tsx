@@ -2,9 +2,15 @@ import { Fragment } from "react";
 import { translator } from "@/lib/t";
 import { fill, markup } from "@/lib/markup";
 import AppShell from "@/components/AppShell";
-import { requireAdmin, adminUsers, adminUserMovements } from "@/lib/admin";
+import {
+  requireAdmin,
+  adminUsers,
+  adminUserMovements,
+  adminOpenInvoices,
+  type AdminOpenInvoice,
+} from "@/lib/admin";
 import { formatCents } from "@/lib/money-math";
-import { setPlan, adjustBalance, revokeTokens, deleteUser } from "../actions";
+import { setPlan, adjustBalance, revokeTokens, deleteUser, markTopupReceived } from "../actions";
 import MessageUserForm from "../MessageUserForm";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +28,13 @@ export default async function AdminUsersPage() {
   // One query for every account's money, grouped here — the alternative is a
   // query per row, and this table renders two hundred of them.
   const movements = await adminUserMovements(users.map((u) => u.id));
+  const invoices = await adminOpenInvoices(users.map((u) => u.id));
+  const unsettled = new Map<string, AdminOpenInvoice[]>();
+  for (const i of invoices) {
+    const list = unsettled.get(i.user_id) ?? [];
+    list.push(i);
+    unsettled.set(i.user_id, list);
+  }
   const history = new Map<string, typeof movements>();
   for (const m of movements) {
     const list = history.get(m.user_id);
@@ -78,6 +91,9 @@ export default async function AdminUsersPage() {
                       <span style={{ display: "block", color: "var(--ink-2)", fontSize: ".75rem" }}>
                         {u.email}
                         {!u.email_verified && t(" · unverified")}
+                        {/* Where this account came from. Blank on the 36 that
+                            arrived before anything recorded it. */}
+                        {u.signup_source && ` · ${u.signup_source}`}
                       </span>
                       <MessageUserForm userId={u.id} label="→" />
                     </td>
@@ -157,6 +173,50 @@ export default async function AdminUsersPage() {
                     </td>
                   </tr>
 
+                  {(unsettled.get(u.id) ?? []).length > 0 && (
+                    <tr>
+                      {/* Started and never settled. Sits above the ledger
+                          because it is the only part of this table that is a
+                          question rather than a record: did this money
+                          actually arrive? */}
+                      <td colSpan={11} style={{ paddingTop: 0 }}>
+                        <div
+                          className="mono"
+                          style={{ fontSize: ".75rem", display: "grid", gap: ".35rem" }}
+                        >
+                          {(unsettled.get(u.id) ?? []).map((i) => (
+                            <div
+                              key={i.reference}
+                              style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}
+                            >
+                              <span style={{ color: "var(--color-riso-red)" }}>
+                                {t("unsettled")}</span>
+                              <span style={{ color: "var(--ink-3)" }}>{i.created_at}</span>
+                              <span>{formatCents(i.amount_cents)}</span>
+                              <span style={{ color: "var(--ink-2)" }}>
+                                {i.pay_amount ?? ""} {i.pay_coin ?? ""} · {i.status}
+                              </span>
+                              <form
+                                action={markTopupReceived}
+                                style={{ display: "flex", gap: ".3rem", marginLeft: "auto" }}
+                              >
+                                <input type="hidden" name="reference" value={i.reference} />
+                                <input
+                                  className="mono"
+                                  name="txId"
+                                  placeholder={t("tx hash (optional)")}
+                                  aria-label={fill(t("Transaction for <0/>"), [i.reference])}
+                                  style={{ width: "13rem", fontSize: ".75rem" }}
+                                />
+                                <button className="btn btn-ghost" style={{ fontSize: ".75rem" }}>
+                                  {t("money arrived")}</button>
+                              </form>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                   {spending.length > 0 && (
                     <tr>
                       {/* Its own row rather than a cell in the one above: a
