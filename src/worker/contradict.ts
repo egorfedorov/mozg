@@ -92,13 +92,25 @@ const VERDICT_SCHEMA = {
  * prompt spends most of its words on what is *not* a contradiction, and the
  * default is no.
  *
- * Held against five known pairs on haiku-4-5 (2026-08-07, ~0.17¢ each) and
- * right on all five in both directions: it caught two genuine conflicts (the
- * same rule with a different number, and two opposite instructions for one
- * endpoint) and refused three lookalikes — two SDK versions, one fact twice in
- * other words, and a general rule beside its exception. Rerun it with
- * judgePair before touching a word of this: the negative list is doing the
- * work, and shortening it is how the page starts crying wolf.
+ * `npm run judge:eval` holds it against eight known pairs — three real
+ * conflicts and five lookalikes, three of which this judge actually got wrong
+ * on the live pack page. Run it before touching a word of this. 8/8 twice on
+ * haiku-4-5 (2026-08-12, ~1.5¢ a run).
+ *
+ * The last two bullets of the negative list were added to that run and are
+ * load-bearing: without them the judge flagged "Executables handles the win
+ * types" against "Executables inherits them, including the win types", and a
+ * note that mentioned one extra loop against one that did not. Both are the
+ * same failure — a difference in where a thing comes from, or in how much of
+ * the procedure is written down, read as a disagreement about what to do.
+ *
+ * What did NOT work, so nobody spends the afternoon again: making the judge
+ * name the divergent action an agent would take, as a required field, and
+ * refusing any verdict that could not. It scored 6/8 — the model rationalises
+ * one ("an agent would either implement it here or look for it in the parent")
+ * rather than concluding there is none. Asking it to justify a yes makes it
+ * better at justifying, not better at saying no. The negative list is doing
+ * the work, and shortening it is how the page starts crying wolf.
  */
 const SYSTEM =
   "You compare two notes taken from two different knowledge brains that are " +
@@ -113,6 +125,11 @@ const SYSTEM =
   "- one is a general rule and the other a specific case of it;\n" +
   "- they overlap, repeat each other, or say the same thing in other words;\n" +
   "- they differ only in wording, emphasis, detail or completeness;\n" +
+  "- one says a class or module does something and the other says it " +
+  "inherits, delegates or gets it from elsewhere — the behaviour is the same " +
+  "and only its origin is described differently;\n" +
+  "- one gives more of a procedure than the other — an extra step, loop, " +
+  "condition or reason — without denying anything the other says;\n" +
   "- you are unsure.\n\n" +
   "Two notes can cover the same topic and both be true. That is not a " +
   "contradiction. Only a genuine conflict is.\n\n" +
