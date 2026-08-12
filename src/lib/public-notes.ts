@@ -128,3 +128,68 @@ export async function sitemapCategories(limit = 20_000): Promise<
     [limit],
   );
 }
+
+export interface OpenChild {
+  handle: string;
+  slug: string;
+  title: string;
+  notes: number;
+}
+
+/**
+ * The readable children of an umbrella brain.
+ *
+ * react, nuxt, opentelemetry and the tf-aws family hold nothing themselves —
+ * their material lives one level down, which is why their exam and their
+ * search both run family-wide. Their notes index answered 404 until this:
+ * technically true of their own rows, and wrong about the brain, since a
+ * reader following the link wants the family's subjects.
+ */
+export async function openChildren(parentId: string): Promise<OpenChild[]> {
+  return query<OpenChild>(
+    `select u.handle, c.slug, c.title,
+            (select count(*)::int from notes n
+              where n.brain_id = c.id and n.status = 'active') as notes
+       from brains c join "user" u on u.id = c.owner_id
+      where c.parent_id = $1 and c.visibility = 'public' and c.price_cents = 0
+        and u.handle is not null
+      order by 4 desc`,
+    [parentId],
+  );
+}
+
+/**
+ * Every brain whose notes index is actually open — the sitemap's own list.
+ *
+ * Derived from the category query rather than from "all public brains", which
+ * is the bug this replaces: 165 index URLs were published and 30-odd of them
+ * answered 404, because paid brains and empty umbrellas were in the list. A
+ * sitemap that offers a crawler dead links spends its budget on nothing and
+ * teaches it to trust the file less.
+ */
+export async function sitemapNoteIndexes(): Promise<
+  { handle: string; slug: string; updated: Date }[]
+> {
+  return query(
+    `select u.handle, b.slug, max(n.created_at) as updated
+       from notes n
+       join brains b on b.id = n.brain_id
+       join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and b.price_cents = 0
+        and n.status = 'active' and n.category is not null
+        and u.handle is not null
+        and not exists (select 1 from brains p
+                         where p.id = b.parent_id and p.price_cents > 0)
+      group by u.handle, b.slug
+     union
+     select u.handle, p.slug, max(n.created_at) as updated
+       from notes n
+       join brains c on c.id = n.brain_id
+       join brains p on p.id = c.parent_id
+       join "user" u on u.id = p.owner_id
+      where p.visibility = 'public' and p.price_cents = 0
+        and c.visibility = 'public' and c.price_cents = 0
+        and n.status = 'active' and u.handle is not null
+      group by u.handle, p.slug`,
+  );
+}

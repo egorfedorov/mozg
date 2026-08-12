@@ -4,7 +4,7 @@ import { translator } from "@/lib/t";
 import { markup } from "@/lib/markup";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
-import { categoriesOf, openBrain, THIN_CATEGORY } from "@/lib/public-notes";
+import { categoriesOf, openBrain, openChildren, THIN_CATEGORY } from "@/lib/public-notes";
 
 export const dynamic = "force-dynamic";
 
@@ -49,9 +49,16 @@ export default async function BrainNotesIndex({
   if (!brain) notFound();
 
   const categories = await categoriesOf(brain.id);
-  if (!categories.length) notFound();
+  // An umbrella brain holds nothing itself — react, nuxt, opentelemetry and
+  // the tf-aws family all keep their material one level down, which is why
+  // their exam and their search run family-wide. Showing the children is the
+  // honest answer here; 404 was true of the row and wrong about the brain.
+  const children = categories.length ? [] : await openChildren(brain.id);
+  if (!categories.length && !children.length) notFound();
 
-  const total = categories.reduce((n, c) => n + c.notes, 0);
+  const total = categories.length
+    ? categories.reduce((n, c) => n + c.notes, 0)
+    : children.reduce((n, c) => n + c.notes, 0);
 
   return (
     <>
@@ -75,13 +82,29 @@ export default async function BrainNotesIndex({
           </p>
         )}
         <p style={{ maxWidth: "58ch", color: "var(--ink-2)" }}>
-          {markup(
-            t("<0/> notes across <1/> subjects, free to read. Your agent searches them over MCP instead of guessing — <2>connect it</2>."),
-            [total.toLocaleString("en-US"), categories.length, <Link href="/connect" key="s2" />],
-          )}
+          {categories.length
+            ? markup(
+                t("<0/> notes across <1/> subjects, free to read. Your agent searches them over MCP instead of guessing — <2>connect it</2>."),
+                [total.toLocaleString("en-US"), categories.length, <Link href="/connect" key="s2" />],
+              )
+            : markup(
+                t("<0/> notes across <1/> brains in this family, free to read. Searching this one reaches all of them — <2>connect your agent</2>."),
+                [total.toLocaleString("en-US"), children.length, <Link href="/connect" key="s2" />],
+              )}
         </p>
 
         <div className="rows" style={{ marginTop: "2rem" }}>
+          {children.map((c) => (
+            <Link className="row" key={c.slug} href={`/b/${c.handle}/${c.slug}/notes`}>
+              <span style={{ minWidth: 0 }}>
+                <strong>{c.title}</strong>
+                <span className="row-sub">
+                  {c.handle}/{c.slug}
+                </span>
+              </span>
+              <span className="row-side">{c.notes.toLocaleString("en-US")}</span>
+            </Link>
+          ))}
           {categories.map((c) => (
             <Link
               className="row"

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { query } from "@/db";
 import { env } from "@/lib/env";
-import { sitemapCategories } from "@/lib/public-notes";
+import { sitemapCategories, sitemapNoteIndexes } from "@/lib/public-notes";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // long tail — 3,281 pages against the 184 the site had — and it is why the
   // notes routes exist at all.
   const categories = await sitemapCategories().catch(() => []);
+  // Derived from what is actually open, not from every public brain: the first
+  // version listed 165 index URLs and thirty-odd answered 404, because paid
+  // brains and empty umbrellas were in the list.
+  const noteIndexes = await sitemapNoteIndexes().catch(() => []);
 
   return [
     { url: base, changeFrequency: "weekly", priority: 1 },
@@ -53,9 +57,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
-    ...brains.map((b) => ({
+    ...noteIndexes.map((b) => ({
       url: `${base}/b/${b.handle}/${b.slug}/notes`,
-      lastModified: b.updated_at,
+      lastModified: b.updated,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     })),
