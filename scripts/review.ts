@@ -1,33 +1,56 @@
 /**
- * Work the review queue from the terminal.
+ * Triage the proposals readers left on a brain, from the command line.
  *
- *   npm run review -- --brain stake-engine-rgs-api          # list what is waiting
- *   npm run review -- --brain stake-engine-rgs-api --approve-all
- *   npm run review -- --approve <note-id>
- *   npm run review -- --reject <note-id>
+ *   npm run review                      # list everything pending
+ *   npm run review -- --approve <id>    # take one
+ *   npm run review -- --reject <id>     # refuse one
+ *   npm run review -- --reject-empty    # refuse every note whose body is its title
  *
- * Approving is where a note an agent wrote becomes searchable, so this is the
- * step that closes the loop: the agent learned something, you agreed, and now
- * every agent has it.
+ * The owner does this from /brains/<slug> one click at a time, which is the
+ * right shape for two proposals and the wrong one for sixteen. It exists as a
+ * script because approving CANNOT be done in SQL: lib/review.ts embeds the
+ * note and only then flips its status, and an "active" note with no chunks is
+ * invisible to search — an approval that silently did nothing.
  */
-import { query, maybeOne } from "@/db";
-import type { Note } from "@/db/types";
+import { maybeOne, query } from "@/db";
 import { approve, reject } from "@/lib/review";
+import type { Note } from "@/db/types";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
+async function list() {
+  const rows = await query<{
+    id: string;
+    slug: string;
+    title: string;
+    body_len: number;
+    empty: boolean;
+  }>(
+    `select n.id::text, b.slug, n.title, length(trim(n.body))::int as body_len,
+            (trim(n.body) = trim(n.title)) as empty
+       from notes n join brains b on b.id = n.brain_id
+      where n.status = 'pending'
+      order by b.slug, n.created_at`,
+  );
+  if (!rows.length) {
+    console.log("\nNothing pending.\n");
+    return;
+  }
+  console.log(`\n${rows.length} pending:\n`);
+  for (const r of rows) {
+    console.log(`  ${r.id}  ${r.empty ? "EMPTY " : "      "}${r.body_len
+      .toString()
+      .padStart(5)}c  ${r.slug}  ${r.title.slice(0, 70)}`);
+  }
+  console.log("");
+}
+
 async function main() {
   const approveId = arg("approve");
   const rejectId = arg("reject");
-
-  if (rejectId) {
-    await reject(rejectId);
-    console.log(`\nrejected ${rejectId}\n`);
-    process.exit(0);
-  }
 
   if (approveId) {
     const note = await maybeOne<Note>(
@@ -35,49 +58,32 @@ async function main() {
       [approveId],
     );
     if (!note) {
-      console.error(`\nNo pending note ${approveId}.\n`);
+      console.error(`No pending note ${approveId}.`);
       process.exit(1);
     }
+    // Embeds first; a throw here leaves the note pending, which is the
+    // correct outcome when the embedder is down.
     await approve(note);
-    console.log(`\napproved "${note.title}" — searchable now\n`);
-    process.exit(0);
+    console.log(`approved: ${note.title}`);
+  } else if (rejectId) {
+    await reject(rejectId);
+    console.log(`rejected ${rejectId}`);
+  } else if (process.argv.includes("--reject-empty")) {
+    // A note whose body repeats its title carries nothing; the product's own
+    // write path refuses it on the way in, and these predate that check.
+    const gone = await query<{ id: string }>(
+      `update notes set status = 'rejected'
+        where status = 'pending' and trim(body) = trim(title)
+        returning id`,
+    );
+    console.log(`rejected ${gone.length} empty proposal(s)`);
   }
 
-  const slug = arg("brain");
-  const pending = await query<Note & { slug: string }>(
-    `select n.*, b.slug from notes n join brains b on b.id = n.brain_id
-      where n.status = 'pending' and ($1::text is null or b.slug = $1)
-      order by b.slug, n.created_at`,
-    [slug ?? null],
-  );
-
-  if (!pending.length) {
-    console.log(`\nnothing waiting${slug ? ` in ${slug}` : ""}\n`);
-    process.exit(0);
-  }
-
-  if (process.argv.includes("--approve-all")) {
-    console.log(`\napproving ${pending.length} note(s)\n`);
-    for (const note of pending) {
-      await approve(note);
-      console.log(`  ✓ ${note.title}`);
-    }
-    console.log("");
-    process.exit(0);
-  }
-
-  console.log(`\n${pending.length} note(s) waiting for review\n`);
-  for (const n of pending) {
-    console.log(`  ${n.id}  [${n.slug}] ${n.kind}`);
-    console.log(`    ${n.title}`);
-    console.log(`    ${n.body.replace(/\s+/g, " ").slice(0, 160)}`);
-    console.log(`    written by ${n.agent_client ?? "an agent"}\n`);
-  }
-  console.log("  --approve <id>, --reject <id>, or --approve-all\n");
+  await list();
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("\n" + (err instanceof Error ? err.message : String(err)));
+main().catch((e) => {
+  console.error(e);
   process.exit(1);
 });
