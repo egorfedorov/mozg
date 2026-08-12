@@ -1,7 +1,7 @@
 import "./test-env";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { symlinkTarget } from "./page";
+import { symlinkTarget, MAX_HOPS } from "./page";
 
 /**
  * The case this was written for: ant-design's AGENTS.md is a symlink to
@@ -72,4 +72,11 @@ test("a link target is recognised at a length the thin-page guard rejects", () =
   const body = "CLAUDE.md";
   assert.ok(body.length < 30);
   assert.ok(symlinkTarget(RAW, body));
+});
+
+test("the hop budget stops a redirect loop before it starts", () => {
+  // Not a behaviour test — the constant is the loop guard for both redirects
+  // and symlinks, and a change to it should be deliberate. Three covers
+  // http→https→canonical, which is every real documentation link.
+  assert.equal(MAX_HOPS, 3);
 });

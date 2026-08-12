@@ -26,7 +26,8 @@ import { enqueueExam } from "@/worker/queue";
  */
 
 export interface IngestResult {
-  status: "ready" | "rejected" | "failed";
+  /** "gone" — the source was deleted before its queued job ran. */
+  status: "ready" | "rejected" | "failed" | "gone";
   notes: number;
   findings?: Finding[];
   costCents?: number;
@@ -112,7 +113,15 @@ export async function ingestSource(sourceId: string): Promise<IngestResult> {
 }
 
 async function ingestLocked(sourceId: string): Promise<IngestResult> {
-  const source = await one<Source>(`select * from sources where id = $1`, [sourceId]);
+  // A queued job whose source has since been deleted is not a failure, it is
+  // an answer: there is nothing to ingest. Throwing here raised an operator
+  // error and pg-boss retried it five times — which is what anybody pressing
+  // "delete" on a source that is still in the queue would get.
+  const source = await maybeOne<Source>(`select * from sources where id = $1`, [sourceId]);
+  if (!source) {
+    console.log(`[ingest] ${sourceId} was deleted before its turn — nothing to do`);
+    return { status: "gone", notes: 0 };
+  }
 
   if (source.status === "ready") {
     return { status: "ready", notes: source.note_count };

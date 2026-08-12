@@ -27,6 +27,13 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const MIN_TEXT = 30;
 
 /**
+ * Redirects and symlinks followed before we call it a loop. Three is more than
+ * any real documentation link needs (http→https→canonical) and far fewer than
+ * a redirect cycle would take to notice.
+ */
+export const MAX_HOPS = 3;
+
+/**
  * A git symlink, as raw.githubusercontent serves it.
  *
  * GitHub's raw host does not follow symlinks: it returns a file whose entire
@@ -66,8 +73,21 @@ export async function fetchPageText(url: string, hops = 0): Promise<string> {
     redirect: "manual", // a redirect could land somewhere the guard rejected
     headers: { "user-agent": "mozg/0.1 (+https://mozg.sh)" },
   });
+  // A redirect used to be refused outright, and the reason was sound: the SSRF
+  // guard checked the URL we were given, not wherever it points. But refusing
+  // every 3xx means ordinary documentation fails — MDN and web.dev reorganise
+  // constantly, and today alone eleven ingests died on links that a browser
+  // would have followed without a word.
+  //
+  // So follow it, through the front door: the recursive call runs
+  // checkFetchableUrl on the destination like any other URL, which is exactly
+  // the check refusing it was protecting. The hop budget is the loop guard.
   if (res.status >= 300 && res.status < 400) {
-    throw new Error(`${url} redirects — add the final URL instead`);
+    const to = res.headers.get("location");
+    if (!to || hops >= MAX_HOPS) {
+      throw new Error(`${url} redirects — add the final URL instead`);
+    }
+    return fetchPageText(new URL(to, url).href, hops + 1);
   }
   if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`);
 
@@ -94,10 +114,9 @@ export async function fetchPageText(url: string, hops = 0): Promise<string> {
     if (rendered && rendered.length > text.length) return rendered;
   }
 
-  // One hop, and only from a body that is unmistakably a link target. Two
-  // symlinks in a row is not a thing git writes, and a hop budget is cheaper
-  // to reason about than a visited set.
-  if (hops === 0) {
+  // Only from a body that is unmistakably a link target, and inside the same
+  // hop budget the redirects use — a chain of either is a loop.
+  if (hops < MAX_HOPS) {
     const target = symlinkTarget(url, text);
     // The guard runs again inside the recursive call — the target is a fresh
     // URL and gets checked like any other, which is the point of going back
