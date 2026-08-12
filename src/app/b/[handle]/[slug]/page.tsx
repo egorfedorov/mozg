@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { markup } from "@/lib/markup";
+import { markup, fill } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { msg } from "@/lib/msg";
 import { notFound } from "next/navigation";
@@ -648,8 +648,14 @@ export default async function PublicBrainPage({
                 <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
                   {t("What it can answer")}</p>
                 <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+                  {/* Coverage only. The trend below counts the whole exam,
+                      anti-bluff probes included, which is what the percentage
+                      is computed over — so the two numbers differ and each
+                      has to say which it is. */}
                   {categories.length
-                    ? `${categories.reduce((n, c) => n + c.total, 0)} checks`
+                    ? fill(t("<0/> coverage checks"), [
+                        categories.reduce((n, c) => n + c.total, 0),
+                      ])
                     : t("not examined")}
                 </span>
               </div>
@@ -675,7 +681,7 @@ export default async function PublicBrainPage({
                 }}
               >
                 <span className="mono" style={{ fontSize: ".8125rem" }}>
-                  {markup(t("Answers <0/> of <1/> questions"), [
+                  {markup(t("Answers <0/> of the exam's <1/> questions"), [
                     <strong key="s0">{trend.passed}</strong>,
                     trend.total,
                   ])}
