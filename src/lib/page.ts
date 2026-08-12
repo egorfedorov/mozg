@@ -13,7 +13,48 @@ import { env } from "@/lib/env";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
-export async function fetchPageText(url: string): Promise<string> {
+/**
+ * Shorter than this and the fetch brought back nothing to read.
+ *
+ * Thirty characters will not hold a sentence, let alone a note, and a document
+ * that small has always meant something went wrong upstream — a symlink served
+ * as its own target, a stub, a login wall, an error page with the words in an
+ * image. It used to go to the model anyway, which then declined in prose
+ * instead of calling the tool, and the source failed with "model did not call
+ * save_notes" — a sentence that names neither the page nor the reason. Refusing
+ * here costs a model call and produces an error somebody can act on.
+ */
+const MIN_TEXT = 30;
+
+/**
+ * A git symlink, as raw.githubusercontent serves it.
+ *
+ * GitHub's raw host does not follow symlinks: it returns a file whose entire
+ * body is the link target, one relative path and nothing else. `AGENTS.md ->
+ * CLAUDE.md` is the convention half the repositories worth crawling now use,
+ * so without this every one of those sources ingests the nine characters
+ * "CLAUDE.md" and fails.
+ *
+ * Deliberately narrow. One line, no whitespace, a file extension, no scheme
+ * and no host — anything looser and a page that happens to be one short word
+ * would send the crawler somewhere it was never pointed at.
+ */
+export function symlinkTarget(url: string, text: string): string | null {
+  const here = new URL(url);
+  if (here.hostname !== "raw.githubusercontent.com") return null;
+
+  const body = text.trim();
+  if (!body || body.length > 200 || /\s/.test(body)) return null;
+  if (!/^[\w.@+-]+(?:\/[\w.@+-]+)*$/.test(body) || !/\.[a-z0-9]+$/i.test(body)) return null;
+
+  const target = new URL(body, here);
+  // Same host by construction; the pathname check catches a link to itself,
+  // which would otherwise be one wasted round trip per fetch forever.
+  if (target.href === here.href) return null;
+  return target.href;
+}
+
+export async function fetchPageText(url: string, hops = 0): Promise<string> {
   // Re-checked on every fetch, not just when the source was added: DNS can
   // change in between, so a hostname that resolved publicly then could point
   // at an internal address by the time we get here.
@@ -52,6 +93,26 @@ export async function fetchPageText(url: string): Promise<string> {
     const rendered = await renderPage(url).catch(() => null);
     if (rendered && rendered.length > text.length) return rendered;
   }
+
+  // One hop, and only from a body that is unmistakably a link target. Two
+  // symlinks in a row is not a thing git writes, and a hop budget is cheaper
+  // to reason about than a visited set.
+  if (hops === 0) {
+    const target = symlinkTarget(url, text);
+    // The guard runs again inside the recursive call — the target is a fresh
+    // URL and gets checked like any other, which is the point of going back
+    // through the front door rather than fetching it here.
+    if (target) return fetchPageText(target, hops + 1);
+  }
+
+  if (text.trim().length < MIN_TEXT) {
+    throw new Error(
+      `${url} returned ${text.trim().length} characters of text` +
+        (text.trim() ? ` (${JSON.stringify(text.trim().slice(0, 60))})` : "") +
+        " — nothing to extract from",
+    );
+  }
+
   return text;
 }
 
