@@ -27,6 +27,7 @@ import { holdsAnyPack } from "@/lib/pack-access";
 import InPack from "@/components/InPack";
 import { anyCryptoReady } from "@/lib/payments";
 import { isoDate } from "@/lib/dates";
+import { examTrend, trendLine } from "@/lib/exam-trend";
 
 /**
  * The public face of a brain. This is the page that gets indexed and shared,
@@ -114,7 +115,8 @@ export default async function PublicBrainPage({
     [brain.id],
   ).then((r) => r[0] ?? { gained: 0, lost: 0 });
 
-  const [categories, samples, balance, added, children, parent, passedChecks, examTotals] = await Promise.all([
+  const [categories, samples, balance, added, children, parent, passedChecks, examTotals, trend] =
+    await Promise.all([
     categoryScores([brain.id]).then((m) => m.get(brain.id) ?? []),
     // Titles are the shop window: enough to judge whether the brain is worth
     // buying, never the bodies that were paid for.
@@ -163,6 +165,7 @@ export default async function PublicBrainPage({
         )`,
       [brain.id],
     ).then((r) => r[0] ?? null),
+    examTrend(brain.id),
   ]);
 
   // What actually has to be bought. For a child of a paid family that is the
@@ -657,6 +660,44 @@ export default async function PublicBrainPage({
                 </div>
               )}
             </div>
+
+            {/* The percentage on its own reads as a verdict on the brain, and
+                it is not one: the exam grows, so a brain that learned can post
+                a smaller number. The absolute count and the split below are
+                what the percentage is usually mistaken for. */}
+            {trend && (
+              <div
+                style={{
+                  padding: ".85rem 1.25rem",
+                  borderTop: "1.5px solid var(--ink)",
+                  display: "grid",
+                  gap: ".3rem",
+                }}
+              >
+                <span className="mono" style={{ fontSize: ".8125rem" }}>
+                  {markup(t("Answers <0/> of <1/> questions"), [
+                    <strong key="s0">{trend.passed}</strong>,
+                    trend.total,
+                  ])}
+                </span>
+                {trendLine(trend) && (
+                  <span
+                    className="mono"
+                    style={{ fontSize: ".75rem", color: "var(--ink-2)" }}
+                  >
+                    {markup(t(trendLine(trend)!.key), trendLine(trend)!.values)}
+                  </span>
+                )}
+                {trend.regressed === 0 && trend.unanswered > 0 && (
+                  <span
+                    className="mono"
+                    style={{ fontSize: ".75rem", color: "var(--color-riso-green)" }}
+                  >
+                    {t("Nothing it used to answer has stopped working.")}
+                  </span>
+                )}
+              </div>
+            )}
 
             {categories.length === 0 ? (
               <p style={{ padding: "1.25rem", margin: 0, color: "var(--ink-2)" }}>
