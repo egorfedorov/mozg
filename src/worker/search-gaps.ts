@@ -26,33 +26,60 @@ const MAX_GAP_CHECKS_PER_BRAIN = 15;
 /** Weak calls read per brain per pass. */
 const CALLS_READ = 200;
 
+/**
+ * How many DIFFERENT people must hit a gap before it becomes an exam question
+ * on a brain the public can buy.
+ *
+ * The harvest used to count calls. One studio working on one game asked five
+ * brains about "red mesa showdown", "iron grip bonus D symbol strip weights"
+ * and "capo noir BONUS CTA" — retried, as people do — and thirteen questions
+ * about two unreleased games became permanent checks on three paid brains.
+ * Every buyer's score was then depressed by questions no other buyer would
+ * ever ask and the author could never answer, because the games are not
+ * theirs. Repetition by one person is not demand; two people is the cheapest
+ * signal that separates them.
+ *
+ * A private brain keeps the old behaviour: there the one caller IS the
+ * audience, and their project is exactly what the brain is for.
+ */
+const MIN_CALLERS_PUBLIC = 2;
+
 export async function growSearchGapChecks(
   limit = BRAIN_BATCH,
 ): Promise<{ brains: number; added: number }> {
-  const weakFilter = `
-      tool = 'brain_search' and ok
-      and created_at > now() - interval '30 days'
-      and (results = 0 or (top_score is not null and top_score < ${WEAK_TOP_SCORE}))
-      and length(trim(query)) >= ${MIN_QUERY_LENGTH}`;
+  // Written per alias rather than pasted twice: the brain-picking query joins
+  // brains, where created_at also exists, so an unqualified column there is
+  // ambiguous — and a filter that reads right but binds to the wrong table is
+  // the kind of bug that ships green.
+  const weak = (t: string) => `
+      ${t}.tool = 'brain_search' and ${t}.ok
+      and ${t}.created_at > now() - interval '30 days'
+      and (${t}.results = 0
+           or (${t}.top_score is not null and ${t}.top_score < ${WEAK_TOP_SCORE}))
+      and length(trim(${t}.query)) >= ${MIN_QUERY_LENGTH}`;
 
   // The brains with the freshest weak calls first — a gap asked yesterday
   // matters more than one from three weeks ago.
-  const brains = await query<{ brain_id: string }>(
-    `select brain_id from calls
-      where brain_id is not null and ${weakFilter}
-      group by brain_id order by max(created_at) desc limit $1`,
+  const brains = await query<{ brain_id: string; visibility: string }>(
+    `select c.brain_id, b.visibility from calls c
+       join brains b on b.id = c.brain_id
+      where c.brain_id is not null and ${weak("c")}
+      group by c.brain_id, b.visibility order by max(c.created_at) desc limit $1`,
     [limit],
   );
 
   let added = 0;
-  for (const { brain_id } of brains) {
-    const calls = await query<{ query: string }>(
-      `select query from calls
-        where brain_id = $1 and ${weakFilter}
-        order by created_at desc limit ${CALLS_READ}`,
+  for (const { brain_id, visibility } of brains) {
+    const calls = await query<{ query: string; caller_id: string }>(
+      `select calls.query, calls.caller_id from calls
+        where calls.brain_id = $1 and ${weak("calls")}
+        order by calls.created_at desc limit ${CALLS_READ}`,
       [brain_id],
     );
-    const clusters = clusterQueries(calls.map((c) => c.query));
+    const minCallers = visibility === "public" ? MIN_CALLERS_PUBLIC : 1;
+    const clusters = clusterQueries(
+      calls.map((c) => ({ query: c.query, callerId: c.caller_id })),
+    ).filter((c) => c.callers >= minCallers);
     if (!clusters.length) continue;
 
     const { n } = await one<{ n: number }>(
@@ -72,8 +99,8 @@ export async function growSearchGapChecks(
         [
           brain_id,
           cluster.representative,
-          `Material that actually answers this — it was asked ${cluster.count} time(s) ` +
-            "and search came back weak.",
+          `Material that actually answers this — ${cluster.callers} caller(s) asked it ` +
+            `${cluster.count} time(s) and search came back weak.`,
         ],
       );
       added += inserted.length;

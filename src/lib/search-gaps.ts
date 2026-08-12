@@ -41,6 +41,17 @@ export interface QueryCluster {
   representative: string;
   /** How many weak calls asked this. The demand ranking. */
   count: number;
+  /**
+   * How many DIFFERENT people asked it — the part that separates demand from
+   * one person's project. See clusterQueries.
+   */
+  callers: number;
+}
+
+/** A weak call, as the harvest reads it. */
+export interface WeakCall {
+  query: string;
+  callerId: string;
 }
 
 /**
@@ -51,14 +62,30 @@ export interface QueryCluster {
  * Input is expected most-recent-first, so the representative of a cluster is
  * its freshest phrasing. Sorted by demand, most-asked first.
  */
-export function clusterQueries(queries: string[]): QueryCluster[] {
-  const clusters = new Map<string, QueryCluster>();
-  for (const raw of queries) {
+export function clusterQueries(calls: (string | WeakCall)[]): QueryCluster[] {
+  const clusters = new Map<string, QueryCluster & { seen: Set<string> }>();
+  for (const call of calls) {
+    const raw = typeof call === "string" ? call : call.query;
+    const caller = typeof call === "string" ? "" : call.callerId;
     const key = normalizeQuery(raw);
     if (key.length < MIN_QUERY_LENGTH) continue;
     const existing = clusters.get(key);
-    if (existing) existing.count++;
-    else clusters.set(key, { representative: raw.trim().slice(0, 500), count: 1 });
+    if (existing) {
+      existing.count++;
+      existing.seen.add(caller);
+      existing.callers = existing.seen.size;
+    } else {
+      clusters.set(key, {
+        representative: raw.trim().slice(0, 500),
+        count: 1,
+        callers: 1,
+        seen: new Set([caller]),
+      });
+    }
   }
-  return [...clusters.values()].sort((a, b) => b.count - a.count);
+  // Most people first, then most times. A question five people asked once
+  // outranks one somebody asked five times, which is the whole correction.
+  return [...clusters.values()]
+    .map((c) => ({ representative: c.representative, count: c.count, callers: c.callers }))
+    .sort((a, b) => b.callers - a.callers || b.count - a.count);
 }
