@@ -29,6 +29,7 @@ import {
   RateLimitedError,
   SourceBusyError,
 } from "@/worker/ingest";
+import { EmptyPageError } from "@/lib/page";
 import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
@@ -111,6 +112,15 @@ async function main() {
         }
         if (err instanceof BudgetPausedError) {
           console.log(`[ingest] ${sourceId} paused — ${err.message}`);
+          return;
+        }
+        // A stub page is not an incident. ingestSource has already failed the
+        // source with the reason on the row, which is where its owner looks;
+        // retrying cannot make a twenty-nine-character include directive grow,
+        // and each retry used to write another identical row into the operator's
+        // triage list. Swallowed like the two above: nothing here is broken.
+        if (err instanceof EmptyPageError) {
+          console.log(`[ingest] ${sourceId} nothing to read — ${err.message}`);
           return;
         }
         if (err instanceof SourceBusyError) {

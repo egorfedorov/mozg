@@ -292,6 +292,22 @@ export function countDegraded(checks: { reranked: boolean }[]): number {
 }
 
 /**
+ * The verdicts that still have a question behind them.
+ *
+ * Exported next to countDegraded for the same reason: it decides what a score
+ * is computed over. A sitting runs for tens of minutes and the exam can be
+ * rewritten under it — "regenerate the exam" and a goal change both delete every
+ * generated check — so by the time the verdicts are written, some of the
+ * questions they answer may no longer exist.
+ */
+export function stillAsked<T extends { check: { id: string } }>(
+  results: T[],
+  live: Set<string>,
+): T[] {
+  return results.filter((r) => live.has(r.check.id));
+}
+
+/**
  * Add anti-bluff probes to an exam that has none.
  *
  * The catalogue grew a measurement inconsistency: negative probes — plausible
@@ -845,7 +861,9 @@ export async function runExam(
     }
 
     let cost = 0;
-    const results: {
+    // let, not const: the exam can be rewritten while this sitting runs, and
+    // the verdicts for questions that no longer exist are dropped below.
+    let results: {
       check: Check;
       passed: boolean;
       reason: string;
@@ -920,6 +938,41 @@ export async function runExam(
         retrievalTopScore: c.top,
         evidence: c.evidence,
       });
+    }
+
+    // A sitting takes tens of minutes, and the exam it is grading can be
+    // rewritten underneath it in that time: "regenerate the exam" on the brain
+    // page and any goal change both delete every generated check and write new
+    // rows with new ids. A verdict about a question that no longer exists has
+    // nowhere to go — check_results references checks — and inserting it killed
+    // the sitting with a foreign key violation at the very last step, after
+    // every judge call had already been paid for (worker/exam, 08-12..08-14).
+    //
+    // Dropping those verdicts is the honest reading: the questions are gone, so
+    // the score is of the exam that remains. If nothing remains, there is no
+    // exam left to have a score about, and the run is failed without one rather
+    // than publishing 0% for a brain that answered everything it was asked.
+    const live = new Set(
+      (
+        await query<{ id: string }>(`select id from checks where id = any($1::uuid[])`, [
+          results.map((r) => r.check.id),
+        ])
+      ).map((r) => r.id),
+    );
+    if (live.size < results.length) {
+      console.warn(
+        `[exam] ${brain.slug}: ${results.length - live.size} check(s) were deleted ` +
+          `while the sitting ran — the exam was rewritten under it`,
+      );
+      results = stillAsked(results, live);
+    }
+    if (!results.length) {
+      await query(
+        `update check_runs set status = 'failed', error = $2, finished_at = now()
+          where id = $1`,
+        [run.id, "the exam was rewritten while the sitting ran — no score recorded"],
+      );
+      return null;
     }
 
     for (const r of results) {

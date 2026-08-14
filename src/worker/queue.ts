@@ -206,7 +206,19 @@ export async function enqueueExam(
   await b.send(
     QUEUES.exam,
     { brainId, mini: opts.mini ?? false, force: opts.force ?? false },
-    { singletonKey: opts.mini ? `${brainId}:recheck` : brainId, singletonSeconds: 60 },
+    {
+      singletonKey: opts.mini ? `${brainId}:recheck` : brainId,
+      singletonSeconds: 60,
+      // pg-boss defaults to declaring a job dead after fifteen minutes, and a
+      // real sitting is nothing like that fast: retrieval alone has an eight
+      // minute budget, and the sittings that failed on 08-12 and 08-14 had been
+      // running for 43 and 49 minutes — healthily, one judge batch at a time.
+      // Under the default they were failed mid-flight and retried while still
+      // running, so a second worker regenerated the checks the first was about
+      // to record verdicts for. Two hours is longer than any sitting observed
+      // and still short enough that a genuinely hung one comes back.
+      expireInSeconds: 2 * 60 * 60,
+    },
   );
 }
 

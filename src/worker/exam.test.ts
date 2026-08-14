@@ -23,6 +23,31 @@ test("one degraded check is enough to refuse the sitting", () => {
   assert.equal(countDegraded(Array.from({ length: 26 }, () => ({ reranked: false }))), 26);
 });
 
+/**
+ * The other rule that decides what a score is about.
+ *
+ * A sitting runs for tens of minutes; regenerating the exam from the brain page
+ * (or changing the goal) deletes every generated check and writes new ids. The
+ * verdicts already in flight then point at questions that no longer exist, and
+ * writing them threw a foreign key violation that killed the sitting after every
+ * judge call was paid for — three times in three days on prod.
+ */
+test("verdicts for deleted questions are dropped, not written", async () => {
+  const { stillAsked } = await import("./exam");
+  const results = [{ check: { id: "a" } }, { check: { id: "b" } }, { check: { id: "c" } }];
+
+  assert.equal(stillAsked(results, new Set(["a", "b", "c"])).length, 3);
+  // One question deleted mid-sitting: the score is of the exam that remains.
+  assert.deepEqual(
+    stillAsked(results, new Set(["a", "c"])).map((r) => r.check.id),
+    ["a", "c"],
+  );
+  // The whole exam rewritten — what "regenerate" actually does. Nothing survives,
+  // and runExam fails the run rather than publishing 0% for a brain that answered
+  // everything it was asked.
+  assert.equal(stillAsked(results, new Set()).length, 0);
+});
+
 test("a pass is carried on its evidence, not on a category label", async () => {
   const { carryable } = await import("./exam");
 

@@ -34,6 +34,27 @@ const MIN_TEXT = 30;
 export const MAX_HOPS = 3;
 
 /**
+ * The page came back fine and holds nothing worth reading.
+ *
+ * A permanent fact about that URL, not a failure of the run: mkdocs stub pages
+ * like pydantic's `pydantic_extra_types_isbn.md` are twenty-nine characters of
+ * include directive and will be twenty-nine characters tomorrow. Thrown as its
+ * own type so the worker can stop retrying — one such page filed four identical
+ * rows in the error centre (0967b0d5, 2026-08-12), three of which were pg-boss
+ * re-reading a stub in the hope it had grown. The source row still carries the
+ * reason, which is where the owner looks.
+ *
+ * NOT used when the renderer was needed and unavailable: a JS shell we could
+ * not render is a real outage and deserves both the retry and the error row.
+ */
+export class EmptyPageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EmptyPageError";
+  }
+}
+
+/**
  * A git symlink, as raw.githubusercontent serves it.
  *
  * GitHub's raw host does not follow symlinks: it returns a file whose entire
@@ -109,8 +130,12 @@ export async function fetchPageText(url: string, hops = 0): Promise<string> {
   // A JS shell serves markup with no words in it. When a renderer is wired
   // up, let the scripts run and read what they produce — same fallback the
   // crawler uses, so a rendered page hashes and refreshes consistently.
+  let renderFailed = false;
   if (looksLikeMarkup && text.length < 300 && env.RENDER_URL) {
-    const rendered = await renderPage(url).catch(() => null);
+    const rendered = await renderPage(url).catch(() => {
+      renderFailed = true;
+      return null;
+    });
     if (rendered && rendered.length > text.length) return rendered;
   }
 
@@ -125,11 +150,13 @@ export async function fetchPageText(url: string, hops = 0): Promise<string> {
   }
 
   if (text.trim().length < MIN_TEXT) {
-    throw new Error(
+    const message =
       `${url} returned ${text.trim().length} characters of text` +
-        (text.trim() ? ` (${JSON.stringify(text.trim().slice(0, 60))})` : "") +
-        " — nothing to extract from",
-    );
+      (text.trim() ? ` (${JSON.stringify(text.trim().slice(0, 60))})` : "") +
+      " — nothing to extract from";
+    // Permanent unless the renderer was the thing that failed. Same sentence
+    // either way — only the type differs, and only the worker reads it.
+    throw renderFailed ? new Error(message) : new EmptyPageError(message);
   }
 
   return text;
