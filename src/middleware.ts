@@ -117,6 +117,37 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);
   }
 
+  // gen.mozg.sh — the asset studio. Same trick and the same shape as the
+  // gallery: the root is the studio, a pack has its own room, and everything
+  // else on the page (the account, the catalogue, signing in) belongs to the
+  // main site rather than growing a second tree to keep in step.
+  if (host.startsWith("gen.")) {
+    const { pathname } = req.nextUrl;
+    if (isInfrastructure(pathname)) return NextResponse.next();
+
+    if (pathname === "/") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/gen";
+      return NextResponse.rewrite(url);
+    }
+
+    // The shared header links to /gen with a relative href because the same
+    // components render on mozg.sh; on this host that would be the studio at
+    // a second URL.
+    if (pathname === "/gen") {
+      return NextResponse.redirect(new URL("/", req.nextUrl), 308);
+    }
+
+    // A pack's own room: gen.mozg.sh/<id> serves what /gen/<id> holds.
+    if (/^\/[0-9a-f-]{36}$/i.test(pathname)) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/gen${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
+    return NextResponse.redirect(`https://mozg.sh${pathname}${req.nextUrl.search}`, 308);
+  }
+
   if (!host.startsWith("learn.")) {
     // Main site: note where this visit came from before anything else.
     // Two same-name session cookies at different scopes is a real problem: one

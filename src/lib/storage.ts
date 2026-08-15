@@ -16,6 +16,13 @@ export interface Storage {
   url(key: string, expiresInSeconds?: number): Promise<string>;
 }
 
+/** Where a generated slot asset lives. Same shape as a brain's key and a
+ *  separate prefix, so one pack's whole set can be found — and one day
+ *  deleted — without touching anything a brain owns. */
+export function packKey(packId: string, filename: string): string {
+  return `packs/${packId}/${storageKey(packId, filename).split("/").pop()}`;
+}
+
 export function storageKey(brainId: string, filename: string): string {
   const ext = filename.includes(".") ? filename.split(".").pop()!.toLowerCase() : "bin";
   const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : "bin";
