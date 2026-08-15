@@ -976,10 +976,16 @@ export async function runExam(
     }
 
     for (const r of results) {
+      // The liveness check above and these inserts are separate statements, so
+      // a regenerate landing between them would still take the whole sitting
+      // down on the foreign key. Asking for the check in the insert itself
+      // closes that window: a question deleted in the last millisecond drops
+      // its verdict, exactly like one deleted an hour ago.
       await query(
         `insert into check_results
            (run_id, check_id, passed, reason, retrieval_hits, retrieval_top_score, evidence)
-         values ($1, $2, $3, $4, $5, $6, $7::uuid[])`,
+         select $1, $2, $3, $4, $5, $6, $7::uuid[]
+          where exists (select 1 from checks where id = $2)`,
         [run.id, r.check.id, r.passed, r.reason, r.retrievalHits, r.retrievalTopScore, r.evidence],
       );
     }

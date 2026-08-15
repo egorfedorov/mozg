@@ -53,6 +53,18 @@ test("unknown model reports zero rather than inventing a price", async () => {
   );
 });
 
+test("a reseller's stop_reason is a failure, a model's is not", async () => {
+  const { endedCleanly } = await load();
+  // The whole point: "error" is what a proxy says when it gave up mid-answer.
+  assert.equal(endedCleanly("error"), false);
+  assert.equal(endedCleanly("upstream_timeout"), false);
+  for (const reason of ["end_turn", "tool_use", "max_tokens", "refusal"]) {
+    assert.equal(endedCleanly(reason), true, reason);
+  }
+  // In flight, so nothing has gone wrong yet.
+  assert.equal(endedCleanly(null), true);
+});
+
 test("an array argument the model quoted comes back as an array", async () => {
   const { unstringify } = await load();
   const schema = {

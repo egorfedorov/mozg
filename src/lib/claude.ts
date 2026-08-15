@@ -62,6 +62,32 @@ export interface Usage {
 }
 
 /**
+ * Did the model finish its own turn, or did something end the response for it?
+ *
+ * Every value here is a way a *model* stops. A stop_reason outside the set is
+ * the transport speaking — resellers signal a generation they could not finish
+ * with "error" — and the content that came with it is half an answer, not a
+ * refusal to answer. Unknown values count as failures rather than successes:
+ * a stop_reason we have never seen is not a completed turn, and treating it as
+ * one stores a truncated extraction as if it were the whole page.
+ */
+const FINISHED = new Set([
+  "end_turn",
+  "max_tokens",
+  "stop_sequence",
+  "tool_use",
+  "pause_turn",
+  "refusal",
+  "model_context_window_exceeded",
+]);
+
+export function endedCleanly(stopReason: string | null | undefined): boolean {
+  // Null is what an in-flight message carries; a finished one always names a
+  // reason. Nothing to complain about either way.
+  return stopReason == null || FINISHED.has(stopReason);
+}
+
+/**
  * Get a structured object back from the model.
  *
  * Uses a forced tool call rather than `output_config.format`. Both work on the
@@ -105,28 +131,58 @@ export async function structured<T>(opts: {
     return { data: unstringify(out.data, opts.schema) as T, usage: out.usage };
   }
 
-  const response = await claude().messages.create({
-    // An Anthropic-compatible endpoint that is not Anthropic — Kimi's coding
-    // plan, Bedrock-style gateways — speaks the same protocol with its own
-    // catalogue, and MODEL_EXTRACT means nothing there. The openai path has
-    // always replaced the model this way; this one used to send our id to
-    // their server and get model_not_found for every call.
-    model: byok?.model || opts.model,
-    max_tokens: opts.maxTokens ?? 16000,
-    system: [
-      // Same prefix for every call in a batch, so it caches.
-      { type: "text", text: opts.system, cache_control: { type: "ephemeral" } },
-    ],
-    tools: [
-      {
-        name: opts.toolName,
-        description: opts.toolDescription,
-        input_schema: opts.schema as Anthropic.Tool.InputSchema,
-      },
-    ],
-    tool_choice: { type: "tool", name: opts.toolName },
-    messages: [{ role: "user", content: opts.content }],
-  });
+  const maxTokens = opts.maxTokens ?? 16000;
+  // Streamed, not because anyone reads the tokens as they arrive, but because
+  // a request that produces nothing for two minutes looks dead to whatever
+  // sits between us and the model. A reseller cut every large call at ~130
+  // seconds and returned a *successful* response carrying stop_reason "error"
+  // and half a sentence — which arrived here as "model did not call
+  // save_notes" and failed the source (worker/ingest and worker/exam, 08-15).
+  // The two calls that died were the two largest asks in the codebase: the
+  // extraction at 16k and the exam at 32k. A stream keeps bytes moving, so
+  // the same generation is no longer something in the middle can time out.
+  const response = await claude().messages.stream(
+    {
+      // An Anthropic-compatible endpoint that is not Anthropic — Kimi's coding
+      // plan, Bedrock-style gateways — speaks the same protocol with its own
+      // catalogue, and MODEL_EXTRACT means nothing there. The openai path has
+      // always replaced the model this way; this one used to send our id to
+      // their server and get model_not_found for every call.
+      model: byok?.model || opts.model,
+      max_tokens: maxTokens,
+      system: [
+        // Same prefix for every call in a batch, so it caches.
+        { type: "text", text: opts.system, cache_control: { type: "ephemeral" } },
+      ],
+      tools: [
+        {
+          name: opts.toolName,
+          description: opts.toolDescription,
+          input_schema: opts.schema as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: opts.toolName },
+      messages: [{ role: "user", content: opts.content }],
+    },
+    // The client's four minutes were sized for the largest extraction segment,
+    // and an exam asks for twice that many tokens — at ~15ms a token it needs
+    // eight. Scaled by the ask rather than raised for everyone, so a hung
+    // ingest still frees the queue in four minutes as before.
+    { timeout: Math.max(240_000, maxTokens * 15) },
+  ).finalMessage();
+
+  // The model never finished its turn: the endpoint gave up mid-generation and
+  // said so in a 200. Named for what it is, because "did not call the tool" is
+  // a sentence about the model and sends you reading prompts.
+  if (!endedCleanly(response.stop_reason)) {
+    const text = response.content.find((b) => b.type === "text");
+    throw new Error(
+      `endpoint ended the response early (stop_reason=${response.stop_reason}) ` +
+        `after ${response.usage.output_tokens} tokens — the model was still ` +
+        "writing. Retryable" +
+        (text && text.type === "text" ? `: ${text.text.slice(0, 160)}` : ""),
+    );
+  }
 
   if (response.stop_reason === "refusal") {
     throw new Error("request refused by safety classifier");
