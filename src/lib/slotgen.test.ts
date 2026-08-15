@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   anchorIndex,
+  distinctClause,
   assetFilename,
   compileAssetPrompt,
   defaultSpecs,
@@ -116,4 +117,19 @@ test("only the assets drawn after the anchor are told to match a reference", () 
   const rest = compileAssetPrompt({ brief: "a tomb" }, spec, KEY, true);
   assert.match(rest, /reference image of this same game is attached/i);
   assert.match(rest, /only the\s+subject changes/i);
+});
+
+test("an asset is told what the set already holds, and only when it holds something", () => {
+  // The defect this fixes, seen on a real pack: eleven symbols against one
+  // reference came back as two eyes of Horus, two djed pillars and four
+  // scarabs. Every call reached for the theme's most obvious object because,
+  // as far as the model knew, every call was the first one.
+  const clause = distinctClause(["a winged scarab in gold", "a djed pillar"]);
+  assert.match(clause, /winged scarab in gold/);
+  assert.match(clause, /djed pillar/);
+  assert.match(clause, /different silhouette/);
+
+  // The anchor has no siblings, and a sentence listing none of them would be
+  // an instruction about an empty set.
+  assert.equal(distinctClause([]), "");
 });

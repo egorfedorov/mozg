@@ -219,6 +219,31 @@ export const REFERENCE_CLAUSE = [
   "subject changes.",
 ].join(" ");
 
+/**
+ * Tell an asset what the set already contains.
+ *
+ * Eleven symbols generated independently against one reference come back as
+ * one game and four silhouettes: the model reaches for the theme's most
+ * obvious objects every time, so a tomb set arrives with two eyes of Horus,
+ * two djed pillars and four scarabs. A player cannot read a paytable like
+ * that, and the value ladder it was built on stops meaning anything.
+ *
+ * The cure is the information the model was missing. It is generated last, at
+ * the moment the asset runs, because only then is it known which siblings
+ * actually exist.
+ */
+export function distinctClause(existing: string[]): string {
+  if (!existing.length) return "";
+  return [
+    `The set already contains: ${existing.join("; ")}.`,
+    "Those pictures are attached. Yours must be a different object from every",
+    "one of them — a different silhouette, recognisable as a different thing at",
+    "a glance and when blurred by motion. Do not draw a variation of one that",
+    "exists; draw something the set does not have yet, in the same world and the",
+    "same style.",
+  ].join(" ");
+}
+
 export interface PackBrief {
   /** The studio's own description of the game: theme, mood, period. */
   brief: string;

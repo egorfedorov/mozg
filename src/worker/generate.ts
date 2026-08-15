@@ -3,7 +3,7 @@ import type { Brain } from "@/db/types";
 import { compilePrompt, settleGeneration } from "@/lib/generate";
 import { generateImage } from "@/lib/imagegen";
 import { cutChroma, DEFAULT_KEY, KEYS } from "@/lib/cutout";
-import { ROLES, type AssetRole } from "@/lib/slotgen";
+import { distinctClause, ROLES, type AssetRole } from "@/lib/slotgen";
 import { packKey, storage, storageKey } from "@/lib/storage";
 import { enqueueGeneration } from "@/worker/queue";
 
@@ -80,12 +80,36 @@ export async function runGeneration(id: string): Promise<void> {
   // Everything after the anchor is drawn against the anchor's own picture —
   // the set's palette, light and outline weight are decided by a file rather
   // than re-described in words the model reinterprets each call.
-  const reference =
-    !gen.is_anchor && gen.reference_key ? await referenceDataUri(gen.reference_key) : null;
+  //
+  // And against its finished siblings, which is what stops a tomb set from
+  // arriving as two eyes of Horus, two pillars and four scarabs: without them
+  // every call reaches for the theme's most obvious object, because every call
+  // is the first one as far as the model knows.
+  const siblings =
+    gen.pack_id && !gen.is_anchor ? await packSiblings(gen.pack_id, id) : [];
+
+  const references: string[] = [];
+  if (!gen.is_anchor && gen.reference_key) {
+    const anchor = await referenceDataUri(gen.reference_key);
+    if (anchor) references.push(anchor);
+  }
+  for (const sibling of siblings) {
+    if (references.length >= MAX_REFERENCES) break;
+    if (sibling.storage_key === gen.reference_key) continue;
+    const uri = await referenceDataUri(sibling.storage_key);
+    if (uri) references.push(uri);
+  }
+
+  if (siblings.length) {
+    full = `${full}\n\n${distinctClause(siblings.map((s) => s.prompt))}`;
+    // What was actually sent, so a repeat can be diagnosed from the record
+    // rather than reconstructed from what we think we sent.
+    await query(`update generations set full_prompt = $2 where id = $1`, [id, full]);
+  }
 
   const image = await generateImage(full, {
     aspect: isPackAsset && gen.role ? aspectFor(gen.role) : "1:1",
-    ...(reference ? { imageUrls: [reference] } : {}),
+    ...(references.length ? { imageUrls: references } : {}),
     // Written the moment the provider hands one over, not after the picture
     // arrives: a run that then times out is only chaseable by its task id, and
     // the first timeout in production had none recorded to chase.
@@ -128,6 +152,32 @@ export async function runGeneration(id: string): Promise<void> {
     await query(`update asset_packs set reference_key = $2 where id = $1`, [gen.pack_id, key]);
     await releaseRest(gen.pack_id);
   }
+}
+
+/**
+ * How many pictures ride along with a prompt.
+ *
+ * The provider takes fourteen; five is the anchor plus four siblings, which is
+ * enough for "do not repeat these" without turning every call into a megabyte
+ * upload. The siblings chosen are the most recent, so the newest divergences
+ * are the ones being avoided.
+ */
+const MAX_REFERENCES = 5;
+
+/** The finished symbols of this pack, newest first, with what each was asked
+ *  for — the words go in the prompt, the pictures go alongside it. */
+async function packSiblings(
+  packId: string,
+  self: string,
+): Promise<{ prompt: string; storage_key: string }[]> {
+  return query<{ prompt: string; storage_key: string }>(
+    `select prompt, storage_key from generations
+      where pack_id = $1 and id <> $2 and status = 'done'
+        and storage_key is not null and role = 'symbol'
+      order by finished_at desc nulls last
+      limit 4`,
+    [packId, self],
+  ).catch(() => []);
 }
 
 /**
