@@ -39,9 +39,12 @@ test("the technical rules come after the artist's, so the file stays shippable",
   const technical = prompt.indexOf("Technical requirements");
   assert.ok(style > 0 && technical > style);
 
-  // The refusal that costs a studio the asset if it loses: baked-in wording is
-  // rejected by the storefront, whatever the style says.
-  assert.match(prompt, /Never render text, numbers/);
+  // The guarantee that costs a studio the whole asset if it slips: a storefront
+  // rejects baked-in wording, whatever the style says. Asserted on the promise
+  // rather than on one sentence — a model that wrote WILD across a symbol is
+  // why this is now phrased as a property of the artwork instead of a ban.
+  assert.match(prompt, /completely wordless/i);
+  assert.match(prompt, /live text layer/i);
 });
 
 test("the shared brief and palette reach every asset in the set", () => {
