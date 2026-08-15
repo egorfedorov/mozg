@@ -11,8 +11,10 @@
  * anchor-first queueing — because a seeding path that skips the money is a
  * path where the money is never tested.
  */
+import { writeFileSync } from "node:fs";
 import { one } from "@/db";
 import { startPack } from "@/lib/assetpacks";
+import { exportPack } from "@/lib/packexport";
 import { SETS } from "@/lib/slotgen";
 import { enqueueGeneration } from "@/worker/queue";
 
@@ -23,6 +25,33 @@ function arg(name: string): string | undefined {
 
 async function main() {
   const email = arg("owner");
+
+  // Second verb: build the same archive a studio downloads, without a browser
+  // session. This is how an export gets checked after a deploy — on real bytes
+  // out of real storage, which is the half no unit test covers.
+  const zipId = arg("zip");
+  if (zipId) {
+    if (!email) {
+      console.error("\nPass --owner <email> with --zip <pack id>.\n");
+      process.exit(1);
+    }
+    const owner = await one<{ id: string }>(
+      `select id from "user" where lower(email) = lower($1)`,
+      [email],
+    );
+    const built = await exportPack(zipId, owner.id);
+    if (!built) {
+      console.error("\n✗ no such pack, or nothing finished in it yet\n");
+      process.exit(1);
+    }
+    const out = arg("out") ?? `/tmp/${built.filename}`;
+    writeFileSync(out, built.bytes);
+    console.log(`\n✓ ${out} — ${(built.bytes.length / 1024 / 1024).toFixed(1)} MB`);
+    for (const name of built.contents) console.log(`  ${name}`);
+    console.log("");
+    process.exit(0);
+  }
+
   const title = arg("title") ?? "Untitled pack";
   const brief = arg("brief");
   const set = arg("set") ?? "full";
