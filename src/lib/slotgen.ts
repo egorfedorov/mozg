@@ -49,6 +49,12 @@ export const ROLES: Record<AssetRole, RolePreset> = {
     rules: (key) => [
       `Place the subject on a completely flat ${key} background, filling the whole frame behind it.`,
       "No shadow, glow, reflection or particle may touch that background — it is keyed out, and anything on it becomes a hole.",
+      // The subtle failure, seen on a neon set: the palette named pink and
+      // cyan, so the key fell through to green — and neon art paints glow in
+      // green. The cut then ate the edge of that glow and left a rim. Picking
+      // a key the palette does not name is not enough; the key has to be
+      // reserved out of the artwork as well.
+      `No part of the artwork may use ${key} or any colour close to it — not in a glow, a rim light, a gem, a sign or a highlight. If the theme wants that hue, shift it far enough to be unmistakably different.`,
       "Leave a clear margin on all four sides: nothing the subject is made of may reach or cross the frame edge.",
       "One subject, centred, seen straight on, no scene and no ground plane.",
       // Watched a model return a framed plaque with a disc behind it. After
@@ -84,6 +90,7 @@ export const ROLES: Record<AssetRole, RolePreset> = {
     cutout: true,
     rules: (key) => [
       `Flat ${key} background, and the panel's interior is that same ${key} — both are keyed out, leaving only the frame.`,
+      `No part of the frame itself may use ${key} or any colour close to it, or the cut will eat holes in it.`,
       "Symmetrical, tileable edges, even border weight.",
       "No text inside the frame: the game writes live values there.",
     ],

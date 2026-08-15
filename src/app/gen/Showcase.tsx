@@ -19,18 +19,41 @@ interface ShowcaseAsset {
  * Only packs flagged `showcase` — ours, set by hand. Nothing a customer
  * ordered can appear here.
  */
-export default async function Showcase({ limit = 11 }: { limit?: number }) {
-  const assets = await query<ShowcaseAsset>(
-    `select g.id, g.label, p.title, p.brief
+export default async function Showcase({ packs = 2 }: { packs?: number }) {
+  const assets = await query<ShowcaseAsset & { pack_id: string }>(
+    `select g.id, g.label, p.id as pack_id, p.title, p.brief
        from generations g
        join asset_packs p on p.id = g.pack_id
       where p.showcase and g.status = 'done' and g.role = 'symbol'
-      order by p.created_at desc, g.created_at
-      limit $1`,
-    [limit],
+        and p.id in (
+          select id from asset_packs where showcase order by created_at desc limit $1
+        )
+      order by p.created_at desc, g.created_at`,
+    [packs],
   ).catch(() => []);
 
   if (!assets.length) return null;
+
+  // Grouped rather than flattened: two worlds from one pipeline is the whole
+  // argument, and a single strip of twenty-two symbols reads as one muddled
+  // set instead of two coherent ones.
+  const grouped = new Map<string, (ShowcaseAsset & { pack_id: string })[]>();
+  for (const asset of assets) {
+    const list = grouped.get(asset.pack_id) ?? [];
+    list.push(asset);
+    grouped.set(asset.pack_id, list);
+  }
+
+  return (
+    <>
+      {[...grouped.values()].map((set) => (
+        <ShowcaseSet key={set[0].pack_id} assets={set} />
+      ))}
+    </>
+  );
+}
+
+function ShowcaseSet({ assets }: { assets: ShowcaseAsset[] }) {
   const pack = assets[0];
 
   return (

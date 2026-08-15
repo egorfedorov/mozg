@@ -133,3 +133,13 @@ test("an asset is told what the set already holds, and only when it holds someth
   // an instruction about an empty set.
   assert.equal(distinctClause([]), "");
 });
+
+test("the key colour is reserved out of the artwork, not only out of the background", () => {
+  // Seen on a neon set: the palette named pink and cyan, the key fell through
+  // to green, and the model painted its glow in green. The cut ate the edge of
+  // that glow and left a rim — so the key has to be forbidden inside the
+  // picture too, not merely chosen to avoid the palette.
+  const prompt = compileAssetPrompt({ brief: "a neon alley" }, SYMBOL, KEY);
+  assert.match(prompt, /No part of the artwork may use pure magenta/i);
+  assert.match(prompt, /glow, a rim light, a gem, a sign or a highlight/i);
+});
