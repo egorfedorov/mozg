@@ -53,7 +53,7 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
         <PackGrid assets={pack.assets} />
 
         <p className="muted" style={{ marginTop: "2rem", maxWidth: "60ch", fontSize: ".9em" }}>
-          {t("Symbols come back keyed on flat green. Cut the key in your own pipeline, or ask in chat and we will cut them for you while the automatic step is being built.")}
+          {t("Symbols arrive with the background already keyed out and the green rim pulled off the edges — the checkerboard behind each tile is what transparency looks like. Backgrounds and tiles are full bleed, so they keep theirs.")}
         </p>
       </main>
 

@@ -2,6 +2,7 @@ import { one, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { compilePrompt, settleGeneration } from "@/lib/generate";
 import { generateImage } from "@/lib/imagegen";
+import { cutChroma } from "@/lib/cutout";
 import { ROLES, type AssetRole } from "@/lib/slotgen";
 import { packKey, storage, storageKey } from "@/lib/storage";
 
@@ -74,7 +75,22 @@ export async function runGeneration(id: string): Promise<void> {
       query(`update generations set task_id = $2 where id = $1`, [id, taskId]).then(() => {}),
   });
 
-  const ext = image.mime.includes("webp") ? "webp" : image.mime.includes("jpeg") ? "jpg" : "png";
+  // Roles that declare themselves cut out get the key removed here rather
+  // than in the studio's own pipeline: "on transparency" is what was sold, and
+  // a green square with instructions attached is not that.
+  const cuts = Boolean(gen.role && ROLES[gen.role as AssetRole]?.cutout);
+  const cut = cuts ? await cutChroma(image.bytes) : null;
+  if (cut && cut.keyed < 0.05) {
+    // Not a failure — the picture is fine and the studio paid for it — but a
+    // symbol that keyed almost nothing means the model ignored the background
+    // instruction, and that is worth seeing in the log rather than discovering
+    // in an engine.
+    console.warn(`[generate] ${id} keyed only ${(cut.keyed * 100).toFixed(1)}% — flat key missing?`);
+  }
+
+  const bytes = cut ? cut.png : image.bytes;
+  const mime = cut ? "image/png" : image.mime;
+  const ext = cut ? "png" : image.mime.includes("webp") ? "webp" : image.mime.includes("jpeg") ? "jpg" : "png";
   // A pack's assets live under the pack, not under a brain: most packs have no
   // brain at all, and the ones that do borrow someone else's — filing a
   // studio's art under an artist's folder would put two people's work in one
@@ -82,7 +98,7 @@ export async function runGeneration(id: string): Promise<void> {
   const key = gen.pack_id
     ? packKey(gen.pack_id, `${gen.role ?? "asset"}.${ext}`)
     : storageKey(brain!.id, `generated.${ext}`);
-  await storage.put(key, image.bytes, image.mime);
+  await storage.put(key, bytes, mime);
 
   // Pays the artist and marks the row done, in one transaction. The cost is
   // the provider's own figure for this job, not an average.
