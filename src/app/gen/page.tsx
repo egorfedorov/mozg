@@ -102,7 +102,7 @@ export default async function GenPage() {
           <Link className="btn" href={user ? "#order" : "/sign-in?next=/gen"}>
             {t("Order a set")}
           </Link>
-          <Link className="btn btn-ghost" href="/gen/account">
+          <Link className="btn btn-ghost" href="/gen/panel">
             {t("Your studio")}
           </Link>
           <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-3)" }}>

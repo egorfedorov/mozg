@@ -138,10 +138,12 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.nextUrl), 308);
     }
 
-    // The studio's own room — balance, prices, everything ordered.
-    if (pathname === "/account") {
+    // The studio's own room — balance, prices, everything ordered. One
+    // account with the main site: the balance shown here is topped up there,
+    // and this page links to it rather than growing a second wallet.
+    if (pathname === "/panel") {
       const url = req.nextUrl.clone();
-      url.pathname = "/gen/account";
+      url.pathname = "/gen/panel";
       return NextResponse.rewrite(url);
     }
 
