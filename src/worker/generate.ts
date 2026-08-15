@@ -2,7 +2,7 @@ import { one, query } from "@/db";
 import type { Brain } from "@/db/types";
 import { compilePrompt, settleGeneration } from "@/lib/generate";
 import { generateImage } from "@/lib/imagegen";
-import { cutChroma } from "@/lib/cutout";
+import { cutChroma, DEFAULT_KEY, KEYS } from "@/lib/cutout";
 import { ROLES, type AssetRole } from "@/lib/slotgen";
 import { packKey, storage, storageKey } from "@/lib/storage";
 
@@ -28,9 +28,15 @@ export async function runGeneration(id: string): Promise<void> {
     prompt: string;
     full_prompt: string | null;
     status: string;
+    // The key this pack's prompts asked for. Cutting on any other colour is
+    // how a symbol comes back with a hole where its own colour was.
+    chroma: string | null;
   }>(
-    `select brain_id, pack_id, role, prompt, full_prompt, status
-       from generations where id = $1`,
+    `select g.brain_id, g.pack_id, g.role, g.prompt, g.full_prompt, g.status,
+            p.chroma
+       from generations g
+       left join asset_packs p on p.id = g.pack_id
+      where g.id = $1`,
     [id],
   );
 
@@ -79,7 +85,7 @@ export async function runGeneration(id: string): Promise<void> {
   // than in the studio's own pipeline: "on transparency" is what was sold, and
   // a green square with instructions attached is not that.
   const cuts = Boolean(gen.role && ROLES[gen.role as AssetRole]?.cutout);
-  const cut = cuts ? await cutChroma(image.bytes) : null;
+  const cut = cuts ? await cutChroma(image.bytes, KEYS[gen.chroma ?? ""] ?? DEFAULT_KEY) : null;
   if (cut && cut.keyed < 0.05) {
     // Not a failure — the picture is fine and the studio paid for it — but a
     // symbol that keyed almost nothing means the model ignored the background

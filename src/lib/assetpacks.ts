@@ -5,6 +5,7 @@ import { scanInjection } from "@/lib/scan";
 import { GENERATION_PRICE_CENTS, ARTIST_CENTS, compilePrompt } from "@/lib/generate";
 import { priceOf, prices } from "@/lib/genprice";
 import { compileAssetPrompt, type AssetSpec } from "@/lib/slotgen";
+import { pickKey } from "@/lib/cutout";
 
 /**
  * A pack: one brief, one payment, a set of assets.
@@ -36,6 +37,7 @@ export interface PackAsset {
 export interface PackView {
   id: string;
   title: string;
+  chroma: string;
   brief: string;
   palette: string | null;
   style_brain_id: string | null;
@@ -101,6 +103,11 @@ export async function startPack(opts: {
   // balance.
   const styleRules = opts.style ? await compilePrompt(opts.style, brief).catch(() => null) : null;
 
+  // Chosen once for the whole pack, from everything the studio told us: the
+  // key must be a colour this art does not contain, and every asset in the set
+  // has to be cut on the same one.
+  const key = pickKey(`${brief} ${palette ?? ""}`);
+
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -124,9 +131,9 @@ export async function startPack(opts: {
     }
 
     const { rows: created } = await client.query<{ id: string }>(
-      `insert into asset_packs (owner_id, title, brief, palette, style_brain_id)
-       values ($1, $2, $3, $4, $5) returning id`,
-      [opts.ownerId, title || "Untitled pack", brief, palette, opts.style?.id ?? null],
+      `insert into asset_packs (owner_id, title, brief, palette, style_brain_id, chroma)
+       values ($1, $2, $3, $4, $5, $6) returning id`,
+      [opts.ownerId, title || "Untitled pack", brief, palette, opts.style?.id ?? null, key.id],
     );
     const packId = created[0].id;
 
@@ -135,7 +142,7 @@ export async function startPack(opts: {
       // The full prompt is written now rather than in the worker: it is what
       // the studio actually bought, and a pack whose brief was edited later
       // must still show what each asset was asked for.
-      const full = compileAssetPrompt({ brief, palette, styleRules }, spec);
+      const full = compileAssetPrompt({ brief, palette, styleRules }, spec, key.clause);
       const { rows: asset } = await client.query<{ id: string }>(
         `insert into generations
            (pack_id, role, label, brain_id, buyer_id, artist_id,
@@ -179,7 +186,7 @@ export async function startPack(opts: {
 /** The pack and everything in it, for its owner only. */
 export async function packFor(id: string, userId: string): Promise<PackView | null> {
   const pack = await maybeOne<Omit<PackView, "assets">>(
-    `select p.id, p.title, p.brief, p.palette, p.style_brain_id,
+    `select p.id, p.title, p.chroma, p.brief, p.palette, p.style_brain_id,
             b.title as style_title,
             to_char(p.created_at at time zone 'UTC', 'YYYY-MM-DD HH24:MI') as created_at
        from asset_packs p

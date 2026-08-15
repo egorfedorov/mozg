@@ -10,24 +10,28 @@ import {
 } from "./slotgen";
 
 const SYMBOL: AssetSpec = { role: "symbol", label: "wild", brief: "a golden scarab" };
+/** The clause the pack chose; the prompt must repeat it verbatim. */
+const KEY = "pure magenta #FF00FF";
 
 test("a cut-out asset asks for the key, a full-bleed one never does", () => {
-  const symbol = compileAssetPrompt({ brief: "an egyptian tomb" }, SYMBOL);
-  assert.match(symbol, /#00B140/);
+  const symbol = compileAssetPrompt({ brief: "an egyptian tomb" }, SYMBOL, KEY);
+  assert.match(symbol, /#FF00FF/);
 
   const background = compileAssetPrompt(
     { brief: "an egyptian tomb" },
     { role: "background", label: "bg", brief: "the reel background" },
+    KEY,
   );
   // A background is composited whole. Asking for chroma there would key out
   // the picture itself.
-  assert.doesNotMatch(background, /#00B140/);
+  assert.doesNotMatch(background, /#FF00FF/);
 });
 
 test("the technical rules come after the artist's, so the file stays shippable", () => {
   const prompt = compileAssetPrompt(
     { brief: "an egyptian tomb", styleRules: "- palette: flat cream and rust, no gradients" },
     SYMBOL,
+    KEY,
   );
   const style = prompt.indexOf("flat cream and rust");
   const technical = prompt.indexOf("Technical requirements");
@@ -42,6 +46,7 @@ test("the shared brief and palette reach every asset in the set", () => {
   const prompt = compileAssetPrompt(
     { brief: "an egyptian tomb", palette: "gold #E8B04B, deep violet" },
     SYMBOL,
+    KEY,
   );
   assert.match(prompt, /an egyptian tomb/);
   assert.match(prompt, /gold #E8B04B/);
@@ -74,7 +79,8 @@ test("export names never collide, and the extension follows the cutout", () => {
 
 test("every role declares an aspect the engine can use", () => {
   for (const [name, preset] of Object.entries(ROLES)) {
-    assert.ok(preset.rules.length > 0, name);
+    // rules is a function of the key now, so it has to be called to be counted.
+    assert.ok(preset.rules(KEY).length > 0, name);
     assert.match(preset.aspect, /^\d+:\d+$/);
   }
 });

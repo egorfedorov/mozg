@@ -44,7 +44,23 @@ export const MODEL_COST_CENTS = 2;
 
 const API = (path: string) => `${env.ANTHROPIC_BASE_URL}/v1${path}`;
 
-async function api<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+/**
+ * The provider drops roughly one call in twenty with a gateway error, and a
+ * measured production run put the useful backoff at three, six and nine
+ * seconds. Without this an asset in a paid set fails, refunds, and leaves a
+ * hole in a paytable for a reason that would have cleared by itself.
+ */
+export const RETRY_BACKOFF_MS = [3000, 6000, 9000] as const;
+
+/** Worth trying again: the gateway, the load balancer, or the network — never
+ *  a rejected request, which will be rejected identically forever. */
+export function transient(status: number, message?: string): boolean {
+  if (status === 429 || status === 408 || status >= 500) return true;
+  const m = (message ?? "").toLowerCase();
+  return m.includes("bad gateway") || m.includes("timeout") || m.includes("overload");
+}
+
+async function once<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
   const res = await fetch(API(path), {
     method,
     headers: {
@@ -60,15 +76,42 @@ async function api<T>(method: "GET" | "POST", path: string, body?: unknown): Pro
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error(`image api returned non-JSON (${res.status})`);
+    const err = new Error(`image api returned non-JSON (${res.status})`);
+    (err as { status?: number }).status = res.status;
+    throw err;
   }
 
   // The provider answers 200 with an error object as readily as it answers a
   // 4xx, so the status code alone decides nothing.
   const err = (parsed as { error?: { message?: string; code?: string } }).error;
-  if (err) throw new Error(err.message ?? err.code ?? "image api error");
-  if (!res.ok) throw new Error(`image api ${res.status}`);
+  if (err) {
+    const e = new Error(err.message ?? err.code ?? "image api error");
+    (e as { status?: number }).status = res.status;
+    throw e;
+  }
+  if (!res.ok) {
+    const e = new Error(`image api ${res.status}`);
+    (e as { status?: number }).status = res.status;
+    throw e;
+  }
   return parsed as T;
+}
+
+async function api<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+  let last: unknown;
+  for (let attempt = 0; attempt <= RETRY_BACKOFF_MS.length; attempt++) {
+    try {
+      return await once<T>(method, path, body);
+    } catch (e) {
+      last = e;
+      const status = (e as { status?: number }).status ?? 0;
+      const message = e instanceof Error ? e.message : String(e);
+      if (attempt === RETRY_BACKOFF_MS.length || !transient(status, message)) break;
+      console.warn(`[imagegen] ${path} ${message} — retry ${attempt + 1}`);
+      await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS[attempt]));
+    }
+  }
+  throw last;
 }
 
 /**

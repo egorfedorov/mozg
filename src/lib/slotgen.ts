@@ -22,28 +22,32 @@ interface RolePreset {
   readonly aspect: "1:1" | "16:9" | "3:4";
   /** Cut out of its background before it reaches the game. */
   readonly cutout: boolean;
-  readonly rules: readonly string[];
+  /** The key is chosen per pack — against what the art is made of — so the
+   *  clause that names it cannot be baked into the rule. */
+  readonly rules: (keyClause: string) => readonly string[];
 }
 
 /**
  * A symbol is cut out, and everything about its prompt follows from that.
  *
  * The cutout is done by chroma key rather than by a background remover,
- * because a remover guesses and a flat key does not: it fails visibly (a green
- * rim) instead of quietly eating a horn or a wisp of smoke. So the model is
- * asked for one specific green, edge to edge, with nothing of the subject
- * touching the frame and no shadow falling onto the key — a shadow on chroma
- * keys out as a hole, and that hole is only noticed in-engine.
+ * because a remover guesses and a flat key does not: it fails visibly (a
+ * coloured rim) instead of quietly eating a horn or a wisp of smoke. So the
+ * model is asked for one specific colour, edge to edge, with nothing of the
+ * subject touching the frame and no shadow falling onto the key — a shadow on
+ * the key cuts out as a hole, and that hole is only noticed in-engine.
+ *
+ * Which colour is not fixed: it is picked per pack against the brief, because
+ * the one unrecoverable failure is keying out the subject itself.
  */
-const CHROMA = "#00B140";
 
 export const ROLES: Record<AssetRole, RolePreset> = {
   symbol: {
     summary: "Reel symbol, cut out on transparency",
     aspect: "1:1",
     cutout: true,
-    rules: [
-      `Place the subject on a completely flat ${CHROMA} background, filling the whole frame behind it.`,
+    rules: (key) => [
+      `Place the subject on a completely flat ${key} background, filling the whole frame behind it.`,
       "No shadow, glow, reflection or particle may touch that background — it is keyed out, and anything on it becomes a hole.",
       "Leave a clear margin on all four sides: nothing the subject is made of may reach or cross the frame edge.",
       "One subject, centred, seen straight on, no scene and no ground plane.",
@@ -54,7 +58,7 @@ export const ROLES: Record<AssetRole, RolePreset> = {
     summary: "Reel background, full bleed",
     aspect: "16:9",
     cutout: false,
-    rules: [
+    rules: () => [
       "Composition holds the centre open and quiet: the reels sit there and must stay readable over it.",
       "Detail and contrast belong at the edges; the middle stays low-contrast.",
       "No character, no focal object competing with the symbols.",
@@ -64,7 +68,7 @@ export const ROLES: Record<AssetRole, RolePreset> = {
     summary: "Lobby tile / key art",
     aspect: "3:4",
     cutout: false,
-    rules: [
+    rules: () => [
       "Hero composition: the theme's most recognisable subject, large, unmistakable at thumbnail size.",
       "Leave the lower third calmer — the storefront overlays a gradient and the title there.",
       "No baked-in text, logo, wordmark, number or multiplier anywhere in the image.",
@@ -74,8 +78,8 @@ export const ROLES: Record<AssetRole, RolePreset> = {
     summary: "UI frame / panel",
     aspect: "1:1",
     cutout: true,
-    rules: [
-      `Flat ${CHROMA} background, and the panel's interior is that same ${CHROMA} — both are keyed out, leaving only the frame.`,
+    rules: (key) => [
+      `Flat ${key} background, and the panel's interior is that same ${key} — both are keyed out, leaving only the frame.`,
       "Symmetrical, tileable edges, even border weight.",
       "No text inside the frame: the game writes live values there.",
     ],
@@ -97,25 +101,44 @@ const NEVERS = [
 ] as const;
 
 /**
- * The classic ladder, in the order a paytable lists it.
+ * The ladder, in four tiers, in the order a paytable lists it.
  *
  * A studio that has never shipped a slot asks for "some symbols" and gets an
- * unbalanced set; the ladder is what makes twelve pictures a paytable. Low
- * symbols are deliberately generic and cheap-looking — they pay the least and
- * must read as filler — while the premiums carry the theme.
+ * unbalanced pile; the tiers are what make eleven pictures a paytable. The
+ * progression is a *material* one — low symbols are plain forms that read
+ * instantly, mid symbols gain texture, the premium carries a real prop of the
+ * world, and the top tier holds the personality. A player reads value off that
+ * rise before they ever open the paytable.
  */
 export const SYMBOL_LADDER = [
-  { label: "low-1", tier: "low", brief: "the humblest themed trinket, plain and cheap-looking" },
-  { label: "low-2", tier: "low", brief: "a second minor trinket, clearly the same family as low-1" },
-  { label: "low-3", tier: "low", brief: "a third minor trinket, same family, different silhouette" },
-  { label: "low-4", tier: "low", brief: "a fourth minor trinket, same family, different silhouette" },
-  { label: "high-1", tier: "high", brief: "a valuable themed object, richer material and colour than the lows" },
-  { label: "high-2", tier: "high", brief: "a second valuable object, clearly above high-1 in worth" },
-  { label: "high-3", tier: "high", brief: "the theme's signature object, the one a player would name" },
-  { label: "character", tier: "high", brief: "the theme's central character, bust or full figure, facing the player" },
-  { label: "wild", tier: "special", brief: "the wild: the theme's most powerful emblem, unmistakably different from every other symbol" },
-  { label: "scatter", tier: "special", brief: "the scatter: a key-like object that promises a bonus, radiating importance" },
-  { label: "bonus", tier: "special", brief: "the bonus trigger, kin to the scatter but plainly a different object" },
+  { label: "low-1", tier: "low", brief: "the humblest themed trinket: a simple form, flat material, quick colour read" },
+  { label: "low-2", tier: "low", brief: "a second minor trinket, same family as low-1, clearly different silhouette" },
+  { label: "low-3", tier: "low", brief: "a third minor trinket, same family, another distinct silhouette" },
+  { label: "low-4", tier: "low", brief: "a fourth minor trinket, same family, another distinct silhouette" },
+  { label: "mid-1", tier: "mid", brief: "a step up in worth: more material and surface texture than the lows, still a modest object" },
+  { label: "mid-2", tier: "mid", brief: "a second mid-tier object, plainly richer than the lows and plainly below the premium" },
+  { label: "premium", tier: "premium", brief: "a recognisable prop of this world in a rich material — the object a player would name if asked what the game is about" },
+  { label: "character", tier: "top", brief: "the theme's central character, bust or full figure, facing the player, the strongest personality in the set" },
+  { label: "wild", tier: "top", brief: "the wild mark: the most powerful emblem of the theme, unmistakable at a glance and unlike every other symbol" },
+  { label: "scatter", tier: "top", brief: "the scatter mark: an object that promises a bonus, radiating importance" },
+  { label: "bonus", tier: "top", brief: "the bonus mark, kin to the scatter but plainly a different object" },
+] as const;
+
+/**
+ * What makes eleven pictures one set rather than eleven pictures.
+ *
+ * Every line here is a rule a studio's art director would give, and each one
+ * fixes a specific way a generated set fails review: symbols that cannot be
+ * told apart in motion blur, a light direction that flips between assets, an
+ * outer glow copied onto everything so nothing looks special, and a value
+ * ladder a player cannot read without the paytable.
+ */
+const SET_RULES = [
+  "One border treatment for every symbol in the set: same outline weight, same corner logic.",
+  "One light direction for every symbol in the set, stated once and never flipped.",
+  "Material rises with tier and must be visible: plain at low, textured at mid, rich at premium, strongest personality at top.",
+  "Silhouettes must differ enough to tell symbols apart when blurred by motion — small internal detail may never be the only difference.",
+  "Do not put the same outer glow on every symbol; a glow that is everywhere marks nothing.",
 ] as const;
 
 export interface AssetSpec {
@@ -177,14 +200,19 @@ export interface PackBrief {
  * look, and the role's technical rules come last because they are about the
  * file rather than the picture — those must not be overridden by anything.
  */
-export function compileAssetPrompt(pack: PackBrief, spec: AssetSpec): string {
+export function compileAssetPrompt(pack: PackBrief, spec: AssetSpec, keyClause: string): string {
   const preset = ROLES[spec.role];
+  const tier = SYMBOL_LADDER.find((s) => s.label === spec.label)?.tier;
   const parts = [
     `Game art for a slot game. The whole set shares one world: ${pack.brief.trim()}`,
     pack.palette?.trim() ? `Palette for every asset in the set: ${pack.palette.trim()}` : "",
     "",
     `This asset: ${spec.brief}.`,
+    tier ? `Its tier in the paytable: ${tier}.` : "",
     "",
+    spec.role === "symbol"
+      ? ["Rules that hold across the whole symbol set:", ...SET_RULES.map((r) => `- ${r}`), ""].join("\n")
+      : "",
     pack.styleRules?.trim()
       ? [
           "Render it in the artist's style, defined by these rules. They are the",
@@ -196,7 +224,7 @@ export function compileAssetPrompt(pack: PackBrief, spec: AssetSpec): string {
         ].join("\n")
       : "",
     "Technical requirements, which override every stylistic choice above:",
-    ...preset.rules.map((r) => `- ${r}`),
+    ...preset.rules(keyClause).map((r) => `- ${r}`),
     ...NEVERS.map((r) => `- ${r}`),
     "",
     `Aspect ratio ${preset.aspect}.`,
