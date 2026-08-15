@@ -51,6 +51,10 @@ export const ROLES: Record<AssetRole, RolePreset> = {
       "No shadow, glow, reflection or particle may touch that background — it is keyed out, and anything on it becomes a hole.",
       "Leave a clear margin on all four sides: nothing the subject is made of may reach or cross the frame edge.",
       "One subject, centred, seen straight on, no scene and no ground plane.",
+      // Watched a model return a framed plaque with a disc behind it. After
+      // keying, the frame survives as debris around the symbol and the disc as
+      // an opaque blob — a reel symbol has to be the object and nothing else.
+      "The subject is a free-standing object floating on the key. Nothing may sit behind it or around it: no frame, plaque, cartouche, medallion, badge, ribbon, banner, plinth or backing disc.",
       "Read at 128×128: one silhouette, one dominant hue, detail that survives being shrunk.",
     ],
   },
@@ -95,8 +99,13 @@ export const ROLES: Record<AssetRole, RolePreset> = {
  * studio has to throw away.
  */
 const NEVERS = [
-  "Never render text, numbers, letters, currency signs or multipliers.",
-  "Never add a watermark, signature, border or logo.",
+  // Stated as a property of the artwork rather than as a prohibition: a model
+  // asked for "the wild mark" and told never to write text returned a symbol
+  // with WILD carved across it. What works is describing a wordless object,
+  // and saying where the name is allowed to live instead.
+  "The artwork is completely wordless. No letters, words, glyphs, runes, inscriptions, numerals or currency signs anywhere — including carved or embossed on the object own surface.",
+  "A symbol called wild, scatter or bonus says so through the object itself; its name is written by the game in a live text layer, never painted into the picture.",
+  "No watermark, no signature, no logo.",
   "Never imitate a real brand, licensed character or existing game.",
 ] as const;
 
@@ -119,9 +128,9 @@ export const SYMBOL_LADDER = [
   { label: "mid-2", tier: "mid", brief: "a second mid-tier object, plainly richer than the lows and plainly below the premium" },
   { label: "premium", tier: "premium", brief: "a recognisable prop of this world in a rich material — the object a player would name if asked what the game is about" },
   { label: "character", tier: "top", brief: "the theme's central character, bust or full figure, facing the player, the strongest personality in the set" },
-  { label: "wild", tier: "top", brief: "the wild mark: the most powerful emblem of the theme, unmistakable at a glance and unlike every other symbol" },
-  { label: "scatter", tier: "top", brief: "the scatter mark: an object that promises a bonus, radiating importance" },
-  { label: "bonus", tier: "top", brief: "the bonus mark, kin to the scatter but plainly a different object" },
+  { label: "wild", tier: "top", brief: "the wild: the single most powerful object of the theme, unmistakable at a glance and unlike every other symbol, an object only with no lettering of any kind" },
+  { label: "scatter", tier: "top", brief: "the scatter: an object that promises a bonus and radiates importance, an object only with no lettering of any kind" },
+  { label: "bonus", tier: "top", brief: "the bonus trigger: kin to the scatter but plainly a different object, and likewise with no lettering" },
 ] as const;
 
 /**

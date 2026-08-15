@@ -95,3 +95,19 @@ test("fringe pixels are despilled and snapped solid, not left as a halo", async 
   assert.equal(a, 255, "boosted to solid");
   assert.ok(r <= g && b <= g, `despilled: ${r},${g},${b}`);
 });
+
+test("the key is not left hiding under the transparency", async () => {
+  // Zeroing alpha hides the key; it does not remove it. A filter, a mipmap or
+  // an atlas packer mixes those hidden pixels back in, and the symbol wears a
+  // rim of exactly the colour this file exists to remove.
+  const { png } = await cutChroma(await card([200, 40, 40]));
+
+  // Just outside the subject: transparent, but carrying the subject's colour.
+  const [r, g, b, a] = await pixel(png, 5, 10);
+  assert.equal(a, 0, "still transparent");
+  assert.ok(r > g && r > b, `should have taken the subject's red, got ${r},${g},${b}`);
+
+  // Far from anything: flattened, never left as the key.
+  const corner = await pixel(png, 0, 0);
+  assert.deepEqual(corner.slice(0, 3), [0, 0, 0]);
+});

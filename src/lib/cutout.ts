@@ -152,6 +152,8 @@ export async function cutChroma(input: Buffer, key: ChromaKey = DEFAULT_KEY): Pr
     if (a >= BOOST_LOW && a <= BOOST_HIGH) px[i + 3] = 255;
   }
 
+  bleed(px, info.width, info.height);
+
   const png = await sharp(Buffer.from(px.buffer), {
     raw: { width: info.width, height: info.height, channels: 4 },
   })
@@ -159,6 +161,77 @@ export async function cutChroma(input: Buffer, key: ChromaKey = DEFAULT_KEY): Pr
     .toBuffer();
 
   return { png, keyed: keyedCount / (info.width * info.height) };
+}
+
+/** How far the subject's colour is pushed out under the transparency. Four
+ *  pixels covers bilinear filtering and the first mip levels, which is where
+ *  the halo actually appears. */
+const BLEED_PASSES = 4;
+
+/**
+ * Push the subject's colour outwards under the transparent pixels.
+ *
+ * Zeroing alpha does not remove the key — it hides it, and the colour is still
+ * sitting there in the red, green and blue channels. Nothing notices until the
+ * asset is scaled, mipmapped or packed into an atlas, at which point the
+ * filter mixes those hidden pixels back in and every symbol wears a rim of
+ * exactly the colour we spent this whole file removing.
+ *
+ * So transparent pixels next to the subject take the subject's colour, and
+ * that spreads outward a few pixels. Alpha is untouched — this changes nothing
+ * anyone can see directly, and everything about what a filter produces.
+ * Whatever is still unclaimed at the end is flattened to black, because a
+ * magenta field under a transparent one is a trap for the next tool in the
+ * chain.
+ */
+function bleed(px: Uint8ClampedArray, w: number, h: number): void {
+  const known = new Uint8Array(w * h);
+  for (let i = 0, p = 0; i < px.length; i += 4, p++) known[p] = px[i + 3] > 0 ? 1 : 0;
+
+  for (let pass = 0; pass < BLEED_PASSES; pass++) {
+    const added: number[] = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const p = y * w + x;
+        if (known[p]) continue;
+
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const q = ny * w + nx;
+            if (!known[q]) continue;
+            r += px[q * 4];
+            g += px[q * 4 + 1];
+            b += px[q * 4 + 2];
+            n++;
+          }
+        }
+        if (!n) continue;
+
+        px[p * 4] = Math.round(r / n);
+        px[p * 4 + 1] = Math.round(g / n);
+        px[p * 4 + 2] = Math.round(b / n);
+        added.push(p);
+      }
+    }
+    // Marked after the pass, not during it, or the colour races across the
+    // image in whichever direction the loop happens to run.
+    for (const p of added) known[p] = 1;
+    if (!added.length) break;
+  }
+
+  for (let p = 0; p < known.length; p++) {
+    if (known[p]) continue;
+    px[p * 4] = 0;
+    px[p * 4 + 1] = 0;
+    px[p * 4 + 2] = 0;
+  }
 }
 
 /**
