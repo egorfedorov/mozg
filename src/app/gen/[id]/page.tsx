@@ -45,9 +45,19 @@ export default async function PackPage({ params }: { params: Promise<{ id: strin
           <p className="muted">{t("Generated in the style")} {pack.style_title}</p>
         ) : null}
 
-        <p className="muted" style={{ margin: "1.25rem 0" }}>
-          {done}/{pack.assets.length}
-          {failed ? ` · ${failed} failed and refunded` : ""}
+        <p className="muted" style={{ margin: "1.25rem 0", display: "flex", gap: "1rem", alignItems: "baseline", flexWrap: "wrap" }}>
+          <span>
+            {done}/{pack.assets.length}
+            {failed ? ` · ${failed} failed and refunded` : ""}
+          </span>
+          {done ? (
+            // Offered as soon as anything is finished rather than at the end:
+            // a studio that wants the first three symbols to try in-engine
+            // should not have to wait for the tile.
+            <a href={`/api/packs/${pack.id}/export`} download>
+              {t("Download for the engine (.zip)")}
+            </a>
+          ) : null}
         </p>
 
         <PackGrid assets={pack.assets} />
