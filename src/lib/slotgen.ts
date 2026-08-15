@@ -120,17 +120,79 @@ const NEVERS = [
  * rise before they ever open the paytable.
  */
 export const SYMBOL_LADDER = [
-  { label: "low-1", tier: "low", brief: "the humblest themed trinket: a simple form, flat material, quick colour read" },
-  { label: "low-2", tier: "low", brief: "a second minor trinket, same family as low-1, clearly different silhouette" },
-  { label: "low-3", tier: "low", brief: "a third minor trinket, same family, another distinct silhouette" },
-  { label: "low-4", tier: "low", brief: "a fourth minor trinket, same family, another distinct silhouette" },
-  { label: "mid-1", tier: "mid", brief: "a step up in worth: more material and surface texture than the lows, still a modest object" },
-  { label: "mid-2", tier: "mid", brief: "a second mid-tier object, plainly richer than the lows and plainly below the premium" },
-  { label: "premium", tier: "premium", brief: "a recognisable prop of this world in a rich material — the object a player would name if asked what the game is about" },
-  { label: "character", tier: "top", brief: "the theme's central character, bust or full figure, facing the player, the strongest personality in the set" },
-  { label: "wild", tier: "top", brief: "the wild: the single most powerful object of the theme, unmistakable at a glance and unlike every other symbol, an object only with no lettering of any kind" },
-  { label: "scatter", tier: "top", brief: "the scatter: an object that promises a bonus and radiates importance, an object only with no lettering of any kind" },
-  { label: "bonus", tier: "top", brief: "the bonus trigger: kin to the scatter but plainly a different object, and likewise with no lettering" },
+  // The lows are the ones a generated set always gets wrong. Asked for "a
+  // humble trinket" a model returns a jewelled amulet, because jewelled is
+  // what it knows how to draw well — and then the paytable reads upside down,
+  // with the cheapest symbol looking richer than the premium. So the lows are
+  // specified by what they are made of and what they must not have, and each
+  // is pinned to a different family of object so four of them cannot all be
+  // the same beetle.
+  {
+    label: "low-1",
+    tier: "low",
+    brief:
+      "a plain everyday VESSEL of this world — a cup, jar, bowl or flask — made of one dull material: unpainted clay, rough stone, plain wood or dull iron. Matte, no gold, no gems, no ornament, no glow. It must look cheap next to everything else in the set",
+  },
+  {
+    label: "low-2",
+    tier: "low",
+    brief:
+      "a plain everyday TOOL or implement of this world — a blade, key, hook, lamp or instrument — in the same dull matte material family as the other low symbols. No gold, no gems, no ornament, no glow, and a silhouette nothing else in the set shares",
+  },
+  {
+    label: "low-3",
+    tier: "low",
+    brief:
+      "something GROWN or gathered in this world — a plant, fruit, bone, shell or scrap of cloth — plain and matte. No gold, no gems, no ornament, no glow, and a silhouette nothing else in the set shares",
+  },
+  {
+    label: "low-4",
+    tier: "low",
+    brief:
+      "a small STRUCTURE or fragment of this world — a tile, brick, chain link, coin blank or shard — plain, matte, worn. No gold, no gems, no ornament, no glow, and a silhouette nothing else in the set shares",
+  },
+  {
+    label: "mid-1",
+    tier: "mid",
+    brief:
+      "a worked object of real craft: the same world, but polished metal or carved stone with visible surface texture and a single accent colour. Clearly above the lows and clearly below the premium — one small inlay at most, and no jewel",
+  },
+  {
+    label: "mid-2",
+    tier: "mid",
+    brief:
+      "a second worked object of a different kind from mid-1 — if mid-1 is worn, this is carried; if mid-1 is metal, this is stone — same level of craft, different silhouette",
+  },
+  {
+    label: "premium",
+    tier: "premium",
+    brief:
+      "the treasure of this world: the single object a player would name if asked what the game is about, in its richest material, with the light doing something on it. This is the set's anchor and the top of the object ladder",
+  },
+  {
+    label: "character",
+    tier: "top",
+    brief:
+      "the theme's central character — a face or a figure, not an object — facing the player, the strongest personality in the set and impossible to confuse with any prop",
+  },
+  {
+    label: "wild",
+    tier: "top",
+    brief:
+      "the wild: the theme's single most powerful emblem, an object only, with no lettering of any kind, and a silhouette unlike every symbol before it",
+  },
+  {
+    label: "scatter",
+    tier: "top",
+    brief:
+      "the scatter: an object that promises a bonus and radiates importance — round or radiant where the wild is not — an object only, with no lettering of any kind",
+  },
+  {
+    label: "bonus",
+    tier: "top",
+    brief:
+      "the bonus trigger: kin to the scatter in importance but a plainly different object and a plainly different shape, and likewise with no lettering",
+  },
 ] as const;
 
 /**
@@ -148,6 +210,7 @@ const SET_RULES = [
   "Material rises with tier and must be visible: plain at low, textured at mid, rich at premium, strongest personality at top.",
   "Silhouettes must differ enough to tell symbols apart when blurred by motion — small internal detail may never be the only difference.",
   "Do not put the same outer glow on every symbol; a glow that is everywhere marks nothing.",
+  "Every symbol is a different kind of thing. Two symbols in one set may never be the same object twice — not the same eye, the same pillar or the same beetle in another pose.",
 ] as const;
 
 export interface AssetSpec {

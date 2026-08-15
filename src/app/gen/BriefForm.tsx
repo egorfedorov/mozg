@@ -31,14 +31,14 @@ export default function BriefForm({
   ];
 
   return (
-    <form action={action} className="card" style={{ display: "grid", gap: "1rem", padding: "1.25rem" }}>
+    <form action={action} className="panel" style={{ display: "grid", gap: "1.25rem" }}>
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span className="eyebrow">{t("Game")}</span>
+        <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>{t("Game")}</span>
         <input name="title" maxLength={120} placeholder={t("Tomb of the Scarab King")} required />
       </label>
 
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span className="eyebrow">{t("The world, in a sentence or two")}</span>
+        <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>{t("The world, in a sentence or two")}</span>
         <textarea
           name="brief"
           rows={3}
@@ -49,19 +49,19 @@ export default function BriefForm({
       </label>
 
       <label style={{ display: "grid", gap: ".35rem" }}>
-        <span className="eyebrow">{t("Palette (optional)")}</span>
+        <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>{t("Palette (optional)")}</span>
         <input name="palette" maxLength={300} placeholder={t("gold #E8B04B, limestone #D8CBB0, deep violet shadow")} />
       </label>
 
       <fieldset style={{ display: "grid", gap: ".5rem", border: 0, padding: 0, margin: 0 }}>
-        <span className="eyebrow">{t("What to make")}</span>
+        <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>{t("What to make")}</span>
         {sets.map((s, i) => (
           <label key={s.id} style={{ display: "flex", gap: ".6rem", alignItems: "baseline" }}>
             <input type="radio" name="set" value={s.id} defaultChecked={i === 0} />
             <span>
               <strong>{s.label}</strong>
               <br />
-              <span className="muted" style={{ fontSize: ".85em" }}>
+              <span className="mono" style={{ fontSize: ".75rem", color: "var(--ink-2)" }}>
                 {s.hint} · ${(setCosts[s.id] / 100).toFixed(2)}
               </span>
             </span>
@@ -74,11 +74,11 @@ export default function BriefForm({
       ) : null}
 
       <div style={{ display: "flex", gap: ".75rem", alignItems: "center", flexWrap: "wrap" }}>
-        <button type="submit" disabled={pending}>
+        <button className="btn" type="submit" disabled={pending}>
           {pending ? t("Ordering…") : t("Generate the set")}
         </button>
-        <span className="muted" style={{ fontSize: ".85em" }}>
-          {t("Balance")} {(balanceCents / 100).toFixed(2)}
+        <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+          {t("Balance")} ${(balanceCents / 100).toFixed(2)}
         </span>
       </div>
     </form>
