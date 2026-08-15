@@ -136,6 +136,28 @@ export function defaultSpecs(): AssetSpec[] {
   ];
 }
 
+/**
+ * What can be ordered in one go.
+ *
+ * Three sets rather than a checklist of thirteen boxes: the point of the
+ * service is that it knows what a slot needs, and a form asking the studio to
+ * assemble its own paytable has handed the expertise back to them. Anyone who
+ * wants a different mix orders twice.
+ *
+ * Here rather than next to the form because the price of a set has to be added
+ * up on the server, and a server action file can only export functions.
+ */
+export const SETS: Record<string, () => AssetSpec[]> = {
+  full: () => defaultSpecs(),
+  symbols: () =>
+    SYMBOL_LADDER.map((s) => ({ role: "symbol" as const, label: s.label, brief: s.brief })),
+  scene: () => [
+    { role: "background", label: "bg", brief: "the game's reel background" },
+    { role: "tile", label: "tile", brief: "lobby key art for the game" },
+    { role: "frame", label: "frame", brief: "the reel frame and UI panel" },
+  ],
+};
+
 export interface PackBrief {
   /** The studio's own description of the game: theme, mood, period. */
   brief: string;

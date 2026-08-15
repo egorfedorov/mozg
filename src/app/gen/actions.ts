@@ -5,27 +5,8 @@ import { currentUser } from "@/lib/session";
 import { imageGenReady } from "@/lib/imagegen";
 import { rateLimited } from "@/lib/rate-limit";
 import { startPack } from "@/lib/assetpacks";
-import { defaultSpecs, SYMBOL_LADDER, type AssetSpec } from "@/lib/slotgen";
+import { SETS } from "@/lib/slotgen";
 import { enqueueGeneration } from "@/worker/queue";
-
-/**
- * What a studio can order in one go.
- *
- * Three sets rather than a checklist of thirteen boxes: the whole point of the
- * service is that it knows what a slot needs, and a form that asks the studio
- * to assemble the paytable themselves has handed the expertise back to them.
- * Anyone who wants a different mix orders twice.
- */
-const SETS: Record<string, () => AssetSpec[]> = {
-  full: () => defaultSpecs(),
-  symbols: () =>
-    SYMBOL_LADDER.map((s) => ({ role: "symbol" as const, label: s.label, brief: s.brief })),
-  scene: () => [
-    { role: "background", label: "bg", brief: "the game's reel background" },
-    { role: "tile", label: "tile", brief: "lobby key art for the game" },
-    { role: "frame", label: "frame", brief: "the reel frame and UI panel" },
-  ],
-};
 
 /**
  * Order a pack.

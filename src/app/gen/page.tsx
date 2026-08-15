@@ -6,7 +6,8 @@ import { markup } from "@/lib/markup";
 import { currentUser } from "@/lib/session";
 import { maybeOne } from "@/db";
 import { imageGenReady } from "@/lib/imagegen";
-import { GENERATION_PRICE_CENTS } from "@/lib/generate";
+import { prices } from "@/lib/genprice";
+import { SETS } from "@/lib/slotgen";
 import { packsOf } from "@/lib/assetpacks";
 import BriefForm from "./BriefForm";
 
@@ -29,6 +30,11 @@ export const metadata = {
 export default async function GenPage() {
   const t = await translator();
   const user = await currentUser();
+  const table = await prices();
+  const setCosts = Object.fromEntries(
+    Object.keys(SETS).map((id) => [id, SETS[id]().reduce((n, s) => n + (table[s.role] ?? 0), 0)]),
+  ) as Record<string, number>;
+
   const [packs, balance] = user
     ? await Promise.all([
         packsOf(user.id, 12),
@@ -71,7 +77,7 @@ export default async function GenPage() {
           {!imageGenReady() ? (
             <p className="muted">{t("Generation is not switched on for this deployment yet.")}</p>
           ) : user ? (
-            <BriefForm balanceCents={balance} perAssetCents={GENERATION_PRICE_CENTS} />
+            <BriefForm balanceCents={balance} setCosts={setCosts} />
           ) : (
             <p className="lede">
               {markup(

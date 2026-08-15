@@ -15,10 +15,11 @@ import { createPack } from "./actions";
  */
 export default function BriefForm({
   balanceCents,
-  perAssetCents,
+  setCosts,
 }: {
   balanceCents: number;
-  perAssetCents: number;
+  /** What each set costs today, priced per role by the operator. */
+  setCosts: Record<string, number>;
 }) {
   const t = useT();
   const [state, action, pending] = useActionState(createPack, null);
@@ -61,7 +62,7 @@ export default function BriefForm({
               <strong>{s.label}</strong>
               <br />
               <span className="muted" style={{ fontSize: ".85em" }}>
-                {s.hint} · {((s.count * perAssetCents) / 100).toFixed(2)}
+                {s.hint} · ${(setCosts[s.id] / 100).toFixed(2)}
               </span>
             </span>
           </label>

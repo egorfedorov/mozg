@@ -138,6 +138,13 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.nextUrl), 308);
     }
 
+    // The studio's own room — balance, prices, everything ordered.
+    if (pathname === "/account") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/gen/account";
+      return NextResponse.rewrite(url);
+    }
+
     // A pack's own room: gen.mozg.sh/<id> serves what /gen/<id> holds.
     if (/^\/[0-9a-f-]{36}$/i.test(pathname)) {
       const url = req.nextUrl.clone();

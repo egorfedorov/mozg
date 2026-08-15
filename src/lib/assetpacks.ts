@@ -3,6 +3,7 @@ import type { Brain } from "@/db/types";
 import { move } from "@/lib/money";
 import { scanInjection } from "@/lib/scan";
 import { GENERATION_PRICE_CENTS, ARTIST_CENTS, compilePrompt } from "@/lib/generate";
+import { priceOf, prices } from "@/lib/genprice";
 import { compileAssetPrompt, type AssetSpec } from "@/lib/slotgen";
 
 /**
@@ -80,11 +81,20 @@ export async function startPack(opts: {
   // Generating in your own style is free of charge, because both sides of the
   // movement would be the same account.
   const paysArtist = Boolean(opts.style && opts.style.owner_id !== opts.ownerId);
-  // One rate for every asset, style or no style: what the artist gets comes
-  // out of it, so a studio comparing two styles compares the work rather than
-  // the tariff. The same argument the gallery's single price already makes.
-  const perAsset = GENERATION_PRICE_CENTS;
-  const total = perAsset * opts.specs.length;
+
+  // Priced per role, from the operator's own settings rather than a constant:
+  // a lobby tile and a low-pay trinket cost the same to generate and are worth
+  // different money. Read once for the whole pack — thirteen assets must not
+  // be thirteen queries, and must not straddle a price change mid-order.
+  const table = await prices();
+  const priced = opts.specs.map((spec) => ({ spec, cents: priceOf(table, spec.role) }));
+  const total = priced.reduce((n, p) => n + p.cents, 0);
+
+  // The artist's share follows the price rather than sitting at a fixed number
+  // of cents: an operator who doubles what a symbol costs would otherwise be
+  // doubling their own margin and leaving the artist exactly where they were.
+  const artistShare = (cents: number) =>
+    paysArtist ? Math.round((cents * ARTIST_CENTS) / GENERATION_PRICE_CENTS) : 0;
 
   // Compiled before the transaction: it reads the style brain's notes, which
   // is a search, and a search has no business holding a row lock on someone's
@@ -108,8 +118,8 @@ export async function startPack(opts: {
       return {
         ok: false,
         reason:
-          `This pack costs ${(total / 100).toFixed(2)} — ${opts.specs.length} assets at ` +
-          `${perAsset}¢. Top up in settings, or take assets out of the set.`,
+          `This pack costs $${(total / 100).toFixed(2)} for ${opts.specs.length} assets. ` +
+          "Top up in settings, or take assets out of the set.",
       };
     }
 
@@ -121,7 +131,7 @@ export async function startPack(opts: {
     const packId = created[0].id;
 
     const assetIds: string[] = [];
-    for (const spec of opts.specs) {
+    for (const { spec, cents } of priced) {
       // The full prompt is written now rather than in the worker: it is what
       // the studio actually bought, and a pack whose brief was edited later
       // must still show what each asset was asked for.
@@ -140,8 +150,8 @@ export async function startPack(opts: {
           paysArtist ? opts.style!.owner_id : null,
           spec.brief,
           full,
-          perAsset,
-          paysArtist ? ARTIST_CENTS : 0,
+          cents,
+          artistShare(cents),
         ],
       );
       assetIds.push(asset[0].id);
