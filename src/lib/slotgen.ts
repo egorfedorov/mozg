@@ -181,6 +181,35 @@ export const SETS: Record<string, () => AssetSpec[]> = {
   ],
 };
 
+/**
+ * Which asset the rest of the set is drawn against.
+ *
+ * The premium symbol, when there is one: it is the asset carrying the most
+ * information about the world — a real prop, a rich material, the light doing
+ * something — so a model handed it as a reference has the most to copy. A
+ * low-pay trinket would anchor the set to its plainest member, and a
+ * background would anchor it to a composition no symbol shares.
+ *
+ * Falls back to whatever comes first, because a set of one still has to work.
+ */
+export function anchorIndex(specs: AssetSpec[]): number {
+  const order = ["premium", "character", "wild", "tile", "background"];
+  for (const wanted of order) {
+    const i = specs.findIndex((s) => s.label === wanted || s.role === wanted);
+    if (i >= 0) return i;
+  }
+  return 0;
+}
+
+/** The clause that makes a reference image binding rather than decorative. */
+export const REFERENCE_CLAUSE = [
+  "A reference image of this same game is attached.",
+  "Match it exactly: the palette, the light direction, the outline weight, the",
+  "material language and the level of detail are already decided by it. This is",
+  "another asset from the same set, not a variation on a theme — only the",
+  "subject changes.",
+].join(" ");
+
 export interface PackBrief {
   /** The studio's own description of the game: theme, mood, period. */
   brief: string;
@@ -200,13 +229,21 @@ export interface PackBrief {
  * look, and the role's technical rules come last because they are about the
  * file rather than the picture — those must not be overridden by anything.
  */
-export function compileAssetPrompt(pack: PackBrief, spec: AssetSpec, keyClause: string): string {
+export function compileAssetPrompt(
+  pack: PackBrief,
+  spec: AssetSpec,
+  keyClause: string,
+  /** True when this asset will be generated with the pack's anchor attached. */
+  withReference = false,
+): string {
   const preset = ROLES[spec.role];
   const tier = SYMBOL_LADDER.find((s) => s.label === spec.label)?.tier;
   const parts = [
     `Game art for a slot game. The whole set shares one world: ${pack.brief.trim()}`,
     pack.palette?.trim() ? `Palette for every asset in the set: ${pack.palette.trim()}` : "",
     "",
+    withReference ? REFERENCE_CLAUSE : "",
+    withReference ? "" : "",
     `This asset: ${spec.brief}.`,
     tier ? `Its tier in the paytable: ${tier}.` : "",
     "",

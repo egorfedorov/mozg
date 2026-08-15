@@ -4,7 +4,7 @@ import { move } from "@/lib/money";
 import { scanInjection } from "@/lib/scan";
 import { GENERATION_PRICE_CENTS, ARTIST_CENTS, compilePrompt } from "@/lib/generate";
 import { priceOf, prices } from "@/lib/genprice";
-import { compileAssetPrompt, type AssetSpec } from "@/lib/slotgen";
+import { anchorIndex, compileAssetPrompt, type AssetSpec } from "@/lib/slotgen";
 import { pickKey } from "@/lib/cutout";
 
 /**
@@ -18,10 +18,12 @@ import { pickKey } from "@/lib/cutout";
  */
 
 export type StartPackResult =
-  // The asset ids come back so the caller can queue them. Queueing inside the
-  // transaction would be a lie: pg-boss writes to the same database, and a job
-  // sent for a row that then rolls back is a worker chasing a ghost.
-  | { ok: true; id: string; assetIds: string[] }
+  // Only the anchor is queued here. The rest of the set waits for its picture
+  // to exist, because they are generated *against* it — the worker releases
+  // them once it does. Queueing inside the transaction would be a lie anyway:
+  // pg-boss writes to the same database, and a job sent for a row that then
+  // rolls back is a worker chasing a ghost.
+  | { ok: true; id: string; anchorId: string }
   | { ok: false; reason: string };
 
 export interface PackAsset {
@@ -137,17 +139,21 @@ export async function startPack(opts: {
     );
     const packId = created[0].id;
 
-    const assetIds: string[] = [];
-    for (const { spec, cents } of priced) {
+    // One asset anchors the set; the others are drawn against its picture.
+    const anchor = anchorIndex(opts.specs);
+
+    let anchorId = "";
+    for (const [n, { spec, cents }] of priced.entries()) {
+      const isAnchor = n === anchor;
       // The full prompt is written now rather than in the worker: it is what
       // the studio actually bought, and a pack whose brief was edited later
       // must still show what each asset was asked for.
-      const full = compileAssetPrompt({ brief, palette, styleRules }, spec, key.clause);
+      const full = compileAssetPrompt({ brief, palette, styleRules }, spec, key.clause, !isAnchor);
       const { rows: asset } = await client.query<{ id: string }>(
         `insert into generations
            (pack_id, role, label, brain_id, buyer_id, artist_id,
-            prompt, full_prompt, price_cents, artist_cents)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+            prompt, full_prompt, price_cents, artist_cents, is_anchor)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
         [
           packId,
           spec.role,
@@ -159,9 +165,10 @@ export async function startPack(opts: {
           full,
           cents,
           artistShare(cents),
+          isAnchor,
         ],
       );
-      assetIds.push(asset[0].id);
+      if (isAnchor) anchorId = asset[0].id;
     }
 
     await move({
@@ -174,7 +181,7 @@ export async function startPack(opts: {
     });
 
     await client.query("commit");
-    return { ok: true, id: packId, assetIds };
+    return { ok: true, id: packId, anchorId };
   } catch (err) {
     await client.query("rollback").catch(() => {});
     throw err;

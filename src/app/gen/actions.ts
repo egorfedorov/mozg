@@ -42,12 +42,12 @@ export async function createPack(_prev: unknown, formData: FormData) {
   });
   if (!started.ok) return { error: started.reason };
 
-  // Queued one by one and never fatally: the rows are paid for, and a worker
-  // that starts later sweeps them. Telling a studio its money vanished because
-  // a queue hiccuped would be the wrong story.
-  for (const id of started.assetIds) {
-    await enqueueGeneration(id).catch(() => {});
-  }
+  // Only the anchor. The worker releases the rest of the set once the anchor's
+  // picture exists, because they are generated against it. Never fatal: the
+  // rows are paid for and a worker that starts later sweeps them, so telling a
+  // studio its money vanished because a queue hiccuped would be the wrong
+  // story.
+  await enqueueGeneration(started.anchorId).catch(() => {});
 
   redirect(`/gen/${started.id}`);
 }

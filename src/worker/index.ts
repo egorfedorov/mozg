@@ -1,4 +1,4 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl } from "@/worker/queue";
+import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl, enqueueGeneration } from "@/worker/queue";
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
 import { compileLesson } from "@/worker/lesson";
@@ -34,7 +34,7 @@ import { crawlSite } from "@/worker/crawl";
 import { runExam } from "@/worker/exam";
 import { compileSummaries } from "@/worker/summary";
 import { runMaintenance, refreshBrain } from "@/worker/maintenance";
-import { runGeneration } from "@/worker/generate";
+import { runGeneration, releaseRest } from "@/worker/generate";
 import { failGeneration } from "@/lib/generate";
 import { runConsolidation } from "@/worker/consolidate";
 import { runContradictions } from "@/worker/contradict";
@@ -80,6 +80,35 @@ async function main() {
       `[worker] requeued ${orphans.length} source(s) interrupted by the last stop:`,
       orphans.map((o) => o.name ?? o.id).join(", "),
     );
+  }
+
+  // Paid assets nobody is coming back for.
+  //
+  // A generation row is written inside the transaction that takes the money,
+  // and only then queued. If that queue call is lost — a hiccup, a worker that
+  // died between the two — the row sits at "queued" forever: paid for, never
+  // drawn, and invisible because nothing was watching. A pack makes it worse,
+  // because the set is released by the anchor finishing, so a worker that
+  // stops in that gap strands twelve assets instead of one.
+  //
+  // A set still waiting on its own anchor is deliberately left alone: those
+  // assets are meant to be drawn *against* the anchor's picture, and releasing
+  // them early would trade the consistency the studio paid for against a few
+  // minutes.
+  const stranded = await query<{ id: string }>(
+    `select g.id
+       from generations g
+       left join asset_packs p on p.id = g.pack_id
+       left join generations a on a.pack_id = g.pack_id and a.is_anchor
+      where g.status = 'queued'
+        and (g.pack_id is null
+             or g.is_anchor
+             or p.reference_key is not null
+             or a.status in ('done', 'failed'))`,
+  );
+  for (const row of stranded) await enqueueGeneration(row.id);
+  if (stranded.length) {
+    console.log(`[worker] requeued ${stranded.length} paid generation(s) nobody had queued`);
   }
 
   await boss.work(
@@ -154,6 +183,15 @@ async function main() {
         await failGeneration(generationId, reason).catch((e) =>
           reportError("worker", "generate-refund", e, { detail: generationId }),
         );
+        // An anchor that died still owes the studio the rest of its set. They
+        // will match each other less closely than they should have — there is
+        // no reference now — but they were paid for, and silence is the one
+        // outcome that takes money and gives nothing.
+        const anchor = await maybeOne<{ pack_id: string }>(
+          `select pack_id from generations where id = $1 and is_anchor and pack_id is not null`,
+          [generationId],
+        ).catch(() => null);
+        if (anchor) await releaseRest(anchor.pack_id).catch(() => {});
         reportError("worker", "generate", err, { detail: `generation ${generationId}` });
       }
     },

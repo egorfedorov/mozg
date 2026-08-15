@@ -2,10 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  anchorIndex,
   assetFilename,
   compileAssetPrompt,
   defaultSpecs,
   ROLES,
+  SETS,
   type AssetSpec,
 } from "./slotgen";
 
@@ -83,4 +85,32 @@ test("every role declares an aspect the engine can use", () => {
     assert.ok(preset.rules(KEY).length > 0, name);
     assert.match(preset.aspect, /^\d+:\d+$/);
   }
+});
+
+test("the set is anchored on the asset that carries the most style", () => {
+  // The premium symbol: a real prop in a rich material, with the light doing
+  // something. Anchoring on a low-pay trinket would pin the whole set to its
+  // plainest member.
+  const full = defaultSpecs();
+  assert.equal(full[anchorIndex(full)].label, "premium");
+
+  // A scene has no symbols at all, so it falls back to something that exists.
+  const scene = SETS.scene();
+  assert.ok(anchorIndex(scene) >= 0 && anchorIndex(scene) < scene.length);
+
+  // A set of one still has to work.
+  assert.equal(anchorIndex([{ role: "tile", label: "tile", brief: "" }]), 0);
+});
+
+test("only the assets drawn after the anchor are told to match a reference", () => {
+  const spec: AssetSpec = { role: "symbol", label: "wild", brief: "a scarab" };
+
+  const anchor = compileAssetPrompt({ brief: "a tomb" }, spec, KEY, false);
+  assert.doesNotMatch(anchor, /reference image/i);
+
+  // The anchor has no picture to match yet — telling it to match one would
+  // describe a file that does not exist.
+  const rest = compileAssetPrompt({ brief: "a tomb" }, spec, KEY, true);
+  assert.match(rest, /reference image of this same game is attached/i);
+  assert.match(rest, /only the\s+subject changes/i);
 });

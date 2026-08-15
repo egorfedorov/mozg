@@ -5,6 +5,7 @@ import { generateImage } from "@/lib/imagegen";
 import { cutChroma, DEFAULT_KEY, KEYS } from "@/lib/cutout";
 import { ROLES, type AssetRole } from "@/lib/slotgen";
 import { packKey, storage, storageKey } from "@/lib/storage";
+import { enqueueGeneration } from "@/worker/queue";
 
 /** A role the database no longer recognises must not decide the frame: an
  *  unknown value falls back to square rather than throwing away a paid job. */
@@ -31,9 +32,13 @@ export async function runGeneration(id: string): Promise<void> {
     // The key this pack's prompts asked for. Cutting on any other colour is
     // how a symbol comes back with a hole where its own colour was.
     chroma: string | null;
+    is_anchor: boolean;
+    /** The anchor's picture, once it exists. Every other asset in the set is
+     *  drawn against it. */
+    reference_key: string | null;
   }>(
     `select g.brain_id, g.pack_id, g.role, g.prompt, g.full_prompt, g.status,
-            p.chroma
+            g.is_anchor, p.chroma, p.reference_key
        from generations g
        left join asset_packs p on p.id = g.pack_id
       where g.id = $1`,
@@ -72,8 +77,15 @@ export async function runGeneration(id: string): Promise<void> {
     throw new Error("generation has neither a style brain nor a compiled prompt");
   }
 
+  // Everything after the anchor is drawn against the anchor's own picture —
+  // the set's palette, light and outline weight are decided by a file rather
+  // than re-described in words the model reinterprets each call.
+  const reference =
+    !gen.is_anchor && gen.reference_key ? await referenceDataUri(gen.reference_key) : null;
+
   const image = await generateImage(full, {
     aspect: isPackAsset && gen.role ? aspectFor(gen.role) : "1:1",
+    ...(reference ? { imageUrls: [reference] } : {}),
     // Written the moment the provider hands one over, not after the picture
     // arrives: a run that then times out is only chaseable by its task id, and
     // the first timeout in production had none recorded to chase.
@@ -109,4 +121,53 @@ export async function runGeneration(id: string): Promise<void> {
   // Pays the artist and marks the row done, in one transaction. The cost is
   // the provider's own figure for this job, not an average.
   await settleGeneration(id, key, image.costCents);
+
+  // The anchor just became the reference. Record it, then let the rest of the
+  // set go — they were held back precisely until this picture existed.
+  if (gen.pack_id && gen.is_anchor) {
+    await query(`update asset_packs set reference_key = $2 where id = $1`, [gen.pack_id, key]);
+    await releaseRest(gen.pack_id);
+  }
+}
+
+/**
+ * Read the anchor back as a data URI.
+ *
+ * A data URI rather than a link because the bucket is private: handing the
+ * provider a signed URL would mean minting one that outlives the request, and
+ * a 1K PNG is comfortably inside the ten megabytes it accepts.
+ */
+async function referenceDataUri(key: string): Promise<string | null> {
+  try {
+    const body = await storage.get(key);
+    const ext = key.split(".").pop()?.toLowerCase();
+    const mime = ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png";
+    return `data:${mime};base64,${body.toString("base64")}`;
+  } catch {
+    // A missing reference must not cost the studio the rest of its set: the
+    // assets are still generated, just from the words alone.
+    console.warn(`[generate] reference ${key} unreadable — continuing without it`);
+    return null;
+  }
+}
+
+/**
+ * Queue everything in the pack that was waiting on the anchor.
+ *
+ * Called after the anchor lands, and also after it fails: a set whose anchor
+ * died is still paid for, and the studio is owed its assets even if they will
+ * match each other less closely than they should have.
+ */
+export async function releaseRest(packId: string): Promise<void> {
+  const waiting = await query<{ id: string }>(
+    `select id from generations
+      where pack_id = $1 and not is_anchor and status = 'queued'`,
+    [packId],
+  );
+  for (const row of waiting) {
+    await enqueueGeneration(row.id).catch(() => {
+      // Swallowed on purpose: the row is paid for and stays queued, so the
+      // next worker start sweeps it.
+    });
+  }
 }

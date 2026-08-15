@@ -127,6 +127,12 @@ export async function generateImage(
     timeoutMs?: number;
     /** Called with the task id as soon as the provider accepts the job. */
     onSubmitted?: (taskId: string) => Promise<void> | void;
+    /**
+     * Reference pictures, as data URIs. The provider takes up to fourteen at
+     * ten megabytes each; a set uses exactly one — its anchor — so every asset
+     * is drawn against the same picture rather than against the same sentence.
+     */
+    imageUrls?: string[];
   } = {},
 ): Promise<GeneratedImage> {
   if (!imageGenReady()) throw new Error("image generation is not configured");
@@ -140,6 +146,10 @@ export async function generateImage(
       size: opts.aspect ?? "1:1",
       n: 1,
       resolution: "1k",
+      // Omitted rather than sent empty: an edit-shaped request with no images
+      // is a different code path on the provider's side, and the first asset
+      // of every set has nothing to reference yet.
+      ...(opts.imageUrls?.length ? { image_urls: opts.imageUrls } : {}),
     },
   );
 
