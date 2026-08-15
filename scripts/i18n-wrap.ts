@@ -71,6 +71,15 @@ export const ALLOW = new Map<string, string>([
   ["Claude Code", "another company's product name"],
   ["Codex", "another company's product name"],
   ["Cursor", "another company's product name"],
+  // The export listing on /gen is a terminal transcript: filenames a developer
+  // types and a command they paste. Translating "symbols.png" would produce a
+  // file that does not exist in the archive.
+  ["unzip tomb-of-the-scarab-king.zip", "a shell command, shown as typed"],
+  ["symbols.png", "a filename in the export"],
+  ["symbols.json", "a filename in the export"],
+  ["trimmed/wild.png · scatter.png · low-1.png …", "filenames in the export"],
+  ["originals/", "a folder in the export"],
+  ["PROMPTS.md", "a filename in the export"],
 ]);
 
 /** Deliberately English, per ALLOW. */
