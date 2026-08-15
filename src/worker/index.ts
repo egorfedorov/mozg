@@ -95,6 +95,25 @@ async function main() {
   // assets are meant to be drawn *against* the anchor's picture, and releasing
   // them early would trade the consistency the studio paid for against a few
   // minutes.
+  // A deploy that lands mid-generation leaves the row it was working on stuck
+  // at "running" forever: the pg-boss job died with the container and this
+  // queue has no retries, by design — a retry there would be a second paid
+  // call for a buyer charged once. So the row is put back on the queue
+  // instead, which reaches the same worker through the front door.
+  //
+  // Fifteen minutes, not "any running row": the client gives up after four,
+  // and autoscale can have a second worker legitimately mid-job. Anything
+  // older than that is not being worked on by anybody.
+  const abandoned = await query<{ id: string }>(
+    `update generations set status = 'queued'
+      where status = 'running' and created_at < now() - interval '15 minutes'
+      returning id`,
+  );
+  for (const row of abandoned) await enqueueGeneration(row.id);
+  if (abandoned.length) {
+    console.log(`[worker] requeued ${abandoned.length} generation(s) a restart interrupted`);
+  }
+
   const stranded = await query<{ id: string }>(
     `select g.id
        from generations g
