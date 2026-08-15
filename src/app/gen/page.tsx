@@ -10,6 +10,7 @@ import { prices } from "@/lib/genprice";
 import { SETS } from "@/lib/slotgen";
 import { packsOf } from "@/lib/assetpacks";
 import BriefForm from "./BriefForm";
+import Showcase from "./Showcase";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -58,20 +59,32 @@ export default async function GenPage() {
         </h1>
         <p className="lede" style={{ maxWidth: "60ch" }}>
           {markup(
-            t("One brief becomes eleven symbols, a background and a lobby tile — <0>one world across all of them</0>, cut out on transparency, sized per role and named for the engine. Not a folder of pretty pictures somebody still has to turn into a game."),
+            t("One brief becomes eleven symbols, a background and a lobby tile — <0>one world across all of them</0>, cut out on transparency, sized per role, named for the engine and packed into a sheet your frontend loads in one call. Not a folder of pretty pictures somebody still has to turn into a game."),
             [<strong key="s0" />],
           )}
         </p>
 
+        {/* The claim is not one to accept in prose. */}
+        <Showcase />
+
         <section style={{ marginTop: "2.5rem", display: "grid", gap: "1.5rem" }}>
           <div>
             <h2>{t("What you get")}</h2>
-            <ul className="lede" style={{ maxWidth: "60ch" }}>
-              <li>{t("The paytable ladder, not a pile: four lows, three highs, a character, wild, scatter and bonus — each reading as a different object at 128 pixels.")}</li>
-              <li>{t("Symbols keyed on flat chroma with nothing touching the frame, so the cutout is clean instead of fringed.")}</li>
-              <li>{t("No text, numbers or multipliers painted into the art — that copy has to be a live layer, and a storefront rejects the alternative.")}</li>
-              <li>{t("Files named wild.png, scatter.png, low-1.png: what a developer expects, not what a model felt like calling them.")}</li>
+            <ul className="lede" style={{ maxWidth: "62ch" }}>
+              <li>{t("A paytable, not a pile: four lows, two mids, a premium, a character, wild, scatter and bonus — the material rising with the tier, so a player reads value before opening the paytable.")}</li>
+              <li>{t("Symbols cut out on transparency, with the key removed from under the alpha too — otherwise the first mipmap drags it back out as a coloured rim.")}</li>
+              <li>{t("Nothing written into the art. No WILD carved across the symbol: that word is a live text layer the game owns, and painted-in copy is what a storefront rejects.")}</li>
+              <li>{t("A sprite sheet and a manifest your engine loads directly, every original untouched, and the prompts that made them — so the set can be extended next month without guessing.")}</li>
             </ul>
+          </div>
+
+          <div>
+            <h2>{t("How the set stays one game")}</h2>
+            <ol className="lede" style={{ maxWidth: "62ch" }}>
+              <li>{t("You describe the world in a sentence or two, and the palette if you have one.")}</li>
+              <li>{t("One asset is drawn first — the premium symbol, the one carrying the most material and light.")}</li>
+              <li>{t("Every other asset is drawn against that picture, and against the siblings already finished: same palette, same outline, same light, and a different object each time. A model asked eleven times from one sentence returns eleven interpretations of it; asked with the set in front of it, it returns the set.")}</li>
+            </ol>
           </div>
 
           {!imageGenReady() ? (
