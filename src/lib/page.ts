@@ -71,7 +71,19 @@ export function symlinkTarget(url: string, text: string): string | null {
   const here = new URL(url);
   if (here.hostname !== "raw.githubusercontent.com") return null;
 
-  const body = text.trim();
+  // A one-line file is a symlink OR a Claude Code import directive, and on the
+  // raw host the two are indistinguishable apart from the `@`. vitest's
+  // CLAUDE.md is the single line `@AGENTS.md`, which resolved to
+  // .../HEAD/@AGENTS.md and 404ed on every refresh pass.
+  //
+  // Only a bare filename, because a leading `@` in front of a *path* is an npm
+  // scope (`@scope/pkg.md`) at least as often as it is an import, and this
+  // function's whole discipline is refusing to guess. An `@docs/FILE.md`
+  // import therefore still misses — exactly as it does today, so nothing that
+  // works now stops working.
+  // lazy: one shape, no fallback chain. If `@dir/file.md` imports show up in
+  // the error centre, make the caller try both forms rather than widening this.
+  const body = text.trim().replace(/^@(?=[\w.]+$)/, "");
   if (!body || body.length > 200 || /\s/.test(body)) return null;
   if (!/^[\w.@+-]+(?:\/[\w.@+-]+)*$/.test(body) || !/\.[a-z0-9]+$/i.test(body)) return null;
 

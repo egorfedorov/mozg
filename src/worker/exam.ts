@@ -554,7 +554,15 @@ const MINI_INTERVAL = "1 day";
  * worth it.
  */
 async function examOutgrown(brain: Brain, checks: Check[]): Promise<boolean> {
+  // "When was the exam written" is a fact about the written checks only. A
+  // usage or search_gap question is filed the day somebody searched, so
+  // counting those dragged the timestamp to roughly now on any brain people
+  // use — and "notes newer than the exam" then came back near zero no matter
+  // how far the material had actually moved. Same origin confusion as
+  // writtenChecks, pointing the other way: it made this test under-fire and
+  // an exam could stay stale forever.
   const writtenAt = checks
+    .filter((c) => c.origin === "generated" || c.origin === "manual")
     .map((c) => new Date(c.created_at).getTime())
     .reduce((a, b) => Math.max(a, b), 0);
   if (!writtenAt) return false;
@@ -567,6 +575,30 @@ async function examOutgrown(brain: Brain, checks: Check[]): Promise<boolean> {
     [scope, new Date(writtenAt)],
   );
   return total > 0 && after / total >= 0.5;
+}
+
+/**
+ * How many of these checks ARE the exam?
+ *
+ * "Has an exam" means "has checks written from the material" — the ones the
+ * generator wrote and the ones the owner added by hand. syncUsageChecks and
+ * search-gaps file questions that searches came back empty on; those are a
+ * to-do list, not an exam, and a brand-new brain someone searched once must
+ * not look like a brain that has already been examined.
+ *
+ * The first attempt at this tested `!c.origin`, and `checks.origin` is
+ * `not null default 'generated'` — so it counted zero for every brain alive,
+ * and every single full sitting rewrote its whole exam before sitting it.
+ * That cost 35¢ a sitting instead of 4¢, and — because a rewrite gives every
+ * check a new id — it also silently disabled the carried-pass path and the
+ * regression diff, which key off the previous run's check ids. Prod ran this
+ * way 08-12 to 08-19: ~50 sittings a day at ~22¢, about $11/day.
+ *
+ * Hence a named function with a test: the predicate decides whether the most
+ * expensive call in the codebase fires, and it read as obviously correct.
+ */
+export function writtenChecks(checks: { origin: string }[]): number {
+  return checks.filter((c) => c.origin === "generated" || c.origin === "manual").length;
 }
 
 /**
@@ -686,13 +718,7 @@ export async function runExam(
     [brainId],
   );
 
-  // "Has an exam" means "has checks written FROM the material", not "has any
-  // row". syncUsageChecks runs just above and files questions from searches
-  // that found nothing — so a brand-new brain someone searched once had a
-  // one-question exam and could never generate a real one, because the count
-  // below was 1 and not 0. Measured on a fresh brain with 1034 notes: 0% of 1,
-  // three sittings running.
-  const written = checks.filter((c) => !c.origin).length;
+  const written = writtenChecks(checks);
 
   // An exam written for 43 notes does not measure a brain that now holds 586.
   // pixijs-casino read 51 pages of documentation, grew thirteenfold, and

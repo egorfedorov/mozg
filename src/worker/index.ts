@@ -26,6 +26,7 @@ import { reportError } from "@/lib/errors";
 import {
   BudgetPausedError,
   ingestSource,
+  isOutOfCredit,
   RateLimitedError,
   SourceBusyError,
 } from "@/worker/ingest";
@@ -267,6 +268,16 @@ async function main() {
             : `[exam] ${brainId} skipped`,
         );
       } catch (err) {
+        // The platform key having no money left is not a fault of this brain,
+        // and it is true of every brain at once — 31 identical rows in three
+        // days, one per sitting that started after the balance ran out. There
+        // is nothing to retry into and nothing to debug, so it is logged once
+        // and the sitting is dropped; the next maintenance pass re-queues it
+        // like any other stale brain once the key is topped up.
+        if (isOutOfCredit(err)) {
+          console.log(`[exam] ${brainId} dropped — provider credit exhausted`);
+          return;
+        }
         reportError("worker", "exam", err, {
           brainId,
           detail: `after ${Date.now() - started}ms`,

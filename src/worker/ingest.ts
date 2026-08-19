@@ -72,6 +72,33 @@ export function isRateLimit(err: unknown): boolean {
   return /\b429\b|rate.?limit|too many requests|quota exceeded/i.test(m);
 }
 
+/**
+ * The platform's own key has no money left.
+ *
+ * A prepaid reseller answers 402 `insufficient balance` to every call at once,
+ * and none of the three things this code does with a failure is right for it.
+ * The page is fine, so failing the source loses a good page; nothing about
+ * retrying can make the balance go up, so three pg-boss attempts are three
+ * more 402s; and the error centre is for things an operator can debug, not for
+ * one fact repeated. Measured on prod 08-16..08-19: 169 rows across
+ * worker/ingest and worker/exam, all of them this one sentence.
+ *
+ * So it is handled exactly like a rate limit and a budget pause — hold the
+ * source, say why on its row, and let the maintenance sweep resume it once
+ * somebody tops the key up. Its own prefix, because "rate limit" would send
+ * the operator to the wrong page: the fix here is a payment, not a wait.
+ *
+ * Deliberately not folded into isRateLimit: same handling, different sentence,
+ * and the sweep in maintenance matches on the prefix.
+ */
+export function isOutOfCredit(err: unknown): boolean {
+  if (typeof err === "object" && err !== null && "status" in err) {
+    if ((err as { status?: number }).status === 402) return true;
+  }
+  const m = err instanceof Error ? err.message : String(err);
+  return /\b402\b|insufficient balance|insufficient_quota|billing.?hard.?limit|credit balance is too low/i.test(m);
+}
+
 export class RateLimitedError extends Error {
   constructor(message: string) {
     super(message);
@@ -473,6 +500,16 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
         `update sources set status = 'failed', error = $2, processed_at = now()
           where id = $1`,
         [sourceId, `rate limit: ${message.slice(0, 400)}`],
+      );
+      throw new RateLimitedError(message);
+    }
+
+    // Same shape, different sentence and a different person to call.
+    if (isOutOfCredit(err)) {
+      await query(
+        `update sources set status = 'failed', error = $2, processed_at = now()
+          where id = $1`,
+        [sourceId, `provider credit: ${message.slice(0, 400)}`],
       );
       throw new RateLimitedError(message);
     }

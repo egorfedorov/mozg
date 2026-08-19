@@ -1,7 +1,7 @@
 import "@/lib/test-env";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countDegraded } from "./exam";
+import { countDegraded, writtenChecks } from "./exam";
 
 /**
  * The rule that decides whether a score gets published.
@@ -65,4 +65,21 @@ test("a pass is carried on its evidence, not on a category label", async () => {
   // No recorded evidence is not proof of anything.
   assert.equal(carryable({ passed: true, evidence: null }, new Set()), false);
   assert.equal(carryable({ passed: true, evidence: [] }, new Set()), false);
+});
+
+/**
+ * The predicate that decides whether a sitting rewrites its exam first.
+ *
+ * `checks.origin` is `not null default 'generated'` — there is no such thing
+ * as an origin-less check, so a test for one counts zero forever and every
+ * sitting pays for a full regeneration. That shipped, and cost ~$11/day.
+ */
+test("auto-filed questions are not an exam, generated and manual ones are", () => {
+  assert.equal(writtenChecks([{ origin: "generated" }, { origin: "manual" }]), 2);
+  // The case that cost the money: a brain with a real exam must not read as
+  // having none just because a search also filed a gap question against it.
+  assert.equal(writtenChecks([{ origin: "generated" }, { origin: "usage" }]), 1);
+  // And the case the origin test was added for: searched once, never examined.
+  assert.equal(writtenChecks([{ origin: "usage" }, { origin: "search_gap" }]), 0);
+  assert.equal(writtenChecks([]), 0);
 });

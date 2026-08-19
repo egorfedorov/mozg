@@ -360,6 +360,10 @@ export async function recrawlSites(limit = RECRAWL_BATCH, brainId?: string): Pro
  * the same kind of "not now" as a budget window, and the fix is the same —
  * come back on the next pass rather than retry into the same wall.
  *
+ * So does a spent prepaid key ('provider credit:%'): nothing about that page
+ * is broken either, and the moment somebody tops the key up the next pass
+ * picks all of them back up without anyone re-adding a source by hand.
+ *
  * Both prefixes, deliberately: this sweep matched only 'daily budget:%' while
  * ingest also writes 'monthly budget:%' — 41 sources on one free account sat
  * failed forever, waiting for a requeue that could never see them.
@@ -371,7 +375,8 @@ export async function requeueBudgetPaused(limit = 50): Promise<number> {
         select id from sources
          where status = 'failed'
            and (error like 'daily budget:%' or error like 'monthly budget:%'
-                or error like 'rate limit:%')
+                or error like 'rate limit:%'
+                or error like 'provider credit:%')
          order by processed_at
          limit $1
       )

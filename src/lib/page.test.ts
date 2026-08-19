@@ -80,3 +80,23 @@ test("the hop budget stops a redirect loop before it starts", () => {
   // http→https→canonical, which is every real documentation link.
   assert.equal(MAX_HOPS, 3);
 });
+
+/**
+ * vitest's CLAUDE.md is the single line `@AGENTS.md` — Claude Code's import
+ * directive, not a symlink, and indistinguishable from one on the raw host.
+ * Following it literally asked for .../HEAD/@AGENTS.md and got a 404 on every
+ * refresh pass.
+ */
+test("a Claude Code @import resolves like the symlink it looks like", () => {
+  assert.equal(
+    symlinkTarget("https://raw.githubusercontent.com/vitest-dev/vitest/HEAD/CLAUDE.md", "@AGENTS.md"),
+    "https://raw.githubusercontent.com/vitest-dev/vitest/HEAD/AGENTS.md",
+  );
+  // A bare filename only: `@` in front of a path is an npm scope at least as
+  // often as it is an import, and guessing wrong sends the crawler somewhere
+  // it was never pointed at.
+  assert.equal(
+    symlinkTarget(RAW, "@scope/pkg.md"),
+    "https://raw.githubusercontent.com/ant-design/ant-design/HEAD/@scope/pkg.md",
+  );
+});
