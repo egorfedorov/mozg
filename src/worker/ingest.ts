@@ -10,6 +10,7 @@ import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSI
 import { redact, scanSecrets, secretGate } from "@/lib/scan";
 import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
+import { reportOutOfCreditOnce } from "@/lib/errors";
 import { storage } from "@/lib/storage";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { checkFetchableUrl } from "@/lib/url-guard";
@@ -511,6 +512,7 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
           where id = $1`,
         [sourceId, `provider credit: ${message.slice(0, 400)}`],
       );
+      await reportOutOfCreditOnce("worker", err, { detail: `source ${sourceId}` });
       throw new RateLimitedError(message);
     }
 

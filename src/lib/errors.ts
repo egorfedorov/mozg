@@ -70,3 +70,33 @@ async function alertIfNew(source: string, kind: string, message: string): Promis
     // that is how one broken push endpoint turns into a loop.
   }
 }
+
+/**
+ * Say once, loudly, that the platform key has run dry.
+ *
+ * Swallowing the 402 fixed 169 duplicate rows and created a worse problem: an
+ * empty key would now stall every lane in total silence, and the balance
+ * running out is exactly the thing an operator has to hear about immediately.
+ * The August outage was noticed because the error page was loud, not because
+ * anything watched the balance — nothing does.
+ *
+ * One row per outage, not one per hour or one per source: an unresolved row
+ * stays on the error page for as long as the outage lasts, which is the state
+ * the operator needs, and reportError's own alert fires on the first one. When
+ * they resolve it and the key is still empty, the next source says so again.
+ *
+ * Two workers could both write a row in the same instant. Two is not 169, and
+ * a lock to prevent it would cost more than it saves.
+ */
+export async function reportOutOfCreditOnce(
+  source: "worker",
+  err: unknown,
+  meta: { detail?: string; brainId?: string } = {},
+): Promise<void> {
+  const [open] = await query<{ n: number }>(
+    `select count(*)::int as n from app_errors
+      where kind = 'provider-credit' and resolved_at is null`,
+  );
+  if (open?.n) return;
+  reportError(source, "provider-credit", err, meta);
+}

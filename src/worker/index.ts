@@ -22,7 +22,7 @@ async function withSourceOwner<T>(sourceId: string, fn: () => Promise<T>): Promi
 }
 
 import { query } from "@/db";
-import { reportError } from "@/lib/errors";
+import { reportError, reportOutOfCreditOnce } from "@/lib/errors";
 import {
   BudgetPausedError,
   ingestSource,
@@ -276,6 +276,7 @@ async function main() {
         // like any other stale brain once the key is topped up.
         if (isOutOfCredit(err)) {
           console.log(`[exam] ${brainId} dropped — provider credit exhausted`);
+          await reportOutOfCreditOnce("worker", err, { brainId });
           return;
         }
         reportError("worker", "exam", err, {
