@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { query } from "@/db";
 import { costCents, structured } from "@/lib/claude";
+import { recordSpend } from "@/lib/spend";
 import { env } from "@/lib/env";
 import { duplicatePairs, type DuplicatePair } from "@/lib/notes";
 import { PACKS, type Pack } from "@/lib/packs";
@@ -228,6 +229,10 @@ export async function runContradictions(): Promise<ContradictReport> {
     report.costCents += one.costCents;
     budget -= one.judged;
   }
+
+  // Same hole as the consolidation pass: a nightly bill that was logged and
+  // never recorded. See recordSpend's doc for why the row matters.
+  await recordSpend("contradict", report.costCents, { model: env.MODEL_JUDGE });
 
   return report;
 }

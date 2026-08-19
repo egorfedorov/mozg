@@ -748,6 +748,13 @@ export async function runExam(
     [brainId, env.MODEL_JUDGE, mini ? "mini" : "full"],
   );
 
+  // Outside the try so the failure path can still read it. A sitting that dies
+  // on its ninetieth check has already bought eighty-nine, and recording null
+  // for those says the run was free. 45 failed runs in the fourteen days to
+  // 08-19 reported no cost at all — most of a rewritten exam's bill, invisible
+  // in exactly the table an operator would check first.
+  let cost = 0;
+
   try {
     // Retrieval first, for every check. This is the part that actually measures
     // the brain: the judge only ever sees what search returned.
@@ -886,7 +893,6 @@ export async function runExam(
       );
     }
 
-    let cost = 0;
     // let, not const: the exam can be rewritten while this sitting runs, and
     // the verdicts for questions that no longer exist are dropped below.
     let results: {
@@ -1149,9 +1155,14 @@ export async function runExam(
     };
   } catch (err) {
     await query(
-      `update check_runs set status = 'failed', error = $2, finished_at = now()
+      `update check_runs set status = 'failed', error = $2, cost_cents = $3,
+                             finished_at = now()
         where id = $1`,
-      [run.id, err instanceof Error ? err.message.slice(0, 500) : String(err)],
+      [
+        run.id,
+        err instanceof Error ? err.message.slice(0, 500) : String(err),
+        Math.round(cost),
+      ],
     );
     throw err;
   }

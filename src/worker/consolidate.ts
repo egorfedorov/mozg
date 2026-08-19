@@ -4,6 +4,7 @@ import type { Note } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
 import { embedPassages } from "@/lib/embed";
 import { costCents, structured } from "@/lib/claude";
+import { recordSpend } from "@/lib/spend";
 import { env } from "@/lib/env";
 import { normalizeCategory } from "@/lib/category";
 import { duplicatePairs } from "@/lib/notes";
@@ -137,6 +138,13 @@ export async function runConsolidation(): Promise<ConsolidateReport> {
     budget -= result.clusters;
     if (budget <= 0) break;
   }
+
+  // A daily pass over the whole catalogue that computed its own bill, printed
+  // it, and told nobody. Neither this nor the contradiction pass wrote a spend
+  // row, so their cost appeared in none of the three places the money lives —
+  // which meant "what did today cost" could not be answered even in principle
+  // for two of the lanes that spend it every night.
+  await recordSpend("consolidate", report.costCents, { model: env.MODEL_JUDGE });
 
   return report;
 }
