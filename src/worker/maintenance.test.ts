@@ -2,7 +2,7 @@ import "@/lib/test-env";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { stubDb } from "@/lib/test-db";
-import { closeAbandonedRuns } from "./maintenance";
+import { closeAbandonedRuns, examStaleBrains } from "./maintenance";
 
 /**
  * The sweep that closes sittings nobody is running any more. Production had
@@ -40,4 +40,40 @@ test("closeAbandonedRuns only touches runs older than the age guard", async () =
 test("closeAbandonedRuns reports zero when there is nothing to close", async () => {
   stubDb(() => []);
   assert.equal(await closeAbandonedRuns(), 0);
+});
+
+/**
+ * The backstop that re-sits exams, and the reason it stopped being a backstop.
+ *
+ * The refresh pass re-reads 500 pages four times a day, so "material moved
+ * since the last score" is true of most of the catalogue most days — and the
+ * queue stayed 58 brains deep forever. $72 of $81 of exam spend in the week to
+ * 08-19 went to brains that have never been searched once.
+ *
+ * What matters here is what it dares enqueue: a brain somebody is asking must
+ * still re-sit the moment its material moves, and a brain nobody is asking
+ * must not be re-sat until the interval says so.
+ */
+test("a brain nobody asks waits for the interval; a brain somebody asks does not", async () => {
+  // No rows back on purpose: enqueueExam would open a real pg-boss connection,
+  // and what is under test is the SELECT that decides who gets there at all.
+  let seen = "";
+  stubDb((text) => {
+    seen = text;
+    return [];
+  });
+
+  assert.deepEqual(await examStaleBrains(10), []);
+
+  // Still the original staleness test — a scored brain whose material has not
+  // moved is never a candidate, however much demand it has.
+  assert.match(seen, /content_changed_at > b\.score_at/);
+  // Recent demand is the exemption, and it is demand for THIS brain.
+  assert.match(seen, /tool = 'brain_search'/);
+  assert.match(seen, /brain_id = b\.id/);
+  // Without demand there is still a floor, so a score never freezes outright.
+  assert.match(seen, /b\.score_at < now\(\) - interval '7 days'/);
+  // A brain that has never been scored skips both guards: it has no score to
+  // age and no demand yet to earn, and it is the one that most needs a number.
+  assert.match(seen, /b\.score_at is null\s+or b\.score_at < now/);
 });

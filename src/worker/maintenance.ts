@@ -227,17 +227,50 @@ export async function refreshUrlSources(
 }
 
 /**
+ * How long a brain nobody has asked anything waits between sittings.
+ *
+ * The refresh pass re-reads 500 pages four times a day, and every page that
+ * changed bumps content_changed_at — so "learned something since it was last
+ * scored" is true of most of the catalogue most days, and the backstop below
+ * was re-sitting the same brains daily forever. Measured 08-12..08-19: $72 of
+ * $81 of exam spend went to brains that have never been searched once (139 of
+ * 170). Of the 31 that have, `stake-engine` alone is most of the demand.
+ *
+ * A score is a promise to a buyer about what asking this brain returns, so it
+ * has to stay current where somebody is asking — those keep the old behaviour
+ * and re-sit as soon as their material moves. Where nobody is asking, a score
+ * a week old is not a worse promise to anybody, it is the same promise
+ * measured less often.
+ *
+ * Not "never": a brain has to be able to earn its first search, and a score
+ * frozen at whatever it was the day demand stopped is a number that quietly
+ * stops meaning anything.
+ */
+const UNASKED_INTERVAL = "7 days";
+
+/** What counts as somebody still asking. One search inside it is enough. */
+const ASKED_WINDOW = "30 days";
+
+/**
  * Re-sit the exam for brains that learned something since they were last
  * scored. Ingest already enqueues an exam after each source, so this is the
  * backstop for the runs that failed, were skipped while the brain had no goal,
  * or were dropped when the worker restarted.
+ *
+ * Brains nobody searches are held to UNASKED_INTERVAL rather than re-sat the
+ * moment a refresh touches one of their pages — see the constant for why.
  */
 export async function examStaleBrains(limit = EXAM_BATCH): Promise<string[]> {
   const stale = await query<{ id: string }>(
-    `select id from brains
-      where goal is not null and note_count > 0
-        and (score_at is null or content_changed_at > score_at)
-      order by content_changed_at nulls first
+    `select b.id from brains b
+      where b.goal is not null and b.note_count > 0
+        and (b.score_at is null or b.content_changed_at > b.score_at)
+        and (b.score_at is null
+             or b.score_at < now() - interval '${UNASKED_INTERVAL}'
+             or exists (select 1 from calls
+                         where brain_id = b.id and tool = 'brain_search'
+                           and created_at > now() - interval '${ASKED_WINDOW}'))
+      order by b.content_changed_at nulls first
       limit $1`,
     [limit],
   );
