@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { parseTools } from "@/lib/brain-tools";
 import { markup, fill } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { msg } from "@/lib/msg";
@@ -96,6 +97,10 @@ export default async function PublicBrainPage({
   if (!found || (!found.access && !found.preview)) notFound();
 
   const { brain, preview } = found;
+  // Owner-authored and shown to strangers, so it goes through the same parse
+  // the agent-facing side uses — the caps and the control-character strip are
+  // the point, not a formality.
+  const publicTools = parseTools(brain.tools);
 
   // The last two sittings, diffed: what the brain learned between them is
   // the collective-mind claim made visible on the shop floor.
@@ -346,6 +351,34 @@ export default async function PublicBrainPage({
             <p style={{ color: "var(--ink-2)", margin: ".6rem 0 0", maxWidth: "60ch" }}>
               {brain.goal ?? t("No goal set.")}
             </p>
+            {/* What this knowledge is worked with. A buyer weighing a brain
+                about Spine deserves to know it assumes Spine on the machine —
+                after the purchase is the wrong time to find that out. */}
+            {publicTools.length > 0 && (
+              <div
+                style={{
+                  marginTop: ".9rem",
+                  borderLeft: "3px solid var(--color-riso-violet)",
+                  paddingLeft: ".75rem",
+                  maxWidth: "60ch",
+                }}
+              >
+                <p className="eyebrow" style={{ margin: 0 }}>
+                  {t("Works with — on your machine, not ours")}
+                </p>
+                {publicTools.map((x) => (
+                  <p key={x.name} style={{ margin: ".35rem 0 0", fontSize: ".9375rem" }}>
+                    <strong className="mono">{x.name}</strong>
+                    <span style={{ color: "var(--ink-2)" }}> — {x.what}</span>
+                    {x.needs && (
+                      <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                        {t("needs")}: {x.needs}
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            )}
             <p
               className="mono"
               style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}

@@ -1,4 +1,5 @@
 import { query, toVector } from "@/db";
+import { parseTools, type BrainTool } from "@/lib/brain-tools";
 import { embedQuery } from "@/lib/embed";
 import { applyRerank, keepRelevant, rerank } from "@/lib/rerank";
 import { toTsQuery } from "@/lib/tsquery";
@@ -328,6 +329,15 @@ export interface BrainBrief {
    * alone.
    */
   intake: { accepted: number; rejected: number; pending: number };
+  /**
+   * The local tools this brain's knowledge is executed with.
+   *
+   * A brain that teaches how to author a Spine skeleton by hand is teaching the
+   * right thing to somebody without the Spine CLI and the wrong thing to
+   * somebody with it — and the agent could not tell which it was, because
+   * nothing here ever mentioned that a tool existed. See lib/brain-tools.ts.
+   */
+  tools: BrainTool[];
 }
 
 /**
@@ -378,8 +388,8 @@ function groupCategories(rows: { name: string; notes: number }[]): {
 
 export async function briefBrain(brainId: string): Promise<BrainBrief> {
   const [goalRow, summaries, categories, titles, gaps, covers, batons, intake] = await Promise.all([
-    query<{ goal: string | null; note_count: number }>(
-      `select goal, note_count from brains where id = $1`,
+    query<{ goal: string | null; note_count: number; tools: unknown }>(
+      `select goal, note_count, tools from brains where id = $1`,
       [brainId],
     ),
     // The synthesised map of each category — largest first, capped like the
@@ -469,6 +479,7 @@ export async function briefBrain(brainId: string): Promise<BrainBrief> {
   return {
     goal: goalRow[0]?.goal ?? null,
     noteCount: goalRow[0]?.note_count ?? 0,
+    tools: parseTools(goalRow[0]?.tools),
     summaries,
     categories: groups,
     hiddenCategories: hidden,

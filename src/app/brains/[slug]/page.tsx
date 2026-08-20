@@ -10,6 +10,8 @@ import ConnectBox from "@/components/ConnectBox";
 import Dropzone from "@/components/Dropzone";
 import AddUrls from "@/components/AddUrls";
 import GoalEditor from "@/components/GoalEditor";
+import ToolsEditor from "@/components/ToolsEditor";
+import { parseTools } from "@/lib/brain-tools";
 import CallLog from "@/components/CallLog";
 import AutoRefresh from "@/components/AutoRefresh";
 import { noteWarnings } from "@/lib/note-quality";
@@ -569,6 +571,19 @@ export default async function BrainPage({
             )}
           </section>
         </div>
+
+        {/* Above the call log and the gaps: this is configuration, not a
+            reading. It changes what every agent is told before it searches. */}
+        <section style={{ marginTop: "3rem" }}>
+          <div className="section-head">
+            <h2 className="h2">{t("Hands for this knowledge")}</h2>
+            <span className="eyebrow">{t("run on the reader's machine, never ours")}</span>
+          </div>
+          <p className="lede">
+            {t("If this brain teaches something a program does better than a person following notes, name it here. Every agent is told before its first search — so it reaches for the tool instead of hand-writing what a machine would have produced.")}
+          </p>
+          <ToolsEditor slug={brain.slug} tools={parseTools(brain.tools)} />
+        </section>
 
         <GapSuggestions slug={brain.slug} suggestions={gapSuggestions} />
 

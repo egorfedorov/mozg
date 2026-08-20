@@ -1,4 +1,5 @@
 import { query, maybeOne, one } from "@/db";
+import { describeTools } from "@/lib/brain-tools";
 import { lockedText, resolveBrain, type Resolved } from "@/lib/mcp-access";
 import { agentNotice } from "@/lib/announcements";
 import { addToLibrary, removeFromLibrary } from "@/lib/library";
@@ -344,10 +345,22 @@ async function brainBrief(handle: string, owner: TokenOwner): Promise<ToolOutcom
       : []),
   ];
 
-  // Before the map of what it knows: what somebody was doing here and did not
-  // finish. An agent orienting itself in a brain needs "where was I" ahead of
-  // "what is here" — resuming beats re-deciding, and a baton read after the
-  // agent has already planned its own approach is a baton ignored.
+  // Ahead of everything, including the handoffs: the tools this knowledge is
+  // executed with.
+  //
+  // It has to come before the map for the same reason the batons do — an agent
+  // that has already read the notes has already decided to write the file by
+  // hand, and learning afterwards that a machine on its own disk would have
+  // exported one is learning it too late to matter. spine-2d-animation is the
+  // case that named this: 341 notes on authoring Spine JSON without the editor,
+  // read by agents sitting next to an installed Spine CLI they were never told
+  // about.
+  parts.push(...describeTools(brief.tools));
+
+  // Then: what somebody was doing here and did not finish. An agent orienting
+  // itself in a brain needs "where was I" ahead of "what is here" — resuming
+  // beats re-deciding, and a baton read after the agent has already planned its
+  // own approach is a baton ignored.
   if (brief.batons.length) {
     parts.push(
       "",

@@ -51,6 +51,10 @@ export interface Brain {
   sales_count: number;
   created_at: Date;
   updated_at: Date;
+  /** Local tools this brain's knowledge is executed with (0087). Owner-authored
+   *  and untrusted — always read through lib/brain-tools.ts parseTools. */
+  tools?: unknown;
+
 }
 
 export type LedgerKind =

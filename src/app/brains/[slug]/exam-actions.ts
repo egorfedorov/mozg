@@ -7,6 +7,7 @@ import type { Brain } from "@/db/types";
 import { currentUser } from "@/lib/session";
 import { enqueueExam } from "@/worker/queue";
 import { setGoal } from "@/lib/goal";
+import { parseTools } from "@/lib/brain-tools";
 import { rateLimited } from "@/lib/rate-limit";
 
 async function ownedBrain(slug: string, userId: string): Promise<Brain | null> {
@@ -29,6 +30,43 @@ export async function saveGoal(_prev: unknown, formData: FormData) {
 
   revalidatePath(`/brains/${slug}`);
   return { ok: true as const, requeued: changed && Boolean(goal) };
+}
+
+/**
+ * The local tools this brain's knowledge is executed with.
+ *
+ * One per line, `name | what it does | what it needs | how to add it`, because
+ * the alternative is four inputs times four rows of form state to hold a list
+ * most brains will never set. The pipe is ugly and the whole thing round-trips
+ * through parseTools, which is where the length caps and the control-character
+ * strip live — so what is stored is already what an agent will be shown.
+ */
+export async function saveTools(_prev: unknown, formData: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const slug = String(formData.get("slug"));
+  const brain = await ownedBrain(slug, user.id);
+  if (!brain) return { error: "Brain not found." };
+
+  const tools = parseTools(
+    String(formData.get("tools") ?? "")
+      .split("\n")
+      .map((line) => line.split("|").map((f) => f.trim()))
+      .filter((f) => f[0])
+      .map(([name, what, needs, install]) => ({ name, what, needs, install })),
+  );
+
+  // Null rather than an empty array when it is cleared: the column means "this
+  // brain declares tools" and [] is a different sentence from "none set" that
+  // nothing downstream wants to have to tell apart.
+  await query(`update brains set tools = $2 where id = $1`, [
+    brain.id,
+    tools.length ? JSON.stringify(tools) : null,
+  ]);
+
+  revalidatePath(`/brains/${slug}`);
+  return { ok: true as const, count: tools.length };
 }
 
 /**
