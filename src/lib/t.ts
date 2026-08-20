@@ -55,8 +55,19 @@ async function dictionary(locale: string): Promise<Dictionary> {
  * page is the single most irritating thing a multilingual site can do.
  */
 export async function currentLocale(): Promise<string> {
-  const chosen = (await cookies()).get(LOCALE_COOKIE)?.value;
-  if (isLocale(chosen)) return chosen;
+  // getAll, not get, and the LAST one wins.
+  //
+  // The language cookie used to be host-only and is now scoped to .mozg.sh, so
+  // a reader who has both sends both — and get() returns the first, which is
+  // the more specific one the browser leads with: the stale host-only copy.
+  // That is how picking Russian on gen.mozg.sh left mozg.sh in English. The
+  // middleware clears the leftover, but a deletion only lands on the next
+  // request, and the page in front of somebody right now is the one they are
+  // looking at.
+  const all = (await cookies()).getAll(LOCALE_COOKIE);
+  for (let i = all.length - 1; i >= 0; i--) {
+    if (isLocale(all[i]?.value)) return all[i].value;
+  }
   return fromAcceptLanguage((await headers()).get("accept-language"));
 }
 
