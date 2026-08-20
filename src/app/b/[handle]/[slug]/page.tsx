@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { parseTools } from "@/lib/brain-tools";
+import { installCommand } from "@/lib/plugins";
 import { markup, fill } from "@/lib/markup";
 import { translator } from "@/lib/t";
 import { msg } from "@/lib/msg";
@@ -373,6 +374,11 @@ export default async function PublicBrainPage({
                     {x.needs && (
                       <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
                         {t("needs")}: {x.needs}
+                      </span>
+                    )}
+                    {x.plugin && installCommand(x.plugin) && (
+                      <span className="mono" style={{ display: "block", fontSize: ".6875rem" }}>
+                        {installCommand(x.plugin)}
                       </span>
                     )}
                   </p>

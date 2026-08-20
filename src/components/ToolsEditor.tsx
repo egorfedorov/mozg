@@ -23,7 +23,7 @@ export default function ToolsEditor({ slug, tools }: { slug: string; tools: Brai
   const [state, action, pending] = useActionState(saveTools, null);
 
   const asText = tools
-    .map((x) => [x.name, x.what, x.needs ?? "", x.install ?? ""].join(" | ").replace(/[ |]+$/, ""))
+    .map((x) => [x.name, x.what, x.needs ?? "", x.plugin ?? x.docs ?? ""].join(" | ").replace(/[ |]+$/, ""))
     .join("\n");
 
   if (!editing) {
@@ -41,7 +41,12 @@ export default function ToolsEditor({ slug, tools }: { slug: string; tools: Brai
                       {t("needs")}: {x.needs}
                     </span>
                   )}
-                  {x.install && <span className="row-meta">{x.install}</span>}
+                  {x.plugin && (
+                    <span className="row-meta">
+                      {t("mozg plugin")}: {x.plugin}
+                    </span>
+                  )}
+                  {x.docs && <span className="row-meta">{x.docs}</span>}
                 </span>
               </div>
             ))}
@@ -67,7 +72,7 @@ export default function ToolsEditor({ slug, tools }: { slug: string; tools: Brai
       <input type="hidden" name="slug" value={slug} />
       <p style={{ color: "var(--ink-2)", margin: "0 0 .5rem", fontSize: ".9375rem", maxWidth: "62ch" }}>
         {t("One per line, up to four:")}{" "}
-        <code className="mono">{t("name | what it does | what it needs | how to add it")}</code>
+        <code className="mono">{t("name | what it does | what it needs | mozg plugin or docs link")}</code>
       </p>
       <textarea
         name="tools"
@@ -76,7 +81,7 @@ export default function ToolsEditor({ slug, tools }: { slug: string; tools: Brai
         maxLength={MAX_TOOLS * 400}
         spellCheck={false}
         className="mono"
-        placeholder={t("spine | rigs skeletons and exports json+atlas | Spine 4.2+ desktop app, licensed | claude mcp add spine -- uvx spine-mcp")}
+        placeholder={t("spine | rigs skeletons and exports json+atlas | Spine 4.2+ desktop app, licensed | mozg-spine")}
         style={{
           width: "100%",
           fontSize: ".8125rem",
@@ -88,7 +93,7 @@ export default function ToolsEditor({ slug, tools }: { slug: string; tools: Brai
         }}
       />
       <p className="mono" style={{ fontSize: ".6875rem", color: "var(--ink-3)", margin: ".5rem 0 0", maxWidth: "62ch" }}>
-        {t("The command is shown to agents to put to their human, never run on its own. mozg does not run these and cannot see whether a reader has them.")}
+        {t("The last field takes the name of a plugin mozg publishes, or an https link. It cannot take a shell command: an install line invented by hand is one an agent would run, and a name mozg does not ship renders nothing rather than something untrue.")}
       </p>
       <div style={{ display: "flex", gap: ".5rem", marginTop: ".75rem", alignItems: "center" }}>
         <button className="btn" disabled={pending}>
