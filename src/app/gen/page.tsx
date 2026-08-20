@@ -187,6 +187,28 @@ export default async function GenPage() {
             {t("Priced per asset, paid from your balance")}
           </h2>
 
+          {/* The front door leads to the cabinet now, not to a brief box.
+              Ordering a set blind was the whole complaint: there was nowhere to
+              see the thirteen assets before paying for them, and nowhere your
+              last game lived. The form below still works and is still the
+              fastest path for somebody who knows exactly what they want — it is
+              simply no longer the only one. */}
+          {imageGenReady() && user && (
+            <div
+              className="panel"
+              style={{
+                marginBottom: "1.5rem",
+                borderLeft: "4px solid var(--color-riso-green)",
+              }}
+            >
+              <p className="eyebrow" style={{ margin: 0 }}>{t("The way most studios want it")}</p>
+              <p style={{ color: "var(--ink-2)", margin: ".4rem 0 1rem", maxWidth: "62ch" }}>
+                {t("Start a project instead: name the game, describe its world, and see the whole set as a list before anything is bought. Rewrite the symbols you care about, drop the ones you do not want, and generate when the price looks right.")}
+              </p>
+              <Link className="btn" href="/gen/panel">{t("Open your games")}</Link>
+            </div>
+          )}
+
           {!imageGenReady() ? (
             <p className="muted">{t("Generation is not switched on for this deployment yet.")}</p>
           ) : user ? (

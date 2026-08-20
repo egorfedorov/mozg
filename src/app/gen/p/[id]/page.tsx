@@ -11,6 +11,7 @@ import { formatCents } from "@/lib/money-math";
 import { one } from "@/db";
 import ItemRow from "./ItemRow";
 import RunButton from "./RunButton";
+import WhileDrawing from "./WhileDrawing";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Project — gen" };
@@ -54,6 +55,8 @@ export default async function GenProjectPage({
   return (
     <>
       <TopBar />
+
+      <WhileDrawing active={items.some((i) => i.status === "generating")} />
 
       <main className="shell" style={{ paddingBlock: "clamp(2rem, 5vw, 3rem)" }}>
         <Link className="mono" href="/gen/panel" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
@@ -118,6 +121,8 @@ export default async function GenProjectPage({
                 role: item.role,
                 spec: item.spec,
                 status: item.status,
+                generationId: item.generation_id,
+                hasImage: Boolean(item.storage_key),
               }}
               priceCents={priceOf(table, item.role)}
             />

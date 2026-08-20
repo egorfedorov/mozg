@@ -159,14 +159,21 @@ export async function removeItem(projectId: string, label: string): Promise<bool
 export async function readProject(
   id: string,
   ownerId: string,
-): Promise<{ project: GenProject; items: GenItem[] } | null> {
+): Promise<{ project: GenProject; items: (GenItem & { storage_key: string | null; error: string | null })[] } | null> {
   const project = await maybeOne<GenProject>(
     `select * from gen_projects where id = $1 and owner_id = $2`,
     [id, ownerId],
   );
   if (!project) return null;
-  const items = await query<GenItem>(
-    `select * from gen_items where project_id = $1 order by sort, created_at`,
+  // The generation carries the picture and the failure reason; the item
+  // carries the plan. Joined here so a page showing thirteen assets does not
+  // read thirteen generations one at a time.
+  const items = await query<GenItem & { storage_key: string | null; error: string | null }>(
+    `select i.*, g.storage_key, g.error
+       from gen_items i
+       left join generations g on g.id = i.generation_id
+      where i.project_id = $1
+      order by i.sort, i.created_at`,
     [id],
   );
   return { project, items };

@@ -41,7 +41,14 @@ export default function ItemRow({
   priceCents,
 }: {
   projectId: string;
-  item: { label: string; role: string; spec: string | null; status: string };
+  item: {
+    label: string;
+    role: string;
+    spec: string | null;
+    status: string;
+    generationId: string | null;
+    hasImage: boolean;
+  };
   priceCents: number;
 }) {
   const t = useT();
@@ -51,8 +58,42 @@ export default function ItemRow({
   const status = STATUS[item.status] ?? STATUS.planned;
   const editable = item.status === "planned";
 
+  const shown = item.status === "done" && item.hasImage && item.generationId;
+
   return (
-    <div className="panel" style={{ padding: ".85rem 1rem" }}>
+    <div className="panel" style={{ padding: ".85rem 1rem", display: "flex", gap: "1rem" }}>
+      {/* The thumbnail earns its place: the checkerboard is the only way to see
+          at a glance whether a symbol actually came back transparent, which is
+          the difference between an asset and a picture of one. */}
+      <div
+        style={{
+          flex: "none",
+          width: 64,
+          height: 64,
+          display: "grid",
+          placeItems: "center",
+          border: "1px solid var(--rule)",
+          backgroundImage:
+            "linear-gradient(45deg, var(--paper-2) 25%, transparent 25%, transparent 75%, var(--paper-2) 75%), linear-gradient(45deg, var(--paper-2) 25%, transparent 25%, transparent 75%, var(--paper-2) 75%)",
+          backgroundSize: "12px 12px",
+          backgroundPosition: "0 0, 6px 6px",
+        }}
+      >
+        {shown ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/generations/${item.generationId}/image`}
+            alt={item.label}
+            style={{ maxWidth: "100%", maxHeight: "100%", display: "block" }}
+          />
+        ) : (
+          <span className="mono" style={{ fontSize: ".6rem", color: "var(--ink-3)", textAlign: "center" }}>
+            {item.status === "generating" ? t("drawing") : item.status === "failed" ? t("failed") : t("planned")}
+          </span>
+        )}
+      </div>
+
+      <div style={{ minWidth: 0, flex: 1 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: ".75rem", flexWrap: "wrap" }}>
         <strong className="mono">{item.label}</strong>
         {rank && (
@@ -131,6 +172,18 @@ export default function ItemRow({
           </div>
         </form>
       )}
+
+      {shown && (
+        <a
+          className="mono"
+          href={`/api/generations/${item.generationId}/image`}
+          download={`${item.label}.png`}
+          style={{ fontSize: ".75rem", display: "inline-block", marginTop: ".4rem" }}
+        >
+          {t("save")}
+        </a>
+      )}
+      </div>
     </div>
   );
 }
