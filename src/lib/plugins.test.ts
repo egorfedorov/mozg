@@ -23,10 +23,12 @@ test("every plugin mozg offers is one the marketplace really ships", () => {
 
 test("the command is only ever built for something we publish", () => {
   assert.equal(installCommand("mozg"), "/plugin install mozg@mozg");
-  // The shape of the bug this replaced: a plausible name for a thing that does
-  // not exist has to produce nothing, not a command.
-  assert.equal(installCommand("mozg-spine"), null);
+  assert.equal(installCommand("mozg-spine"), "/plugin install mozg-spine@mozg");
+  // The shape of the bug this replaced: a plausible name for a thing we do not
+  // ship has to produce nothing, not a command. `spine-mcp` is the package name
+  // of the server itself — real, and still not a mozg plugin.
   assert.equal(installCommand("spine-mcp"), null);
+  assert.equal(installCommand("mozg-pixi"), null);
   assert.equal(installCommand(""), null);
   // Never let a prototype-chain name look published.
   assert.equal(installCommand("toString"), null);

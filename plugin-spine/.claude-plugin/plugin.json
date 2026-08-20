@@ -1,0 +1,11 @@
+{
+  "name": "mozg-spine",
+  "description": "Hands for the Spine 2D Animation brain: rig a cut-up character into an animated Spine skeleton, pack atlases, and export runtime json.",
+  "version": "0.1.0",
+  "author": {
+    "name": "mozg",
+    "url": "https://mozg.sh"
+  },
+  "homepage": "https://mozg.sh/b/mozg/spine-2d-animation",
+  "keywords": ["mcp", "spine", "animation", "rigging", "gamedev"]
+}

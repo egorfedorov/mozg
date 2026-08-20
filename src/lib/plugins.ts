@@ -32,6 +32,10 @@ export const MARKETPLACE_SOURCE = "egorfedorov/mozg-plugin";
  */
 export const PLUGINS: Record<string, string> = {
   mozg: "The brains themselves: search them, and write back what you work out.",
+  // The hands for mozg/spine-2d-animation. Listed here is what turns the brain's
+  // declared tool into a real install line — see brains.tools and 0087.
+  "mozg-spine":
+    "Rig a cut-up character into an animated Spine skeleton, pack atlases, export runtime json.",
 };
 
 export function isPublishedPlugin(name: string): boolean {
