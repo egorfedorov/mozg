@@ -13,11 +13,13 @@ import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Connect a brain — mozg",
-  description:
-    "Exact configuration for Claude Code, Codex, Kimi CLI, Qwen Code, Cursor, VS Code, Cline and Claude Desktop.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Connect a brain — mozg"),
+    description: t("Exact configuration for Claude Code, Codex, Kimi CLI, Qwen Code, Cursor, VS Code, Cline and Claude Desktop."),
+  };
+}
 
 export default async function ConnectPage() {
   const t = await translator();

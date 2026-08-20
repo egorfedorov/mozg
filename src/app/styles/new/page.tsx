@@ -6,11 +6,13 @@ import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
 import StyleForm from "./StyleForm";
 
-export const metadata = {
-  title: "Create a style brain — mozg",
-  description:
-    "Describe your style once — palette, light, line, the hard nevers — and it becomes an exam-scored brain any buyer's agent can follow.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Create a style brain — mozg"),
+    description: t("Describe your style once — palette, light, line, the hard nevers — and it becomes an exam-scored brain any buyer's agent can follow."),
+  };
+}
 
 /**
  * The guided path from "I am an illustrator" to "my style is a brain".

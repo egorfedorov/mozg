@@ -13,7 +13,10 @@ import PayoutForm from "../PayoutForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Balance — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Balance — mozg") };
+}
 
 const KIND_LABEL: Record<string, string> = {
   topup: "Top-up",

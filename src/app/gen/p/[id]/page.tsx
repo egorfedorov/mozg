@@ -14,7 +14,10 @@ import RunButton from "./RunButton";
 import WhileDrawing from "./WhileDrawing";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Project — gen" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Project — gen") };
+}
 
 /**
  * One game's folder.

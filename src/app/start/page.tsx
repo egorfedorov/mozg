@@ -6,11 +6,13 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import { SketchDefs, Pipeline } from "@/components/Sketch";
 
-export const metadata = {
-  title: "Start here — mozg, from zero to a thinking agent",
-  description:
-    "The whole path, step by step: what mozg is and why it exists, connecting your first brain to Claude Code / Codex / Cursor, proving it works, and building a brain of your own from one link.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Start here — mozg, from zero to a thinking agent"),
+    description: t("The whole path, step by step: what mozg is and why it exists, connecting your first brain to Claude Code / Codex / Cursor, proving it works, and building a brain of your own from one link."),
+  };
+}
 
 /**
  * The onboarding walk. One page that takes a stranger from "what is this"

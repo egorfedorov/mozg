@@ -17,7 +17,10 @@ import { removePackSeat } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Packs — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Packs — mozg") };
+}
 
 /**
  * The packs this account holds, and who each one is shared with.

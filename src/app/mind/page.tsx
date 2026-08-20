@@ -8,7 +8,10 @@ import { tintFor } from "@/lib/brains";
 import MindMap, { type MindBrain } from "./MindMap";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Your mind — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Your mind — mozg") };
+}
 
 /**
  * Everything this account's agents can know, on one screen: own brains,

@@ -7,7 +7,10 @@ import { requireAdmin } from "@/lib/admin";
 import { mintPromo } from "./actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Promo — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Promo — mozg admin") };
+}
 
 /**
  * Minting and watching promo codes. A code is percent-off on a plan month

@@ -7,11 +7,13 @@ import SiteFooter from "@/components/SiteFooter";
 import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "The verified changelog — mozg",
-  description:
-    "What changed across every public brain: exam re-sits diffed against their predecessors, and sources whose content actually moved. Deltas signed by the grader, not written by anyone.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("The verified changelog — mozg"),
+    description: t("What changed across every public brain: exam re-sits diffed against their predecessors, and sources whose content actually moved. Deltas signed by the grader, not written by anyone."),
+  };
+}
 
 /**
  * The global diff feed. /changelog is what WE shipped; this is what the

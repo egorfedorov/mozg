@@ -12,11 +12,13 @@ import { foundingSpotsLeft, FOUNDING_LIMIT } from "@/lib/upgrade";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Pricing — mozg",
-  description:
-    "Teaching a brain from your own CLI subscription is free, and always will be. A plan buys one thing: our AI doing the reading, so there is no API key to wire up.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Pricing — mozg"),
+    description: t("Teaching a brain from your own CLI subscription is free, and always will be. A plan buys one thing: our AI doing the reading, so there is no API key to wire up."),
+  };
+}
 
 /**
  * The one page that answers "what am I paying, and for what" in order of how

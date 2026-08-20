@@ -15,7 +15,10 @@ import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Account — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Account — mozg") };
+}
 
 /**
  * Plan and usage. Upgrades are a month at a time, two doors: pay from the

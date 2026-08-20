@@ -5,12 +5,15 @@ import { query } from "@/db";
 import WelcomeFlow, { type StepState } from "./WelcomeFlow";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Welcome — mozg in one minute",
-  description:
-    "What mozg is, how a brain learns, and your first four steps — with live checkmarks.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Welcome — mozg in one minute"),
+    description:
+      t("What mozg is, how a brain learns, and your first four steps — with live checkmarks."),
+    robots: { index: false, follow: false },
+  };
+}
 
 /**
  * The onboarding, standalone by design: no topbar, no nav, no footer —

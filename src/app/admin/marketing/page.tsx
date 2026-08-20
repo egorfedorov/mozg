@@ -6,7 +6,10 @@ import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Marketing — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Marketing — mozg admin") };
+}
 
 /**
  * The marketing kit: every text the operator needs to post, in copy-paste

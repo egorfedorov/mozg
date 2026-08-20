@@ -9,11 +9,13 @@ import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "How a brain learns — mozg",
-  description:
-    "One link becomes every page behind it, pages become notes, notes sit an exam, and the questions it fails decide what gets read next. The loop that makes a knowledge base improve instead of rot.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("How a brain learns — mozg"),
+    description: t("One link becomes every page behind it, pages become notes, notes sit an exam, and the questions it fails decide what gets read next. The loop that makes a knowledge base improve instead of rot."),
+  };
+}
 
 /**
  * How one brain learns.

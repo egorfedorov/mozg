@@ -11,7 +11,10 @@ import TopUpMethods from "./TopUpMethods";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Top up — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Top up — mozg") };
+}
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Waiting for payment",

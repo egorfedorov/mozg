@@ -8,11 +8,13 @@ import Contents from "@/components/Contents";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "ichi — the other half of the same problem",
-  description:
-    "A brain gives your agent your project's knowledge. ichi gives it a persistent character and the standards you laid down. Why we build both, and why they are one idea.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("ichi — the other half of the same problem"),
+    description: t("A brain gives your agent your project's knowledge. ichi gives it a persistent character and the standards you laid down. Why we build both, and why they are one idea."),
+  };
+}
 
 const HALVES: { n: string; title: string; body: string }[] = [
   {

@@ -12,11 +12,13 @@ import { formatCents } from "@/lib/money-math";
 import Showcase from "./Showcase";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "gen — slot art, planned before it is paid for",
-  description:
-    "Name the game, see the whole set as a list, rewrite the symbols you care about, and generate when the price looks right. Eleven symbols on transparency, a background and a lobby tile, drawn as one world.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("gen — slot art, planned before it is paid for"),
+    description: t("Name the game, see the whole set as a list, rewrite the symbols you care about, and generate when the price looks right. Eleven symbols on transparency, a background and a lobby tile, drawn as one world."),
+  };
+}
 
 /**
  * gen.mozg.sh — the front door.

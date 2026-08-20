@@ -13,7 +13,10 @@ import { listProjects, KINDS } from "@/lib/genproject";
 import ProjectStart from "./ProjectStart";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Panel — gen" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Panel — gen") };
+}
 
 /**
  * gen.mozg.sh/panel — the studio's own room.

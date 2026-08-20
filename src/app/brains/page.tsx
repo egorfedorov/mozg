@@ -14,7 +14,10 @@ import { formatCents } from "@/lib/money-math";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Your brains — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Your brains — mozg") };
+}
 
 const ATTENTION: Record<string, { tint: "red" | "blue" | "violet" | "orange"; action: string }> = {
   flagged: { tint: "red", action: "Look" },

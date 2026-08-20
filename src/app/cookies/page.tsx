@@ -7,11 +7,13 @@ import Contents from "@/components/Contents";
 import CookieSettingsLink from "@/components/CookieSettingsLink";
 import { env } from "@/lib/env";
 
-export const metadata = {
-  title: "Cookie Policy — mozg",
-  description:
-    "Every cookie mozg sets, what it does, how long it lasts, and how to change your mind.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Cookie Policy — mozg"),
+    description: t("Every cookie mozg sets, what it does, how long it lasts, and how to change your mind."),
+  };
+}
 
 const UPDATED = "6 August 2026";
 

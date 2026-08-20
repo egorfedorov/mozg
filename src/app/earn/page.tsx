@@ -25,11 +25,13 @@ import Calculator from "./Calculator";
 // be prerendered into one cached copy.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Earn with mozg — 20% of every month",
-  description:
-    "Send someone to mozg and take 20% of every plan payment they make, for as long as they keep paying. Free to join, 30-day window, commission lands on your balance the second it is earned.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Earn with mozg — 20% of every month"),
+    description: t("Send someone to mozg and take 20% of every plan payment they make, for as long as they keep paying. Free to join, 30-day window, commission lands on your balance the second it is earned."),
+  };
+}
 
 /**
  * The referral programme, as one page.

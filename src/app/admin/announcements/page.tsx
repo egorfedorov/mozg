@@ -7,7 +7,10 @@ import { requireAdmin } from "@/lib/admin";
 import { postAnnouncement, retireAnnouncement } from "./actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Announcements — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Announcements — mozg admin") };
+}
 
 const field = {
   display: "block",

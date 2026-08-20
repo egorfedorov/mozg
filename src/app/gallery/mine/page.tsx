@@ -10,7 +10,10 @@ import { recentGenerations } from "@/lib/generate";
 import { formatCents } from "@/lib/money-math";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Your images — mozg gallery" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Your images — mozg gallery") };
+}
 
 /**
  * Everything you have made here, and what it cost.

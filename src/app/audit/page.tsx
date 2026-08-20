@@ -6,11 +6,13 @@ import Contents from "@/components/Contents";
 import SiteFooter from "@/components/SiteFooter";
 import { env } from "@/lib/env";
 
-export const metadata = {
-  title: "Knowledge audit — exam your RAG or memory system",
-  description:
-    "Send your knowledge base; it sits a real exam. A dated report: what it actually knows, category by category, with the judge's agreement rate. SOC 2 energy for knowledge bases.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Knowledge audit — exam your RAG or memory system"),
+    description: t("Send your knowledge base; it sits a real exam. A dated report: what it actually knows, category by category, with the judge's agreement rate. SOC 2 energy for knowledge bases."),
+  };
+}
 
 /**
  * Exam-as-a-service, concierge edition. Every memory tool cites benchmarks

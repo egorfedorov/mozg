@@ -9,11 +9,13 @@ import { publicWorkflows } from "@/lib/workflow-store";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Workflows — the order your work actually goes in",
-  description:
-    "A workflow is a named route through your brains: every step names what to read, what to ask it, the rules that hold, and the check that ends it. Your agent walks it with /mozg:build. Nothing runs on our side.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Workflows — the order your work actually goes in"),
+    description: t("A workflow is a named route through your brains: every step names what to read, what to ask it, the rules that hold, and the check that ends it. Your agent walks it with /mozg:build. Nothing runs on our side."),
+  };
+}
 
 /**
  * The workflows page.

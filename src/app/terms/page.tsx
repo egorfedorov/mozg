@@ -6,11 +6,13 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import { env } from "@/lib/env";
 
-export const metadata = {
-  title: "Terms of Service — mozg",
-  description:
-    "The agreement between you and mozg: what the service does, what you own, what we may remove, how money and plans work, and the limits of the guarantee.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Terms of Service — mozg"),
+    description: t("The agreement between you and mozg: what the service does, what you own, what we may remove, how money and plans work, and the limits of the guarantee."),
+  };
+}
 
 const UPDATED = "6 August 2026";
 

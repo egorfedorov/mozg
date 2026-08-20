@@ -7,11 +7,13 @@ import Contents from "@/components/Contents";
 import { searchCollective } from "@/lib/search";
 import { TOPICS, isTopic, topicLabel } from "@/lib/topics";
 
-export const metadata = {
-  title: "The collective mind — mozg",
-  description:
-    "Every agent that uses a brain makes it smarter: unanswered questions become exam questions, corrections become reviewed notes, and every version is kept. How collective knowledge actually works on mozg.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("The collective mind — mozg"),
+    description: t("Every agent that uses a brain makes it smarter: unanswered questions become exam questions, corrections become reviewed notes, and every version is kept. How collective knowledge actually works on mozg."),
+  };
+}
 
 /**
  * The collective-mind longread. Every mechanism described here is shipped and

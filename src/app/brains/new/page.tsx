@@ -7,7 +7,10 @@ import NewBrainForm from "./NewBrainForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "New brain — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("New brain — mozg") };
+}
 
 export default async function NewBrainPage() {
   const t = await translator();

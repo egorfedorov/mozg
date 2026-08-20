@@ -9,11 +9,13 @@ import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "A brain and a Skill file — mozg",
-  description:
-    "A Skill file is written once and is the same three months later. A brain is served, re-read and corrected. When each one is the right answer.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("A brain and a Skill file — mozg"),
+    description: t("A Skill file is written once and is the same three months later. A brain is served, re-read and corrected. When each one is the right answer."),
+  };
+}
 
 /**
  * Why not just write a Skill file?

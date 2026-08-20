@@ -8,11 +8,13 @@ import { query } from "@/db";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Style brains — sell your style, not fight the scrapers",
-  description:
-    "Artists package their style as an exam-scored brain: palette, light, the hard nevers. Buyers' agents generate in it — licensed, attributed, revocable. The answer to style theft that pays the artist.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Style brains — sell your style, not fight the scrapers"),
+    description: t("Artists package their style as an exam-scored brain: palette, light, the hard nevers. Buyers' agents generate in it — licensed, attributed, revocable. The answer to style theft that pays the artist."),
+  };
+}
 
 /**
  * The style-brains sub-project. The argument in one line: defensive cloaking

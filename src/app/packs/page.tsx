@@ -9,11 +9,13 @@ import { translator } from "@/lib/t";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Packs — mozg",
-  description:
-    "A trade's brains, sold together and scored separately: the set one job already reaches for, on five seats and one shared allowance.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Packs — mozg"),
+    description: t("A trade's brains, sold together and scored separately: the set one job already reaches for, on five seats and one shared allowance."),
+  };
+}
 
 /**
  * The shelf of packs.

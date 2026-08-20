@@ -5,17 +5,20 @@ import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 
-export const metadata = {
-  title: "Manifesto — mozg",
-  description:
-    "Everything we know is being poured into one memory that belongs to nobody, pays nobody, and cannot say what it does not know. mozg is the opposite architecture. By Egor Fedorov, Sakha Republic.",
-  openGraph: {
-    title: "The manifesto — mozg",
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Manifesto — mozg"),
     description:
-      "One memory for everything, owned by nobody — or many minds, each with an author, a price and an honest edge. A manifesto by Egor Fedorov.",
-    type: "article",
-  },
-};
+      t("Everything we know is being poured into one memory that belongs to nobody, pays nobody, and cannot say what it does not know. mozg is the opposite architecture. By Egor Fedorov, Sakha Republic."),
+    openGraph: {
+      title: t("The manifesto — mozg"),
+      description:
+        t("One memory for everything, owned by nobody — or many minds, each with an author, a price and an honest edge. A manifesto by Egor Fedorov."),
+      type: "article",
+    },
+  };
+}
 
 /**
  * The manifesto.

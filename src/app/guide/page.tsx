@@ -9,11 +9,13 @@ import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "How to build a brain worth using — mozg",
-  description:
-    "What separates a brain an agent actually reads from a folder of screenshots: one job, a testable goal, primary material, and letting the exam tell you what is missing.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("How to build a brain worth using — mozg"),
+    description: t("What separates a brain an agent actually reads from a folder of screenshots: one job, a testable goal, primary material, and letting the exam tell you what is missing."),
+  };
+}
 
 /** Numbered because this genuinely is a sequence — each step needs the last. */
 const STEPS = [

@@ -6,11 +6,13 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import AskedTwice from "@/components/AskedTwice";
 
-export const metadata = {
-  title: "Start from zero — what any of this is",
-  description:
-    "No jargon. What an AI agent actually is, why it gets your project wrong, what MCP means, and what a knowledge brain does about it — explained for somebody who has never heard any of these words.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Start from zero — what any of this is"),
+    description: t("No jargon. What an AI agent actually is, why it gets your project wrong, what MCP means, and what a knowledge brain does about it — explained for somebody who has never heard any of these words."),
+  };
+}
 
 /**
  * The page for somebody who has heard none of these words.

@@ -10,7 +10,10 @@ import CopyErrors from "./CopyErrors";
 import { resolveErrors } from "../actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Errors — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Errors — mozg admin") };
+}
 
 /**
  * The error center: every layer's failures on one page, grouped the way

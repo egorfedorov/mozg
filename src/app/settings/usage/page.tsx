@@ -9,7 +9,10 @@ import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Usage — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Usage — mozg") };
+}
 
 /**
  * What your agents actually did with the tokens on the page next door.

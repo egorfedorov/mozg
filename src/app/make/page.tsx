@@ -9,11 +9,13 @@ import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Making a brain, in six panels — mozg",
-  description:
-    "Pick one job, write the goal as an outcome, feed primary material, read the failures, connect it early, let agents correct it.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Making a brain, in six panels — mozg"),
+    description: t("Pick one job, write the goal as an outcome, feed primary material, read the failures, connect it early, let agents correct it."),
+  };
+}
 
 /**
  * The guide as a strip.

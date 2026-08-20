@@ -1,3 +1,4 @@
+import { translator } from "@/lib/t";
 import { redirect } from "next/navigation";
 import SignInForm from "./SignInForm";
 import { env, emailReady } from "@/lib/env";
@@ -5,7 +6,10 @@ import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Sign in — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Sign in — mozg") };
+}
 
 export default async function SignInPage({
   searchParams,

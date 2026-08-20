@@ -7,11 +7,13 @@ import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 
-export const metadata = {
-  title: "Roadmap — mozg",
-  description:
-    "What is shipped and what the rest of the year goes on, month by month, each with the gate that has to hold before the next one starts. The same file the repository keeps.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Roadmap — mozg"),
+    description: t("What is shipped and what the rest of the year goes on, month by month, each with the gate that has to hold before the next one starts. The same file the repository keeps."),
+  };
+}
 
 /**
  * The roadmap, on the site, from the file the repository already keeps.

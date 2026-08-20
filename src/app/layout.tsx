@@ -1,5 +1,5 @@
 import { localeOf } from "@/lib/locales";
-import { currentLocale, clientDictionary } from "@/lib/t";
+import { currentLocale, clientDictionary, translator } from "@/lib/t";
 import { Translations } from "@/lib/t-client";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
@@ -30,13 +30,20 @@ import "./globals.css";
  * way to make a product feel unfinished, and an English-only reader still
  * downloads only the Latin file. See scripts/fetch-fonts.mjs.
  */
-export const metadata: Metadata = {
+/**
+ * The site-wide fallback, and the tab title of every page that does not set its
+ * own. Async because a title is a sentence somebody reads, and a static export
+ * is evaluated before there is a request to read the reader's language from.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await translator();
+  return {
   // Absolute URLs for every og:/twitter: tag below — without a base, crawlers
   // get relative paths and the share card silently loses its image.
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
-  title: "mozg — one brain, every agent",
+  title: t("mozg — one brain, every agent"),
   description:
-    "Build a knowledge brain from screenshots and files, then connect it to Claude Code, Codex and Cursor over MCP.",
+    t("Build a knowledge brain from screenshots and files, then connect it to Claude Code, Codex and Cursor over MCP."),
   ...(env.GOOGLE_SITE_VERIFICATION
     ? { verification: { google: env.GOOGLE_SITE_VERIFICATION } }
     : {}),
@@ -46,7 +53,7 @@ export const metadata: Metadata = {
   // a <link>.
   alternates: {
     types: {
-      "text/plain": [{ url: "/machine.txt", title: "mozg as a fact sheet" }],
+      "text/plain": [{ url: "/machine.txt", title: t("mozg as a fact sheet") }],
     },
   },
   openGraph: {
@@ -54,9 +61,10 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
-  },
-};
+      card: "summary_large_image",
+    },
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = localeOf(await currentLocale());

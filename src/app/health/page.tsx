@@ -7,11 +7,13 @@ import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Catalogue health — mozg",
-  description:
-    "How much of the catalogue was read this week, re-examined this week, and what it scores. The pace of a beta, in public.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Catalogue health — mozg"),
+    description: t("How much of the catalogue was read this week, re-examined this week, and what it scores. The pace of a beta, in public."),
+  };
+}
 
 /**
  * The catalogue, measured in public.

@@ -6,11 +6,13 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import { env } from "@/lib/env";
 
-export const metadata = {
-  title: "Privacy Policy — mozg",
-  description:
-    "What mozg stores, who it is sent to, how long it is kept, and how to get it back or have it deleted.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Privacy Policy — mozg"),
+    description: t("What mozg stores, who it is sent to, how long it is kept, and how to get it back or have it deleted."),
+  };
+}
 
 const UPDATED = "6 August 2026";
 

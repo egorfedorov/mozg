@@ -6,11 +6,13 @@ import SiteFooter from "@/components/SiteFooter";
 import Contents from "@/components/Contents";
 import AskedTwice from "@/components/AskedTwice";
 
-export const metadata = {
-  title: "The confident wrong answer — mozg",
-  description:
-    "Skills and context files make agents feel knowledgeable. The pain: stale answers delivered with confidence, tokens burned on unread text, knowledge nobody can measure. What a brain does differently.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("The confident wrong answer — mozg"),
+    description: t("Skills and context files make agents feel knowledgeable. The pain: stale answers delivered with confidence, tokens burned on unread text, knowledge nobody can measure. What a brain does differently."),
+  };
+}
 
 /**
  * The pain page. Every section is one error people actually hit with skills

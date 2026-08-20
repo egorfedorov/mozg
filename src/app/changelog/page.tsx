@@ -10,10 +10,13 @@ import Contents from "@/components/Contents";
 // than no news page.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Changelog — mozg",
-  description: "What shipped, dated. A beta whose pace you can see.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Changelog — mozg"),
+    description: t("What shipped, dated. A beta whose pace you can see."),
+  };
+}
 
 /**
  * Curated, not generated: one entry per thing a user can feel, written when
@@ -26,6 +29,31 @@ export const metadata = {
  * outage that ended — and nobody should have to redeploy to say one.
  */
 const ENTRIES: { date: string; title: string; body: string }[] = [
+  {
+    date: "2026-08-20",
+    title: msg("Every page speaks the language you picked"),
+    body: msg("The language choice was scoped to the host it was made on, so picking Russian on mozg.sh left gen.mozg.sh in English — and the pages built this week had no translations at all, which made them half one language and half the other. Mixed is worse than English, because English at least looks deliberate. The cookie is shared across the subdomains now, the leftover copy is cleared rather than left to win by being more specific, and every title is translated too: metadata was a static export evaluated before there was a reader to have a language, so the tab said one thing while the page said another."),
+  },
+  {
+    date: "2026-08-20",
+    title: msg("gen.mozg.sh plans the set before you pay for it"),
+    body: msg("The old flow was a brief box and a button that spent money — nowhere to see what you were buying, nowhere to change one symbol, nowhere your last game lived. Now a project is a folder: name the game, and the whole set appears as a list you can rewrite. Describe the premium yourself, leave the rest to the world you wrote, drop what you do not want. All of that is free; the price is shown before the one button that charges. Assets land one by one with the art visible, not a status word. A run is a pack, so redoing a symbol next week is another batch in the same project rather than an edit to a receipt. And it is not only slots: a storefront listing is its own kind, drawn as the separate layers a storefront actually composites, and a custom project starts empty for work we have no rules for."),
+  },
+  {
+    date: "2026-08-20",
+    title: msg("A rig-ready set, and the hands to rig it"),
+    body: msg("A set of flat symbols cannot be animated without redrawing half of it. What a slot needs to move is a handful of state variants — the mascot's win face and its blink, the wild and scatter at the moment they land — and they have to be drawn with the set, because a model has no memory between calls and a variant generated later will not match. So rig-ready is a set you order rather than a step you take afterwards, and mozg-spine turns it into an animated Spine skeleton on your own machine. Rigging needs no Spine licence at all; a licence only adds the packer and the editable project."),
+  },
+  {
+    date: "2026-08-20",
+    title: msg("Brains now say what hands they need"),
+    body: msg("A brain teaches how something is done, and some of what it teaches is done far better by a program on your own machine — the agent had no way to know, so it hand-wrote a Spine skeleton next to a machine that would have exported one. Brains now name their tools, and mozg publishes them: mozg-spine rigs and animates, mozg-devtools measures a running game against the budgets the PixiJS brain teaches, mozg-stake uploads and publishes a build. The command is generated from what mozg actually ships rather than typed by a brain's owner, so a brain cannot tell your agent to install something that does not exist. They run on your machine and mozg runs none of them."),
+  },
+  {
+    date: "2026-08-20",
+    title: msg("Earn with mozg: 20% of every month"),
+    body: msg("Send somebody here and take a fifth of every plan payment they make, for as long as they keep paying — not a bounty on the first invoice. Your handle is the link, the window is thirty days, and the commission lands on your balance the second they pay, with a ledger row you can read. It stops when they stop, and nothing is clawed back. Free to join and nothing to apply for: if you have signed in, you already have the link."),
+  },
   {
     date: "2026-08-10",
     title: msg("A route hands you the shelf it needs"),

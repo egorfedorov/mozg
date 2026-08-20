@@ -16,7 +16,10 @@ import ConfirmForm from "@/components/ConfirmForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Tokens — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Tokens — mozg") };
+}
 
 /**
  * One page for both products' credentials.

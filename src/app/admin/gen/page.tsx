@@ -9,7 +9,10 @@ import { SETS } from "@/lib/slotgen";
 import PriceForm from "./PriceForm";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "gen — operator" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("gen — operator") };
+}
 
 /**
  * What the studio service charges, and what it has actually done.

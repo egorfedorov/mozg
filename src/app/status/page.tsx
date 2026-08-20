@@ -11,11 +11,13 @@ import { systemStatus } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Status — mozg",
-  description:
-    "Live status of every mozg service: the website, the database, semantic search, the reading queue, AI reading, the agent API and payments.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Status — mozg"),
+    description: t("Live status of every mozg service: the website, the database, semantic search, the reading queue, AI reading, the agent API and payments."),
+  };
+}
 
 const WORD: Record<string, string> = {
   ok: msg("All systems operational"),

@@ -8,7 +8,10 @@ import { currentUser } from "@/lib/session";
 import ChatForm from "./ChatForm";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "chatmozg — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("chatmozg — mozg") };
+}
 
 /**
  * The line to the developer — a thread, not a mailto. The product's whole

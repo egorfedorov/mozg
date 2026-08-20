@@ -11,7 +11,10 @@ import { replyInChat, markThreadRead } from "./actions";
 import { messageUser } from "../actions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Chat — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Chat — mozg admin") };
+}
 
 /**
  * Every thread, unread first. Replying here lands in the user's /chat and,

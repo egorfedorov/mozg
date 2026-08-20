@@ -7,22 +7,25 @@ import { coverUrl } from "@/lib/covers";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "The style gallery — buy the way someone works",
-  description:
-    "Styles from illustrators, photographers, animators and composers, packaged as exam-scored brains. Your agent follows the artist's own rules — licensed, attributed, and paid for on every call.",
-  openGraph: {
-    title: "The style gallery — mozg",
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("The style gallery — buy the way someone works"),
     description:
-      "Buy the way someone works. Every style is licensed by its author, scored on an exam, and pays them per call.",
-    type: "website",
-    url: "https://gallery.mozg.sh",
-  },
-  // The wall answers on two addresses — gallery.mozg.sh is the front door and
-  // mozg.sh/gallery is where the shared nav points. Same page, so name the one
-  // that should be indexed rather than let a crawler pick.
-  alternates: { canonical: "https://gallery.mozg.sh" },
-};
+      t("Styles from illustrators, photographers, animators and composers, packaged as exam-scored brains. Your agent follows the artist's own rules — licensed, attributed, and paid for on every call."),
+    openGraph: {
+      title: t("The style gallery — mozg"),
+      description:
+        t("Buy the way someone works. Every style is licensed by its author, scored on an exam, and pays them per call."),
+      type: "website",
+      url: "https://gallery.mozg.sh",
+    },
+    // The wall answers on two addresses — gallery.mozg.sh is the front door and
+    // mozg.sh/gallery is where the shared nav points. Same page, so name the one
+    // that should be indexed rather than let a crawler pick.
+    alternates: { canonical: "https://gallery.mozg.sh" },
+  };
+}
 
 interface StyleCard {
   id: string;

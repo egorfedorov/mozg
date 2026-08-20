@@ -10,7 +10,10 @@ import { TOPICS } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Brains — admin", robots: { index: false, follow: false } };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Brains — admin"), robots: { index: false, follow: false } };
+}
 
 export default async function AdminBrainsPage() {
   const t = await translator();

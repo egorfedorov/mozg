@@ -22,7 +22,10 @@ import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Admin — mozg", robots: { index: false, follow: false } };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Admin — mozg"), robots: { index: false, follow: false } };
+}
 
 export default async function AdminPage() {
   const t = await translator();

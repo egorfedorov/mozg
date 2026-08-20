@@ -10,11 +10,13 @@ import { topicLabel } from "@/lib/topics";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "learn — study what your AI agent knows",
-  description:
-    "Spaced-repetition learning built on mozg brains: the same exam-scored, always-current knowledge your coding agent queries — as cards and quiz questions for you.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("learn — study what your AI agent knows"),
+    description: t("Spaced-repetition learning built on mozg brains: the same exam-scored, always-current knowledge your coding agent queries — as cards and quiz questions for you."),
+  };
+}
 
 /**
  * The learn service's front door. Deliberately its own brand surface — green

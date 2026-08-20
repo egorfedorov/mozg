@@ -8,17 +8,20 @@ import { STORIES } from "./stories";
 import StoryArt from "./StoryArt";
 import AskedTwice from "@/components/AskedTwice";
 
-export const metadata = {
-  title: "How people use it — mozg",
-  description:
-    "An artist who sold his method. A company that taught its own software without letting it leave. A studio shipping on a platform whose docs move weekly. How people actually use a knowledge brain.",
-  openGraph: {
-    title: "How people use it — mozg",
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("How people use it — mozg"),
     description:
-      "An artist who sold his method. A company that taught its own software privately. A studio shipping on a moving platform. How people use a knowledge brain.",
-    type: "article",
-  },
-};
+      t("An artist who sold his method. A company that taught its own software without letting it leave. A studio shipping on a platform whose docs move weekly. How people actually use a knowledge brain."),
+    openGraph: {
+      title: t("How people use it — mozg"),
+      description:
+        t("An artist who sold his method. A company that taught its own software privately. A studio shipping on a moving platform. How people use a knowledge brain."),
+      type: "article",
+    },
+  };
+}
 
 /**
  * The long read.

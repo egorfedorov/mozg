@@ -8,11 +8,13 @@ import { query } from "@/db";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Beta — mozg",
-  description:
-    "mozg is in open beta: what that means, what already works, what is still rough, and how breaking it makes it better.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Beta — mozg"),
+    description: t("mozg is in open beta: what that means, what already works, what is still rough, and how breaking it makes it better."),
+  };
+}
 
 /**
  * The page the beta badge points at. Honest in both directions: real numbers

@@ -9,11 +9,13 @@ import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Why mozg exists",
-  description:
-    "Agents forget between sessions, memory is locked to one vendor, and nobody can tell you what a knowledge base does not know. mozg fixes the third one first.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Why mozg exists"),
+    description: t("Agents forget between sessions, memory is locked to one vendor, and nobody can tell you what a knowledge base does not know. mozg fixes the third one first."),
+  };
+}
 
 export default async function WhyPage() {
   const t = await translator();

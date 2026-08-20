@@ -12,7 +12,10 @@ import { currentUser } from "@/lib/session";
 import { formatCents } from "@/lib/money-math";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Pay — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Pay — mozg") };
+}
 
 /**
  * A mozgpay invoice: the address, the EXACT amount, and a page that watches

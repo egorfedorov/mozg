@@ -13,7 +13,10 @@ import { dropBrain } from "@/app/b/[handle]/[slug]/library-action";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Library — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Library — mozg") };
+}
 
 interface Bought {
   brain_id: string;

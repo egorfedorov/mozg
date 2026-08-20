@@ -15,7 +15,10 @@ import MessageUserForm from "../MessageUserForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "People — admin", robots: { index: false, follow: false } };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("People — admin"), robots: { index: false, follow: false } };
+}
 
 /** A token used this recently means an agent is connected right now. */
 const LIVE_MINUTES = 15;

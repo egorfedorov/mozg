@@ -6,7 +6,10 @@ import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Lessons — mozg admin" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Lessons — mozg admin") };
+}
 
 /**
  * The editor pass, surveyed: which modules have a compiled lesson, which are

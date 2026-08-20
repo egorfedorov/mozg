@@ -19,11 +19,13 @@ import { publicWorkflows } from "@/lib/workflow-store";
 // and, worse, would serve a cached page that never reflects new public brains.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Explore brains — mozg",
-  description:
-    "Ready-made knowledge brains, free and paid, you can connect to Claude Code, Codex or Cursor in one command.",
-};
+export async function generateMetadata() {
+  const t = await translator();
+  return {
+    title: t("Explore brains — mozg"),
+    description: t("Ready-made knowledge brains, free and paid, you can connect to Claude Code, Codex or Cursor in one command."),
+  };
+}
 
 interface PublicBrain extends Brain {
   owner_handle: string;

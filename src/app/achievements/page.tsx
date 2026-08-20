@@ -12,7 +12,10 @@ import { Stats, Stat } from "@/components/ui";
 import { fill } from "@/lib/markup";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Achievements — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Achievements — mozg") };
+}
 
 /**
  * The trophy shelf. Twenty badges in the same print style as the mascot;

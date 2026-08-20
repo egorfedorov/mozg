@@ -8,7 +8,10 @@ import NewWorkflowForm from "./NewWorkflowForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Workflows — mozg" };
+export async function generateMetadata() {
+  const t = await translator();
+  return { title: t("Workflows — mozg") };
+}
 
 /**
  * The routes through the shelf.
