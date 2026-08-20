@@ -3135,3 +3135,88 @@ html.banner-notice-off #mozg-notice {
   .wf-step-line { grid-template-columns: 1fr; gap: 0.15rem; }
   .wf-step-tag { border-left: 0; padding-left: 0; }
 }
+
+/* ─── earn ──────────────────────────────────────────────────────────────── */
+/* The referral calculator's one control. A range input inherits nothing from
+   the rest of this stylesheet, so left alone it is the only rounded, glossy,
+   system-blue object on a site made of 1.5px black rules. */
+
+.earn-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.earn-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--rule);
+  border: 1.5px solid var(--ink);
+}
+
+.earn-slider::-moz-range-track {
+  height: 6px;
+  background: var(--rule);
+  border: 1.5px solid var(--ink);
+}
+
+/* Square, yellow, and offset up by half its own height minus half the track —
+   the webkit thumb is positioned from the top of the track, not centred on it. */
+.earn-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-riso-yellow);
+  border: 1.5px solid var(--ink);
+  margin-top: -9px;
+}
+
+.earn-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+  background: var(--color-riso-yellow);
+  border: 1.5px solid var(--ink);
+}
+
+.earn-slider:focus-visible::-webkit-slider-thumb {
+  background: var(--color-riso-green);
+}
+
+.earn-slider:focus-visible::-moz-range-thumb {
+  background: var(--color-riso-green);
+}
+
+/* The FAQ list. summary is a list-item by default in Firefox and carries a
+   webkit marker in Safari; both need saying no to separately. Its own marker
+   instead, on the right, where it does not shove the question off its line. */
+.earn-faq > summary {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.earn-faq > summary::-webkit-details-marker {
+  display: none;
+}
+
+.earn-faq > summary::after {
+  content: "+";
+  font-family: var(--font-mono), monospace;
+  color: var(--color-riso-red);
+  flex: none;
+}
+
+.earn-faq[open] > summary::after {
+  content: "−";
+}
+
+.earn-faq > summary:hover {
+  background: var(--paper);
+}

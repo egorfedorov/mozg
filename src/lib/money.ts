@@ -24,7 +24,11 @@ export type LedgerKind =
   // Per-image use of a style brain: the buyer's debit. The artist's side
   // is an "earning", the same kind a sale pays them under, so one payout
   // query still sees everything they are owed.
-  | "generation";
+  | "generation"
+  // 20% of what somebody you brought paid for their plan, every month they
+  // renew. Its own kind rather than "earning": the balance page names the
+  // kind, and "Sale" is the wrong word for money you made no sale to earn.
+  | "referral";
 
 interface MoveOptions {
   client: PoolClient;

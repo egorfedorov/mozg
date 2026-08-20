@@ -23,3 +23,19 @@ export function formatCents(cents: number): string {
 export function sellerShare(priceCents: number): number {
   return priceCents - Math.floor((priceCents * PLATFORM_FEE_PERCENT) / 100);
 }
+
+/** The affiliate's share of every plan payment their referral makes. */
+export const REFERRAL_PERCENT = 20;
+
+/**
+ * The commission on one plan payment — see lib/referral.ts for the programme.
+ *
+ * Floored, so a fraction of a cent is never conjured. It only bites on an odd
+ * promo price: both plans and the founding half-price divide by five exactly.
+ * Computed from what was actually charged, never from the list price, which is
+ * why it takes an amount rather than a plan.
+ */
+export function commissionCents(paidCents: number): number {
+  if (paidCents <= 0) return 0;
+  return Math.floor((paidCents * REFERRAL_PERCENT) / 100);
+}

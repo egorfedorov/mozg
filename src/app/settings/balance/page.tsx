@@ -24,6 +24,7 @@ const KIND_LABEL: Record<string, string> = {
   adjustment: "Adjustment",
   plan: "Plan",
   generation: "Generated an image",
+  referral: "Referral commission",
 };
 
 export default async function BalancePage() {
@@ -110,6 +111,8 @@ export default async function BalancePage() {
               {t("Your brains")}</Link>
             <Link className="btn btn-ghost" href="/guide#selling">
               {t("How to build one worth paying for")}</Link>
+            <Link className="btn btn-ghost" href="/earn">
+              {t("Or earn 20% by recommending mozg")}</Link>
           </div>
         </Section>
       </div>

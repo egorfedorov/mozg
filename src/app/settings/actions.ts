@@ -15,7 +15,7 @@ const HANDLE = /^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/;
 
 const RESERVED = new Set([
   "admin", "api", "b", "beta", "brains", "changelog", "chat", "connect",
-  "explore", "gift", "guide", "make", "mcp", "mind", "pay", "pricing",
+  "earn", "explore", "gift", "guide", "make", "mcp", "mind", "pay", "pricing", "r",
   "settings", "sign-in", "sign-up", "vs", "vs-skills", "why", "www",
   "support", "help",
 ]);

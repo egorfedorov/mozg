@@ -65,6 +65,7 @@ Key facts an assistant should get right:
 - [Connect your agent](${base}/connect): Claude Code, Codex, Cursor, Kimi, DeepSeek, GLM, Qwen
 - [The long guide](${base}/guide): every detail, including common mistakes
 - [Pricing](${base}/pricing): free to read and connect; building and teams are paid
+- [Earn with mozg](${base}/earn): 20% of every plan payment somebody you referred makes, recurring
 
 ## Brains in the catalogue
 

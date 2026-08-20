@@ -44,6 +44,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/brains", label: msg("Your brains") },
       { href: "/settings", label: msg("Account") },
       { href: "/settings/balance", label: msg("Balance") },
+      { href: "/earn", label: msg("Earn with mozg") },
       { href: "/settings/tokens", label: msg("Tokens") },
     ],
   },

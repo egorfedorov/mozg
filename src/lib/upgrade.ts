@@ -1,5 +1,6 @@
 import { maybeOne, tx } from "@/db";
 import { move } from "@/lib/money";
+import { payReferralCommission } from "@/lib/referral";
 import { PLAN_PRICE_CENTS, PLAN_PERIOD_DAYS, type PaidPlan } from "@/lib/plans";
 
 /**
@@ -185,6 +186,24 @@ export async function payPlanFromBalance(opts: {
           (promoWins ? `, promo ${code} −${percentOff}%` : founding ? ", founding −50%" : ""),
       });
     }
+
+    // Whoever brought them gets their cut of this payment, inside the same
+    // transaction — that is what makes the programme recurring without a
+    // subscription to hang it on. Every renewal is another payment through
+    // here, so every renewal pays again, and a month that is not paid for
+    // pays nobody.
+    //
+    // The referrer's row is credited without being locked first, which is the
+    // rule at the top of money.ts and correct here: the movement is positive,
+    // so it is a blind increment rather than a read-then-write, and Postgres
+    // serialises those on the row itself. Nor can two of these deadlock —
+    // referred_by is written once, at signup, and can only point at an account
+    // that already existed, so the referral graph has no cycles to wait around.
+    await payReferralCommission(client, {
+      payerId: opts.userId,
+      paidCents: priceCents,
+      note: `${opts.plan} plan`,
+    });
 
     await client.query(
       `update "user"

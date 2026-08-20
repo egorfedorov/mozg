@@ -42,6 +42,10 @@ const GROUPS: {
       { href: "/settings/usage", label: msg("Usage") },
       { href: "/settings/packs", label: msg("Packs & people") },
       { href: "/settings", label: msg("Plan & profile") },
+      // Last in Account rather than first in Work: it is a way to make money
+      // from the product, not a part of using it, and putting it above
+      // "Balance" would be the tail wagging the dog.
+      { href: "/earn", label: msg("Earn with mozg") },
     ],
   },
 ];

@@ -81,6 +81,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
     summary: msg("free, paid, and what's new"),
     pages: [
       { href: "/pricing", label: msg("Pricing"), note: msg("your inference is free, ours is the plan") },
+      { href: "/earn", label: msg("Earn with mozg"), note: msg("20% of every month, recurring") },
       { href: "/changelog", label: msg("News & changelog"), note: msg("what shipped, dated") },
       { href: "/changes", label: msg("What the brains learned"), note: msg("knowledge deltas, verified by re-sits") },
       { href: "/roadmap", label: msg("Roadmap"), note: msg("what is next, with its gate") },

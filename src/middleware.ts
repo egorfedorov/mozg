@@ -207,6 +207,7 @@ export function middleware(req: NextRequest) {
     "/why", "/vs", "/vs-skills", "/collective", "/make", "/guide", "/connect",
     "/explore", "/pricing", "/beta", "/changelog", "/chat", "/brains",
     "/settings", "/b", "/mind", "/gift", "/pay", "/admin", "/llms.txt",
+    "/earn", "/r",
     // The shared footer links to these from learn pages too.
     "/terms", "/privacy", "/cookies", "/status", "/about", "/gallery", "/styles",
   ];
