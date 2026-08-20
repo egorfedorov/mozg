@@ -85,3 +85,57 @@ test("an array argument the model quoted comes back as an array", async () => {
     verdicts: "not json",
   });
 });
+
+// ─── retrying a torn stream ─────────────────────────────────────────────────
+//
+// The two shapes below are transcribed from what production actually threw
+// (app_errors, 08-16 to 08-20). Both arrive after a 200, which is why the
+// SDK's own maxRetries never sees them.
+
+test("a stream the endpoint tore is worth retrying", async () => {
+  const { endpointTore, EndpointTore } = await load();
+
+  // MessageStream.js: the stream closed carrying no assistant message.
+  assert.ok(
+    endpointTore(new Error("stream ended without producing a Message with role=assistant")),
+  );
+  // undici: socket cut mid-body. Arrives raw, not wrapped by the SDK — which
+  // is why matching on APIConnectionError alone would have missed the one
+  // shape that happens most.
+  assert.ok(endpointTore(new TypeError("terminated")));
+  // Assigned rather than passed to the constructor: tsx transpiles this file
+  // to CJS and the options argument does not survive it, so the constructor
+  // form silently tests nothing. The wrapper is what undici actually throws.
+  const wrapped = new Error("fetch failed");
+  wrapped.cause = new TypeError("terminated");
+  assert.ok(endpointTore(wrapped));
+  // What the SDK says when it wraps a connection failure itself. Matched by
+  // message, not by class: the SDK's dual CJS/ESM builds make `instanceof`
+  // depend on which copy the checking module resolved, and it came out false
+  // from inside claude.ts for an error built one import away.
+  assert.ok(endpointTore(new Error("Connection error.")));
+  // Our own name for a stop_reason no model produces.
+  assert.ok(endpointTore(new EndpointTore("endpoint ended the response early")));
+});
+
+test("nothing a retry cannot fix is retried", async () => {
+  const { endpointTore } = await load();
+  const { OutputCutoff } = await import("./cutoff");
+
+  for (const err of [
+    // The answer was too long, not interrupted — the caller halves it instead.
+    new OutputCutoff("ran out of output room after 16000 tokens"),
+    // The proxy dropped tool_choice: the fix is a different endpoint.
+    new Error("model did not call save_notes (stop_reason=end_turn)"),
+    new Error("request refused by safety classifier"),
+    // Money, not weather. Retrying spends nothing and fixes nothing.
+    new Error('402 {"error":{"message":"insufficient balance"}}'),
+    new Error("400 invalid_request_error"),
+    // A word that merely contains the token must not trip the match.
+    new Error("the contract was terminated by the vendor"),
+    "not an error at all",
+    null,
+  ]) {
+    assert.equal(endpointTore(err), false, `wrongly retried: ${String(err)}`);
+  }
+});

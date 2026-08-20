@@ -132,17 +132,22 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     goal: string | null;
     score: number | null;
     note_count: number;
+    /** Notes in this brain's children — see the query. */
+    child_notes: number;
     access: string;
     parent_handle: string | null;
   }>(
-    `select b.slug as handle, b.title, b.goal, b.score, b.note_count, 'owner' as access,
+    `select b.slug as handle, b.title, b.goal, b.score, b.note_count,
+            (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id) as child_notes,
+            'owner' as access,
             p.slug as parent_handle
        from brains b
        left join brains p on p.id = b.parent_id
       where b.owner_id = $1
      union all
-     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count, g.role,
-            null
+     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
+            (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id),
+            g.role, null
        from brains b
        join grants g on g.brain_id = b.id
        join "user" u on u.id = b.owner_id
@@ -161,6 +166,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
      -- 'added'), and the grant is the truer of the two — 'added' is only
      -- where it sits.
      select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
+            (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id),
             'added', null
        from library l
        join brains b on b.id = l.brain_id
@@ -186,7 +192,14 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     `select u.handle || '/' || b.slug as handle, b.title, b.score, b.price_cents
        from brains b join "user" u on u.id = b.owner_id
       where b.visibility = 'public' and u.handle is not null and b.parent_id is null
-        and b.note_count > 0
+        -- A brain with something in it, counting the children a parent holds
+        -- its material in. The bare note_count test hid every family brain
+        -- from the one block that exists to tell an agent what can be had by
+        -- handle — the best-scoring brains in the catalogue were the invisible
+        -- ones, because a parent owns no notes directly.
+        and (b.note_count > 0
+             or exists (select 1 from brains c
+                         where c.parent_id = b.id and c.note_count > 0))
       order by b.score desc nulls last limit 12`,
   ).then((rs) => rs.filter((r) => !shelf.has(r.handle)));
 
@@ -236,11 +249,22 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     };
   }
 
+  // What searching this handle actually reaches, which for a parent is its
+  // children's notes and not its own.
+  //
+  // note_count means "notes owned directly here", and every reader of this line
+  // means "notes I can search". For a family brain the two differ by
+  // everything: ai-sdk printed "0 notes" beside "trained 82%" while holding
+  // 7,556 notes across three children, which reads as a brain that is broken
+  // and scored anyway — and it is the whole family shelf that looks like that.
+  const searchable = (r: (typeof rows)[number]) => r.note_count + r.child_notes;
+
   const describe = (r: (typeof rows)[number], indent: string) =>
     `${indent}- ${r.handle} — ${r.title}\n` +
     `${indent}  goal: ${r.goal ?? "not set"}\n` +
-    `${indent}  ${r.note_count} notes · ` +
-    `${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}`;
+    `${indent}  ${searchable(r)} notes` +
+    (r.child_notes && !r.note_count ? " across its children" : "") +
+    ` · ${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}`;
 
   // Children are printed under their parent so the shape of someone's
   // knowledge is visible at a glance, and so an agent knows that asking the

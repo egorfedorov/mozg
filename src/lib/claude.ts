@@ -81,6 +81,67 @@ const FINISHED = new Set([
   "model_context_window_exceeded",
 ]);
 
+/**
+ * The endpoint gave up mid-generation and said so in a 200.
+ *
+ * A class rather than a sentence ending in "Retryable", because that sentence
+ * was a promise nothing kept: it named the failure correctly and then threw it
+ * at a caller with no way to tell it apart from the six other things that
+ * reach the same catch.
+ */
+export class EndpointTore extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EndpointTore";
+  }
+}
+
+/**
+ * Did the endpoint tear the response, rather than the model finishing it?
+ *
+ * Two shapes, both from a reseller cutting a generation it could not finish,
+ * and both arriving *after* a 200 — which is why the SDK's own maxRetries
+ * never sees them. It retries requests; this is a body that died once the
+ * headers were already good.
+ *
+ *   AnthropicError  "stream ended without producing a Message with role=assistant"
+ *                   the stream closed cleanly and carried no message
+ *   TypeError       "terminated"
+ *                   undici, socket cut mid-body. Arrives raw rather than as
+ *                   APIConnectionError, so matching on the class alone misses it.
+ *   EndpointTore    stop_reason outside the set a model can produce — the
+ *                   reseller's way of saying it stopped, inside a 200.
+ *
+ * Deliberately narrow. A 400, a refusal, an answer cut off at max_tokens and a
+ * proxy that dropped tool_choice are all things a retry cannot help, and each
+ * already has handling that says something truer than "try again".
+ */
+export function endpointTore(err: unknown): boolean {
+  // Our own throw, from this module, so instanceof is meaningful.
+  if (err instanceof EndpointTore) return true;
+  if (!(err instanceof Error)) return false;
+
+  // Everything below matches on the message rather than on the SDK's error
+  // classes, which is not the obvious choice and is the right one. The SDK
+  // ships dual CJS/ESM builds, and `err instanceof Anthropic.APIConnectionError`
+  // came out true or false depending on which of the two the *checking* module
+  // had resolved — it was false from inside this file for an error a test built
+  // one import away. An instanceof that is right in a script and wrong in the
+  // worker is worse than no check at all, because it looks like a check.
+  //
+  // The strings are safe to lean on: they come out of the SDK and undici, not
+  // out of a model, and the two that matter are transcribed from production.
+  const message = err.message.toLowerCase();
+  const cause = err.cause instanceof Error ? err.cause.message.toLowerCase() : "";
+  return (
+    message.includes("stream ended without producing") ||
+    message === "terminated" ||
+    cause === "terminated" ||
+    // What the SDK says when it wraps a connection failure itself.
+    message === "connection error."
+  );
+}
+
 export function endedCleanly(stopReason: string | null | undefined): boolean {
   // Null is what an in-flight message carries; a finished one always names a
   // reason. Nothing to complain about either way.
@@ -132,6 +193,44 @@ export async function structured<T>(opts: {
   }
 
   const maxTokens = opts.maxTokens ?? 16000;
+
+  // One retry, and only for a torn stream.
+  //
+  // The queue already retries the whole job, which is why no source is ever
+  // lost to this — but it redoes the entire page to recover one segment, and
+  // it raises an operator alarm on the way. Both are the wrong price for a
+  // reseller dropping a socket once or twice a day. Retrying here costs one
+  // segment, hits the cached system prefix on the way back through, and stays
+  // silent about a thing that was always going to be fine.
+  //
+  // Once, not more: if the endpoint is actually down, the job retry is the
+  // right backstop and a tighter loop here just spends money discovering the
+  // same fact.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await attemptStructured<T>(opts, maxTokens);
+    } catch (err) {
+      if (attempt >= 1 || !endpointTore(err)) throw err;
+      console.warn(
+        `[claude] ${opts.toolName}: endpoint tore the stream ` +
+          `(${err instanceof Error ? err.message : String(err)}) — one retry`,
+      );
+    }
+  }
+}
+
+async function attemptStructured<T>(
+  opts: {
+    model: string;
+    system: string;
+    content: Anthropic.ContentBlockParam[];
+    toolName: string;
+    toolDescription: string;
+    schema: Record<string, unknown>;
+  },
+  maxTokens: number,
+): Promise<{ data: T; usage: Usage }> {
+  const byok = byokStorage.getStore();
   // Streamed, not because anyone reads the tokens as they arrive, but because
   // a request that produces nothing for two minutes looks dead to whatever
   // sits between us and the model. A reseller cut every large call at ~130
@@ -176,10 +275,10 @@ export async function structured<T>(opts: {
   // a sentence about the model and sends you reading prompts.
   if (!endedCleanly(response.stop_reason)) {
     const text = response.content.find((b) => b.type === "text");
-    throw new Error(
+    throw new EndpointTore(
       `endpoint ended the response early (stop_reason=${response.stop_reason}) ` +
         `after ${response.usage.output_tokens} tokens — the model was still ` +
-        "writing. Retryable" +
+        "writing" +
         (text && text.type === "text" ? `: ${text.text.slice(0, 160)}` : ""),
     );
   }
