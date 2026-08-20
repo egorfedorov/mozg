@@ -3,6 +3,7 @@
 import { useT } from "@/lib/t-client";
 import { useActionState, useState } from "react";
 import { newProject } from "@/app/gen/project-actions";
+import { KINDS } from "@/lib/genproject";
 
 /**
  * The interview, opened rather than always sitting there.
@@ -37,7 +38,7 @@ export default function ProjectStart({ hasProjects }: { hasProjects: boolean }) 
           {t("Step 1 of 2 · what are we making")}
         </p>
         <p style={{ color: "var(--ink-2)", margin: ".4rem 0 0", fontSize: ".9375rem", maxWidth: "62ch" }}>
-          {t("Name the game and describe its world. The next screen lists every symbol the set will hold — you can rewrite any of them, or leave them to this description. Nothing is charged until you generate.")}
+          {t("Name it, say what it looks like, and pick what you are making. The next screen lists everything the set will hold — rewrite any of it, or leave it to the description. Nothing is charged until you generate.")}
         </p>
       </div>
 
@@ -64,35 +65,23 @@ export default function ProjectStart({ hasProjects }: { hasProjects: boolean }) 
         />
       </label>
 
-      {/* Which set, as two honest choices rather than a checklist of nineteen
-          boxes. The rig-ready one is the reason gen and mozg-spine exist in the
-          same product: it draws the win and blink faces the rigger collapses
-          into one slot, and generating those later never matches, because the
-          model has no memory between calls. */}
+      {/* What is being made, from the one list in lib/genproject.ts — so this
+          cannot offer a kind the generator has no set for. "Something else" is
+          the honest entry: an empty project rather than a category with no
+          rules behind it. */}
       <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
-        <span className="eyebrow">{t("What the set holds")}</span>
-        {[
-          {
-            id: "full",
-            title: t("A full game"),
-            note: t("11 symbols, background, lobby tile — 13 assets"),
-          },
-          {
-            id: "rig-ready",
-            title: t("A full game, rig-ready"),
-            note: t("the same, plus a reel frame and the win and blink faces mozg-spine animates — 19 assets"),
-          },
-        ].map((o, i) => (
+        <span className="eyebrow">{t("What are you making")}</span>
+        {KINDS.map((k, i) => (
           <label
-            key={o.id}
+            key={k.set}
             className="panel"
             style={{ padding: ".7rem .85rem", display: "flex", gap: ".6rem", alignItems: "flex-start", cursor: "pointer" }}
           >
-            <input type="radio" name="set" value={o.id} defaultChecked={i === 0} style={{ marginTop: ".25rem" }} />
+            <input type="radio" name="set" value={k.set} defaultChecked={i === 0} style={{ marginTop: ".25rem" }} />
             <span style={{ minWidth: 0 }}>
-              <strong style={{ fontSize: ".9375rem" }}>{o.title}</strong>
+              <strong style={{ fontSize: ".9375rem" }}>{t(k.title)}</strong>
               <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
-                {o.note}
+                {t(k.note)}
               </span>
             </span>
           </label>

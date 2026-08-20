@@ -12,6 +12,7 @@ import {
   setItemSpec,
   removeItem,
   runProject,
+  KINDS,
 } from "@/lib/genproject";
 
 /**
@@ -33,15 +34,20 @@ export async function newProject(_prev: unknown, formData: FormData) {
   }
 
   try {
+    const set = String(formData.get("set") ?? "full");
     const project = await createProject(user.id, {
       title: String(formData.get("title") ?? ""),
       style: String(formData.get("style") ?? ""),
       palette: String(formData.get("palette") ?? ""),
+      // The set is what was picked; the kind is what that set is for. Read from
+      // the same list the radios were built from rather than trusting a hidden
+      // field, which is a value the browser can send anything in.
+      kind: KINDS.find((k) => k.set === set)?.id ?? "custom",
     });
 
     // Proposed rather than imposed: every row is editable and removable on the
     // next screen, before anything is bought.
-    await addItems(project.id, proposedItems(String(formData.get("set") ?? "full")));
+    await addItems(project.id, proposedItems(set));
 
     revalidatePath("/gen/panel");
     redirect(`/gen/p/${project.id}`);

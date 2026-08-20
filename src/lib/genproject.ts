@@ -23,11 +23,47 @@ import type { Brain } from "@/db/types";
  * not a reason to rewrite the one part that already works.
  */
 
+/**
+ * What a project is for.
+ *
+ * Tied to the sets in lib/slotgen.ts rather than invented separately: a kind
+ * whose set does not exist is a category with nothing behind it, and this
+ * service is selling exactly the knowledge of what a set needs.
+ */
+export type ProjectKind = "slot" | "tiles" | "custom" | "other";
+
+export const KINDS: { id: ProjectKind; set: string; title: string; note: string }[] = [
+  {
+    id: "slot",
+    set: "full",
+    title: "A slot game",
+    note: "the value ladder — 11 symbols, a background and a lobby tile",
+  },
+  {
+    id: "slot",
+    set: "rig-ready",
+    title: "A slot game, rig-ready",
+    note: "the same plus a reel frame and the win and blink faces mozg-spine animates",
+  },
+  {
+    id: "tiles",
+    set: "tiles",
+    title: "A storefront listing",
+    note: "one cut-out hero and the two backgrounds it sits on — portrait and landscape, any game",
+  },
+  {
+    id: "custom",
+    set: "none",
+    title: "Something else",
+    note: "an empty project: name your own assets and pick what each one is",
+  },
+];
+
 export interface GenProject {
   id: string;
   owner_id: string;
   title: string;
-  kind: "slot" | "other";
+  kind: ProjectKind;
   style: string | null;
   palette: string | null;
   style_brain_id: string | null;
@@ -58,7 +94,7 @@ function clean(value: unknown, max: number): string {
 
 export async function createProject(
   ownerId: string,
-  opts: { title: string; kind?: "slot" | "other"; style?: string; palette?: string; styleBrainId?: string | null },
+  opts: { title: string; kind?: ProjectKind; style?: string; palette?: string; styleBrainId?: string | null },
 ): Promise<GenProject> {
   const title = clean(opts.title, 80);
   if (!title) throw new Error("a project needs a name — the game's, usually");
@@ -94,6 +130,9 @@ export function proposedItems(
   // Straight from the sets the service already knows how to price and prompt.
   // Reading them here rather than keeping a second list is what stops the
   // interview proposing a set the generator has never heard of.
+  // "none" is a real answer: a custom project starts empty and is filled by
+  // hand, which is the only honest offer for work this service has no rules for.
+  if (set === "none") return [];
   const specs = (SETS[set] ?? SETS.full)();
   return specs.map((s, i) => ({
     role: s.role as AssetRole,

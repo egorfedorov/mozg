@@ -14,8 +14,8 @@ import { scanInjection } from "@/lib/scan";
  * tariff.
  */
 
-export const GENERATION_PRICE_CENTS = 25;
-export const ARTIST_CENTS = 10;
+export const GENERATION_PRICE_CENTS = 100;
+export const ARTIST_CENTS = 40;
 
 export type StartResult =
   | { ok: true; id: string }

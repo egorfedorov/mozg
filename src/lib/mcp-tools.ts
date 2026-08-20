@@ -306,11 +306,14 @@ export const TOOLS: ToolDef[] = [
         palette: { type: "string", description: "Colours the whole set shares. Hexes welcome." },
         set: {
           type: "string",
-          enum: ["full", "rig-ready", "symbols", "scene"],
+          enum: ["full", "rig-ready", "tiles", "symbols", "scene", "none"],
           description:
             "Which set to plan. `rig-ready` adds a reel frame and the win and " +
             "blink faces mozg-spine animates — draw those with the set or they " +
-            "will not match it later. Default `full`.",
+            "will not match it later. `tiles` is a storefront listing for any " +
+            "game: one cut-out hero and the portrait and landscape backgrounds " +
+            "it sits on, drawn to the platform's own layer spec. `none` starts " +
+            "an empty project you fill with gen_plan. Default `full`.",
         },
       },
       additionalProperties: false,

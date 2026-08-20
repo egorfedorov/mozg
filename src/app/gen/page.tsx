@@ -279,7 +279,9 @@ export default async function GenPage() {
           <div style={{ marginTop: "1.5rem", maxWidth: "52rem" }}>
             <p className="eyebrow">{t("Packs — top up once, spend it as you go")}</p>
             <div className="rows" style={{ marginTop: ".6rem" }}>
-              {[1000, 2500, 5000, 10000].map((cents) => (
+              {/* Sized to the new prices: a pack that buys less than one game is
+                a pack nobody can act on. */}
+            {[2500, 7500, 20000, 50000].map((cents) => (
                 <div className="row" key={cents}>
                   <span style={{ minWidth: 0 }}>
                     <strong className="mono">{formatCents(cents)}</strong>

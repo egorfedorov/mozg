@@ -13,7 +13,16 @@
 
 /** Roles differ in what a correct picture even looks like, so each carries its
  *  own framing, aspect and refusals rather than one prompt with branches. */
-export type AssetRole = "symbol" | "background" | "tile" | "frame";
+export type AssetRole =
+  | "symbol"
+  | "background"
+  | "tile"
+  | "frame"
+  // The storefront tile as the layers a storefront actually composites, rather
+  // than the flattened picture it cannot use. See the presets below.
+  | "tile-fg"
+  | "tile-bg"
+  | "tile-wide";
 
 interface RolePreset {
   /** Shown to the studio when it picks what to generate. */
@@ -82,6 +91,62 @@ export const ROLES: Record<AssetRole, RolePreset> = {
       "Hero composition: the theme's most recognisable subject, large, unmistakable at thumbnail size.",
       "Leave the lower third calmer — the storefront overlays a gradient and the title there.",
       "No baked-in text, logo, wordmark, number or multiplier anywhere in the image.",
+    ],
+  },
+  // ─── storefront tiles, as two layers ──────────────────────────────────────
+  //
+  // Stake's tile builder composes the layers itself: background, foreground,
+  // gradient, title. So a single flattened picture is the one thing it cannot
+  // use — the gradient lands on top of art that already made room for one, and
+  // the title lands on a title that is painted in.
+  //
+  // Hence a foreground and a background as separate assets. One foreground
+  // serves both shapes, which is also what the brand guide asks for: continuity
+  // between portrait and landscape comes from "bright backgrounds and a
+  // singular foreground focus", so the hero is drawn once and placed twice.
+  "tile-fg": {
+    summary: "Tile foreground — the hero, cut out",
+    aspect: "1:1",
+    cutout: true,
+    rules: (key) => [
+      `Flat ${key} background, filling the whole frame behind the subject.`,
+      `No part of the artwork may use ${key} or any colour close to it — not in a glow, a rim light or a highlight.`,
+      "One subject and nothing else: the game's single most recognisable character or object, facing the viewer, full or half body.",
+      // The guide's own numbers. Half the width is what stops a hero reading as
+      // a sticker on a landscape crop, and a bottom edge that trails off is
+      // what lets the storefront anchor it without a visible cut line.
+      "Draw it large and centred, with its lower edge running off the bottom of the frame rather than finishing inside it — it will be anchored to the bottom of a wide tile and must not float.",
+      "No shadow on the ground, no plinth, no frame, no badge, no ribbon and no backing shape.",
+      "No lettering of any kind: no title, no wordmark, no multiplier, no number. The storefront sets the title as live text over this.",
+    ],
+  },
+  "tile-bg": {
+    summary: "Tile background — portrait 3:4",
+    aspect: "3:4",
+    cutout: false,
+    rules: () => [
+      "A place, not a scene: the game's world with nothing in the middle of it. The hero is a separate layer and will be composited on top.",
+      // Every one of these is a rule from the brand guide, in the order it
+      // gives them: crop to the bright part, lift the light, keep it simple
+      // enough for a foreground to survive on top of it.
+      "Bright and vibrant. Choose the sunlit, open part of this world rather than its busiest or darkest corner — a foreground character has to stay legible against it.",
+      "Keep the middle simple and uncluttered. Detail belongs at the edges.",
+      "No character, no creature and no single dominant object anywhere in it.",
+      "No baked-in text, logo, wordmark, number or multiplier.",
+      "No vignette and no gradient of your own — the storefront adds its own gradient and title, and a second one underneath reads as dirt.",
+    ],
+  },
+  "tile-wide": {
+    summary: "Tile background — landscape 164×92",
+    aspect: "16:9",
+    cutout: false,
+    rules: () => [
+      "The same world as the portrait background, in a wide shot — the two are one game seen twice, not two ideas.",
+      "A place with an empty middle: the hero is composited on top and needs room roughly half the width of the frame.",
+      "Bright, open and evenly lit, with the busy detail pushed to the left and right edges.",
+      "Sharp throughout. Do not blur it — blur is only for rescuing contrast, and a background drawn simple enough does not need rescuing.",
+      "No bottom gradient, no vignette, no darkening toward any edge. The wide tile carries no gradient at all.",
+      "No character, no creature, no dominant object, and no text, logo or number anywhere.",
     ],
   },
   frame: {
@@ -309,6 +374,13 @@ export const SETS: Record<string, () => AssetSpec[]> = {
       label: `${v.base}_${v.state}`,
       brief: v.brief,
     })),
+  ],
+  // What a storefront listing needs, and nothing else: one hero and the two
+  // backgrounds it is placed on.
+  tiles: () => [
+    { role: "tile-fg" as const, label: "tile-fg", brief: "the game's hero, cut out for the storefront tile" },
+    { role: "tile-bg" as const, label: "tile-bg", brief: "the portrait tile background" },
+    { role: "tile-wide" as const, label: "tile-wide", brief: "the landscape tile background" },
   ],
   symbols: () =>
     SYMBOL_LADDER.map((s) => ({ role: "symbol" as const, label: s.label, brief: s.brief })),
