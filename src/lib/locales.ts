@@ -97,7 +97,32 @@ const LOCALE_MAX_AGE = 60 * 60 * 24 * 365;
  * out loud; storing it is doing what they said, not tracking them.
  */
 export function writeLocale(code: string): void {
+  // Domain-scoped to the registrable domain, not to the host it was chosen on.
+  //
+  // Without it the cookie is host-only: a reader who picked Russian on mozg.sh
+  // arrived at gen.mozg.sh in English, and at learn. and gallery. too. Worse
+  // than plain English, because the pages are half-translated — the strings
+  // that happen to be cached render in one language and the rest in another.
+  //
+  // Only when we are actually on mozg.sh. `Domain=.localhost` is rejected
+  // outright by browsers, and naming a domain the page is not on would have
+  // the cookie silently dropped in development, which is the kind of bug that
+  // only shows up after a deploy.
+  const onMozg = location.hostname.endsWith("mozg.sh");
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+
+  // Clear the host-only cookie first. Browsers key cookies by (name, domain,
+  // path), so the old one does not get overwritten by the domain-scoped one —
+  // it sits beside it, both are sent, and the server reads whichever comes
+  // first. That is the same two-cookies-one-name trap the session cookie fell
+  // into (see middleware.ts), and it presents as a language choice that will
+  // not stick.
+  if (onMozg) {
+    document.cookie = `${LOCALE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+  }
+
   document.cookie =
     `${LOCALE_COOKIE}=${code}; Path=/; Max-Age=${LOCALE_MAX_AGE}; SameSite=Lax` +
-    (location.protocol === "https:" ? "; Secure" : "");
+    (onMozg ? "; Domain=.mozg.sh" : "") +
+    secure;
 }
