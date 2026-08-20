@@ -3,7 +3,6 @@
 import { useT } from "@/lib/t-client";
 import { useActionState, useState } from "react";
 import { newProject } from "@/app/gen/project-actions";
-import { KINDS } from "@/lib/genproject";
 
 /**
  * The interview, opened rather than always sitting there.
@@ -17,7 +16,20 @@ import { KINDS } from "@/lib/genproject";
  * what each one is — is decided on the next screen where it can be seen as a
  * list, and where it is still free to change.
  */
-export default function ProjectStart({ hasProjects }: { hasProjects: boolean }) {
+/**
+ * `kinds` arrives as a prop rather than an import, and that is load-bearing
+ * rather than taste: lib/genproject reaches assetpacks, which reaches the
+ * cutout, which is sharp — a native module with no business in a browser
+ * bundle. The build refuses it, correctly. Pure data crossing the boundary as
+ * a prop is the cheap way past that; a second module for one array is not.
+ */
+export default function ProjectStart({
+  hasProjects,
+  kinds,
+}: {
+  hasProjects: boolean;
+  kinds: { id: string; set: string; title: string; note: string }[];
+}) {
   const t = useT();
 
   const [open, setOpen] = useState(!hasProjects);
@@ -71,7 +83,7 @@ export default function ProjectStart({ hasProjects }: { hasProjects: boolean }) 
           rules behind it. */}
       <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
         <span className="eyebrow">{t("What are you making")}</span>
-        {KINDS.map((k, i) => (
+        {kinds.map((k, i) => (
           <label
             key={k.set}
             className="panel"

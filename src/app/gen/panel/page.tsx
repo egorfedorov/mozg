@@ -9,7 +9,7 @@ import { currentUser } from "@/lib/session";
 import { packsOf } from "@/lib/assetpacks";
 import { prices, priceRows } from "@/lib/genprice";
 import { SETS } from "@/lib/slotgen";
-import { listProjects } from "@/lib/genproject";
+import { listProjects, KINDS } from "@/lib/genproject";
 import ProjectStart from "./ProjectStart";
 
 export const dynamic = "force-dynamic";
@@ -141,7 +141,7 @@ export default async function GenPanelPage() {
             </div>
           )}
 
-          <ProjectStart hasProjects={projects.length > 0} />
+          <ProjectStart hasProjects={projects.length > 0} kinds={KINDS} />
         </section>
 
         <section style={{ marginBottom: "2.5rem" }}>
