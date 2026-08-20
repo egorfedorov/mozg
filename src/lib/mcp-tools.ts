@@ -284,6 +284,76 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: "gen_project",
+    description:
+      "Plan a set of game art on gen.mozg.sh: create a project, or read one " +
+      "back. Free — a project is a folder and a plan, and nothing is charged " +
+      "until gen_run. Call it with a title and style to start one, with an id " +
+      "to read it, or with neither to list what the studio already has. " +
+      "Creating one fills it with the usual slot set (the value ladder, a " +
+      "background, a reel frame and a lobby tile), which you then edit.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Read this project. Omit to create or list." },
+        title: { type: "string", description: "The game's name. With `style`, creates a project." },
+        style: {
+          type: "string",
+          description:
+            "The world, in a sentence or two — the shared half of every prompt. " +
+            "Assets with no description of their own are drawn from this alone.",
+        },
+        palette: { type: "string", description: "Colours the whole set shares. Hexes welcome." },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "gen_plan",
+    description:
+      "Change what a project's set contains, before any of it is bought. " +
+      "Describe one asset in particular, clear that description so it is drawn " +
+      "from the game's world instead, or drop an asset from the set. Still " +
+      "free. Use it when the user says what a specific symbol should be.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        project: { type: "string", description: "Project id, from gen_project." },
+        label: { type: "string", description: "Which asset: premium, wild, low-1, bg…" },
+        spec: {
+          type: "string",
+          description:
+            "What this asset is. Empty string clears it — which is a real " +
+            "choice, not a blank: the game's world becomes the whole instruction.",
+        },
+        remove: { type: "boolean", description: "Drop this asset from the set instead." },
+      },
+      required: ["project", "label"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "gen_run",
+    description:
+      "Generate the planned assets of a project. THIS SPENDS THE USER'S " +
+      "BALANCE — say what it will cost and get a yes before calling it. Pass " +
+      "`labels` to run only some of them, or omit it for everything still " +
+      "planned. Failed assets refund themselves.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        project: { type: "string", description: "Project id." },
+        labels: {
+          type: "array",
+          items: { type: "string" },
+          description: "Only these assets. Omit to run every planned one.",
+        },
+      },
+      required: ["project"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "library_remove",
     description:
       "Take a brain off your shelf. The brain itself is untouched — this only " +

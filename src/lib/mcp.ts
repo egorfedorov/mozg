@@ -96,6 +96,12 @@ export async function callTool(
       return libraryAdd(args, owner);
     case "library_remove":
       return libraryRemove(args, owner);
+    case "gen_project":
+      return genProject(args, owner);
+    case "gen_plan":
+      return genPlan(args, owner);
+    case "gen_run":
+      return genRun(args, owner);
     default:
       return { text: `Unknown tool: ${name}`, isError: true };
   }
@@ -1893,5 +1899,160 @@ async function brainRefresh(
       `https://mozg.sh/b/${handle} in a few minutes rather than waiting here.`,
     brainId: resolved.brain.id,
     ownerId: resolved.brain.owner_id,
+  };
+}
+
+
+// ─── gen.mozg.sh over MCP ───────────────────────────────────────────────────
+//
+// The studio's art pipeline, from the same terminal the brains are read in.
+// The web cabinet and these tools are the same three verbs against the same
+// tables — plan for free, edit for free, pay once — because a CLI that could
+// only do half of it would send people back to the browser at the one moment
+// they are deepest in their editor.
+
+function money(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+async function genProject(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const { createProject, proposedItems, addItems, readProject, listProjects, syncItems } =
+    await import("@/lib/genproject");
+  const { prices, priceOf } = await import("@/lib/genprice");
+
+  const id = String(args.id ?? "").trim();
+  const title = String(args.title ?? "").trim();
+
+  if (id) {
+    await syncItems(id);
+    const read = await readProject(id, owner.userId);
+    if (!read) return { text: "No project with that id on this account.", isError: true };
+    const table = await prices();
+
+    const lines = read.items.map((i) => {
+      const cost = i.status === "planned" ? ` · ${money(priceOf(table, i.role))}` : "";
+      return (
+        `  ${i.label} (${i.role}) — ${i.status}${cost}\n` +
+        `      ${i.spec ?? "drawn from the game's world"}`
+      );
+    });
+    const planned = read.items.filter((x) => x.status === "planned");
+    const total = planned.reduce((n, x) => n + priceOf(table, x.role), 0);
+
+    return {
+      text:
+        `${read.project.title} — ${read.project.id}\n` +
+        `World: ${read.project.style ?? "not described yet"}\n` +
+        (read.project.palette ? `Palette: ${read.project.palette}\n` : "") +
+        `\n${lines.join("\n")}\n\n` +
+        `${planned.length} planned, ${money(total)} to generate them. ` +
+        `Change one with gen_plan; generate with gen_run — that is the call that spends money.`,
+    };
+  }
+
+  if (title) {
+    const style = String(args.style ?? "").trim();
+    if (style.length < 10) {
+      return {
+        text: "Describe the game's world too — a sentence or two. It is the shared half of every prompt, and the assets you do not describe individually are drawn from it alone.",
+        isError: true,
+      };
+    }
+    const project = await createProject(owner.userId, {
+      title,
+      style,
+      palette: String(args.palette ?? "").trim() || undefined,
+    });
+    const added = await addItems(project.id, proposedItems("slot"));
+    return {
+      text:
+        `Created ${project.title} — ${project.id}\n\n` +
+        `Planned ${added.length} assets: ${added.map((i) => i.label).join(", ")}.\n` +
+        "Nothing is charged yet. Read it with gen_project {\"id\": \"…\"}, change any " +
+        "asset with gen_plan, and generate with gen_run.",
+    };
+  }
+
+  const mine = await listProjects(owner.userId, 20);
+  if (!mine.length) {
+    return {
+      text:
+        "No projects yet. Start one with gen_project {\"title\": \"…\", \"style\": \"…\"} — " +
+        "the title is the game, the style is its world.",
+    };
+  }
+  return {
+    text:
+      `${mine.length} project(s):\n` +
+      mine
+        .map((p) => `  ${p.title} — ${p.id}\n      ${p.planned} planned, ${p.done} generated`)
+        .join("\n"),
+  };
+}
+
+async function genPlan(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const { readProject, setItemSpec, removeItem } = await import("@/lib/genproject");
+  const project = String(args.project ?? "");
+  const label = String(args.label ?? "");
+
+  // Ownership is checked by reading the project as this user, not by trusting
+  // the id: these tools take an id straight from an agent.
+  if (!(await readProject(project, owner.userId))) {
+    return { text: "No project with that id on this account.", isError: true };
+  }
+
+  if (args.remove === true) {
+    const gone = await removeItem(project, label);
+    return gone
+      ? { text: `Removed ${label} from the set. It was never charged for.` }
+      : { text: `Nothing planned called ${label} — already generated, or not in the set.`, isError: true };
+  }
+
+  const raw = args.spec === undefined ? "" : String(args.spec);
+  const ok = await setItemSpec(project, label, raw.trim() || null);
+  if (!ok) {
+    return { text: `Nothing planned called ${label} — already generated, or not in the set.`, isError: true };
+  }
+  return {
+    text: raw.trim()
+      ? `${label}: ${raw.trim()}`
+      : `${label} cleared — it will be drawn from the game's world alone, which is usually the right answer.`,
+  };
+}
+
+async function genRun(
+  args: Record<string, unknown>,
+  owner: TokenOwner,
+): Promise<ToolOutcome> {
+  const { imageGenReady } = await import("@/lib/imagegen");
+  if (!imageGenReady()) {
+    return { text: "Generation is not switched on for this deployment.", isError: true };
+  }
+
+  const { runProject } = await import("@/lib/genproject");
+  const { enqueueGeneration } = await import("@/worker/queue");
+
+  const project = String(args.project ?? "");
+  const labels = Array.isArray(args.labels)
+    ? args.labels.map(String).filter(Boolean)
+    : undefined;
+
+  const result = await runProject(project, owner.userId, labels);
+  if (!result.ok) return { text: result.reason, isError: true };
+
+  // After the debit commits, same order the web path uses.
+  for (const id of result.ids) await enqueueGeneration(id);
+
+  return {
+    text:
+      `Started ${result.ids.length} asset(s). They render in the background — ` +
+      `read the project again in a minute with gen_project {"id": "${project}"} to see them land, ` +
+      `or open https://gen.mozg.sh/p/${project}. A failed asset refunds itself.`,
   };
 }

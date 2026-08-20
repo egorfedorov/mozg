@@ -66,7 +66,7 @@ export default async function ConnectPage() {
 export MOZG_TOKEN=mzg_...`}
           </pre>
           <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>
-            {markup(t("It brings the MCP connection and seven commands: <0>/mozg:brains</0> for the map, <1>/mozg:add</1> to shelve a catalogue brain, <2>/mozg:sync</2> to write your shelf into the project so every session starts knowing it, <3>/mozg:update</3> to re-read a brain against its sources, and <4>/mozg:train</4>, <5>/mozg:teach</5>, <6>/mozg:learn</6> for teaching. Make the token below — the button fills it into the command."), [
+            {markup(t("It brings the MCP connection and eight commands: <0>/mozg:brains</0> for the map, <1>/mozg:add</1> to shelve a catalogue brain, <2>/mozg:sync</2> to write your shelf into the project so every session starts knowing it, <3>/mozg:update</3> to re-read a brain against its sources, and <4>/mozg:train</4>, <5>/mozg:teach</5>, <6>/mozg:learn</6> for teaching, and <7>/mozg:gen</7> to plan and generate a game's art. Make the token below — the button fills it into the command."), [
             <code className="mono" key="s0" />,
             <code className="mono" key="s1" />,
             <code className="mono" key="s2" />,
@@ -74,6 +74,7 @@ export MOZG_TOKEN=mzg_...`}
             <code className="mono" key="s4" />,
             <code className="mono" key="s5" />,
             <code className="mono" key="s6" />,
+            <code className="mono" key="s7" />,
           ])}</p>
         </section>
 
