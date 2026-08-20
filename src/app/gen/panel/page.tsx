@@ -4,11 +4,13 @@ import { one } from "@/db";
 import TopBar from "@/components/TopBar";
 import SiteFooter from "@/components/SiteFooter";
 import { translator } from "@/lib/t";
-import { markup } from "@/lib/markup";
+import { markup, fill } from "@/lib/markup";
 import { currentUser } from "@/lib/session";
 import { packsOf } from "@/lib/assetpacks";
 import { prices, priceRows } from "@/lib/genprice";
 import { SETS } from "@/lib/slotgen";
+import { listProjects } from "@/lib/genproject";
+import ProjectStart from "./ProjectStart";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Panel — gen" };
@@ -31,7 +33,7 @@ export default async function GenPanelPage() {
   const user = await currentUser();
   if (!user) redirect("/sign-in?next=/gen/panel");
 
-  const [packs, table, totals] = await Promise.all([
+  const [packs, table, totals, projects] = await Promise.all([
     packsOf(user.id, 50),
     prices(),
     one<{ balance_cents: number; assets: number; spent_cents: number; packs: number }>(
@@ -46,6 +48,7 @@ export default async function GenPanelPage() {
            where p.owner_id = $1 and g.status = 'done') as spent_cents`,
       [user.id],
     ),
+    listProjects(user.id),
   ]);
 
   const setCost = (id: string) => SETS[id]().reduce((n, s) => n + (table[s.role] ?? 0), 0);
@@ -108,6 +111,37 @@ export default async function GenPanelPage() {
               {t("failed assets refund themselves")}
             </span>
           </div>
+        </section>
+
+        {/* Projects first. The old panel opened with prices and a set-picker,
+            which answers "what does it cost" to somebody who came to ask "where
+            is my game". Work you already have is the reason you are here. */}
+        <section style={{ marginBottom: "2.5rem" }}>
+          <div className="section-head">
+            <h2 className="h2">{t("Your games")}</h2>
+            <span className="eyebrow">{t("a folder each · plan free, pay to generate")}</span>
+          </div>
+
+          {projects.length > 0 && (
+            <div className="rows" style={{ marginBottom: "1rem" }}>
+              {projects.map((p) => (
+                <Link className="row" key={p.id} href={`/gen/p/${p.id}`}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong>{p.title}</strong>
+                    <span className="row-sub">
+                      {p.style ?? t("no world described yet")}
+                    </span>
+                    <span className="row-meta">
+                      {fill(t("<0/> planned · <1/> generated"), [p.planned, p.done])}
+                    </span>
+                  </span>
+                  <span className="row-side">→</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <ProjectStart hasProjects={projects.length > 0} />
         </section>
 
         <section style={{ marginBottom: "2.5rem" }}>

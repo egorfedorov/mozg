@@ -147,6 +147,16 @@ export function middleware(req: NextRequest) {
       return NextResponse.rewrite(url);
     }
 
+    // A project's own room: gen.mozg.sh/p/<id> serves what /gen/p/<id> holds.
+    // Its own prefix rather than a bare uuid, because a pack already claimed
+    // that shape below and the two are different objects — a project is the
+    // folder, a pack is one run inside it.
+    if (/^\/p\/[0-9a-f-]{36}$/i.test(pathname)) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/gen${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
     // A pack's own room: gen.mozg.sh/<id> serves what /gen/<id> holds.
     if (/^\/[0-9a-f-]{36}$/i.test(pathname)) {
       const url = req.nextUrl.clone();

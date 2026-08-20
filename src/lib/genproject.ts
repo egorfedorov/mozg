@@ -1,5 +1,6 @@
 import { query, maybeOne } from "@/db";
 import { ROLES, SYMBOL_LADDER, type AssetRole } from "@/lib/slotgen";
+import type { Brain } from "@/db/types";
 
 /**
  * A project: the folder a studio keeps one game's art in, and the plan inside
@@ -189,13 +190,14 @@ export async function listProjects(ownerId: string, limit = 30): Promise<
 }
 
 /**
- * What one asset is actually asked for.
+ * What one asset is asked for, as a person reads it.
  *
- * The project's style is the shared half of every prompt and the item's spec is
- * the rest — so leaving a spec empty is a real choice ("draw it from the world
- * you already described"), not an unfinished field. Assembled here rather than
- * at each call site so the web wizard and the MCP tool cannot drift into asking
- * for two different pictures from the same row.
+ * A preview, and only that. The prompt that actually reaches the model is
+ * composed by assetpacks.startPack, which wraps this in the technical rules
+ * for the role — chroma key, margins, what may not touch the background — and
+ * those rules are the difference between a symbol and a picture. Two composers
+ * would be two sources of truth; this one exists so the cabinet can show a
+ * studio what it is about to buy.
  */
 export function promptFor(project: GenProject, item: GenItem): string {
   return [
@@ -205,4 +207,112 @@ export function promptFor(project: GenProject, item: GenItem): string {
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+
+/**
+ * Generate the planned assets of a project.
+ *
+ * One run is one pack. That is not a compromise to reuse code — it is what a
+ * run is: a batch a studio decided on and paid for at a moment in time. The
+ * project is the folder those batches accumulate in, so redoing the premium
+ * next week is a second pack in the same project rather than an edit to a
+ * receipt.
+ *
+ * Every rule about money therefore stays where it already was. startPack
+ * debits inside the transaction, refuses an unaffordable set before creating
+ * anything, picks the anchor the others are drawn against, pays the artist and
+ * records what each call cost us. Nothing here re-implements any of it.
+ */
+export async function runProject(
+  projectId: string,
+  ownerId: string,
+  labels?: string[],
+): Promise<{ ok: true; packId: string; ids: string[] } | { ok: false; reason: string }> {
+  const read = await readProject(projectId, ownerId);
+  if (!read) return { ok: false, reason: "No such project." };
+  const { project } = read;
+
+  const wanted = labels?.map((l) => l.toLowerCase());
+  const planned = read.items.filter(
+    (i) => i.status === "planned" && (!wanted || wanted.includes(i.label.toLowerCase())),
+  );
+  if (!planned.length) {
+    return {
+      ok: false,
+      reason: labels?.length
+        ? "Nothing planned under those labels — already generated, or never added."
+        : "Everything in this project has been generated. Add an asset, or re-plan one.",
+    };
+  }
+  if (!project.style || project.style.length < 10) {
+    return { ok: false, reason: "Describe the game first — the style is the shared half of every prompt." };
+  }
+
+  const { startPack } = await import("@/lib/assetpacks");
+
+  const style = project.style_brain_id
+    ? await maybeOne<Brain>(`select * from brains where id = $1`, [project.style_brain_id])
+    : null;
+
+  const started = await startPack({
+    ownerId,
+    title: project.title,
+    brief: project.style,
+    palette: project.palette,
+    style,
+    // An item with no spec of its own is drawn from the project's style alone,
+    // which startPack already receives as the brief — so an empty string here
+    // is the correct instruction rather than a missing one.
+    specs: planned.map((i) => ({ role: i.role, label: i.label, brief: i.spec ?? "" })),
+  });
+  if (!started.ok) return { ok: false, reason: started.reason };
+
+  // Link each planned row to the generation that will fill it.
+  //
+  // Matched by label, read back from the pack, rather than by the order the
+  // specs went in. startPack returns the pack, not its rows, and an index that
+  // happens to line up today is a silent mis-attribution the first time that
+  // function reorders anything — which it already does, since it moves the
+  // anchor to the front.
+  const made = await query<{ id: string; label: string }>(
+    `select id, label from generations where pack_id = $1`,
+    [started.id],
+  );
+  const byLabel = new Map(made.map((g) => [g.label.toLowerCase(), g.id]));
+
+  for (const item of planned) {
+    const generationId = byLabel.get(item.label.toLowerCase());
+    if (!generationId) continue;
+    await query(
+      `update gen_items set status = 'generating', generation_id = $2 where id = $1`,
+      [item.id, generationId],
+    );
+  }
+  await query(`update gen_projects set updated_at = now() where id = $1`, [projectId]);
+
+  return { ok: true, packId: started.id, ids: made.map((g) => g.id) };
+}
+
+/**
+ * Bring a project's items in step with the generations behind them.
+ *
+ * The worker settles a generation; nothing tells the item. Rather than have the
+ * worker know about projects — a dependency pointing the wrong way — the item
+ * reads its own generation whenever the project is opened.
+ */
+export async function syncItems(projectId: string): Promise<void> {
+  await query(
+    `update gen_items i
+        set status = case g.status
+                       when 'done' then 'done'
+                       when 'failed' then 'failed'
+                       else i.status end
+       from generations g
+      where g.id = i.generation_id
+        and i.project_id = $1
+        and i.status = 'generating'
+        and g.status in ('done', 'failed')`,
+    [projectId],
+  );
 }
