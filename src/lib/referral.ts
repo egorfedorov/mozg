@@ -39,6 +39,27 @@ export const REFERRAL_DAYS = 30;
  */
 export const REFERRAL_COOKIE = "mozg_ref";
 
+/**
+ * Where a referral link puts the visitor down, as a path.
+ *
+ * Same-site paths only: an open redirect on a link designed to be shared
+ * widely is exactly how one becomes a phishing hop, and `//evil.com` is a
+ * path by the letter of `startsWith("/")`.
+ *
+ * A path rather than a URL because the redirect must be relative. Behind the
+ * proxy the request's own origin is the container's address, so an absolute
+ * form sends the visitor to localhost — on the one request the site serves
+ * that is guaranteed to have come from somewhere else.
+ *
+ * The ?ref= rides along so the first-touch reporting that already reads it
+ * (middleware.ts) learns the same thing from the same visit.
+ */
+export function referralTarget(to: string | null, handle: string | null): string {
+  const path = !to || !to.startsWith("/") || to.startsWith("//") ? "/" : to;
+  if (!handle) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}ref=${encodeURIComponent(handle)}`;
+}
+
 /** The link an affiliate shares. Short on purpose: it goes in a bio. */
 export function referralLink(handle: string): string {
   return `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/r/${handle}`;

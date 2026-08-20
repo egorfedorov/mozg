@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { maybeOne } from "@/db";
-import { REFERRAL_COOKIE, REFERRAL_DAYS, recordClick, today, visitorKey } from "@/lib/referral";
+import {
+  REFERRAL_COOKIE,
+  REFERRAL_DAYS,
+  recordClick,
+  referralTarget,
+  today,
+  visitorKey,
+} from "@/lib/referral";
 
 /**
  * A referral link: mozg.sh/r/{handle}
@@ -25,14 +32,6 @@ export const dynamic = "force-dynamic";
     that runs before this handler does. */
 const SOURCE_COOKIE = "mozg_src";
 
-/** Where the visitor is put down. Same-site paths only — an open redirect on
-    a link designed to be shared widely is exactly how one becomes a phishing
-    hop. */
-function landing(to: string | null): string {
-  if (!to || !to.startsWith("/") || to.startsWith("//")) return "/";
-  return to;
-}
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ handle: string }> },
@@ -45,13 +44,14 @@ export async function GET(
     [clean],
   );
 
-  const url = new URL(landing(req.nextUrl.searchParams.get("to")), req.nextUrl.origin);
-  // The existing first-touch reporting learns the same thing from the same
-  // visit — middleware.ts reads ?ref= into mozg_src — so nothing has to be
-  // taught twice about where an account came from.
-  if (referrer) url.searchParams.set("ref", clean);
+  // A relative Location, never one built from req.nextUrl. Behind the proxy
+  // nextUrl.origin is the container's own address, so the absolute form
+  // shipped `location: https://localhost:3300/` to every visitor who opened a
+  // referral link in production — the one request this site serves that is
+  // guaranteed to have arrived from somewhere else.
+  const target = referralTarget(req.nextUrl.searchParams.get("to"), referrer ? clean : null);
 
-  const res = NextResponse.redirect(url, 302);
+  const res = new NextResponse(null, { status: 302, headers: { location: target } });
   if (!referrer) return res;
 
   const day = today();
