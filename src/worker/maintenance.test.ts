@@ -77,3 +77,65 @@ test("a brain nobody asks waits for the interval; a brain somebody asks does not
   // age and no demand yet to earn, and it is the one that most needs a number.
   assert.match(seen, /b\.score_at is null\s+or b\.score_at < now/);
 });
+
+/**
+ * The refresh pass, and the thing that made it unaffordable: it was blind to
+ * demand while the catalogue grew past what its own promise could cover.
+ *
+ * Production, the day this changed: 13,357 URL sources, 11,208 of them in
+ * brains nobody had searched in a month, 6,953 due at once against a pass that
+ * checks 2,000 a day. A blind pass does not merely waste the fetches — it puts
+ * the pages somebody IS asking about behind five thousand nobody wants.
+ */
+
+test("refresh holds idle brains to a longer window and serves demand first", async () => {
+  const seen: string[] = [];
+  stubDb((text) => {
+    seen.push(text.replace(/\s+/g, " "));
+    return text.includes("count(*)") ? [{ n: 0 }] : [];
+  });
+
+  const { refreshUrlSources } = await import("./maintenance");
+  await refreshUrlSources();
+
+  const batch = seen.find((s) => s.includes("order by")) ?? "";
+
+  // Two windows, chosen per source by whether anyone is asking. Both present:
+  // an idle brain is refreshed rarely, never "not at all" — it still has to be
+  // able to earn its first search.
+  assert.match(batch, /case when asked\.root is not null/);
+  assert.match(batch, /then interval '3 days'/);
+  assert.match(batch, /else interval '21 days'/);
+
+  // Demand ahead of idleness in the queue. This is the half that stops a busy
+  // brain waiting behind an abandoned one when more is due than fits.
+  assert.match(batch, /order by \(asked\.root is not null\) desc/);
+
+  // Rolled up to the family: searching a parent searches its children, so a
+  // child of a busy parent is in demand even though no call carries its id.
+  // Without this, stake-engine's five handles would have looked idle while
+  // taking 4,486 searches between them.
+  assert.match(batch, /coalesce\(kb\.parent_id, kb\.id\)/);
+  assert.match(batch, /coalesce\(b\.parent_id, b\.id\)/);
+
+  // The backlog is counted under the same rule it is served under, or "due"
+  // reports a queue the pass is not actually working from.
+  const count = seen.find((s) => s.includes("count(*)")) ?? "";
+  assert.match(count, /case when asked\.root is not null/);
+});
+
+test("a named brain is refreshed whole, demand or not", async () => {
+  const seen: string[] = [];
+  stubDb((text) => {
+    seen.push(text.replace(/\s+/g, " "));
+    return text.includes("count(*)") ? [{ n: 0 }] : [];
+  });
+
+  const { refreshUrlSources } = await import("./maintenance");
+  await refreshUrlSources(400, "11111111-1111-1111-1111-111111111111");
+
+  const batch = seen.find((s) => s.includes("order by")) ?? "";
+  // Somebody asked for this one by name. The window is skipped entirely —
+  // "I checked the ones I felt like" is not an answer to "update my brain".
+  assert.match(batch, /\$1::uuid is not null or s\.checked_at is null/);
+});

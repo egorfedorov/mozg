@@ -25,6 +25,26 @@ import { growSearchGapChecks } from "@/worker/search-gaps";
 /** How long a page may go unchecked. */
 const RECHECK_AFTER = "3 days";
 
+/** What counts as somebody still asking. One search inside it is enough. */
+const ASKED_WINDOW = "30 days";
+
+/**
+ * The same promise, measured less often, where nobody is asking.
+ *
+ * The pass was demand-blind, and the catalogue had grown past the point where
+ * that was affordable: 11,208 of the 13,357 URL sources belong to brains
+ * nobody has searched in a month, and 5,581 of those were due at once. The
+ * batch is 500 four times a day, so the 1,372 pages somebody *is* asking about
+ * were queued behind five thousand nobody wants — a demand-blind pass does not
+ * merely waste the fetches, it makes the used brains the stale ones.
+ *
+ * Not "never", for the same reason examStaleBrains does not stop scoring them:
+ * a brain has to be able to earn its first search, and knowledge that silently
+ * stopped being re-read is worse than knowledge re-read rarely. Seven times
+ * the window, not the end of it.
+ */
+const UNASKED_RECHECK_AFTER = "21 days";
+
 /**
  * Pages per scheduled pass.
  *
@@ -92,23 +112,43 @@ export async function refreshUrlSources(
    */
   brainId?: string,
 ): Promise<RefreshReport> {
-  const where = `kind = 'url' and status = 'ready' and url is not null
-        and ($1::uuid is null or brain_id = $1::uuid)
+  // Demand, rolled up to the family. A search on a parent searches every child,
+  // so a child of a busy parent is in demand even though no call ever carried
+  // its own id — without the rollup this would have quietly slowed the refresh
+  // of stake-engine's children, which is 4,486 searches of demand wearing five
+  // handles.
+  const source = `from sources s
+       join brains b on b.id = s.brain_id
+       left join (
+         select distinct coalesce(kb.parent_id, kb.id) as root
+           from calls k join brains kb on kb.id = k.brain_id
+          where k.tool = 'brain_search'
+            and k.created_at > now() - interval '${ASKED_WINDOW}'
+       ) asked on asked.root = coalesce(b.parent_id, b.id)
+      where s.kind = 'url' and s.status = 'ready' and s.url is not null
+        and ($1::uuid is null or s.brain_id = $1::uuid)
+        -- A named brain ignores the window entirely, demand or not: somebody
+        -- asked, and "I checked the ones I felt like" is not an answer.
         and ($1::uuid is not null
-             or checked_at is null or checked_at < now() - interval '${RECHECK_AFTER}')`;
+             or s.checked_at is null
+             or s.checked_at < now() - (case when asked.root is not null
+                                             then interval '${RECHECK_AFTER}'
+                                             else interval '${UNASKED_RECHECK_AFTER}' end))`;
 
   // The backlog, before the cap is applied. Counted separately rather than
   // inferred from a full batch: "we checked 500" and "500 was all there was"
   // are the difference between a pass that is keeping up and one that is not.
   const [{ n: due }] = await query<{ n: number }>(
-    `select count(*)::int as n from sources where ${where}`,
+    `select count(*)::int as n ${source}`,
     [brainId ?? null],
   );
 
   const batch = await query<{ id: string; url: string; brain_id: string; content_hash: string | null }>(
-    `select id, url, brain_id, content_hash from sources
-      where ${where}
-      order by checked_at nulls first
+    `select s.id, s.url, s.brain_id, s.content_hash ${source}
+      -- Demand first. The window above decides what is due; this decides who
+      -- goes first when more is due than the batch can hold, and it is the
+      -- half that stops a busy brain waiting behind an idle one.
+      order by (asked.root is not null) desc, s.checked_at nulls first
       limit $2`,
     [brainId ?? null, limit],
   );
@@ -247,9 +287,6 @@ export async function refreshUrlSources(
  * stops meaning anything.
  */
 const UNASKED_INTERVAL = "7 days";
-
-/** What counts as somebody still asking. One search inside it is enough. */
-const ASKED_WINDOW = "30 days";
 
 /**
  * Re-sit the exam for brains that learned something since they were last
