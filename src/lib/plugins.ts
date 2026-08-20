@@ -36,6 +36,14 @@ export const PLUGINS: Record<string, string> = {
   // declared tool into a real install line — see brains.tools and 0087.
   "mozg-spine":
     "Rig a cut-up character into an animated Spine skeleton, pack atlases, export runtime json.",
+  // Google's chrome-devtools-mcp, wired with an isolated profile. The hands for
+  // mozg/pixijs-casino, whose whole subject is budgets nobody has measured.
+  "mozg-devtools":
+    "Measure a running game: performance traces, FPS, draw calls, console and network.",
+  // Wiring only — stakecli is a binary the reader installs themselves, so the
+  // brain carries a docs link beside this command rather than instead of it.
+  "mozg-stake":
+    "Upload math and front-end bundles to Stake Engine, check compliance, publish a release.",
 };
 
 export function isPublishedPlugin(name: string): boolean {

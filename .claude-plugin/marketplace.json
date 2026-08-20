@@ -14,6 +14,16 @@
       "source": "./plugin-spine",
       "name": "mozg-spine",
       "description": "Hands for the Spine 2D Animation brain: rig a cut-up character into an animated Spine skeleton, pack atlases, export runtime json. Your own Spine licence, or none at all."
+    },
+    {
+      "source": "./plugin-devtools",
+      "name": "mozg-devtools",
+      "description": "Hands for the PixiJS brain: measure a running game instead of guessing \u2014 traces, FPS, draw calls, console, network."
+    },
+    {
+      "source": "./plugin-stake",
+      "name": "mozg-stake",
+      "description": "Hands for the Stake Engine brain: upload bundles, run compliance checks, publish a release. Needs the stakecli binary."
     }
   ]
 }

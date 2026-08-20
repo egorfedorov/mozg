@@ -1,0 +1,8 @@
+{
+  "name": "mozg-stake",
+  "description": "Hands for the Stake Engine brain: upload math and front-end bundles, run compliance checks, publish a release. Needs the stakecli binary.",
+  "version": "0.1.0",
+  "author": { "name": "mozg", "url": "https://mozg.sh" },
+  "homepage": "https://mozg.sh/b/mozg/stake-engine",
+  "keywords": ["mcp", "stake-engine", "slots", "gamedev", "publishing"]
+}

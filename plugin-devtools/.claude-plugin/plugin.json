@@ -1,0 +1,8 @@
+{
+  "name": "mozg-devtools",
+  "description": "Hands for the PixiJS brain: measure a running game instead of guessing — performance traces, FPS, draw calls, console and network.",
+  "version": "0.1.0",
+  "author": { "name": "mozg", "url": "https://mozg.sh" },
+  "homepage": "https://mozg.sh/b/mozg/pixijs-casino",
+  "keywords": ["mcp", "performance", "profiling", "pixijs", "gamedev"]
+}
