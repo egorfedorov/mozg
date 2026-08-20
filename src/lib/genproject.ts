@@ -1,5 +1,5 @@
 import { query, maybeOne } from "@/db";
-import { ROLES, SYMBOL_LADDER, type AssetRole } from "@/lib/slotgen";
+import { ROLES, SETS, type AssetRole } from "@/lib/slotgen";
 import type { Brain } from "@/db/types";
 
 /**
@@ -88,23 +88,19 @@ export async function createProject(
  * inverts the paytable. A fresh list of labels would throw that away and ask
  * the studio to rediscover it.
  */
-export function proposedItems(kind: "slot" | "other" = "slot"): Omit<GenItem, "id" | "project_id" | "status" | "generation_id">[] {
-  if (kind !== "slot") return [];
-
-  const symbols = SYMBOL_LADDER.map((s, i) => ({
-    role: "symbol" as AssetRole,
+export function proposedItems(
+  set: string = "full",
+): Omit<GenItem, "id" | "project_id" | "status" | "generation_id">[] {
+  // Straight from the sets the service already knows how to price and prompt.
+  // Reading them here rather than keeping a second list is what stops the
+  // interview proposing a set the generator has never heard of.
+  const specs = (SETS[set] ?? SETS.full)();
+  return specs.map((s, i) => ({
+    role: s.role as AssetRole,
     label: s.label,
     spec: s.brief,
     sort: i,
   }));
-
-  const scene: { role: AssetRole; label: string; spec: string; sort: number }[] = [
-    { role: "background", label: "bg", spec: "the game's reel background", sort: 100 },
-    { role: "frame", label: "frame", spec: "the reel frame and UI panel", sort: 101 },
-    { role: "tile", label: "tile", spec: "lobby key art for the game", sort: 102 },
-  ];
-
-  return [...symbols, ...scene];
 }
 
 export async function addItems(

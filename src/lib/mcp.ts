@@ -1966,7 +1966,7 @@ async function genProject(
       style,
       palette: String(args.palette ?? "").trim() || undefined,
     });
-    const added = await addItems(project.id, proposedItems("slot"));
+    const added = await addItems(project.id, proposedItems(String(args.set ?? "full")));
     return {
       text:
         `Created ${project.title} — ${project.id}\n\n` +

@@ -104,6 +104,8 @@ export default async function GenPage() {
   const table = await prices();
   const fullSet = SETS.full();
   const fullCost = fullSet.reduce((n, s) => n + (table[s.role] ?? 0), 0);
+  const rigSet = SETS["rig-ready"]();
+  const rigCost = rigSet.reduce((n, s) => n + (table[s.role] ?? 0), 0);
   const symbolPrice = table.symbol ?? 0;
 
   const start = user ? "/gen/panel" : "/sign-in?next=/gen/panel";
@@ -218,36 +220,93 @@ export default async function GenPage() {
           </div>
         </section>
 
-        {/* ── price ────────────────────────────────────────────────────── */}
+        {/* ── what a game costs, and what a pack buys ──────────────────── */}
         <section style={{ marginTop: "clamp(3.5rem, 9vw, 5.5rem)" }}>
           <div className="section-head">
             <h2 className="h2">{t("What it costs")}</h2>
             <span className="eyebrow">{t("per asset · nothing monthly")}</span>
           </div>
+
           <div
             style={{
+              display: "grid",
+              gap: "1px",
+              background: "var(--rule)",
               border: "1.5px solid var(--ink)",
-              background: "var(--color-riso-yellow)",
-              boxShadow: "6px 6px 0 var(--ink)",
-              padding: "clamp(1.25rem, 4vw, 2rem)",
-              maxWidth: "48rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              maxWidth: "52rem",
             }}
           >
-            <p className="display" style={{ fontSize: "clamp(2rem, 6vw, 3rem)", margin: 0 }}>
-              {formatCents(fullCost)}
+            {[
+              {
+                title: t("A full game"),
+                cost: fullCost,
+                n: fullSet.length,
+                note: t("11 symbols, a background and a lobby tile, drawn as one world"),
+                loud: false,
+              },
+              {
+                title: t("A full game, rig-ready"),
+                cost: rigCost,
+                n: rigSet.length,
+                note: t("the same plus a reel frame and the win and blink faces — the set mozg-spine animates without redrawing anything"),
+                loud: true,
+              },
+            ].map((o) => (
+              <div
+                key={o.title}
+                style={{
+                  background: o.loud ? "var(--color-riso-yellow)" : "var(--paper-2)",
+                  padding: "1.25rem",
+                }}
+              >
+                <p className="eyebrow" style={{ margin: 0 }}>{o.title}</p>
+                <p className="display" style={{ fontSize: "clamp(1.8rem, 5vw, 2.6rem)", margin: ".3rem 0 .5rem" }}>
+                  {formatCents(o.cost)}
+                </p>
+                <p className="mono" style={{ fontSize: ".6875rem", color: o.loud ? "var(--ink)" : "var(--ink-3)", margin: "0 0 .6rem" }}>
+                  {fill(t("<0/> assets · <1/> each"), [o.n, formatCents(symbolPrice)])}
+                </p>
+                <p style={{ color: "var(--ink-2)", margin: 0, fontSize: ".9375rem" }}>{o.note}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* "Where do I buy packs" — you already can, and it is the balance a
+              brain is bought with. What was missing was anyone saying what a
+              given top-up actually buys, which is the only form of that
+              question anybody is really asking. */}
+          <div style={{ marginTop: "1.5rem", maxWidth: "52rem" }}>
+            <p className="eyebrow">{t("Packs — top up once, spend it as you go")}</p>
+            <div className="rows" style={{ marginTop: ".6rem" }}>
+              {[1000, 2500, 5000, 10000].map((cents) => (
+                <div className="row" key={cents}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong className="mono">{formatCents(cents)}</strong>
+                    <span className="row-sub">
+                      {fill(t("<0/> assets — about <1/> rig-ready games"), [
+                        Math.floor(cents / symbolPrice),
+                        Math.floor(cents / rigCost),
+                      ])}
+                    </span>
+                  </span>
+                  <span className="row-side mono" style={{ fontSize: ".75rem" }}>
+                    {fill(t("<0/> full games"), [Math.floor(cents / fullCost)])}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem" }}>
+              {t("It is the same mozg balance a brain is bought with — one wallet, no credits to convert, nothing expires and nothing renews. A failed asset refunds itself.")}
             </p>
-            <p style={{ margin: ".5rem 0 1rem", fontSize: "1.0625rem", maxWidth: "46ch" }}>
-              {fill(t("A full game — <0/> assets, drawn as one world. Individually <1/> each, and you only ever pay for what you actually generate."), [
-                fullSet.length,
-                formatCents(symbolPrice),
-              ])}
-            </p>
-            <p className="mono" style={{ fontSize: ".8125rem", margin: "0 0 1.25rem" }}>
-              {t("Paid from the same mozg balance a brain is bought with. Top it up once; there is no second wallet and nothing to cancel.")}
-            </p>
-            <Link className="btn" href={start}>
-              {user ? t("Open your games") : t("Start a game")}
-            </Link>
+            <div style={{ display: "flex", gap: ".6rem", marginTop: "1rem", flexWrap: "wrap" }}>
+              <Link className="btn" href={start}>
+                {user ? t("Open your games") : t("Start a game")}
+              </Link>
+              <a className="btn btn-ghost" href="https://mozg.sh/settings/topup">
+                {t("Top up the balance")}
+              </a>
+            </div>
           </div>
         </section>
 

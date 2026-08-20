@@ -304,6 +304,14 @@ export const TOOLS: ToolDef[] = [
             "Assets with no description of their own are drawn from this alone.",
         },
         palette: { type: "string", description: "Colours the whole set shares. Hexes welcome." },
+        set: {
+          type: "string",
+          enum: ["full", "rig-ready", "symbols", "scene"],
+          description:
+            "Which set to plan. `rig-ready` adds a reel frame and the win and " +
+            "blink faces mozg-spine animates — draw those with the set or they " +
+            "will not match it later. Default `full`.",
+        },
       },
       additionalProperties: false,
     },

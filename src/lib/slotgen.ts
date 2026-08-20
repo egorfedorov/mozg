@@ -249,8 +249,67 @@ export function defaultSpecs(): AssetSpec[] {
  * Here rather than next to the form because the price of a set has to be added
  * up on the server, and a server action file can only export functions.
  */
+/**
+ * The states a symbol needs before it can be animated.
+ *
+ * Not every symbol: a low-pay trinket sits still, and drawing it a win face
+ * would be spending money on a frame nobody plays. These four are the ones a
+ * slot actually reacts with — the mascot lives, the wild and scatter pop when
+ * they land, the premium celebrates the pay it just gave.
+ *
+ * The suffixes are not decoration. `<base>_win` and `<base>_blink` are exactly
+ * what the Spine rigger in mozg-spine detects as a head-state family: it
+ * collapses them into ONE slot and swaps the attachment inside the win and
+ * blink timelines. Generate them here and the set arrives rig-ready; generate
+ * them separately later and they will not match, because the model has no
+ * memory between calls.
+ */
+const STATES: { base: string; state: "win" | "blink"; brief: string }[] = [
+  {
+    base: "character",
+    state: "win",
+    brief:
+      "the same character, celebrating: the face open and delighted, eyes wide or crinkled, mouth open. Identical build, colours, outline and framing to the base character — only the expression changes",
+  },
+  {
+    base: "character",
+    state: "blink",
+    brief:
+      "the same character with the eyes closed, mid-blink. Everything else identical to the base character — this is one frame of the same drawing, not a new pose",
+  },
+  {
+    base: "wild",
+    state: "win",
+    brief:
+      "the same wild emblem at its brightest moment: the light in it lifted, the metal hotter, as if it has just landed. Same object, same silhouette, same framing — no lettering",
+  },
+  {
+    base: "scatter",
+    state: "win",
+    brief:
+      "the same scatter, triggered: radiating, the glow inside it lit rather than added around it. Same object and silhouette as the base scatter — no lettering",
+  },
+  {
+    base: "premium",
+    state: "win",
+    brief:
+      "the same premium object, catching the light at its richest — the gold hotter, the inlay brighter. Same object, same angle, same framing as the base premium",
+  },
+];
+
 export const SETS: Record<string, () => AssetSpec[]> = {
   full: () => defaultSpecs(),
+  // Everything in `full`, plus a reel frame and the state variants — the set a
+  // studio orders when the symbols are going to move rather than sit.
+  "rig-ready": () => [
+    ...defaultSpecs(),
+    { role: "frame" as const, label: "frame", brief: "the reel frame and UI panel" },
+    ...STATES.map((v) => ({
+      role: "symbol" as const,
+      label: `${v.base}_${v.state}`,
+      brief: v.brief,
+    })),
+  ],
   symbols: () =>
     SYMBOL_LADDER.map((s) => ({ role: "symbol" as const, label: s.label, brief: s.brief })),
   scene: () => [

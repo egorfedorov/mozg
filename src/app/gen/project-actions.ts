@@ -39,9 +39,9 @@ export async function newProject(_prev: unknown, formData: FormData) {
       palette: String(formData.get("palette") ?? ""),
     });
 
-    // The usual slot set, proposed rather than imposed: every row is editable
-    // and removable on the next screen, before anything is bought.
-    await addItems(project.id, proposedItems("slot"));
+    // Proposed rather than imposed: every row is editable and removable on the
+    // next screen, before anything is bought.
+    await addItems(project.id, proposedItems(String(formData.get("set") ?? "full")));
 
     revalidatePath("/gen/panel");
     redirect(`/gen/p/${project.id}`);

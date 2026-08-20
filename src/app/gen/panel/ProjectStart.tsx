@@ -64,6 +64,41 @@ export default function ProjectStart({ hasProjects }: { hasProjects: boolean }) 
         />
       </label>
 
+      {/* Which set, as two honest choices rather than a checklist of nineteen
+          boxes. The rig-ready one is the reason gen and mozg-spine exist in the
+          same product: it draws the win and blink faces the rigger collapses
+          into one slot, and generating those later never matches, because the
+          model has no memory between calls. */}
+      <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: ".5rem" }}>
+        <span className="eyebrow">{t("What the set holds")}</span>
+        {[
+          {
+            id: "full",
+            title: t("A full game"),
+            note: t("11 symbols, background, lobby tile — 13 assets"),
+          },
+          {
+            id: "rig-ready",
+            title: t("A full game, rig-ready"),
+            note: t("the same, plus a reel frame and the win and blink faces mozg-spine animates — 19 assets"),
+          },
+        ].map((o, i) => (
+          <label
+            key={o.id}
+            className="panel"
+            style={{ padding: ".7rem .85rem", display: "flex", gap: ".6rem", alignItems: "flex-start", cursor: "pointer" }}
+          >
+            <input type="radio" name="set" value={o.id} defaultChecked={i === 0} style={{ marginTop: ".25rem" }} />
+            <span style={{ minWidth: 0 }}>
+              <strong style={{ fontSize: ".9375rem" }}>{o.title}</strong>
+              <span className="mono" style={{ display: "block", fontSize: ".6875rem", color: "var(--ink-3)" }}>
+                {o.note}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
       <label style={{ display: "grid", gap: ".35rem" }}>
         <span className="eyebrow">{t("Palette — optional, and worth naming")}</span>
         <input
