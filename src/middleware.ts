@@ -40,6 +40,71 @@ function isInfrastructure(pathname: string): boolean {
  */
 const SOURCE_COOKIE = "mozg_src";
 
+/** lib/locales.ts owns this name; it is touched here only to clear a duplicate. */
+const LOCALE_COOKIE = "mozg_lang";
+
+/**
+ * Drop a leftover host-only language cookie when a domain-scoped one exists.
+ *
+ * The language cookie used to be written without a Domain, so it stayed on
+ * whichever host it was chosen on. It is now scoped to .mozg.sh — but writing
+ * the new one does not replace the old: browsers key cookies by (name, domain,
+ * path), so both are sent, host-only first, and `cookies().get()` returns that
+ * one. A reader who picked Russian on gen.mozg.sh therefore got Russian there
+ * and their old language on mozg.sh, which is the exact split the widening was
+ * meant to end.
+ *
+ * Only when there really are two. A Set-Cookie with no Domain attribute targets
+ * exactly the host-only copy, so the domain-scoped choice survives — but firing
+ * this unconditionally would delete the choice of everyone who has only the old
+ * cookie and has not re-picked since. Counting first is what makes it a
+ * migration rather than a recurring surprise.
+ */
+function hasDuplicateLocale(req: NextRequest): boolean {
+  const raw = req.headers.get("cookie") ?? "";
+  return raw.split(";").filter((c) => c.trim().startsWith(`${LOCALE_COOKIE}=`)).length > 1;
+}
+
+function dropDuplicateLocale(req: NextRequest, res: NextResponse): NextResponse {
+  if (!hasDuplicateLocale(req)) return res;
+  res.headers.append(
+    "Set-Cookie",
+    `${LOCALE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure`,
+  );
+  return res;
+}
+
+/**
+ * The same duplicate, taken out of the request this render will read.
+ *
+ * Deleting it on the response fixes the next page load and leaves this one
+ * wrong, which for somebody staring at a page in the wrong language is
+ * indistinguishable from not being fixed. So the header the server reads is
+ * rewritten too.
+ *
+ * The last copy wins. Browsers send the more specific cookie first, so the
+ * host-only leftover leads and the domain-scoped choice — the one just made —
+ * trails it. Keeping the last is keeping the newer of the two.
+ */
+function preferSharedLocale(req: NextRequest): Headers | null {
+  if (!hasDuplicateLocale(req)) return null;
+
+  const parts = (req.headers.get("cookie") ?? "").split(";").map((c) => c.trim());
+  const locales = parts.filter((c) => c.startsWith(`${LOCALE_COOKIE}=`));
+  const kept = locales[locales.length - 1];
+  const rest = parts.filter((c) => !c.startsWith(`${LOCALE_COOKIE}=`));
+
+  const headers = new Headers(req.headers);
+  headers.set("cookie", [...rest, kept].join("; "));
+  return headers;
+}
+
+/** NextResponse.next(), reading the deduplicated cookie header when there is one. */
+function proceed(req: NextRequest): NextResponse {
+  const headers = preferSharedLocale(req);
+  return headers ? NextResponse.next({ request: { headers } }) : NextResponse.next();
+}
+
 function rememberSource(req: NextRequest, res: NextResponse): NextResponse {
   if (req.cookies.get(SOURCE_COOKIE)) return res;
 
@@ -191,9 +256,9 @@ export function middleware(req: NextRequest) {
         "Set-Cookie",
         `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
       );
-      return rememberSource(req, res);
+      return dropDuplicateLocale(req, rememberSource(req, res));
     }
-    return rememberSource(req, NextResponse.next());
+    return dropDuplicateLocale(req, rememberSource(req, proceed(req)));
   }
 
   const { pathname } = req.nextUrl;
