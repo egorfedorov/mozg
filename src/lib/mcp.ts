@@ -1,5 +1,5 @@
 import { query, maybeOne, one } from "@/db";
-import { describeTools } from "@/lib/brain-tools";
+import { describeTools, parseTools } from "@/lib/brain-tools";
 import { lockedText, resolveBrain, type Resolved } from "@/lib/mcp-access";
 import { agentNotice } from "@/lib/announcements";
 import { addToLibrary, removeFromLibrary } from "@/lib/library";
@@ -133,12 +133,13 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
     goal: string | null;
     score: number | null;
     note_count: number;
+    tools: unknown;
     /** Notes in this brain's children — see the query. */
     child_notes: number;
     access: string;
     parent_handle: string | null;
   }>(
-    `select b.slug as handle, b.title, b.goal, b.score, b.note_count,
+    `select b.slug as handle, b.title, b.goal, b.score, b.note_count, b.tools,
             (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id) as child_notes,
             'owner' as access,
             p.slug as parent_handle
@@ -146,7 +147,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
        left join brains p on p.id = b.parent_id
       where b.owner_id = $1
      union all
-     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
+     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count, b.tools,
             (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id),
             g.role, null
        from brains b
@@ -166,7 +167,7 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
      -- dedupe them: the rows differ in the access column ('buyer' against
      -- 'added'), and the grant is the truer of the two — 'added' is only
      -- where it sits.
-     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count,
+     select u.handle || '/' || b.slug, b.title, b.goal, b.score, b.note_count, b.tools,
             (select coalesce(sum(c.note_count), 0)::int from brains c where c.parent_id = b.id),
             'added', null
        from library l
@@ -260,12 +261,26 @@ async function brainList(owner: TokenOwner): Promise<ToolOutcome> {
   // and scored anyway — and it is the whole family shelf that looks like that.
   const searchable = (r: (typeof rows)[number]) => r.note_count + r.child_notes;
 
+  // Which plugin a brain's knowledge is carried out with, named on its own
+  // line in the shelf. An agent calls brain_list once, at the start, and picks
+  // a brain from it — so "this one has hands, and they are not connected" has
+  // to be legible there and not only after it commits to searching.
+  const handsLine = (r: (typeof rows)[number], indent: string) => {
+    const tools = parseTools(r.tools);
+    if (!tools.length) return "";
+    const named = tools
+      .map((t) => (t.plugin ? `${t.name} (${t.plugin})` : t.name))
+      .join(", ");
+    return `\n${indent}  hands: ${named} — the notes say how, these do it`;
+  };
+
   const describe = (r: (typeof rows)[number], indent: string) =>
     `${indent}- ${r.handle} — ${r.title}\n` +
     `${indent}  goal: ${r.goal ?? "not set"}\n` +
     `${indent}  ${searchable(r)} notes` +
     (r.child_notes && !r.note_count ? " across its children" : "") +
-    ` · ${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}`;
+    ` · ${r.score === null ? "not examined" : `trained ${r.score}%`} · ${r.access}` +
+    handsLine(r, indent);
 
   // Children are printed under their parent so the shape of someone's
   // knowledge is visible at a glance, and so an agent knows that asking the
@@ -1783,12 +1798,22 @@ async function libraryAdd(
 
   const result = await addToLibrary(owner.userId, resolved.brain.id);
   if (result.ok) {
+    // The moment to say a brain needs hands is the moment it is shelved.
+    //
+    // The brief says it too, but the brief is read later — by then the agent
+    // has a question in front of it and is already deciding how to answer.
+    // Here there is nothing else going on, and the person is by definition
+    // setting something up, which is when installing a plugin is a small ask
+    // rather than an interruption.
+    const hands = describeTools(parseTools(resolved.brain.tools));
+
     return {
-      text: result.already
-        ? `${handle} is already on your shelf.`
-        : `Added ${handle} — ${resolved.brain.title}. It is in brain_list from now on, ` +
-          `and stays maintained by its author. Run /mozg:sync to write it into this ` +
-          `project's local map.`,
+      text:
+        (result.already
+          ? `${handle} is already on your shelf.`
+          : `Added ${handle} — ${resolved.brain.title}. It is in brain_list from now on, ` +
+            `and stays maintained by its author. Run /mozg:sync to write it into this ` +
+            `project's local map.`) + hands.join("\n"),
     };
   }
 
