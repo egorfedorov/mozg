@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { markup } from "@/lib/markup";
+import { companionPlugins, MARKETPLACE } from "@/lib/plugins";
 import { translator } from "@/lib/t";
 import TopBar from "@/components/TopBar";
 import AppShell from "@/components/AppShell";
@@ -74,6 +75,39 @@ export MOZG_TOKEN=mzg_...`}
             <code className="mono" key="s5" />,
             <code className="mono" key="s6" />,
           ])}</p>
+        </section>
+
+        {/* The hands. Three plugins existed in the marketplace and this page —
+            the one place a person sets mozg up — named only the first, so the
+            only way to learn the others was to open the one brain that happens
+            to declare one. Read from lib/plugins.ts rather than written out
+            again, so the next plugin appears here on its own. */}
+        <section style={{ marginTop: "clamp(2rem, 5vw, 3rem)" }}>
+          <div className="section-head">
+            <h2 className="h2">{t("And the hands, when a brain needs them")}</h2>
+            <span className="eyebrow">{t("optional · same marketplace")}</span>
+          </div>
+          <p className="lede">
+            {t("A brain knows how something is done; some of what it teaches is done far better by a program on your own machine. Those brains say so before your first search, and name one of these. Install the one you are told to — none of them is needed to read a brain.")}
+          </p>
+
+          <div className="rows">
+            {companionPlugins().map((p) => (
+              <div className="row" key={p.name}>
+                <span style={{ minWidth: 0 }}>
+                  <strong className="mono">{p.name}</strong>
+                  <span className="row-sub">{t(p.what)}</span>
+                  {/* A command, not prose: built as one expression so it is
+                      never wrapped for translation. */}
+                  <span className="row-meta">{`/plugin install ${p.name}@${MARKETPLACE}`}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mono" style={{ fontSize: ".75rem", color: "var(--ink-3)", marginTop: ".75rem", maxWidth: "68ch" }}>
+            {t("These run on your machine and mozg never runs them. Some want something installed first — a licensed app, a binary — and the brain that names one says which. Nothing here shares a licence or a key between people.")}
+          </p>
         </section>
 
         <ClientList

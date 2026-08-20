@@ -46,6 +46,20 @@ export const PLUGINS: Record<string, string> = {
     "Upload math and front-end bundles to Stake Engine, check compliance, publish a release.",
 };
 
+/**
+ * The companion plugins — everything except the brains themselves.
+ *
+ * Their own list because /connect answers two different questions with them:
+ * "how do I connect" is the mozg plugin, and "what else is there" is these.
+ * Derived rather than written out again, so adding a plugin cannot leave the
+ * page describing the catalogue it had last month.
+ */
+export function companionPlugins(): { name: string; what: string }[] {
+  return Object.entries(PLUGINS)
+    .filter(([name]) => name !== "mozg")
+    .map(([name, what]) => ({ name, what }));
+}
+
 export function isPublishedPlugin(name: string): boolean {
   return Object.hasOwn(PLUGINS, name);
 }
