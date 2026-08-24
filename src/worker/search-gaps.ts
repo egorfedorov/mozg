@@ -70,8 +70,11 @@ export async function growSearchGapChecks(
 
   let added = 0;
   for (const { brain_id, visibility } of brains) {
+    // Anonymous callers all share one caller_id, so without the address hash
+    // a hundred strangers hitting the same gap would look like one very
+    // persistent person and never clear the two-people bar below.
     const calls = await query<{ query: string; caller_id: string }>(
-      `select calls.query, calls.caller_id from calls
+      `select calls.query, coalesce(calls.caller_ip_hash, calls.caller_id) as caller_id from calls
         where calls.brain_id = $1 and ${weak("calls")}
         order by calls.created_at desc limit ${CALLS_READ}`,
       [brain_id],

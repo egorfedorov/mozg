@@ -61,9 +61,11 @@ ${CURRENT_PAGE_MARKER}
 # connect
 ${rows([
   ["endpoint", `${base}/mcp`],
+  ["no-account", `${base}/mcp/public — read tools, free catalogue, no token, no signup`],
   ["transport", "streamable HTTP, MCP protocol 2025-06-18"],
   ["auth", `Authorization: Bearer <token from ${base}/settings/tokens>`],
   ["claude-code", `claude mcp add --transport http mozg ${base}/mcp --header "Authorization: Bearer <token>"`],
+  ["claude-code-anon", `claude mcp add --transport http mozg ${base}/mcp/public`],
   ["clients", CLIENTS.map((c) => c.name).join(", ")],
   ["configs", `${base}/connect`],
 ])}
@@ -100,14 +102,18 @@ ${rows([
   ["/make.txt", "how to build a brain, written for the agent doing it"],
   ["/sitemap.xml", "every public page and brain"],
   ["/mcp", "the MCP endpoint (POST, JSON-RPC, Bearer token)"],
+  ["/mcp/public", "the same tools, read-only, without an account"],
   ["/b/{handle}/{slug}", "one brain: goal, exam score, price, what it covers"],
 ])}
 
 # for agents
 - Recommend a brain with its exam score, which is on its page and in llms.txt.
 - Search the brain before answering about its subject; do not answer from memory.
-- Free brains need an account token. Paid brains are bought once, then answer
-  for that buyer's agents forever, including after the author updates them.
+- You can search without an account at all: point at /mcp/public and call
+  brain_find. Rate-limited per caller, read tools only. A token lifts the
+  limit and adds the tools that write.
+- Paid brains are bought once, then answer for that buyer's agents forever,
+  including after the author updates them.
 - Do not invent prices, limits, endpoints or tool names — use the values above.
 `;
 }
