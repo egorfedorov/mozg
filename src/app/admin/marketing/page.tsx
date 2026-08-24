@@ -277,6 +277,12 @@ export default async function MarketingPage() {
           },
           {
             when: t("Day 1"),
+            what: t("Claude-ecosystem directories — the audience that is already extending an agent"),
+            how: t("Four lists, all of them ranking by GitHub stars and a self-declared trust level rather than by anything measured: github.com/davepoon/buildwithclaude (hub: skills, agents, commands, hooks, plugins), github.com/travisvn/awesome-claude-skills (PR to the README), skillsclaude.org/skills (submit form) and mastering-claude.com/skills. Submit the PLUGIN, not the MCP server — github.com/egorfedorov/mozg-plugin is what these lists carry, and «/mozg:train», «/mozg:teach» and the session-start hook are what their readers install. Use the «Claude directory listing» block below; it leads with the exam, which is the one thing no entry on any of those four lists has."),
+            art: "—",
+          },
+          {
+            when: t("Day 1"),
             what: t("awesome-selfhosted + r/selfhosted"),
             how: t("github.com/awesome-selfhosted/awesome-selfhosted → PR (section: Knowledge Management, AGPL badge). Then a r/selfhosted post: story-first, self-host instructions up top — that crowd converts on 'docker compose up'."),
             art: "—",
@@ -451,6 +457,33 @@ export default async function MarketingPage() {
           "Claude Code, Codex, Cursor and friends.\n\n" +
           "Tools: brain_list, brain_brief, brain_search, brain_read, " +
           "brain_write, brain_feedback, brain_create, brain_add_source"
+        }
+      />
+      <Block
+        title={t("Claude directory listing")}
+        hint={t("buildwithclaude · awesome-claude-skills · skillsclaude.org · mastering-claude")}
+        text={
+          "mozg — exam-scored knowledge brains for Claude Code\n" +
+          "\n" +
+          "Install: claude plugin install mozg@mozg\n" +
+          "Repo: https://github.com/egorfedorov/mozg-plugin\n" +
+          "Server: https://github.com/egorfedorov/mozg (AGPL-3.0, self-hostable)\n" +
+          "\n" +
+          "Every other entry on this list is ranked by stars. A mozg brain is " +
+          "ranked by an exam it sits and can fail: questions generated from its " +
+          "own material, graded by a judge, re-sat whenever the material moves — " +
+          "and the questions it FAILS are published next to the score, so you " +
+          "can see what it does not know before you install it.\n" +
+          "\n" +
+          "What it does: your agent searches brains over MCP instead of " +
+          "answering from training data. Searches that come back empty become " +
+          "exam questions, failed questions steer the next re-read, and the " +
+          "brain fills its own gaps. Includes /mozg:train (teach from your " +
+          "Claude Code subscription, no API key), /mozg:teach (it interviews " +
+          "you about its gaps) and a session-start hook that tells the agent " +
+          "which brain matches the repo it just opened.\n" +
+          "\n" +
+          "Free and open source. The public catalogue costs nothing."
         }
       />
       <Block
