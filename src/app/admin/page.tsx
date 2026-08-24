@@ -1,4 +1,5 @@
 import { translator } from "@/lib/t";
+import { spendSumSql } from "@/lib/spend";
 import { fill, markup } from "@/lib/markup";
 import AppShell from "@/components/AppShell";
 import {
@@ -106,20 +107,11 @@ export default async function AdminPage() {
        from sources where processed_at > now() - interval '7 days'`,
   );
 
+  // The three tables money lands in are defined once, in lib/spend — a reader
+  // that spells them out itself is a reader that misses the next lane.
   const [cost] = await query<{ day: number; week: number }>(
-    `select
-       (select coalesce(sum(cost_cents), 0) from sources
-         where processed_at > now() - interval '24 hours')
-     + (select coalesce(sum(cost_cents), 0) from check_runs
-         where started_at > now() - interval '24 hours')
-     + (select coalesce(sum(cents), 0) from spend
-         where created_at > now() - interval '24 hours') as day,
-       (select coalesce(sum(cost_cents), 0) from sources
-         where processed_at > now() - interval '7 days')
-     + (select coalesce(sum(cost_cents), 0) from check_runs
-         where started_at > now() - interval '7 days')
-     + (select coalesce(sum(cents), 0) from spend
-         where created_at > now() - interval '7 days') as week`,
+    `select ${spendSumSql("24 hours")}::int as day,
+            ${spendSumSql("7 days")}::int as week`,
   );
 
   const totalsRow = totals[0];

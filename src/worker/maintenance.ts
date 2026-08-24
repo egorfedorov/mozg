@@ -8,6 +8,8 @@ import { notifyGaps } from "@/lib/operator-chat";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
 import { growSearchGapChecks } from "@/worker/search-gaps";
+import { holdScheduledSpend, PLATFORM_DAILY_CENTS } from "@/lib/spend";
+import { reportOnce } from "@/lib/errors";
 
 /**
  * Keeping brains honest without being asked.
@@ -583,7 +585,29 @@ export async function runMaintenance(): Promise<{
   const refresh = await refreshUrlSources();
   // After the refresh, so a page that changed a minute ago is re-examined in
   // the same pass rather than waiting a full day for the next one.
-  const examined = await examStaleBrains();
+  // The only lane with no ceiling of its own, and the one the money is
+  // actually in. Everything above is cheap or capped per owner; a periodic
+  // re-sit is neither, so it is what gets held when the platform has spent
+  // its day. See holdScheduledSpend for why this and not the whole pass.
+  const budget = await holdScheduledSpend();
+  if (budget.hold) {
+    // Stable message, moving number in the detail: see reportOnce. A pass runs
+    // every few hours and the spend figure changes every time, so a figure in
+    // the message would push-alert the operator on a loop about one condition.
+    await reportOnce(
+      "worker",
+      "spend-ceiling",
+      "Scheduled exams held: the platform hit its 24h model-spend ceiling.",
+      {
+        detail:
+          `$${(budget.spent / 100).toFixed(2)} spent in the last 24h against a ` +
+          `$${(PLATFORM_DAILY_CENTS / 100).toFixed(2)} ceiling (PLATFORM_DAILY_CENTS). ` +
+          `Owner-initiated and post-ingest exams still run; only the periodic re-sit is held. ` +
+          `Raise the ceiling or wait for the window to roll.`,
+      },
+    );
+  }
+  const examined = budget.hold ? [] : await examStaleBrains();
   // Real searches that came back weak become exam checks, so the next
   // sitting measures what callers actually asked and could not get. After
   // examStaleBrains deliberately: a check added now is graded by the exam

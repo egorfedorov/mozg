@@ -93,10 +93,30 @@ export async function reportOutOfCreditOnce(
   err: unknown,
   meta: { detail?: string; brainId?: string } = {},
 ): Promise<void> {
+  await reportOnce(source, "provider-credit", err, meta);
+}
+
+/**
+ * One unresolved row per ongoing condition, for anything that repeats on a
+ * clock rather than happening once.
+ *
+ * The rule that makes this work is that the *message* must not carry the
+ * changing number — a spend figure or a balance in the message makes every
+ * occurrence a new one to alertIfNew, and the operator gets a push every pass
+ * for a condition they already know about. Put the moving number in `detail`,
+ * which is read on the error page and never compared.
+ */
+export async function reportOnce(
+  source: "app" | "worker" | "mcp" | "client" | "payments",
+  kind: string,
+  err: unknown,
+  meta: { detail?: string; brainId?: string; userId?: string | null } = {},
+): Promise<void> {
   const [open] = await query<{ n: number }>(
     `select count(*)::int as n from app_errors
-      where kind = 'provider-credit' and resolved_at is null`,
+      where kind = $1 and resolved_at is null`,
+    [kind],
   );
   if (open?.n) return;
-  reportError(source, "provider-credit", err, meta);
+  reportError(source, kind, err, meta);
 }
