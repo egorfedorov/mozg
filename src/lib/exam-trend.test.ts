@@ -88,3 +88,50 @@ test("a brain that never sat an exam returns nothing", () => {
   stubDb(() => []);
   return examTrend("b").then((t) => assert.equal(t, null));
 });
+
+/**
+ * The anti-bluff split. Coverage and honesty are different failures with
+ * different fixes, and on the catalogue's own numbers they diverge by
+ * eighteen points — averaged into one percentage the weaker half disappears,
+ * and it is the half that decides whether an agent can trust the answer.
+ */
+test("out-of-scope probes are reported apart from coverage", async () => {
+  stubDb((text, params) => {
+    if (/from check_runs/.test(text)) {
+      return [{ id: "now", started_at: new Date("2026-08-24") }];
+    }
+    assert.match(text, /join checks/, "the split needs each result's kind");
+    assert.equal(params[0], "now");
+    return [
+      { check_id: "c1", passed: true, kind: "positive" },
+      { check_id: "c2", passed: true, kind: "positive" },
+      { check_id: "c3", passed: false, kind: "positive" },
+      // Three probes, one of which the brain bluffed its way through.
+      { check_id: "n1", passed: true, kind: "negative" },
+      { check_id: "n2", passed: true, kind: "negative" },
+      { check_id: "n3", passed: false, kind: "negative" },
+    ];
+  });
+
+  const t = await examTrend("b");
+  assert.ok(t);
+  // The probes stay inside the headline count — bluffing is a quality defect,
+  // not a side metric — and are ALSO reported on their own.
+  assert.equal(t.passed, 4);
+  assert.equal(t.total, 6);
+  assert.deepEqual(t.bluff, { refused: 2, probes: 3 });
+});
+
+test("a brain examined without probes claims no anti-bluff number", async () => {
+  stubDb((text) => {
+    if (/from check_runs/.test(text)) {
+      return [{ id: "now", started_at: new Date("2026-08-24") }];
+    }
+    return [{ check_id: "c1", passed: true, kind: "positive" }];
+  });
+
+  const t = await examTrend("b");
+  // Zero probes must read as "not measured", never as a perfect score — that
+  // is the misreading the whole probe top-up exists to prevent.
+  assert.deepEqual(t?.bluff, { refused: 0, probes: 0 });
+});

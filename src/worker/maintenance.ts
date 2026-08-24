@@ -8,6 +8,8 @@ import { notifyGaps } from "@/lib/operator-chat";
 import { fetchPageText, contentHash } from "@/lib/page";
 import { enqueueIngest, enqueueExam, enqueueCrawl, PRIORITY } from "@/worker/queue";
 import { growSearchGapChecks } from "@/worker/search-gaps";
+import { generateNegativeProbes, negativeTarget } from "@/worker/exam";
+import { withOwnerKey } from "@/lib/byok";
 import { holdScheduledSpend, PLATFORM_DAILY_CENTS } from "@/lib/spend";
 import { reportOnce } from "@/lib/errors";
 
@@ -318,6 +320,71 @@ export async function examStaleBrains(limit = EXAM_BATCH): Promise<string[]> {
   return stale.map((b) => b.id);
 }
 
+/** Brains topped up with anti-bluff probes per pass. Each one is a model call
+ *  on the bigger model, so this is a trickle, not a sweep. */
+const PROBE_BATCH = 3;
+
+/**
+ * Keep every exam measuring the same dimensions.
+ *
+ * Negative probes — plausible questions just outside a brain's scope, which it
+ * is supposed to refuse — reached the generator after most brains had written
+ * their exams, and a brain graded without them averages three points higher.
+ * `npm run probes` was written to repair that once, by hand, for brains with
+ * *zero* probes.
+ *
+ * Neither of those closes the hole. An exam grows — the search-gap harvest and
+ * the usage loop add checks every pass — and negativeTarget is a *share* of
+ * it, so a brain that started at the target drifts back under it as its
+ * positive checks multiply. Nothing was watching that, and a one-shot script
+ * nobody reruns is not watching it either.
+ *
+ * So the top-up joins the pass that already keeps brains honest. Ordered by
+ * the biggest shortfall, because that is where the score is least comparable
+ * to the rest of the catalogue.
+ */
+export async function topUpNegativeProbes(limit = PROBE_BATCH): Promise<number> {
+  // negativeTarget is TypeScript, not SQL, so the shortfall is computed here
+  // rather than in the order-by: one small query, a handful of rows.
+  const candidates = await query<{ id: string; neg: number; total: number }>(
+    `select b.id,
+            count(*) filter (where c.kind = 'negative')::int as neg,
+            count(*)::int as total
+       from brains b
+       join checks c on c.brain_id = b.id and c.enabled
+      where b.goal is not null
+      group by b.id
+      having count(*) > 0
+      limit 500`,
+  );
+
+  const short = candidates
+    .map((c) => ({ id: c.id, gap: negativeTarget(c.total) - c.neg }))
+    .filter((c) => c.gap > 0)
+    .sort((a, b) => b.gap - a.gap)
+    .slice(0, limit);
+
+  let wrote = 0;
+  for (const { id } of short) {
+    const brain = await maybeOne<Brain>(`select * from brains where id = $1`, [id]);
+    if (!brain) continue;
+    try {
+      // On the owner's key where they set one. Every other lane routes its
+      // model calls through the wallet the brain belongs to; a top-up that
+      // skipped it would quietly put BYOK brains back on our bill.
+      const n = await withOwnerKey(brain.owner_id, () => generateNegativeProbes(brain));
+      wrote += n;
+      // Adding a check is not a content change, so nothing else would ever
+      // queue the sitting that makes the new probes count.
+      if (n) await enqueueExam(brain.id);
+    } catch {
+      // One brain whose probe generation failed must not stop the pass; the
+      // next one retries it, and the shortfall keeps it at the front.
+    }
+  }
+  return wrote;
+}
+
 /**
  * The longest a sitting can honestly still be in progress. A full exam is ~30
  * checks against a judge; an hour is generous even for a large family.
@@ -551,6 +618,8 @@ export async function notifyGapOwners(limit = 20): Promise<number> {
 export async function runMaintenance(): Promise<{
   refresh: RefreshReport;
   examined: number;
+  /** Anti-bluff probes written this pass — see topUpNegativeProbes. */
+  probes: number;
   recrawled: number;
   resumed: number;
   gapChecks: number;
@@ -608,6 +677,9 @@ export async function runMaintenance(): Promise<{
     );
   }
   const examined = budget.hold ? [] : await examStaleBrains();
+  // Under the same hold: topping up probes is a model call and it queues a
+  // sitting, so it is scheduled spend by both definitions.
+  const probes = budget.hold ? 0 : await topUpNegativeProbes();
   // Real searches that came back weak become exam checks, so the next
   // sitting measures what callers actually asked and could not get. After
   // examStaleBrains deliberately: a check added now is graded by the exam
@@ -619,6 +691,7 @@ export async function runMaintenance(): Promise<{
   return {
     refresh,
     examined: examined.length,
+    probes,
     recrawled,
     resumed,
     gapChecks: gapChecks.added,

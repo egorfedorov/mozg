@@ -42,6 +42,19 @@ export interface ExamTrend {
   unanswered: number;
   /** Failed before, passes now. */
   learned: number;
+  /**
+   * The anti-bluff split of the SAME sitting: out-of-scope probes the brain
+   * was supposed to refuse, and how many it did refuse.
+   *
+   * Reported apart from `passed` even though the probes are counted in it
+   * too. Coverage and honesty fail differently and are fixed differently — a
+   * brain missing coverage needs material, a brain that bluffs needs its
+   * answers narrowed — and on the catalogue's own numbers they diverge
+   * sharply: ordinary checks pass at 82%, "admit you do not cover this" at
+   * 64%. Averaged into one percentage, the weaker half is invisible, and it
+   * is the half that decides whether an agent can trust the answer.
+   */
+  bluff: { refused: number; probes: number };
 }
 
 export async function examTrend(brainId: string): Promise<ExamTrend | null> {
@@ -55,14 +68,29 @@ export async function examTrend(brainId: string): Promise<ExamTrend | null> {
 
   const [latest, previous] = runs;
 
-  const now = await query<{ check_id: string; passed: boolean }>(
-    `select check_id, passed from check_results where run_id = $1`,
+  const now = await query<{ check_id: string; passed: boolean; kind: string }>(
+    `select cr.check_id, cr.passed, c.kind
+       from check_results cr join checks c on c.id = cr.check_id
+      where cr.run_id = $1`,
     [latest.id],
   );
   const passed = now.filter((r) => r.passed).length;
+  const negatives = now.filter((r) => r.kind === "negative");
+  const bluff = {
+    refused: negatives.filter((r) => r.passed).length,
+    probes: negatives.length,
+  };
 
   if (!previous) {
-    return { passed, total: now.length, previous: null, regressed: 0, unanswered: 0, learned: 0 };
+    return {
+      passed,
+      total: now.length,
+      previous: null,
+      regressed: 0,
+      unanswered: 0,
+      learned: 0,
+      bluff,
+    };
   }
 
   const before = await query<{ check_id: string; passed: boolean }>(
@@ -96,6 +124,7 @@ export async function examTrend(brainId: string): Promise<ExamTrend | null> {
     regressed,
     unanswered,
     learned,
+    bluff,
   };
 }
 

@@ -733,6 +733,25 @@ export default async function PublicBrainPage({
                     {markup(t(trendLine(trend)!.key), trendLine(trend)!.values)}
                   </span>
                 )}
+                {/* Honesty, next to coverage and never folded into it. A
+                    reader deciding whether to point an agent at this brain
+                    cares more about what it does at its edges than about the
+                    percentage: a brain that answers 90% and bluffs the rest
+                    is worse to automate against than one that answers 70%
+                    and says so. Silent when the sitting had no probes — the
+                    maintenance pass tops those up, and "0 of 0" would read
+                    as a perfect record. */}
+                {trend.bluff.probes > 0 && (
+                  <span
+                    className="mono"
+                    style={{ fontSize: ".75rem", color: "var(--ink-2)" }}
+                  >
+                    {markup(t("Says \"I don't cover that\" to <0/> of <1/> out-of-scope questions"), [
+                      <strong key="b0">{trend.bluff.refused}</strong>,
+                      trend.bluff.probes,
+                    ])}
+                  </span>
+                )}
                 {trend.regressed === 0 && trend.unanswered > 0 && (
                   <span
                     className="mono"
