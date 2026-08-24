@@ -274,3 +274,64 @@ test("a repo's own plumbing is not its documentation", async () => {
     assert.equal(isDocPath(doc), true, doc);
   }
 });
+
+// ─── reading a repository as code ────────────────────────────────────────────
+
+/**
+ * A repo brain answers "how do we do X *here*", so the crawl has to reach the
+ * source — and stop before the three families that are text, enormous, and
+ * say nothing about this team: dependencies, generated artefacts, and vendored
+ * copies of other people's code.
+ */
+test("a code crawl reads hand-written source and skips what a tool wrote", async () => {
+  const { isSourcePath } = await import("./crawl");
+
+  for (const p of [
+    "src/worker/exam.ts",
+    "app/models/user.rb",
+    "internal/api/handler.go",
+    "docs/adr/0003-why-postgres.md",
+    // Tests are kept on purpose: often the only written statement of how a
+    // thing is meant to be called.
+    "src/lib/__specs__/exam.test.ts",
+  ]) {
+    assert.equal(isSourcePath(p), true, p);
+  }
+
+  for (const p of [
+    "node_modules/react/index.js",
+    "vendor/bundle/gems/rails.rb",
+    "dist/app.js",
+    "build/out.js",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "Cargo.lock",
+    "go.sum",
+    "src/app.min.js",
+    "src/api/client.generated.ts",
+    "src/types.d.ts",
+  ]) {
+    assert.equal(isSourcePath(p), false, p);
+  }
+});
+
+/**
+ * The crawl writes its children as plain url sources, so the fact that a page
+ * came out of a repository has to be readable from the address alone — a
+ * column would be a second copy that can drift.
+ */
+test("code material is recognised from the url the crawl wrote", async () => {
+  const { isCodeMaterial } = await import("./crawl");
+  const raw = "https://raw.githubusercontent.com/o/r/HEAD";
+
+  assert.equal(isCodeMaterial(`${raw}/src/worker/exam.ts`), true);
+  assert.equal(isCodeMaterial(`${raw}/config/settings.yml`), true);
+  // Prose inside a repo is still prose: the code framing would ask a model
+  // for the conventions of a paragraph.
+  assert.equal(isCodeMaterial(`${raw}/README.md`), false);
+  assert.equal(isCodeMaterial(`${raw}/docs/guide.mdx`), false);
+  // Anything not out of a repository crawl.
+  assert.equal(isCodeMaterial("https://example.com/docs/api.ts"), false);
+  assert.equal(isCodeMaterial(null), false);
+  assert.equal(isCodeMaterial("not a url"), false);
+});

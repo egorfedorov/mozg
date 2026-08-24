@@ -1,4 +1,5 @@
 import { translator } from "@/lib/t";
+import { isCrawlRoot } from "@/lib/sources";
 import { fill, markup } from "@/lib/markup";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -189,7 +190,7 @@ export default async function BrainPage({
   ).length;
   const readSources = sources.filter((s) => s.status === "ready").length;
   const discovering = sources.some(
-    (s) => s.kind === "site" && (s.status === "queued" || s.status === "processing"),
+    (s) => isCrawlRoot(s.kind) && (s.status === "queued" || s.status === "processing"),
   );
 
   return (

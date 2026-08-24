@@ -1,4 +1,5 @@
 import { maybeOne, query } from "@/db";
+import { CRAWL_ROOTS_SQL } from "@/lib/sources";
 import type { Brain } from "@/db/types";
 import { familyIds } from "@/lib/families";
 import { searchBrain } from "@/lib/search";
@@ -474,7 +475,7 @@ export async function recrawlSites(limit = RECRAWL_BATCH, brainId?: string): Pro
     `update sources set status = 'queued', error = null
       where id in (
         select id from sources
-         where kind = 'site' and status = 'ready'
+         where kind in ${CRAWL_ROOTS_SQL} and status = 'ready'
            and ($2::uuid is null or brain_id = $2::uuid)
            and ($2::uuid is not null
                 or processed_at < now() - interval '${RECRAWL_AFTER}')

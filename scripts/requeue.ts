@@ -18,6 +18,7 @@
  * is read again from scratch with the current prompt, at the usual cost.
  */
 import { query } from "@/db";
+import { CRAWL_ROOTS_SQL } from "../src/lib/sources";
 import { enqueueIngest } from "@/worker/queue";
 
 function arg(name: string): string | undefined {
@@ -56,7 +57,7 @@ async function main() {
         and ($4::uuid is not null or (
               ($2 = false or s.status in ('failed', 'rejected'))
           and ($3 = true or s.status <> 'ready')
-          and s.kind <> 'site'))
+          and s.kind not in ${CRAWL_ROOTS_SQL}))
       order by s.created_at`,
     [slug ?? null, onlyFailed, reread, id ?? null],
   );

@@ -17,6 +17,12 @@ const NOTE_KINDS = ["fact", "rule", "layout", "example", "pitfall"] as const;
 
 /** Bumped when the extraction prompt changes meaningfully — it invalidates
  *  the extraction cache, which cannot see the prompt any other way. */
+// Still v4: the code framing below is additive and fires only when the caller
+// asks for it, so every knowledge and style prompt is byte-identical to what
+// v4 produced. Bumping it would invalidate every cached extraction on the
+// platform — the whole catalogue would pay to re-read pages whose answer has
+// not changed. The code/knowledge distinction rides in the goal hash instead
+// (see cachedTextExtract), which is where a per-read difference belongs.
 export const EXTRACT_PROMPT_VERSION = "v4";
 
 export interface ExtractedNote {
@@ -88,10 +94,11 @@ function promptFor(opts: {
   categories?: string[];
   focus?: string[];
   style?: boolean;
+  code?: boolean;
 }): string {
   return opts.style
     ? styleSystemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? [])
-    : systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? []);
+    : systemPrompt(opts.goal, opts.categories ?? [], opts.focus ?? [], opts.code ?? false);
 }
 
 /**
@@ -194,6 +201,7 @@ function systemPrompt(
   goal: string | null,
   categories: string[],
   focus: string[] = [],
+  code = false,
 ): string {
   return [
     "You build knowledge packs that AI coding agents read later, through a",
@@ -248,6 +256,31 @@ function systemPrompt(
           "Do not narrow the rest of your extraction because of this list;",
           "everything the goal needs still gets extracted as usual:",
           ...focus.map((q) => `- ${q}`),
+          "",
+        ]
+      : []),
+    // Source code, not documentation about it. Additive for the reason the
+    // focus block above is additive: a paragraph that reads as "instead"
+    // narrows the extraction, and that measurably cost a brain twenty points
+    // once already. This adds a question, it does not replace the ones above.
+    ...(code
+      ? [
+          "IN ADDITION to the full extraction above — never instead of it —",
+          "this source is a file from a working codebase, not documentation",
+          "about one. The reader is an agent about to change this repository,",
+          "and what it cannot get anywhere else is how THIS codebase does",
+          "things. So also capture, where the file shows them:",
+          "- conventions actually followed here: naming, file layout, where a",
+          "  new thing of this kind is expected to go",
+          "- the local way of doing a common task, especially where it differs",
+          "  from the library's own documented way",
+          "- invariants and constraints the code depends on, including ones",
+          "  stated only in a comment",
+          "- decisions with a reason attached — a comment explaining why",
+          "  something is done the slower or stranger way is the single most",
+          "  valuable thing in a repository, because it is nowhere else",
+          "Do not narrate what the code does line by line; a reader can read",
+          "the file. Capture what a reader could NOT infer from one file.",
           "",
         ]
       : []),
@@ -351,7 +384,15 @@ function finish(raw: unknown, usage: Usage): ExtractResult {
  */
 export async function extractFromPdf(
   pdf: Buffer,
-  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[]; style?: boolean },
+  opts: {
+    goal: string | null;
+    categories?: string[];
+    label?: string;
+    focus?: string[];
+    style?: boolean;
+    /** The material is source code from a repository — see systemPrompt. */
+    code?: boolean;
+  },
 ): Promise<ExtractResult> {
   const { data: raw, usage } = await structured<unknown>({
     model: env.MODEL_EXTRACT,
@@ -494,7 +535,15 @@ function merge(results: ExtractResult[]): ExtractResult {
 
 export async function extractFromText(
   text: string,
-  opts: { goal: string | null; categories?: string[]; label?: string; focus?: string[]; style?: boolean },
+  opts: {
+    goal: string | null;
+    categories?: string[];
+    label?: string;
+    focus?: string[];
+    style?: boolean;
+    /** The material is source code from a repository — see systemPrompt. */
+    code?: boolean;
+  },
 ): Promise<ExtractResult> {
   const parts = segments(text);
 

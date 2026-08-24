@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isCrawlRoot } from "@/lib/sources";
 import { redirect } from "next/navigation";
 import { maybeOne, one, query } from "@/db";
 import type { Source } from "@/db/types";
@@ -47,7 +48,7 @@ export async function retrySource(formData: FormData) {
   // A site source retries its discovery, not an ingest — the crawl skips
   // pages that are already sources, so re-running it is safe and picks up
   // whatever the site added since.
-  await (source.kind === "site" ? enqueueCrawl(source.id) : enqueueIngest(source.id));
+  await (isCrawlRoot(source.kind) ? enqueueCrawl(source.id) : enqueueIngest(source.id));
   revalidatePath(`/brains/${String(formData.get("slug"))}`);
 }
 

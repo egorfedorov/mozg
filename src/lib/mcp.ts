@@ -1,4 +1,5 @@
 import { query, maybeOne, one } from "@/db";
+import { CRAWL_ROOTS_SQL } from "@/lib/sources";
 import { describeTools, parseTools } from "@/lib/brain-tools";
 import { lockedText, resolveBrain, type Resolved } from "@/lib/mcp-access";
 import { agentNotice } from "@/lib/announcements";
@@ -18,6 +19,7 @@ import {
 import { scanSecrets } from "@/lib/scan";
 import { searchCollective, searchBrain, briefBrain } from "@/lib/search";
 import { WEAK_TOP_SCORE } from "@/lib/search-gaps";
+import { parseGitHubUrl } from "@/lib/crawl";
 import { workflowList, workflowRead, workflowReport } from "@/lib/mcp-workflows";
 
 import { clipExcerpt } from "@/lib/excerpt";
@@ -1478,10 +1480,28 @@ async function brainAddSource(
         isError: true,
       };
     }
+    // A repository read for its code is the same crawl root with a different
+    // question; the kind is what every later path branches on.
+    const code = args.code === true;
+    if (code && !parseGitHubUrl(check.url)) {
+      return {
+        text:
+          `code: true reads a repository's source, so it needs a GitHub URL — ` +
+          `${check.url.slice(0, 60)} is not one.`,
+        isError: true,
+      };
+    }
     const site = await one<{ id: string }>(
       `insert into sources (brain_id, kind, url, original_name)
-       values ($1, 'site', $2, $3) returning id`,
-      [brain.id, check.url, `${new URL(check.url).hostname} (whole site)`],
+       values ($1, $4, $2, $3) returning id`,
+      [
+        brain.id,
+        check.url,
+        code
+          ? `${new URL(check.url).pathname.slice(1)} (repository source)`
+          : `${new URL(check.url).hostname} (whole site)`,
+        code ? "repo" : "site",
+      ],
     );
     await enqueueCrawl(site.id);
     return {
@@ -1874,7 +1894,7 @@ async function brainRefresh(
 
   const sources = await one<{ urls: number; sites: number }>(
     `select count(*) filter (where kind = 'url')::int as urls,
-            count(*) filter (where kind = 'site')::int as sites
+            count(*) filter (where kind in ${CRAWL_ROOTS_SQL})::int as sites
        from sources where brain_id = $1 and status = 'ready'`,
     [resolved.brain.id],
   );

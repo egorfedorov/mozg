@@ -63,6 +63,12 @@ const schema = z.object({
 
   BETTER_AUTH_SECRET: z.string().min(16).optional(),
   BETTER_AUTH_URL: z.string().url().default("http://localhost:3300"),
+  // Shared secret for repository push callbacks (/api/github/push). One
+  // platform-wide value the owner also pastes into their repo's webhook
+  // settings: a per-repo secret would need a place to live and a UI to set it,
+  // and the thing being protected is "requeue a crawl the schedule would run
+  // anyway", not money.
+  GITHUB_WEBHOOK_SECRET: z.string().optional(),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),

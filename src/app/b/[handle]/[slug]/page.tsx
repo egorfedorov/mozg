@@ -746,7 +746,7 @@ export default async function PublicBrainPage({
                     className="mono"
                     style={{ fontSize: ".75rem", color: "var(--ink-2)" }}
                   >
-                    {markup(t("Says \"I don't cover that\" to <0/> of <1/> out-of-scope questions"), [
+                    {markup(t("Admits it does not cover <0/> of <1/> out-of-scope questions"), [
                       <strong key="b0">{trend.bluff.refused}</strong>,
                       trend.bluff.probes,
                     ])}

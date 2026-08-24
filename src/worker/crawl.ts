@@ -49,7 +49,7 @@ export async function crawlSite(sourceId: string): Promise<CrawlResult> {
 async function crawlLocked(sourceId: string): Promise<CrawlResult> {
   const source = await one<Source>(`select * from sources where id = $1`, [sourceId]);
   if (source.status === "ready") return { queued: 0, skipped: 0, via: "done" };
-  if (!source.url) throw new Error("site source has no url");
+  if (!source.url) throw new Error(`${source.kind} source has no url`);
 
   const brain = await one<Brain & { plan: string; paid_until: Date | null }>(
     `select b.*, u.plan, u.paid_until from brains b join "user" u on u.id = b.owner_id
@@ -75,7 +75,15 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
       );
     }
 
-    const found = await discoverPages(source.url, remaining);
+    // The kind decides what the crawl is looking for: a docs set or a
+    // codebase. Nothing else about the expansion differs — same cap, same
+    // dedup, same recrawl.
+    const found = await discoverPages(
+      source.url,
+      remaining,
+      undefined,
+      source.kind === "repo" ? "code" : "docs",
+    );
 
     let queued = 0;
     let skipped = 0;

@@ -2,6 +2,7 @@ import { pool, query, one, maybeOne, tx, toVector } from "@/db";
 import { env } from "@/lib/env";
 import type { Brain, Finding, Source } from "@/db/types";
 import { chunksForNote, estimateTokens } from "@/lib/chunk";
+import { isCodeMaterial } from "@/lib/crawl";
 import { limitsFor } from "@/lib/plans";
 import { notifyBudgetPaused } from "@/lib/operator-chat";
 import { byokStorage } from "@/lib/byok";
@@ -572,6 +573,7 @@ async function cachedTextExtract(
   brain: Brain,
   categories: string[],
   label?: string,
+  code = false,
 ): Promise<ExtractResult> {
   const focus = await failedFocus(brain.id);
   const style = brain.kind === "style";
@@ -587,7 +589,8 @@ async function cachedTextExtract(
     contentHash(text),
     env.MODEL_EXTRACT,
     contentHash(
-      `${EXTRACT_PROMPT_VERSION}\n${style ? "style" : "knowledge"}\n${brain.goal ?? ""}\n${focus.join("\n")}`,
+      `${EXTRACT_PROMPT_VERSION}\n${style ? "style" : code ? "code" : "knowledge"}\n` +
+        `${brain.goal ?? ""}\n${focus.join("\n")}`,
     ),
   ];
 
@@ -601,7 +604,14 @@ async function cachedTextExtract(
     return { ...hit.payload, usage: { ...hit.payload.usage, costCents: 0 } };
   }
 
-  const result = await extractFromText(text, { goal: brain.goal, categories, label, focus, style });
+  const result = await extractFromText(text, {
+    goal: brain.goal,
+    categories,
+    label,
+    focus,
+    style,
+    code,
+  });
 
   await query(
     `insert into extract_cache (content_hash, model, goal_hash, payload, note_count)
@@ -675,7 +685,10 @@ async function extract(source: Source, brain: Brain, categories: string[]) {
       [source.id, contentHash(text)],
     );
 
-    return cachedTextExtract(text, brain, categories, source.url);
+    // A page fetched from a repository's raw host, whose path is not prose,
+    // is source code — the provenance is in the URL the crawl wrote, so
+    // nothing has to be carried on the row to know it. See isCodeMaterial.
+    return cachedTextExtract(text, brain, categories, source.url, isCodeMaterial(source.url));
   }
 
   // text | file

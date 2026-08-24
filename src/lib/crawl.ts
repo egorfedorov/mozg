@@ -119,6 +119,78 @@ const NOT_DOCS = /(^|\/)(\.[^/]+|node_modules|vendor|dist|__tests__)\//;
 const NOT_DOC_FILE =
   /(^|\/)(changelog|changes|history|release[-_]notes|licen[sc]es?|code[-_]of[-_]conduct|contributing|authors|governance|maintainers|notice)\.[a-z]+$/i;
 
+/**
+ * Source files worth reading for conventions.
+ *
+ * Deliberately not "every text file in the tree". A repo brain answers "how do
+ * we do X *here*" — the layout, the naming, the local decisions — and that
+ * lives in hand-written source and hand-written config. A lockfile, a
+ * generated client and a minified bundle are all text, all enormous, and all
+ * answer nothing: the measured lesson from the docs crawler was a CHANGELOG at
+ * 41 cents for 393 useless notes, and a lockfile is that failure an order of
+ * magnitude worse.
+ *
+ * Markdown is in the list, because a repo's own README and ADRs are the most
+ * concentrated statement of its conventions that exists.
+ */
+const CODE_ENDINGS = [
+  ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
+  ".py", ".rb", ".go", ".rs", ".java", ".kt", ".swift",
+  ".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".php",
+  ".sql", ".sh", ".gd", ".svelte", ".vue",
+  ".md", ".mdx", ".toml", ".yaml", ".yml",
+];
+
+/**
+ * Paths that are text, and are not this codebase's conventions.
+ *
+ * Three families, each of which would otherwise dominate the crawl by volume:
+ * dependencies and build output (never written by this team), lockfiles and
+ * generated artefacts (written by a tool, and enormous), and the vendored or
+ * minified copies of other people's code. Tests are deliberately KEPT — a test
+ * is often the only written statement of how a thing is meant to be called.
+ */
+const NOT_SOURCE =
+  /(^|\/)(node_modules|vendor|third_party|dist|build|out|target|coverage|\.git|\.next|__pycache__|migrations?\/generated)\//i;
+
+const NOT_SOURCE_FILE =
+  /(^|\/)([^/]*\.(min|bundle|generated|gen|pb|d)\.[a-z]+|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|go\.sum|composer\.lock)$/i;
+
+/** Prose extensions — the files a repo crawl picks up that are still writing,
+ *  not code. Read with the ordinary knowledge prompt. */
+const PROSE_ENDINGS = /\.(md|mdx|txt|rst|adoc)$/i;
+
+/**
+ * Is this URL a source file the crawl pulled out of a repository?
+ *
+ * Asked of the child page rather than carried on it. The crawl writes children
+ * as plain `url` sources pointing at raw.githubusercontent.com, so the
+ * provenance a later read needs is already in the address — a column would be
+ * a second copy of a fact that cannot disagree with itself this way.
+ *
+ * Prose is excluded even inside a repo: a README is documentation that happens
+ * to live in git, and reading it with the code framing would ask a model for
+ * the conventions of a paragraph.
+ */
+export function isCodeMaterial(url: string | null): boolean {
+  if (!url) return false;
+  let host: string, path: string;
+  try {
+    const u = new URL(url);
+    host = u.hostname;
+    path = u.pathname;
+  } catch {
+    return false;
+  }
+  if (host !== "raw.githubusercontent.com") return false;
+  return !PROSE_ENDINGS.test(path);
+}
+
+/** Is this repo path hand-written source, or dependency and build output? */
+export function isSourcePath(path: string): boolean {
+  return !NOT_SOURCE.test(path) && !NOT_SOURCE_FILE.test(path);
+}
+
 /** Is this repo path the product's documentation, or the repo's own plumbing? */
 export function isDocPath(path: string): boolean {
   return !NOT_DOCS.test(path) && !NOT_DOC_FILE.test(path);
@@ -165,7 +237,14 @@ export function parseGitHubUrl(raw: string): GitHubRef | null {
   return null;
 }
 
-async function githubPages(gh: GitHubRef, cap: number): Promise<Discovery> {
+/** What a crawl of a repository is looking for. */
+export type RepoRead = "docs" | "code";
+
+async function githubPages(
+  gh: GitHubRef,
+  cap: number,
+  read: RepoRead = "docs",
+): Promise<Discovery> {
   const res = await fetch(
     `https://api.github.com/repos/${gh.repo}/git/trees/${gh.ref}?recursive=1`,
     {
@@ -181,20 +260,25 @@ async function githubPages(gh: GitHubRef, cap: number): Promise<Discovery> {
   }
   const tree = (await res.json()) as { tree: { path: string; type: string }[] };
 
+  const code = read === "code";
+  const endings = code ? CODE_ENDINGS : DOC_ENDINGS;
+  const keep = code ? isSourcePath : isDocPath;
+
   const found = tree.tree
     .filter((t) => t.type === "blob")
     .map((t) => t.path)
-    .filter(
-      (p) => p.startsWith(gh.path) && DOC_ENDINGS.some((e) => p.endsWith(e)),
-    )
+    .filter((p) => p.startsWith(gh.path) && endings.some((e) => p.endsWith(e)))
     .sort();
-  const files = found.filter(isDocPath);
+  const files = found.filter(keep);
   const plumbing = found.length - files.length;
 
   if (!files.length) {
     throw new Error(
-      `no documentation files (${DOC_ENDINGS.join(", ")}) under ` +
-        `${gh.repo}/${gh.path || ""} — point at the directory that holds the docs`,
+      code
+        ? `no source files under ${gh.repo}/${gh.path || ""} — point at the ` +
+          "directory that holds the code, or add it as a documentation source"
+        : `no documentation files (${DOC_ENDINGS.join(", ")}) under ` +
+          `${gh.repo}/${gh.path || ""} — point at the directory that holds the docs`,
     );
   }
 
@@ -619,9 +703,19 @@ export async function discoverPages(
   startUrl: string,
   cap: number,
   fetcher: Fetcher = fetchGuarded,
+  read: RepoRead = "docs",
 ): Promise<Discovery> {
   const gh = parseGitHubUrl(startUrl);
-  if (gh) return githubPages(gh, cap);
+  if (gh) return githubPages(gh, cap, read);
+
+  // Reading a codebase means reading a repository. There is no link walk that
+  // produces one, and silently falling back to crawling a website would hand
+  // the caller a brain full of marketing pages under the name they asked for.
+  if (read === "code") {
+    throw new Error(
+      `a repository source needs a GitHub URL — ${startUrl} is not one`,
+    );
+  }
 
   const known = KNOWN_REPOS[new URL(startUrl).hostname.replace(/^www\./, "")];
   if (known) {

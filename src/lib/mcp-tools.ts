@@ -491,6 +491,16 @@ export const TOOLS: ToolDef[] = [
             "reads the doc files of the repository — for docs sites that are " +
             "JavaScript apps, the repository link is the one that works.",
         },
+        code: {
+          type: "boolean",
+          description:
+            "With crawl and a GitHub URL: read the repository's SOURCE rather " +
+            "than its documentation — the conventions this codebase actually " +
+            "follows, where a new thing of a given kind is expected to go, and " +
+            "the decisions its comments explain. Use this when the user wants " +
+            "a brain about THEIR OWN repository (\"learn how we do things in " +
+            "this repo\"); leave it off to learn a product from its docs.",
+        },
         text: { type: "string", description: "A block of material to read." },
         name: { type: "string", description: "What the text is, for the source list." },
       },

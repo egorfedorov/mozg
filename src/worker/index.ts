@@ -1,4 +1,5 @@
 import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl, enqueueGeneration } from "@/worker/queue";
+import { isCrawlRoot } from "@/lib/sources";
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
 import { compileLesson } from "@/worker/lesson";
@@ -74,7 +75,7 @@ async function main() {
   for (const o of orphans) {
     // A site source belongs to the crawl queue — requeueing it as an ingest
     // would fail it with "unknown kind" instead of resuming the discovery.
-    await (o.kind === "site" ? enqueueCrawl(o.id) : enqueueIngest(o.id));
+    await (isCrawlRoot(o.kind) ? enqueueCrawl(o.id) : enqueueIngest(o.id));
   }
   if (orphans.length) {
     console.log(

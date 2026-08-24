@@ -492,6 +492,7 @@
   "61fde6222ef5": "Ce qu'il peut répondre",
   "50c59d3b0c51": "<0/> vérifications de couverture",
   "35a7c17f6605": "Répond à <0/> des <1/> questions de l'examen",
+  "9791451a32a0": "Reconnaît qu'il ne couvre pas <0/> des <1/> questions hors périmètre",
   "c8dc869aaca3": "Rien de ce qu'il servait à répondre n'a arrêté de fonctionner.",
   "3a5abb7e62fc": "Ce brain n'a pas encore passé son examen, donc sa couverture n'est pas vérifiée.",
   "67fba815f57e": "badge d'examen — partage ce score →",

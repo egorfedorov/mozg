@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CRAWL_ROOTS_SQL } from "@/lib/sources";
 import { z } from "zod";
 import { publishBlocker } from "@/lib/publishable";
 import { query, maybeOne } from "@/db";
@@ -371,7 +372,8 @@ export async function requeueBrainSources(formData: FormData) {
 
   const rows = await query<{ id: string }>(
     `update sources set status = 'queued', error = null, reject_reason = null
-      where brain_id = $1 and status in ('failed', 'rejected') and kind <> 'site'
+      where brain_id = $1 and status in ('failed', 'rejected')
+        and kind not in ${CRAWL_ROOTS_SQL}
       returning id`,
     [brainId],
   );

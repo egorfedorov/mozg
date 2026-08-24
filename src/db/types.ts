@@ -3,7 +3,7 @@
 export type Plan = "free" | "pro" | "team" | "admin";
 export type Visibility = "private" | "link" | "public";
 export type License = "nc" | "mit" | "proprietary";
-export type SourceKind = "image" | "text" | "url" | "file" | "site";
+export type SourceKind = "image" | "text" | "url" | "file" | "site" | "repo";
 export type SourceStatus = "queued" | "processing" | "ready" | "failed" | "rejected";
 export type NoteKind = "fact" | "rule" | "layout" | "example" | "pitfall";
 export type NoteStatus = "active" | "pending" | "superseded" | "rejected";

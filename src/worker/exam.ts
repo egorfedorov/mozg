@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CRAWL_ROOTS_SQL } from "@/lib/sources";
 import { exists, one, query, tx } from "@/db";
 import type { Brain, Check, Plan } from "@/db/types";
 import { costCents, structured } from "@/lib/claude";
@@ -1177,7 +1178,7 @@ export async function runExam(
 async function topUpFromSites(brain: Brain, failedTexts: string[]): Promise<void> {
   const sites = await query<{ id: string; url: string }>(
     `select id, url from sources
-      where brain_id = $1 and kind = 'site' and url is not null
+      where brain_id = $1 and kind in ${CRAWL_ROOTS_SQL} and url is not null
       order by created_at limit 2`,
     [brain.id],
   );
