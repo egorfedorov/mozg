@@ -679,7 +679,15 @@ export async function runMaintenance(): Promise<{
   const examined = budget.hold ? [] : await examStaleBrains();
   // Under the same hold: topping up probes is a model call and it queues a
   // sitting, so it is scheduled spend by both definitions.
-  const probes = budget.hold ? 0 : await topUpNegativeProbes();
+  // Never fatal. Everything else in this pass is a guarantee somebody depends
+  // on — pages refreshed, scores kept current — and the probe top-up is a
+  // nicety on top; a bad query here must not make pg-boss retry the whole pass.
+  const probes = budget.hold
+    ? 0
+    : await topUpNegativeProbes().catch((err) => {
+        reportOnce("worker", "probe-topup", err);
+        return 0;
+      });
   // Real searches that came back weak become exam checks, so the next
   // sitting measures what callers actually asked and could not get. After
   // examStaleBrains deliberately: a check added now is graded by the exam
