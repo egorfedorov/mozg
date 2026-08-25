@@ -107,8 +107,18 @@ const SKIP_ENDINGS =
  * a rule on those names would drop real chapters — the mistake this cannot
  * afford, since a brain that quietly lost a chapter still scores itself as
  * complete.
+ *
+ * `fixtures`, `playground`, `snapshots` and `e2e` join the list on the same
+ * test: no product documents itself in a directory called fixtures. They were
+ * added after twelve sources failed the same way across three crawls —
+ * vitest's `test/unit/test/fixtures/hi.txt` ("Hello, World!"), its
+ * `snapshot-1.txt` ("white space"), vite's `playground/assets/static/foo`.
+ * Each was fetched, paid for, and rejected by the extractor as too short to
+ * hold anything, which is a failed source on the owner's page for a file that
+ * was never documentation.
  */
-const NOT_DOCS = /(^|\/)(\.[^/]+|node_modules|vendor|dist|__tests__)\//;
+const NOT_DOCS =
+  /(^|\/)(\.[^/]+|node_modules|vendor|dist|__tests__|fixtures?|playground|snapshots?|e2e)\//;
 
 /**
  * Repository housekeeping files. A CHANGELOG is the single most expensive page

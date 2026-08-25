@@ -335,3 +335,37 @@ test("code material is recognised from the url the crawl wrote", async () => {
   assert.equal(isCodeMaterial(null), false);
   assert.equal(isCodeMaterial("not a url"), false);
 });
+
+/**
+ * Twelve sources failed the same way across three docs crawls: vitest's
+ * `test/unit/test/fixtures/hi.txt` ("Hello, World!"), its `snapshot-1.txt`
+ * ("white space"), vite's `playground/assets/static/foo`. Each was fetched,
+ * paid for, and rejected as too short to hold anything — a failed source on
+ * the owner's page for a file that was never documentation.
+ */
+test("a docs crawl stops at test fixtures without dropping real chapters", async () => {
+  const { isDocPath } = await import("./crawl");
+
+  for (const p of [
+    "test/unit/test/fixtures/hi.txt",
+    "test/ui/fixtures/single-file/resources/test.txt",
+    "test/unit/test/snapshots/a.txt",
+    "playground/assets/static/foo.md",
+    "test/e2e/fixtures/config.md",
+    "packages/x/fixture/thing.md",
+  ]) {
+    assert.equal(isDocPath(p), false, p);
+  }
+
+  // The omission the original rule was careful about, still honoured: expo
+  // documents EAS Build under docs/pages/build and bun its test runner under
+  // docs/test, so a rule on those names would drop real chapters.
+  for (const p of [
+    "docs/pages/build/introduction.md",
+    "docs/test/writing-tests.md",
+    "docs/guides/testing.md",
+    "docs/api/index.md",
+  ]) {
+    assert.equal(isDocPath(p), true, p);
+  }
+});

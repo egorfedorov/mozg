@@ -163,3 +163,44 @@ test("brain_find accepts the argument name its sibling tool uses", async () => {
   // Reaches the search rather than the argument complaint.
   assert.doesNotMatch(out.text, /needs a question/);
 });
+
+/**
+ * The wall has to arrive before the work, not after it.
+ *
+ * A user watched an agent plan seventeen cutouts for three and a half minutes,
+ * call gen_run, and get "could not charge the generation". Their reaction was
+ * "so what's the point". Nothing was broken — the price was printed and the
+ * refusal was correct — but the balance was only consulted at the moment of
+ * spending, so everything before that was work they watched happen and could
+ * not use.
+ */
+test("a project short of balance says so while there is still time to act", async () => {
+  stubDb((text) => {
+    if (/from gen_prices/.test(text)) return [{ role: "symbol", cents: 100 }];
+    if (/balance_cents/.test(text)) return [{ balance_cents: 300 }];
+    if (/from gen_projects/.test(text)) {
+      return [{ id: "p1", title: "Tomb", style: "a bleached tomb", palette: null, owner_id: "u1" }];
+    }
+    if (/from gen_items/.test(text)) {
+      return Array.from({ length: 5 }, (_, i) => ({
+        id: `i${i}`,
+        label: `sym-${i}`,
+        role: "symbol",
+        status: "planned",
+        spec: null,
+      }));
+    }
+    return [];
+  });
+
+  const out = await callTool("gen_project", { id: "p1" }, owner);
+
+  // Five symbols at $1 against $3 of balance.
+  assert.match(out.text, /\$2\.00 SHORT/);
+  // Said before any generating, and it names every way out rather than only
+  // the one that takes our money.
+  assert.match(out.text, /BEFORE planning further work/);
+  assert.match(out.text, /mozg\.sh\/settings/);
+  assert.match(out.text, /apimart\.ai\/keys/);
+  assert.match(out.text, /drop assets/);
+});

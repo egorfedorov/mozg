@@ -1982,7 +1982,7 @@ async function genProject(
 ): Promise<ToolOutcome> {
   const { createProject, proposedItems, addItems, readProject, listProjects, syncItems } =
     await import("@/lib/genproject");
-  const { prices, priceOf } = await import("@/lib/genprice");
+  const { prices, priceOf, affordance } = await import("@/lib/genprice");
 
   const id = String(args.id ?? "").trim();
   const title = String(args.title ?? "").trim();
@@ -2017,7 +2017,6 @@ async function genProject(
     );
     const balance = wallet?.balance_cents ?? 0;
     const short = total - balance;
-    const money_ = money(balance);
 
     return {
       text:
@@ -2025,14 +2024,16 @@ async function genProject(
         `World: ${read.project.style ?? "not described yet"}\n` +
         (read.project.palette ? `Palette: ${read.project.palette}\n` : "") +
         `\n${lines.join("\n")}\n\n` +
-        `${planned.length} planned, ${money(total)} to generate them. ` +
-        `Balance ${money_}.` +
+        `${planned.length} planned, ${money(total)} to generate them.\n` +
+        `${affordance(balance, table)}` +
         (planned.length && short > 0
           ? `\n\nTHAT IS ${money(short)} SHORT — gen_run will refuse and generate ` +
             `nothing. Say this to the user BEFORE planning further work: they can ` +
             `top up at https://mozg.sh/settings, or bring their own key at ` +
             `https://apimart.ai/keys, or drop assets from the set to fit the balance.`
-          : ` Enough for the set.`) +
+          : planned.length
+            ? ` Enough for this set.`
+            : ``) +
         `\n\nChange one with gen_plan; generate with gen_run — that is the call that spends money.`,
     };
   }
@@ -2068,12 +2069,22 @@ async function genProject(
         "the title is the game, the style is its world.",
     };
   }
+  // The balance rides on the list too, not only on an opened project. An agent
+  // asked "make me some art" lists projects first, and that is the moment to
+  // know whether there is money to make any — before it plans a set it cannot
+  // pay for and the user watches the work happen for nothing.
+  const walletRow = await maybeOne<{ balance_cents: number }>(
+    `select balance_cents from "user" where id = $1`,
+    [owner.userId],
+  );
+
   return {
     text:
       `${mine.length} project(s):\n` +
       mine
         .map((p) => `  ${p.title} — ${p.id}\n      ${p.planned} planned, ${p.done} generated`)
-        .join("\n"),
+        .join("\n") +
+      `\n\n${affordance(walletRow?.balance_cents ?? 0, await prices())}`,
   };
 }
 

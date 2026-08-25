@@ -53,3 +53,40 @@ export function priceRows(table: PriceTable): { role: AssetRole; cents: number; 
     summary: ROLES[role].summary,
   }));
 }
+
+/**
+ * What a balance can actually buy, in a sentence the agent can say out loud.
+ *
+ * A number of cents is not an answer to "can I do this". The user asking an
+ * agent for art wants to hear "you have ten dollars, that is about ten
+ * symbols" before anything is planned — not a balance they have to divide by a
+ * price they were never told, and certainly not a refusal after the work.
+ *
+ * Deliberately approximate and says so: a set mixes roles at different prices,
+ * so an exact count would be a promise about a set nobody has chosen yet.
+ */
+export function affordance(balanceCents: number, table: PriceTable): string {
+  const money = (c: number) => `$${(c / 100).toFixed(2)}`;
+  const costs = Object.values(table).filter((c) => c > 0);
+  const min = costs.length ? Math.min(...costs) : GENERATION_PRICE_CENTS;
+  const max = costs.length ? Math.max(...costs) : GENERATION_PRICE_CENTS;
+
+  if (balanceCents < min) {
+    return (
+      `Balance ${money(balanceCents)} — not enough for a single asset ` +
+      `(the cheapest is ${money(min)}). Top up at https://mozg.sh/settings, or ` +
+      `use your own key at https://apimart.ai/keys and generation stops costing ` +
+      `balance at all.`
+    );
+  }
+
+  const most = Math.floor(balanceCents / min);
+  const fewest = Math.floor(balanceCents / max);
+  const count =
+    min === max || most === fewest
+      ? `about ${most} asset${most === 1 ? "" : "s"} at ${money(min)} each`
+      : `between ${fewest} and ${most} assets, depending on kind ` +
+        `(${money(min)}–${money(max)} each)`;
+
+  return `Balance ${money(balanceCents)} — enough for ${count}.`;
+}
