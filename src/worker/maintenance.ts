@@ -514,9 +514,18 @@ export async function requeueBudgetPaused(limit = 50): Promise<number> {
       where id in (
         select id from sources
          where status = 'failed'
-           and (error like 'daily budget:%' or error like 'monthly budget:%'
+           and (error like 'daily budget:%'
                 or error like 'rate limit:%'
-                or error like 'provider credit:%')
+                or error like 'provider credit:%'
+                -- A monthly cap does not roll for weeks, and this pass runs
+                -- every six hours. Retrying inside the same month re-queues
+                -- the source, spends a worker slot re-reading the budget, and
+                -- fails it with the same sentence — measured on prod as 43
+                -- sources looping for a free account that had used $0.50 of
+                -- $0.50. Only once the calendar month has actually moved past
+                -- the failure is there anything new to try.
+                or (error like 'monthly budget:%'
+                    and processed_at < date_trunc('month', now())))
          order by processed_at
          limit $1
       )

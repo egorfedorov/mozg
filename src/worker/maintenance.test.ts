@@ -139,3 +139,27 @@ test("a named brain is refreshed whole, demand or not", async () => {
   // "I checked the ones I felt like" is not an answer to "update my brain".
   assert.match(batch, /\$1::uuid is not null or s\.checked_at is null/);
 });
+
+/**
+ * The pass runs every six hours; a monthly cap does not roll for weeks.
+ * Production had 43 sources from one free account looping through it — queued,
+ * re-read the budget, failed with the same sentence, four times a day, for the
+ * rest of the month.
+ */
+test("a monthly budget failure is not retried inside the same month", async () => {
+  let sql = "";
+  stubDb((text) => {
+    sql = text;
+    return [];
+  });
+
+  const { requeueBudgetPaused } = await import("./maintenance");
+  await requeueBudgetPaused();
+
+  const flat = sql.replace(/\s+/g, " ");
+  // Daily and rate limits still retry freely — those windows do roll.
+  assert.match(flat, /error like 'daily budget:%'/);
+  assert.match(flat, /error like 'rate limit:%'/);
+  // The monthly one only once the calendar month has moved past the failure.
+  assert.match(flat, /monthly budget:%' and processed_at < date_trunc\('month', now\(\)\)/);
+});
