@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { query } from "@/db";
 import { requireAdmin } from "@/lib/admin";
+import { signupFunnel, type SourceFunnel } from "@/lib/attribution";
+import { formatCents } from "@/lib/money-math";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() {
@@ -49,10 +51,96 @@ function Block({ title, hint, text }: { title: string; hint?: string; text: stri
   );
 }
 
-export default async function MarketingPage() {
+/**
+ * What the last round of posting bought.
+ *
+ * Kept at the top of the kit rather than on a page of its own, because the
+ * decision it informs is made here: the next block someone copies out of this
+ * page should be the one whose channel got past the first column last time.
+ * Every other number on this page describes the catalogue; this is the only
+ * one that describes the audience.
+ */
+function Funnel({
+  rows,
+  days,
+  t,
+}: {
+  rows: SourceFunnel[];
+  days: number | null;
+  t: (s: string) => string;
+}) {
+  const cell: React.CSSProperties = {
+    padding: ".4rem .6rem",
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
+  };
+  const head = { ...cell, color: "var(--ink-3)", fontSize: ".6875rem" };
+
+  return (
+    <>
+      <h2 className="h3" style={{ margin: "1.5rem 0 .5rem" }}>{t("Where they came from")}</h2>
+      <p style={{ color: "var(--ink-2)", maxWidth: "62ch", marginTop: 0, marginBottom: ".75rem" }}>
+        {t("First touch, as the cookie saw it. A tagged link (?utm_source=hn-0826) makes its own row; an untagged one shared in a DM arrives as “direct”, so this undercounts rather than invents. Signups are not the number that matters — an account with no token read the page and left, and one with a token and no calls stopped at the config.")}</p>
+      <p className="mono" style={{ fontSize: ".75rem", marginTop: 0, marginBottom: ".5rem" }}>
+        <a href="/admin/marketing?days=30" style={{ fontWeight: days === 30 ? 700 : 400 }}>{t("30 days")}</a>
+        {" · "}
+        <a href="/admin/marketing?days=90" style={{ fontWeight: days === 90 ? 700 : 400 }}>{t("90 days")}</a>
+        {" · "}
+        <a href="/admin/marketing?days=all" style={{ fontWeight: days === null ? 700 : 400 }}>{t("all time")}</a>
+      </p>
+      <div style={{ overflowX: "auto", border: "1.5px solid var(--ink)", marginBottom: "1.5rem" }}>
+        <table className="mono" style={{ width: "100%", borderCollapse: "collapse", fontSize: ".8125rem" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--rule)" }}>
+              <th style={{ ...head, textAlign: "left" }}>{t("Source")}</th>
+              <th style={head}>{t("Signed up")}</th>
+              <th style={head}>{t("Connected")}</th>
+              <th style={head}>{t("Called")}</th>
+              <th style={head}>{t("Paid")}</th>
+              <th style={head}>{t("Money")}</th>
+              <th style={{ ...head, textAlign: "left" }}>{t("Last")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ ...cell, textAlign: "left", color: "var(--ink-3)" }}>
+                  {t("Nobody signed up in this window.")}
+                </td>
+              </tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.source} style={{ borderBottom: "1px solid var(--rule)" }}>
+                <td style={{ ...cell, textAlign: "left" }}>{r.source}</td>
+                <td style={cell}>{r.signups}</td>
+                <td style={cell}>{r.connected}</td>
+                <td style={{ ...cell, fontWeight: r.active > 0 ? 700 : 400 }}>{r.active}</td>
+                <td style={cell}>{r.paying}</td>
+                <td style={cell}>{r.revenue_cents > 0 ? formatCents(r.revenue_cents) : "—"}</td>
+                <td style={{ ...cell, textAlign: "left", color: "var(--ink-3)" }}>{r.last}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+export default async function MarketingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ days?: string }>;
+}) {
   const t = await translator();
 
   await requireAdmin().catch(() => redirect("/"));
+
+  // Default to a month: long enough that a quiet week is not read as a dead
+  // channel, short enough that last spring's launch is not still the winner.
+  const asked = (await searchParams).days;
+  const days = asked === "all" ? null : asked === "90" ? 90 : 30;
+  const funnel = await signupFunnel(days);
 
   const s = await query<{ brains: number; avg: number; paid: number }>(
     `select count(*)::int as brains,
@@ -241,6 +329,8 @@ export default async function MarketingPage() {
         s.brains,
         s.avg,
       ])}</p>
+
+      <Funnel rows={funnel} days={days} t={t} />
 
       <h2 className="h3" style={{ margin: "1.5rem 0 .75rem" }}>{t("Launch runbook — go top to bottom")}</h2>
       <div style={{ display: "grid", gap: "1px", background: "var(--rule)", border: "1.5px solid var(--ink)", marginBottom: "1.5rem" }}>

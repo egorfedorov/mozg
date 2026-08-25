@@ -43,6 +43,7 @@
     "check:payments": "NOWPAYMENTS_API_KEY=test-key NOWPAYMENTS_IPN_SECRET=test-secret tsx --env-file-if-exists=.env scripts/check-payments.ts",
     "requeue": "tsx --env-file-if-exists=.env scripts/requeue.ts",
     "check:usage": "tsx --env-file-if-exists=.env scripts/check-usage.ts",
+    "funnel": "tsx --env-file-if-exists=.env scripts/funnel.ts",
     "lesson": "tsx --env-file-if-exists=.env scripts/lesson.ts",
     "probes": "tsx --env-file-if-exists=.env scripts/probes.ts",
     "contradict": "tsx --env-file-if-exists=.env scripts/contradict.ts",
