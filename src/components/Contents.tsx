@@ -70,6 +70,7 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
       { href: "/packs", label: msg("Packs"), note: msg("a trade's brains, sold together") },
       { href: "https://gallery.mozg.sh", label: msg("Style gallery"), note: msg("buy the way someone works"), external: true },
       { href: "/styles", label: msg("Sell your style"), note: msg("the answer to scraping that pays you") },
+      { href: "/answerable", label: msg("Make your product answerable"), note: msg("your users ask an agent, not your docs") },
       { href: "/audit", label: msg("Audit a knowledge base"), note: msg("exam-as-a-service, dated") },
       { href: "https://learn.mozg.sh", label: msg("Learn as a human"), note: msg("the same brain, as a course"), external: true },
     ],
