@@ -135,9 +135,17 @@ async function check(): Promise<SystemStatus> {
           where status = 'failed'
             and coalesce(error, '') not like '%budget: extraction paused%')::int
           from sources where processed_at > now() - interval '24 hours') as read_failed,
-       (select count(*)::int from calls where created_at > now() - interval '1 hour') as calls,
+       -- Signed-in callers only. An anonymous caller is a stranger's agent
+       -- meeting the tools for the first time, and a fair share of its calls
+       -- are refusals BY DESIGN — a write tool it may not reach, a rate limit
+       -- it just hit. Those are the system working, and counting them here
+       -- made "Agent API degraded" mean "somebody is trying mozg out".
        (select count(*)::int from calls
-         where created_at > now() - interval '1 hour' and not ok) as calls_failed,
+         where created_at > now() - interval '1 hour'
+           and caller_ip_hash is null) as calls,
+       (select count(*)::int from calls
+         where created_at > now() - interval '1 hour'
+           and caller_ip_hash is null and not ok) as calls_failed,
        (select count(*)::int from app_errors
          where source = 'payments' and resolved_at is null
            and created_at > now() - interval '24 hours') as payment_errors`,
