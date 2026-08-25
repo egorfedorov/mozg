@@ -347,7 +347,11 @@ export const TOOLS: ToolDef[] = [
     name: "gen_run",
     description:
       "Generate the planned assets of a project. THIS SPENDS THE USER'S " +
-      "BALANCE — say what it will cost and get a yes before calling it. Pass " +
+      "BALANCE — say what it will cost AND what their balance is, and get a " +
+      "yes, before calling it. gen_project prints both; if it says the set is " +
+      "short, tell them before you plan anything further rather than after. " +
+      "A run that cannot be paid for generates nothing and charges nothing. " +
+      "Pass " +
       "`labels` to run only some of them, or omit it for everything still " +
       "planned. Failed assets refund themselves.",
     inputSchema: {

@@ -127,8 +127,11 @@ export async function startPack(opts: {
       return {
         ok: false,
         reason:
-          `This pack costs $${(total / 100).toFixed(2)} for ${opts.specs.length} assets. ` +
-          "Top up in settings, or take assets out of the set.",
+          `This pack costs $${(total / 100).toFixed(2)} for ${opts.specs.length} assets, ` +
+          `and the balance is $${(rows[0].balance_cents / 100).toFixed(2)} — ` +
+          `$${((total - rows[0].balance_cents) / 100).toFixed(2)} short. Nothing was ` +
+          "generated and nothing was charged. Top up at https://mozg.sh/settings, use " +
+          "your own key at https://apimart.ai/keys, or take assets out of the set.",
       };
     }
 

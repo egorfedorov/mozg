@@ -1962,6 +1962,22 @@ async function genProject(
     const planned = read.items.filter((x) => x.status === "planned");
     const total = planned.reduce((n, x) => n + priceOf(table, x.role), 0);
 
+    // The balance, next to the price, while there is still time to act on it.
+    //
+    // The price was always here and the balance never was, so an agent could
+    // quote "$17 for 17 cutouts" in perfect good faith, spend three minutes
+    // planning the set, call gen_run and only then find the wallet empty. The
+    // user's whole experience of that is: it did the work, then showed a
+    // paywall. Knowing both numbers here turns it into a sentence said before
+    // any work happens.
+    const wallet = await maybeOne<{ balance_cents: number }>(
+      `select balance_cents from "user" where id = $1`,
+      [owner.userId],
+    );
+    const balance = wallet?.balance_cents ?? 0;
+    const short = total - balance;
+    const money_ = money(balance);
+
     return {
       text:
         `${read.project.title} — ${read.project.id}\n` +
@@ -1969,7 +1985,14 @@ async function genProject(
         (read.project.palette ? `Palette: ${read.project.palette}\n` : "") +
         `\n${lines.join("\n")}\n\n` +
         `${planned.length} planned, ${money(total)} to generate them. ` +
-        `Change one with gen_plan; generate with gen_run — that is the call that spends money.`,
+        `Balance ${money_}.` +
+        (planned.length && short > 0
+          ? `\n\nTHAT IS ${money(short)} SHORT — gen_run will refuse and generate ` +
+            `nothing. Say this to the user BEFORE planning further work: they can ` +
+            `top up at https://mozg.sh/settings, or bring their own key at ` +
+            `https://apimart.ai/keys, or drop assets from the set to fit the balance.`
+          : ` Enough for the set.`) +
+        `\n\nChange one with gen_plan; generate with gen_run — that is the call that spends money.`,
     };
   }
 
