@@ -135,17 +135,27 @@ async function check(): Promise<SystemStatus> {
           where status = 'failed'
             and coalesce(error, '') not like '%budget: extraction paused%')::int
           from sources where processed_at > now() - interval '24 hours') as read_failed,
-       -- Signed-in callers only. An anonymous caller is a stranger's agent
-       -- meeting the tools for the first time, and a fair share of its calls
-       -- are refusals BY DESIGN — a write tool it may not reach, a rate limit
-       -- it just hit. Those are the system working, and counting them here
-       -- made "Agent API degraded" mean "somebody is trying mozg out".
        (select count(*)::int from calls
-         where created_at > now() - interval '1 hour'
-           and caller_ip_hash is null) as calls,
-       (select count(*)::int from calls
-         where created_at > now() - interval '1 hour'
-           and caller_ip_hash is null and not ok) as calls_failed,
+         where created_at > now() - interval '1 hour') as calls,
+       -- What "the Agent API is unwell" actually means.
+       --
+       -- It used to mean not-ok, which is set from a tool's isError — and
+       -- isError is how every honest refusal answers: "top up your balance",
+       -- "that is not in the set", "brain_find takes a question, not a name".
+       -- Measured on prod, 23 of an hour's 75 calls were refusals of exactly
+       -- that kind, every one of them the system working, and the tile went
+       -- red. It would go red harder now: an anonymous caller is a stranger's
+       -- agent meeting the tools for the first time, and its refusals — a
+       -- write tool it may not reach, a rate limit it just hit — are the
+       -- design, not a fault.
+       --
+       -- A call that genuinely broke is one that threw, and those already
+       -- report themselves to app_errors under source 'mcp' (see the catch in
+       -- lib/mcp-rpc). So count those. The number is small by construction,
+       -- which is the point: a tile that is red most of the time is a tile
+       -- nobody reads.
+       (select count(*)::int from app_errors
+         where source = 'mcp' and created_at > now() - interval '1 hour') as calls_failed,
        (select count(*)::int from app_errors
          where source = 'payments' and resolved_at is null
            and created_at > now() - interval '24 hours') as payment_errors`,
@@ -178,11 +188,14 @@ async function check(): Promise<SystemStatus> {
       key: "mcp",
       label: "Agent API (MCP)",
       blurb: "What Claude Code, Codex and Cursor actually call.",
-      state: m.calls >= 5 && m.calls_failed / m.calls > 0.2 ? "degraded" : "ok",
+      state: m.calls_failed > 0 ? "degraded" : "ok",
       detail:
-        m.calls === 0
-          ? "no calls in the last hour"
-          : `${m.calls - m.calls_failed} of ${m.calls} calls answered this hour`,
+        m.calls_failed > 0
+          ? `${m.calls_failed} call${m.calls_failed === 1 ? "" : "s"} failed with an ` +
+            `internal error this hour, of ${m.calls}`
+          : m.calls === 0
+            ? "no calls in the last hour"
+            : `${m.calls} calls this hour, none broken`,
     },
     {
       key: "payments",
