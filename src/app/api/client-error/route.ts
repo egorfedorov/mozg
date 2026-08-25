@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
-import { fromExtension } from "@/lib/client-error";
+import { fromExtension, fromStaleDeploy } from "@/lib/client-error";
 
 /**
  * The browser's lane into the error center. Anonymous reports are accepted —
@@ -24,6 +24,11 @@ export async function POST(req: Request) {
   // Accepted and dropped, rather than rejected: the reporter cannot do
   // anything useful with a failure either way.
   if (fromExtension(body?.stack)) return NextResponse.json({ ok: true });
+
+  // A tab that was open when we deployed. Nothing to fix in the code, and the
+  // reporter reloads the page so the user's next click works — filing it as a
+  // fresh failure only pages the operator after every release.
+  if (fromStaleDeploy(message)) return NextResponse.json({ ok: true, stale: true });
 
   await query(
     `insert into app_errors (source, kind, message, detail, user_id)

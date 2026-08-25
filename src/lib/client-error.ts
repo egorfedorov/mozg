@@ -16,3 +16,20 @@ export function fromExtension(stack?: string | null): boolean {
   const top = stack?.split("\n").find((l) => l.includes("://"));
   return !!top && /\w+-extension:\/\//.test(top);
 }
+
+/**
+ * A page that was open when we deployed.
+ *
+ * Next gives every server action an id derived from the build, so a tab left
+ * open across a release posts an id the new server has never heard of and the
+ * user's click does nothing at all. It is not a fault in our code and there is
+ * nothing to fix in it — but it is also not harmless the way an extension's
+ * throw is, because somebody pressed a button and got silence.
+ *
+ * So it is recognised in two places for two different reasons: here, so it
+ * stops being filed as a fresh failure and paging the operator after every
+ * deploy, and in the reporter, which reloads the page so the next click works.
+ */
+export function fromStaleDeploy(message?: string | null): boolean {
+  return !!message && /Server Action "[^"]*" was not found on the server/.test(message);
+}

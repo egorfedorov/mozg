@@ -104,3 +104,56 @@ test("halving a cut-off segment keeps every byte, on a paragraph break", async (
   assert.ok(a.length > 0 && b.length > 0);
   assert.equal(a + b, flat);
 });
+
+/**
+ * Production, 08-25: "notes.31.category Invalid input: expected string,
+ * received undefined". The model had written thirty-five good notes about a
+ * source we had already paid to read, forgot the label on three of them, and
+ * the strict array parse threw away all thirty-five and failed the source.
+ */
+test("a page whose model forgot a label keeps the notes it did write", async () => {
+  const { finish } = await import("./extract");
+  const usage = { input_tokens: 10, output_tokens: 10 };
+
+  const good = { title: "T", body: "B", kind: "fact", category: "Queues", confidence: 0.8 };
+  const noLabel = { title: "T2", body: "B2", kind: "fact", confidence: 0.8 };
+
+  const out = finish({ notes: [good, noLabel, good] }, usage);
+  assert.equal(out.notes.length, 3);
+  // The label is repaired, not invented from thin air: it says so on the board
+  // and the owner can move it.
+  assert.equal(out.notes[1].category, "Uncategorised");
+});
+
+test("a note with no text at all is dropped, not repaired", async () => {
+  const { finish } = await import("./extract");
+  const usage = { input_tokens: 10, output_tokens: 10 };
+
+  const good = { title: "T", body: "B", kind: "fact", category: "C", confidence: 0.8 };
+  const empty = { kind: "fact", category: "C", confidence: 0.8 };
+
+  const out = finish({ notes: [good, empty] }, usage);
+  // There is no note in an object with no title and no body — a guessed label
+  // would make one up.
+  assert.equal(out.notes.length, 1);
+});
+
+test("an answer where nothing survives still fails the source", async () => {
+  const { finish } = await import("./extract");
+  // Recording an empty read as a success would mark the page done and never
+  // look at it again.
+  assert.throws(
+    () => finish({ notes: [{ kind: "fact" }, { kind: "rule" }] }, { input_tokens: 1, output_tokens: 1 }),
+    /every note was unusable/,
+  );
+});
+
+/** Seen on prod 08-21: the array arrived as its own JSON string. */
+test("an array handed back as a string is rescued", async () => {
+  const { finish } = await import("./extract");
+  const notes = JSON.stringify([
+    { title: "T", body: "B", kind: "fact", category: "C", confidence: 0.8 },
+  ]);
+  const out = finish({ notes }, { input_tokens: 1, output_tokens: 1 });
+  assert.equal(out.notes.length, 1);
+});

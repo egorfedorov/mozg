@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { z } from "zod";
-import { costCents, structured, type Usage } from "@/lib/claude";
+import { costCents, structured, unstringify, type Usage } from "@/lib/claude";
 import { OutputCutoff } from "@/lib/cutoff";
 import { env } from "@/lib/env";
 import type { NoteKind } from "@/db/types";
@@ -351,13 +351,34 @@ export async function extractFromImage(
   return finish(raw, usage);
 }
 
-/** The schema is enforced server-side, but a proxy might not — verify locally. */
-function finish(raw: unknown, usage: Usage): ExtractResult {
-  const parsed = responseSchema.safeParse(raw);
-  if (!parsed.success) {
-    // Name the fields that broke, like the exam's judge does — "schema
-    // mismatch" alone sends the next person to re-read the schema, which is
-    // almost never where the problem is.
+/** A note whose category the model forgot. The shelf label is not the
+ *  knowledge, and losing thirty good notes over a missing one is the wrong
+ *  trade — the board shows this and the owner can move it. */
+const NO_CATEGORY = "Uncategorised";
+
+/**
+ * The schema is enforced server-side, but a proxy might not — verify locally.
+ *
+ * Tolerant per note, for the same reason the exam's check generator is: the
+ * model is the cheap one, and a page that produced thirty-five good notes and
+ * forgot the category on three of them is a page we have already paid to read.
+ * Rejecting the array threw away all thirty-five and failed the source, and
+ * that is what production did twice on 08-25 — "notes.31.category Invalid
+ * input: expected string, received undefined".
+ *
+ * So: repair what can be repaired, drop what cannot, and only give up when
+ * nothing survives. A missing category is repairable — it is a label. A
+ * missing title or body is not; there is no note there to keep.
+ */
+export function finish(raw: unknown, usage: Usage): ExtractResult {
+  // A proxy that hands the array back as its JSON string is a shape we can
+  // rescue, and the helper that knows how already exists for the BYOK path.
+  const data = unstringify(raw, JSON_SCHEMA as unknown as Record<string, unknown>);
+
+  const list = (data as { notes?: unknown })?.notes;
+  if (!Array.isArray(list)) {
+    const parsed = responseSchema.safeParse(data);
+    if (parsed.success) return done(parsed.data.notes, usage);
     throw new Error(
       `extraction schema mismatch: ${parsed.error.issues
         .slice(0, 2)
@@ -365,8 +386,51 @@ function finish(raw: unknown, usage: Usage): ExtractResult {
         .join("; ")}`,
     );
   }
+
+  const noteSchema = responseSchema.shape.notes.element;
+  const kept: ExtractedNote[] = [];
+  const reasons: string[] = [];
+  for (const item of list) {
+    const one = noteSchema.safeParse(item);
+    if (one.success) {
+      kept.push(one.data);
+      continue;
+    }
+    // Second chance with the label supplied, since that is the field the model
+    // drops and the only one worth guessing.
+    const patched = noteSchema.safeParse({
+      ...(item as Record<string, unknown>),
+      category:
+        typeof (item as { category?: unknown })?.category === "string" &&
+        (item as { category: string }).category.trim()
+          ? (item as { category: string }).category
+          : NO_CATEGORY,
+    });
+    if (patched.success) kept.push(patched.data);
+    else if (reasons.length < 2) {
+      reasons.push(one.error.issues[0]?.path.join(".") ?? "note");
+    }
+  }
+
+  // Nothing survived: this really is a broken answer, and the source should
+  // fail rather than record an empty read as a successful one.
+  if (!kept.length && list.length) {
+    throw new Error(
+      `extraction schema mismatch: every note was unusable (${reasons.join(", ")})`,
+    );
+  }
+  if (kept.length < list.length) {
+    console.warn(
+      `[extract] dropped ${list.length - kept.length} of ${list.length} notes` +
+        (reasons.length ? ` (${reasons.join(", ")})` : ""),
+    );
+  }
+  return done(kept, usage);
+}
+
+function done(notes: ExtractedNote[], usage: Usage): ExtractResult {
   return {
-    notes: parsed.data.notes,
+    notes,
     usage: {
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,

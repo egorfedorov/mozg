@@ -13,7 +13,7 @@ import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
 import { reportOutOfCreditOnce } from "@/lib/errors";
 import { storage } from "@/lib/storage";
-import { fetchPageText, contentHash } from "@/lib/page";
+import { fetchPageText, contentHash, EmptyPageError } from "@/lib/page";
 import { checkFetchableUrl } from "@/lib/url-guard";
 import { enqueueExam } from "@/worker/queue";
 
@@ -491,6 +491,26 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
     return { status: "ready", notes: inserted, costCents: extracted.usage.costCents };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+
+    // A page we fetched successfully that turned out to hold nothing — a
+    // mkdocs `::: module` directive, a changelog stub, a fixture called
+    // hi.txt. That is a page READ, not a page broken: there was never
+    // anything on it to extract, and the recorded lesson is that an empty
+    // extraction is a valid answer rather than a failure.
+    //
+    // Failing it was wrong twice over. It sat red on the owner's page forever
+    // for a file that is fine, and the maintenance sweep kept picking it up to
+    // fetch the same nothing again. Marked ready with zero notes, it stops
+    // being both.
+    if (err instanceof EmptyPageError) {
+      await query(
+        `update sources set status = 'ready', error = null, processed_at = now(),
+                note_count = 0
+          where id = $1`,
+        [sourceId],
+      );
+      return { status: "ready", notes: 0, costCents: 0 };
+    }
 
     // "Too many requests" is the provider asking us to wait, and every
     // response to it except waiting is wrong: retrying burns the attempt,

@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { fromStaleDeploy } from "@/lib/client-error";
+
+/** One reload per tab, so a release cannot become a refresh loop. */
+const STALE_KEY = "mozg:reloaded-after-deploy";
 
 /**
  * The browser tells on itself. Three reports per page load at most — after
@@ -11,6 +15,25 @@ export default function ClientErrorReporter() {
   useEffect(() => {
     let budget = 3;
     const send = (message: string, stack?: string) => {
+      // The page was open when we deployed, so its server actions post ids the
+      // new server has never heard of and every click silently does nothing.
+      // Reloading is the fix and the user cannot know to do it — but only once
+      // per page, or a release turns into a refresh loop.
+      if (fromStaleDeploy(message)) {
+        // Guarded: a private window or blocked site data makes the accessor
+        // itself throw, and this is an error handler — throwing here would
+        // turn one stale click into an unhandled rejection loop.
+        try {
+          if (!sessionStorage.getItem(STALE_KEY)) {
+            sessionStorage.setItem(STALE_KEY, "1");
+            location.reload();
+          }
+        } catch {
+          // No memory of a previous reload, so do nothing rather than risk one
+          // on every throw.
+        }
+        return;
+      }
       if (budget-- <= 0) return;
       void fetch("/api/client-error", {
         method: "POST",
