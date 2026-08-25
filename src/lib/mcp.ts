@@ -935,12 +935,45 @@ async function brainRead(
     };
   }
 
-  const note = await maybeOne<Note>(
+  const noteId = String(args.note_id ?? "");
+  let note = await maybeOne<Note>(
     `select * from notes where id = $1 and brain_id = $2 and status = 'active'`,
-    [String(args.note_id ?? ""), resolved.brain.id],
+    [noteId, resolved.brain.id],
   );
+
+  // A note the caller was handed and cannot read is nearly always one that has
+  // since been superseded: the brain learned a better version between the
+  // search and the read. Refusing was technically right and practically wrong
+  // — the answer the caller wanted exists, one pointer away, and it is the
+  // one the search would return now. Follow the chain rather than making them
+  // search again for something they already found.
   if (!note) {
-    return { text: `No active note ${args.note_id} in ${handle}.`, isError: true };
+    const stale = await maybeOne<{ superseded_by: string | null }>(
+      `select superseded_by from notes where id = $1 and brain_id = $2`,
+      [noteId, resolved.brain.id],
+    );
+    // Bounded: a chain is normally one link, and a cycle from bad data must
+    // not spin here.
+    let next = stale?.superseded_by ?? null;
+    for (let hop = 0; next && hop < 5 && !note; hop++) {
+      const found = await maybeOne<Note>(
+        `select * from notes where id = $1 and brain_id = $2`,
+        [next, resolved.brain.id],
+      );
+      if (!found) break;
+      if (found.status === "active") note = found;
+      else next = found.superseded_by;
+    }
+  }
+
+  if (!note) {
+    return {
+      text:
+        `No active note ${noteId} in ${handle}. It was either replaced without ` +
+        "a successor or never existed here — search again, the brain may have " +
+        "learned a different version of this.",
+      isError: true,
+    };
   }
 
   // Reader-side defence in depth: a note written by a stranger must arrive
@@ -1628,10 +1661,18 @@ async function brainFind(
   args: Record<string, unknown>,
   owner: TokenOwner,
 ): Promise<ToolOutcome> {
-  const question = String(args.question ?? "").trim();
+  // `query` is accepted because brain_search takes `query`, so an agent that
+  // has just used one reaches for the same key here — and the old message then
+  // told it off for passing "a brain name", which it had not done. Being
+  // strict about the label of a field whose value is right costs a round trip
+  // and teaches the agent that the tool is unreliable.
+  const question = String(args.question ?? args.query ?? "").trim();
   if (question.length < 3) {
     return {
-      text: "Say what you need to know — brain_find takes a question, not a brain name.",
+      text:
+        "brain_find needs a question — what you actually want to know, in a " +
+        "sentence. It searches every brain at once, so it takes no brain name. " +
+        "The argument is `question` (`query` also works).",
       isError: true,
     };
   }

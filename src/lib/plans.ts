@@ -144,3 +144,25 @@ export function effectivePlan(
   if (!paidUntil) return plan;
   return new Date(paidUntil).getTime() > now.getTime() ? plan : "free";
 }
+
+/**
+ * How long an operator's plan grant lasts, as a Postgres interval or null.
+ *
+ * Null means no expiry, which is what a grant meant before a period existed —
+ * so zero months keeps the old behaviour rather than quietly capping anyone.
+ *
+ * Free never carries a date. A free account with a paid_until is a
+ * contradiction the next reader has to puzzle over, and effectivePlan ignores
+ * it anyway.
+ *
+ * The reason the caller must write this on EVERY grant, rather than only when
+ * a period is chosen: effectivePlan downgrades pro or team to free once
+ * paid_until has passed. Granting pro to somebody whose subscription had
+ * lapsed therefore set the plan column and changed nothing, because the stale
+ * date was still there voiding it — the operator saw "pro" in the table and
+ * the user stayed on free quotas.
+ */
+export function grantWindow(plan: Plan, months: number): string | null {
+  if (plan === "free" || !Number.isFinite(months) || months <= 0) return null;
+  return `${Math.floor(months)} months`;
+}

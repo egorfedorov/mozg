@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   effectivePlan,
+  grantWindow,
   limitsFor,
   upgradesFrom,
   PLANS,
@@ -102,4 +103,32 @@ test("every paid tier above the current one is offered, and admin is not sold to
   assert.deepEqual(upgradesFrom("admin"), []);
   // Nothing is offered that has no price on it.
   for (const p of upgradesFrom("free")) assert.ok(PLAN_PRICE_CENTS[p] > 0);
+});
+
+/**
+ * The operator's grant. What matters is not the happy path but that the date
+ * is ALWAYS decided here — a grant that leaves a stale paid_until behind sets
+ * the plan column and changes nothing, which is a silent failure the operator
+ * cannot see from the table.
+ */
+test("a grant's window is decided for every plan, not only for timed ones", () => {
+  assert.equal(grantWindow("pro", 3), "3 months");
+  assert.equal(grantWindow("team", 12), "12 months");
+  // No expiry — what a grant meant before a period existed.
+  assert.equal(grantWindow("pro", 0), null);
+  // Free never carries a date: effectivePlan ignores it and a reader would not.
+  assert.equal(grantWindow("free", 12), null);
+  // Junk from a form must not become an interval.
+  assert.equal(grantWindow("pro", NaN), null);
+  assert.equal(grantWindow("pro", -1), null);
+  assert.equal(grantWindow("pro", 1.9), "1 months");
+});
+
+/** The silent failure this exists to stop, stated as a test. */
+test("a lapsed date makes a paid plan serve as free", () => {
+  const past = new Date("2026-01-01");
+  const now = new Date("2026-08-25");
+  assert.equal(effectivePlan("pro", past, now), "free");
+  // Which is why a grant must clear it rather than leave it.
+  assert.equal(effectivePlan("pro", grantWindow("pro", 0), now), "pro");
 });

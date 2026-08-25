@@ -141,9 +141,25 @@ test("brain_find says so plainly when the catalogue cannot help", async () => {
   assert.match(out.text, /unverified/);
 });
 
-test("brain_find refuses a brain name where a question belongs", async () => {
+test("brain_find asks for a question, and names the argument", async () => {
   stubDb(() => []);
   const out = await callTool("brain_find", { question: "hi" }, owner);
   assert.equal(out.isError, true);
-  assert.match(out.text, /a question, not a brain name/);
+  assert.match(out.text, /needs a question/);
+  // The message has to name the field, because the commonest way to reach it
+  // is passing the right value under the wrong key.
+  assert.match(out.text, /`question`/);
+});
+
+/**
+ * brain_search takes `query`, so an agent that has just used it reaches for
+ * the same key here. Refusing that was a round trip spent on the label of a
+ * field whose value was already correct — and the old message blamed the
+ * caller for passing "a brain name", which it had not done.
+ */
+test("brain_find accepts the argument name its sibling tool uses", async () => {
+  stubDb(() => []);
+  const out = await callTool("brain_find", { query: "how do cascading reels settle" }, owner);
+  // Reaches the search rather than the argument complaint.
+  assert.doesNotMatch(out.text, /needs a question/);
 });

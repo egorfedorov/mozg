@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { grantWindow } from "@/lib/plans";
 import { CRAWL_ROOTS_SQL } from "@/lib/sources";
 import { z } from "zod";
 import { publishBlocker } from "@/lib/publishable";
@@ -23,15 +24,43 @@ export async function setPlan(formData: FormData) {
   const admin = await requireAdmin();
 
   const parsed = z
-    .object({ id: z.string().min(1), plan: z.enum(["free", "pro", "team"]) })
-    .safeParse({ id: formData.get("id"), plan: formData.get("plan") });
+    .object({
+      id: z.string().min(1),
+      plan: z.enum(["free", "pro", "team"]),
+      // "" is the forever grant; anything else is a whole number of months.
+      months: z.coerce.number().int().min(0).max(60).catch(0),
+    })
+    .safeParse({
+      id: formData.get("id"),
+      plan: formData.get("plan"),
+      months: formData.get("months") || 0,
+    });
   if (!parsed.success) return;
 
-  await query(`update "user" set plan = $2, "updatedAt" = now() where id = $1`, [
-    parsed.data.id,
-    parsed.data.plan,
-  ]);
-  console.log(`[admin] ${admin.email} set plan=${parsed.data.plan} on ${parsed.data.id}`);
+  const { id, plan, months } = parsed.data;
+
+  // paid_until is ALWAYS written, never left as it was, and that is the fix
+  // for a silent failure rather than a nicety. effectivePlan downgrades a pro
+  // or team account to free once paid_until is in the past — so granting pro
+  // to somebody whose subscription had lapsed used to set the column and
+  // change nothing at all, because the stale date was still sitting there
+  // voiding it. The operator saw "pro" in the table and the user stayed on
+  // free quotas.
+  //
+  const until = grantWindow(plan, months);
+
+  await query(
+    `update "user"
+        set plan = $2,
+            paid_until = case when $3::text is null then null
+                              else now() + $3::interval end,
+            "updatedAt" = now()
+      where id = $1`,
+    [id, plan, until],
+  );
+  console.log(
+    `[admin] ${admin.email} set plan=${plan}${until ? ` for ${until}` : " (no expiry)"} on ${id}`,
+  );
   revalidatePath("/admin/users");
 }
 

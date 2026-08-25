@@ -128,8 +128,35 @@ export default async function AdminUsersPage() {
                           <option value="pro">{t("pro")}</option>
                           <option value="team">{t("team")}</option>
                         </select>
+                        {/* How long the grant lasts. Zero is no expiry, which
+                            is what a grant meant before this existed, so the
+                            default keeps the old behaviour. */}
+                        <select name="months" defaultValue="0" title={t("How long the plan lasts")}>
+                          <option value="0">{t("no expiry")}</option>
+                          <option value="1">{t("1 month")}</option>
+                          <option value="3">{t("3 months")}</option>
+                          <option value="6">{t("6 months")}</option>
+                          <option value="12">{t("12 months")}</option>
+                        </select>
                         <button type="submit">{t("Set")}</button>
                       </form>
+                      {/* The date decides the quota, so it belongs next to the
+                          control that sets it: a paid plan whose date has
+                          passed is served as free. */}
+                      {u.paid_until && (
+                        <div
+                          className="mono"
+                          style={{ fontSize: ".7rem", color: "var(--ink-2)", marginTop: ".2rem" }}
+                        >
+                          {new Date(u.paid_until) > new Date()
+                            ? fill(t("until <0/>"), [
+                                new Date(u.paid_until).toISOString().slice(0, 10),
+                              ])
+                            : fill(t("LAPSED <0/> — served as free"), [
+                                new Date(u.paid_until).toISOString().slice(0, 10),
+                              ])}
+                        </div>
+                      )}
                     </td>
 
                     <td className="num">

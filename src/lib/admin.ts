@@ -91,6 +91,8 @@ export interface AdminUser {
   name: string | null;
   handle: string | null;
   plan: Plan;
+  /** When a granted plan lapses. Null means it does not — see effectivePlan. */
+  paid_until: Date | null;
   email_verified: boolean;
   balance_cents: number;
   /** Everything ever credited as a top-up — what they actually paid us. */
@@ -110,7 +112,7 @@ export interface AdminUser {
 
 export async function adminUsers(limit = 200): Promise<AdminUser[]> {
   return query<AdminUser>(
-    `select u.id, u.email, u.name, u.handle, u.plan, u.signup_source,
+    `select u.id, u.email, u.name, u.handle, u.plan, u.paid_until, u.signup_source,
             u."emailVerified" as email_verified, u.balance_cents,
             -- A balance answers "how much is left", never "what for". Both
             -- sides of the account, so a top-up that went somewhere is visible
