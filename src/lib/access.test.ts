@@ -25,6 +25,8 @@ function brain(over: Partial<Brain>): Brain {
     license: "proprietary",
     score: null,
     score_at: null,
+    score_closed: null,
+    delta: null,
     review_required: false,
     contributions: true,
     cover_key: null,

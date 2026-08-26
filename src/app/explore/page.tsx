@@ -35,7 +35,7 @@ interface PublicBrain extends Brain {
 }
 
 type Price = "all" | "free" | "paid";
-type Sort = "score" | "new" | "popular";
+type Sort = "delta" | "score" | "new" | "popular";
 
 const PRICES: { key: Price; label: string }[] = [
   { key: "all", label: msg("Everything") },
@@ -58,8 +58,21 @@ function freshness(when: Date, t: (s: string) => string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
+// Default is the delta, not the score, and the difference is the whole
+// argument of the catalogue. A score says a corpus can answer questions
+// written from itself, which react.dev does at 94% while adding perhaps four
+// points to what the model already knew — and those were the brains this shelf
+// used to put on top, under the label "Best measured", none of them ever
+// searched. `nulls last`: a brain whose baseline has not been measured yet is
+// unproven, not excellent, and sorting it first is the same mistake wearing a
+// different number.
 const SORTS: { key: Sort; label: string; sql: string }[] = [
-  { key: "score", label: msg("Best measured"), sql: "b.score desc nulls last, b.updated_at desc" },
+  {
+    key: "delta",
+    label: msg("Adds the most"),
+    sql: "b.delta desc nulls last, b.score desc nulls last, b.updated_at desc",
+  },
+  { key: "score", label: msg("Highest score"), sql: "b.score desc nulls last, b.updated_at desc" },
   { key: "new", label: msg("Newest"), sql: "b.created_at desc" },
   { key: "popular", label: msg("Most bought"), sql: "b.sales_count desc, b.score desc nulls last" },
 ];
@@ -165,7 +178,7 @@ export default async function ExplorePage({
     // as "nothing here" rather than "you were on page 3".
     const n = over.page ?? (over.price || over.sort || over.topic !== undefined ? 1 : page);
     if (p !== "all") q.set("price", p);
-    if (s !== "score") q.set("sort", s);
+    if (s !== "delta") q.set("sort", s);
     if (t) q.set("topic", t);
     if (n > 1) q.set("page", String(n));
     const qs = q.toString();
@@ -329,11 +342,25 @@ export default async function ExplorePage({
                     brain.readers_week > 1 && ` · ${brain.readers_week} people`,
                     brain.last_read && ` · read ${freshness(brain.last_read, t)}`,
                   ])}</span>
-                  {brain.score !== null && (
-                    <span className="card-score">
-                      {brain.score}
-                      <sup>%</sup>
+                  {/* The delta leads when it exists: "+61" is what this brain
+                      adds to what the model already knew, which is the number
+                      being bought. The raw score stays as the title attribute
+                      rather than beside it — two percentages on one card and a
+                      reader averages them. */}
+                  {brain.delta !== null ? (
+                    <span
+                      className="card-score"
+                      title={`${brain.score}% ${t("with this brain")}, ${brain.score_closed}% ${t("without it")}`}
+                    >
+                      +{brain.delta}
                     </span>
+                  ) : (
+                    brain.score !== null && (
+                      <span className="card-score card-score--unmeasured" title={t("No baseline measured yet")}>
+                        {brain.score}
+                        <sup>%</sup>
+                      </span>
+                    )
                   )}
                 </div>
               </Link>

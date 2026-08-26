@@ -288,6 +288,28 @@ export async function generateChecks(brain: Brain): Promise<number> {
  * is published or the run is failed, which makes it the most consequential
  * arithmetic in the file.
  */
+/**
+ * The closed-book half of a sitting, weighted exactly like the graded half.
+ *
+ * Returns null rather than a number whenever any check is missing its
+ * baseline — a partial control arm subtracts a figure measured on some of the
+ * questions from one measured on all of them, which reads as a delta and is
+ * not one. Separate and exported for the same reason countDegraded is: it
+ * decides whether the product publishes its headline number.
+ */
+export function closedScore(
+  results: { check: { weight: number; closed_passed: boolean | null } }[],
+): number | null {
+  if (!results.length) return null;
+  if (results.some((r) => r.check.closed_passed === null)) return null;
+  const total = results.reduce((n, r) => n + r.check.weight, 0);
+  if (!total) return null;
+  const passed = results
+    .filter((r) => r.check.closed_passed)
+    .reduce((n, r) => n + r.check.weight, 0);
+  return Math.round((passed / total) * 100);
+}
+
 export function countDegraded(checks: { reranked: boolean }[]): number {
   return checks.filter((c) => !c.reranked).length;
 }
@@ -1032,10 +1054,32 @@ export async function runExam(
       .reduce((n, r) => n + r.check.weight, 0);
     const score = totalWeight ? Math.round((passedWeight / totalWeight) * 100) : 0;
 
+    // The control arm. The same live checks, graded the same way, against what
+    // the model says with no brain in front of it — because `score` on its own
+    // answers "is this corpus self-consistent", and the question everyone is
+    // actually paying to have answered is "what would my agent have got wrong
+    // without it".
+    //
+    // Full sittings only: a mini probe is a staleness signal, not a storefront
+    // number, and buying a baseline it will never publish is how the cheap
+    // probe stops being cheap.
+    let scoreClosed: number | null = null;
+    if (!mini) {
+      cost += await ensureClosedBook(results.map((r) => r.check));
+      scoreClosed = closedScore(results);
+      if (scoreClosed === null) {
+        const missing = results.filter((r) => r.check.closed_passed === null).length;
+        console.warn(
+          `[exam] ${brain.slug}: ${missing}/${results.length} check(s) have no ` +
+            `closed-book verdict — delta not published this sitting`,
+        );
+      }
+    }
+
     await query(
       `update check_runs set status = 'done', score = $2, cost_cents = $3,
-              finished_at = now() where id = $1`,
-      [run.id, score, Math.round(cost)],
+              score_closed = $4, finished_at = now() where id = $1`,
+      [run.id, score, Math.round(cost), scoreClosed],
     );
     if (mini) {
       // Marked examined so examStaleBrains does not queue a full sitting on
@@ -1043,10 +1087,17 @@ export async function runExam(
       // number: one vote is a staleness signal, not a storefront figure.
       await query(`update brains set score_at = now() where id = $1`, [brainId]);
     } else {
-      await query(`update brains set score = $2, score_at = now() where id = $1`, [
-        brainId,
-        score,
-      ]);
+      // coalesce, not overwrite: a control batch the proxy mangled would
+      // otherwise drop the delta off the shelf for a week over a transient
+      // error, and the baseline it measured last time is still the baseline
+      // for these questions. Same reflex as the score itself — the last
+      // number we actually measured stays up rather than being replaced by
+      // nothing.
+      await query(
+        `update brains set score = $2, score_closed = coalesce($3, score_closed),
+                score_at = now() where id = $1`,
+        [brainId, score, scoreClosed],
+      );
     }
 
     // The staleness signal this run can see and the score cannot: a check
@@ -1296,4 +1347,164 @@ async function judge(
     verdicts: parsed.data.verdicts,
     costCents: costCents(env.MODEL_JUDGE, usage),
   };
+}
+
+const CLOSED_SCHEMA = {
+  type: "object",
+  properties: {
+    answers: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "The check id you were given." },
+          answer: {
+            type: "string",
+            description:
+              "Your best answer from your own knowledge, as you would give it to " +
+              "a developer who asked. Say you do not know only if you genuinely " +
+              "do not.",
+          },
+        },
+        required: ["id", "answer"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["answers"],
+  additionalProperties: false,
+} as const;
+
+const closedAnswers = z.object({
+  answers: z.array(z.object({ id: z.string(), answer: z.string() })),
+});
+
+/**
+ * The control arm. Ask the model the exam's questions with no brain in front
+ * of it, and keep what it says.
+ *
+ * Two rules make the subtraction downstream mean anything. The model answers
+ * as it would answer a developer — not "assess whether you know this", which
+ * is a self-report and reliably flattering. And the answers are graded by the
+ * SAME judge, against the same `expect`, with the same rubric; only the source
+ * of the passage changes. Anything else compares two different standards and
+ * calls the difference a measurement.
+ */
+async function answerClosed(
+  batch: Check[],
+): Promise<{ answers: Map<string, string>; costCents: number }> {
+  const { data: raw, usage } = await structured<unknown>({
+    model: env.MODEL_JUDGE,
+    maxTokens: 8000,
+    toolName: "save_answers",
+    toolDescription: "Record your own answer to each question you were given.",
+    schema: CLOSED_SCHEMA,
+    system:
+      "You are answering technical questions from your own knowledge, with no " +
+      "documentation in front of you.\n\n" +
+      "Answer each one the way you would answer a developer who asked you in a " +
+      "coding session: concretely, with the specifics — names, values, versions, " +
+      "the actual rule — not a description of where the answer could be found. " +
+      "Do not hedge for safety and do not add caveats about checking the docs; " +
+      "the point is to record what you would have told them.\n\n" +
+      "If you genuinely do not know, say so plainly and stop. A confident wrong " +
+      "answer and an admission of ignorance are both useful here and a vague " +
+      "non-answer is not.",
+    content: [
+      {
+        type: "text",
+        text: batch
+          .map((c) => `<check id="${c.id}">\n<question>${c.question}</question>\n</check>`)
+          .join("\n\n"),
+      },
+    ],
+  });
+
+  const parsed = closedAnswers.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(
+      `the closed-book pass answered in a shape we cannot read: ${parsed.error.issues
+        .slice(0, 2)
+        .map((i) => `${i.path.join(".") || "root"} ${i.message}`)
+        .join("; ")} — got ${JSON.stringify(raw).slice(0, 400)}`,
+    );
+  }
+
+  return {
+    answers: new Map(parsed.data.answers.map((a) => [a.id, a.answer])),
+    costCents: costCents(env.MODEL_JUDGE, usage),
+  };
+}
+
+/**
+ * Make sure every check carries a closed-book verdict, asking only for the
+ * ones that do not — which after the first sitting is only the questions the
+ * exam has newly written.
+ *
+ * This is the cost argument in one function. A full sitting pays three judge
+ * votes per check every time it runs; this pays one answer and one grading
+ * call per check ONCE, and every later sitting subtracts a cached boolean.
+ * Exams are already three quarters of all model spend with no platform budget
+ * guard, so a control arm that re-ran per sitting would have been the most
+ * expensive honest idea in the product.
+ *
+ * A single vote, deliberately, where the graded half takes three: the question
+ * here is coarse ("does the model already know this at all") and the answer it
+ * feeds is the model's own, so judge variance lands on both sides of the
+ * subtraction rather than on one.
+ */
+export async function ensureClosedBook(checks: Check[]): Promise<number> {
+  const stale = checks.filter(
+    (c) => c.closed_at === null || c.closed_model !== env.MODEL_JUDGE,
+  );
+  if (!stale.length) return 0;
+
+  let cost = 0;
+  for (let i = 0; i < stale.length; i += JUDGE_BATCH) {
+    const batch = stale.slice(i, i + JUDGE_BATCH);
+    let answers: Map<string, string>;
+    let verdicts: Awaited<ReturnType<typeof judge>>["verdicts"];
+    try {
+      const spoken = await answerClosed(batch);
+      cost += spoken.costCents;
+      const graded = await judge(
+        batch.map((c) => ({
+          check: c,
+          // The model's own words in the slot the brain's passages occupy.
+          context: spoken.answers.get(c.id) ?? "",
+        })),
+      );
+      cost += graded.costCents;
+      answers = spoken.answers;
+      verdicts = graded.verdicts;
+    } catch (err) {
+      // A failed control batch leaves those checks unmeasured and the delta
+      // unpublished for this sitting — the graded half is unaffected and its
+      // score still lands. Losing a number is the honest outcome; guessing
+      // the baseline is not.
+      console.warn(
+        `[exam] closed-book batch failed, ${batch.length} check(s) left unmeasured — ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+      continue;
+    }
+
+    for (const c of batch) {
+      const v = verdicts.find((x) => x.id === c.id);
+      // No verdict is an abstention, exactly as in the graded half: leave the
+      // row null so the next sitting asks again, rather than recording a fail
+      // the judge never returned.
+      if (!v || answers.get(c.id) === undefined) continue;
+      await query(
+        `update checks set closed_passed = $2, closed_at = now(), closed_model = $3
+          where id = $1`,
+        [c.id, v.passed, env.MODEL_JUDGE],
+      );
+      c.closed_passed = v.passed;
+      c.closed_at = new Date();
+      c.closed_model = env.MODEL_JUDGE;
+    }
+  }
+  return cost;
 }

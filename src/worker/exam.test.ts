@@ -1,7 +1,7 @@
 import "@/lib/test-env";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countDegraded, writtenChecks } from "./exam";
+import { closedScore, countDegraded, writtenChecks } from "./exam";
 
 /**
  * The rule that decides whether a score gets published.
@@ -82,4 +82,34 @@ test("auto-filed questions are not an exam, generated and manual ones are", () =
   // And the case the origin test was added for: searched once, never examined.
   assert.equal(writtenChecks([{ origin: "usage" }, { origin: "search_gap" }]), 0);
   assert.equal(writtenChecks([]), 0);
+});
+
+/**
+ * The rule that decides whether a DELTA gets published.
+ *
+ * A brain's headline number is score minus this one, so the failure to guard
+ * against is a baseline measured on a subset: eight of ten questions answered
+ * from the model's own knowledge, subtracted from ten questions answered with
+ * the brain, would flatter every brain in the catalogue by exactly the share of
+ * its control arm that failed to run.
+ */
+const c = (weight: number, closed_passed: boolean | null) => ({
+  check: { weight, closed_passed },
+});
+
+test("closedScore refuses a baseline it did not measure in full", () => {
+  assert.equal(closedScore([c(1, true), c(1, null)]), null);
+  assert.equal(closedScore([]), null);
+  // Every check measured, none passed closed-book: a real zero baseline, which
+  // is the case that produces the largest honest delta. It must not read as
+  // "unmeasured".
+  assert.equal(closedScore([c(1, false), c(1, false)]), 0);
+});
+
+test("closedScore weights the control arm like the graded half", () => {
+  // A central question the model already knows counts for more than a
+  // peripheral one it does not.
+  assert.equal(closedScore([c(5, true), c(1, false)]), 83);
+  assert.equal(closedScore([c(1, true), c(1, false)]), 50);
+  assert.equal(closedScore([c(3, true), c(3, true)]), 100);
 });

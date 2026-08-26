@@ -317,6 +317,16 @@ a {
   margin-left: 0.1em;
 }
 
+/* A raw score with no baseline behind it. It is still shown — hiding it would
+   read as "this brain was never examined", which is a different and worse
+   claim — but it must not carry the same weight as a measured delta, because
+   the whole point of the delta is that a high score on its own proved
+   nothing. */
+.card-score--unmeasured {
+  opacity: 0.42;
+  font-weight: 600;
+}
+
 /* ─── the readout ───────────────────────────────────────────────────────────
    The signature element. A ring shows one number; this strip shows WHICH exam
    categories hold and where the hole is — which is the actual product. */

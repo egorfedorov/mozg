@@ -45,6 +45,7 @@
     "check:usage": "tsx --env-file-if-exists=.env scripts/check-usage.ts",
     "funnel": "tsx --env-file-if-exists=.env scripts/funnel.ts",
     "lesson": "tsx --env-file-if-exists=.env scripts/lesson.ts",
+    "delta": "tsx --env-file-if-exists=.env scripts/delta.ts",
     "probes": "tsx --env-file-if-exists=.env scripts/probes.ts",
     "contradict": "tsx --env-file-if-exists=.env scripts/contradict.ts",
     "smoke": "tsx scripts/smoke.ts",
