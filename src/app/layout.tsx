@@ -59,6 +59,19 @@ export async function generateMetadata(): Promise<Metadata> {
   openGraph: {
     siteName: "mozg",
     type: "website",
+    // Declared here or the card below is a promise nothing keeps: twitter.card
+    // has said summary_large_image since launch while fifteen of sixteen public
+    // pages shipped no image at all, so every share of mozg.sh has rendered an
+    // empty slot. Brain pages generate their own (b/[handle]/[slug]/
+    // opengraph-image.tsx) and override this; everything else inherits it.
+    images: [
+      {
+        url: "/brand/devto-cover.jpg",
+        width: 2752,
+        height: 1536,
+        alt: t("mozg — one brain, every agent"),
+      },
+    ],
   },
   twitter: {
       card: "summary_large_image",

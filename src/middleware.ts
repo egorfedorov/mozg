@@ -78,6 +78,20 @@ function dropDuplicateLocale(req: NextRequest, res: NextResponse): NextResponse 
 function rememberSource(req: NextRequest, res: NextResponse): NextResponse {
   if (req.cookies.get(SOURCE_COOKIE)) return res;
 
+  // Never bank a source from inside the sign-in round-trip. The OAuth callback
+  // arrives with Referer: accounts.google.com, and where first touch had not
+  // already banked a cookie that host won the bucket permanently — one of the
+  // three accounts created since attribution shipped on 2026-08-12 reads
+  // `accounts.google.com`, which names the consent screen someone passed
+  // through rather than the place they came from, and is worse than null
+  // because it looks like an answer.
+  //
+  // Matched on the path, not the host: github.com is an identity provider AND
+  // one of the few referrers that genuinely matters for a developer tool, so
+  // excluding the host would throw away the signal this column exists to
+  // catch.
+  if (req.nextUrl.pathname.startsWith("/api/auth/")) return res;
+
   const params = req.nextUrl.searchParams;
   const tagged = params.get("ref") ?? params.get("utm_source");
   let source = tagged?.trim().slice(0, 60);

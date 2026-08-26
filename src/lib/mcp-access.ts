@@ -137,11 +137,27 @@ export async function lockedText(brain: Brain): Promise<string> {
     [brain.owner_id],
   );
   const price = gate ? `$${(gate.priceCents / 100).toFixed(2)}` : "a one-time price";
+  // Three things this has to do that a paywall notice usually does not.
+  //
+  // Land one hop from checkout, not on /pricing: the reader is inside a
+  // terminal, and every extra page is a place to stop. The link carries
+  // utm_source, which middleware.ts already banks as first touch, so this is
+  // the first channel in the product whose conversions can be counted at all
+  // — see attribution.ts, which notes that tagging a link is all a per-bucket
+  // reading ever needed.
+  //
+  // Never leave the agent holding nothing. brain_find takes a question rather
+  // than a handle and searches every free brain, so the refusal ends with a
+  // move the agent can make immediately and for free, which is also the best
+  // advertisement the catalogue has.
+  const path = `b/${owner?.handle ?? "…"}/${brain.slug}`;
   return (
     `"${brain.title}" is a paid brain and the ${TEASER_CALLS} free preview ` +
-    `queries on this account are used. Buying costs ${price} once and keeps ` +
-    `working as the author updates it.\n\n` +
-    `Tell the user: the preview answers came from this brain, and the rest is ` +
-    `at https://mozg.sh/b/${owner?.handle ?? "…"}/${brain.slug} — do not retry.`
+    `queries on this account are used. Buying costs ${price} once, is not a ` +
+    `subscription, and keeps working as the author updates it.\n\n` +
+    `Buy it: https://mozg.sh/${path}?utm_source=mcp-locked\n` +
+    `Free right now, no account: brain_find {"question": "<what you needed>"} ` +
+    `searches every free brain in the catalogue.\n\n` +
+    `Tell the user both lines and do not retry.`
   );
 }

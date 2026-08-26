@@ -9,7 +9,7 @@ import { SketchDefs, Pipeline, Divergence, Scribble } from "@/components/Sketch"
 import { currentUser } from "@/lib/session";
 import { query } from "@/db";
 import type { Brain } from "@/db/types";
-import { tintFor } from "@/lib/brains";
+import { categoryScores, tintFor } from "@/lib/brains";
 import { topicLabel } from "@/lib/topics";
 import { formatCents } from "@/lib/money-math";
 
@@ -84,6 +84,26 @@ export default async function Home() {
   // The learning claim, receipted: public brains whose LAST exam sitting
   // passed questions the sitting before could not. Real diffs from the
   // grader, not copy — an empty list hides the rows rather than faking one.
+  // The hero used to show a scorecard for a brain called "Design system"
+  // that does not exist, scoring 84%, with hand-written category rows. It was
+  // the one number on the site nobody could check, on the page whose whole
+  // argument is that mozg publishes numbers you can. So it is a real brain
+  // now: the one that adds the most to what the model already knew, with the
+  // categories its last sitting actually produced.
+  const [showcase] = await query<
+    Pick<Brain, "id" | "slug" | "title" | "score" | "score_closed" | "delta">
+  >(
+    `select b.id, b.slug, b.title, b.score, b.score_closed, b.delta
+       from brains b join "user" u on u.id = b.owner_id
+      where b.visibility = 'public' and u.handle is not null
+        and b.score is not null and b.note_count > 0
+      order by b.delta desc nulls last, b.score desc nulls last
+      limit 1`,
+  );
+  const showcaseCategories = showcase
+    ? (await categoryScores([showcase.id])).get(showcase.id) ?? []
+    : [];
+
   const learning = await query<{
     title: string;
     slug: string;
@@ -193,24 +213,33 @@ export default async function Home() {
             <span style={{ marginLeft: ".5rem" }}>{t("claude code")}</span>
           </div>
           <div>
-            {markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp"), [
+            {markup(t("<0>$</0> claude mcp add --transport http mozg https://mozg.sh/mcp/public"), [
             <span className="c" key="s0" />,
           ])}</div>
-          <div className="t">{t("✓ connected · 3 brains available")}</div>
+          <div className="t">{t("✓ connected · no account, no token")}</div>
           <div style={{ height: ".9rem" }} />
           <div>
-            {markup(t("<0>&gt;</0> build the pricing page — make it match our design system"), [
+            {markup(t("<0>&gt;</0> wire up the RGS round flow"), [
             <span className="u" key="s0" />,
           ])}</div>
           <div style={{ height: ".9rem" }} />
           <div className="k">
-            {markup(t("brain_search(brain: \"design\", query: \"card, spacing, price type\")"), [
+            {markup(t("brain_search(brain: \"mozg/stake-engine\", query: \"rgs round flow\")"), [
           ])}</div>
-          <div className="c"> {t("→ 6 notes · 128 ms")}</div>
+          <div className="c"> {t("→ 5 notes")}</div>
           <div style={{ height: ".9rem" }} />
-          <div> {t("Cards: 1px #E4E4E7 border, no shadow at rest, 8px radius, 24px pad.")}</div>
-          <div> {t("Section gap is 32px — 24px is the inner scale, never between sections.")}</div>
-          <div> {t("Price is 40/44 with tabular-nums. Primary CTA fills only on mobile.")}</div>
+          <div> {t("Authenticate must be the first RGS API call. Without it every other")}</div>
+          <div> {t("endpoint returns ERR_IS (Invalid Session).")}</div>
+          <div> {t("The frontend sends sessionID to Authenticate first; the RGS returns")}</div>
+          <div> {t("balance, bet levels and jurisdiction settings on success.")}</div>
+          <div style={{ height: ".9rem" }} />
+          {/* The anonymous door is the first mile, so it says out loud where it
+              ends. It used to say nothing at all: the hero pointed at /mcp,
+              which answers 401 until a client completes OAuth, while the door
+              that answers a stranger in one command was documented nowhere a
+              human reads. */}
+          <div className="c">
+            {t("300 calls a day, read-only. A free account lifts it and adds the tools that write.")}</div>
         </div>
 
         {/* Breadth, stated as a fact rather than as a wall of logos we do not
@@ -317,46 +346,54 @@ export default async function Home() {
               <em key="s0" />,
             ])}</p>
 
-            <div className="scorecard">
-              <div className="score-head">
-                <div>
-                  <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
-                    {t("Brain · Design system")}</p>
-                  <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
-                    {t("32 checks · 4 categories")}</span>
+            {showcase && (
+              <div className="scorecard">
+                <div className="score-head">
+                  <div>
+                    <p className="eyebrow" style={{ marginBottom: ".35rem" }}>
+                      {t("Brain")} · {showcase.title}</p>
+                    <span className="mono" style={{ fontSize: ".8125rem", color: "var(--ink-2)" }}>
+                      {showcase.delta !== null
+                        ? `${showcase.score}% ${t("with it")} · ${showcase.score_closed}% ${t("without it")}`
+                        : `${showcaseCategories.reduce((n, c) => n + c.total, 0)} ${t("checks")}`}</span>
+                  </div>
+                  {/* The delta leads, not the score. A score is a corpus
+                      agreeing with itself; this is what the brain adds to what
+                      the model already knew, which is the thing being sold. */}
+                  <div className="score-big">
+                    {showcase.delta !== null ? (
+                      <>+{showcase.delta}</>
+                    ) : (
+                      <>
+                        {showcase.score}
+                        <sup>%</sup>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="score-big">
-                  84<sup>%</sup>
-                </div>
-              </div>
 
-              <div className="score-row" data-state="pass">
-                <span className="sig">✓</span>
-                <span>{t("Colour, borders and elevation")}</span>
-                <span className="count">12 / 12</span>
+                {showcaseCategories.slice(0, 5).map((c) => (
+                  <div className="score-row" data-state={c.state} key={c.category}>
+                    <span className="sig">
+                      {c.state === "pass"
+                        ? "\u2713"
+                        : c.state === "fail"
+                          ? "\u2715"
+                          : c.state === "empty"
+                            ? "\u00b7"
+                            : "\u25b2"}
+                    </span>
+                    <span>
+                      {c.category}
+                      {c.gap && <span className="score-gap"> — {c.gap}</span>}
+                    </span>
+                    <span className="count">
+                      {c.passed} / {c.total}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div className="score-row" data-state="pass">
-                <span className="sig">✓</span>
-                <span>{t("Type scale and spacing")}</span>
-                <span className="count">8 / 8</span>
-              </div>
-              <div className="score-row" data-state="partial">
-                <span className="sig">▲</span>
-                <span>
-                  {markup(t("Motion and transitions <0>missing · no screen recordings yet</0>"), [
-                  <span className="score-gap" key="s0" />,
-                ])}</span>
-                <span className="count">3 / 7</span>
-              </div>
-              <div className="score-row" data-state="fail">
-                <span className="sig">✕</span>
-                <span>
-                  {markup(t("Empty and error states <0>missing · no source covers this</0>"), [
-                  <span className="score-gap" key="s0" />,
-                ])}</span>
-                <span className="count">0 / 5</span>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 

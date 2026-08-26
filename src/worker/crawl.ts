@@ -75,12 +75,30 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
       );
     }
 
+    // Cap by what the budget can actually pay to READ, not by how many rows
+    // the plan lets you store. Those two numbers disagree by six times on the
+    // free plan: 200 sources allowed, 50c of extraction a month, and a page
+    // has cost 1.60c on average across 10,687 real pages in production. So a
+    // first-time user's first act queued 200 pages, ~170 of them went red on
+    // the budget, and requeueBudgetPaused then refused to retry them until the
+    // calendar month rolled over. The product's opening move produced a brain
+    // that was mostly errors, and said so in a sentence that never mentioned
+    // the wait was a month.
+    //
+    // p90 (3c) rather than the 1.60c mean: a cap set on the average is wrong
+    // half the time, and the two ways of being wrong are not symmetrical —
+    // slightly conservative means "run the crawl again", slightly generous
+    // means the month-long lockout above.
+    const PAGE_CENTS = 3;
+    const affordable = Math.max(1, Math.floor(limits.monthlyExtractCents / PAGE_CENTS));
+    const cap = Math.min(remaining, affordable);
+
     // The kind decides what the crawl is looking for: a docs set or a
     // codebase. Nothing else about the expansion differs — same cap, same
     // dedup, same recrawl.
     const found = await discoverPages(
       source.url,
-      remaining,
+      cap,
       undefined,
       source.kind === "repo" ? "code" : "docs",
     );
@@ -130,7 +148,14 @@ async function crawlLocked(sourceId: string): Promise<CrawlResult> {
       [
         sourceId,
         `${new URL(source.url).hostname} — ${queued} page${queued === 1 ? "" : "s"} ` +
-          `via ${found.via}${found.note ? ` (${found.note})` : ""}`,
+          `via ${found.via}${found.note ? ` (${found.note})` : ""}` +
+          // Never a silent cap. If the budget is what stopped it — rather than
+          // the site running out of pages — the person reading this row is the
+          // one who can do something about it, and "run it again next month"
+          // is a different instruction from "that was the whole site".
+          (cap < remaining && found.pages.length >= cap
+            ? ` — stopped at ${cap} pages, which is what this plan's monthly reading budget covers; run it again to continue`
+            : ""),
       ],
     );
 

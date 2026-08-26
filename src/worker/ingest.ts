@@ -8,7 +8,7 @@ import { notifyBudgetPaused } from "@/lib/operator-chat";
 import { byokStorage } from "@/lib/byok";
 import { embedPassages } from "@/lib/embed";
 import { extractFromImage, extractFromPdf, extractFromText, EXTRACT_PROMPT_VERSION, type ExtractResult } from "@/lib/extract";
-import { redact, scanSecrets, secretGate } from "@/lib/scan";
+import { redact, scanInjection, scanSecrets, secretGate } from "@/lib/scan";
 import { findDuplicateNote } from "@/lib/dedup";
 import { normalizeCategory } from "@/lib/category";
 import { reportOutOfCreditOnce } from "@/lib/errors";
@@ -255,10 +255,17 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
           `${over.window} budget: extraction paused — ` +
             `${(over.spent / 100).toFixed(2)} of ${(over.budget / 100).toFixed(2)} USD used ` +
             `on the ${owner.plan} plan. ` +
-            (over.budget === 0
-              ? "Our AI reading for you is what a plan buys; teaching from your own CLI or " +
-                "your own API key (settings) stays unlimited and starts working immediately."
-              : "Resumes automatically as the window rolls."),
+            // Both halves used to be wrong for the person most likely to read
+            // this. "Resumes automatically as the window rolls" never said the
+            // monthly window is up to thirty days — and the sentence naming
+            // the free way out sat on the `budget === 0` branch, which never
+            // fires on the free plan, so the one user who needed it was the
+            // one who could not see it.
+            (over.window === "monthly"
+              ? "It resumes when the calendar month turns — up to 30 days away. "
+              : "It resumes tomorrow. ") +
+            "Reading with our AI is what a plan buys; teaching from your own CLI or " +
+            "your own API key (settings) is unlimited on any plan and works immediately.",
         );
       }
 
@@ -356,6 +363,31 @@ async function ingestLocked(sourceId: string): Promise<IngestResult> {
         ],
       );
       return { status: "ready", notes: 0, costCents: extracted.usage.costCents };
+    }
+
+    // ── refuse steering ────────────────────────────────────────────────────
+    // The scan that guards publication, agent proposals and generated packs
+    // has never run on the one path that ingests pages NOBODY CHOSE. A failed
+    // exam check queues source URLs by itself (topUpFromSites in worker/exam),
+    // and whatever those pages say becomes notes that are served straight into
+    // other people's agent context. Prompt injection is first in the OWASP LLM
+    // Top 10, and this is the door it would arrive through — the secret scan
+    // right above has been here since the beginning, guarding the material we
+    // might leak, while nothing guarded the material we might obey.
+    //
+    // Dropped rather than queued for review: crawled material has no author to
+    // tell, and a review queue fed by a crawler is a queue nobody empties.
+    // Dropped before embedding, so a poisoned note does not also cost money.
+    const usable = extracted.notes.filter(
+      (n) => scanInjection(`${n.title}\n${n.body}`).length === 0,
+    );
+    if (usable.length < extracted.notes.length) {
+      console.warn(
+        `[ingest] ${source.url ?? source.id}: dropped ${
+          extracted.notes.length - usable.length
+        } note(s) that read as instructions to a model rather than as material`,
+      );
+      extracted.notes = usable;
     }
 
     // ── chunk + embed ──────────────────────────────────────────────────────

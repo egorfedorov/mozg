@@ -32,6 +32,12 @@ interface Page {
   external?: boolean;
 }
 
+// Twenty-five links in five groups, on thirty-eight pages, for a product whose
+// visitor cannot yet answer "what is this for" — because the site answered it
+// eleven different ways, each one well. Nothing here is deleted and no page is
+// orphaned; the primary path is now four links, and everything that used to
+// compete with them sits under "More" where a reader who is already convinced
+// can still find it.
 const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
   {
     label: msg("Start"),
@@ -41,51 +47,24 @@ const GROUPS: { label: string; summary: string; pages: Page[] }[] = [
       // pages use — including the word in the group label above it.
       { href: "/basics", label: msg("Never heard of MCP?"), note: msg("start from zero, no jargon") },
       { href: "/connect", label: msg("Connect a client"), note: msg("your CLI, one command") },
-      { href: "/make", label: msg("Make a brain"), note: msg("six panels") },
+      { href: "/pricing", label: msg("Pricing"), note: msg("what is free forever, and what is not") },
       { href: "/guide", label: msg("The long guide"), note: msg("every detail, in order") },
     ],
   },
   {
-    label: msg("About"),
-    summary: msg("what this is, and why"),
+    label: msg("More"),
+    summary: msg("once you know what it is"),
     pages: [
-      { href: "/about", label: msg("The manifesto"), note: msg("what this is for, and who by") },
       { href: "/why", label: msg("Why it exists"), note: msg("the problem this solves") },
       { href: "/how-it-learns", label: msg("How a brain learns"), note: msg("the loop, step by step") },
       { href: "/vs", label: msg("Brain or file"), note: msg("and when a file wins") },
-      { href: "/vs-skills", label: msg("Skills vs brain"), note: msg("the confident wrong answer") },
-      { href: "/collective", label: msg("The collective mind"), note: msg("every user makes it smarter") },
-    ],
-  },
-  {
-    label: msg("Uses"),
-    summary: msg("what people do with it"),
-    pages: [
+      { href: "/make", label: msg("Make a brain"), note: msg("six panels") },
+      { href: "/packs", label: msg("Packs"), note: msg("a trade's brains, sold together") },
       { href: "/build", label: msg("Workflows"), note: msg("the order the brains are read in") },
       { href: "/health", label: msg("Catalogue health"), note: msg("what was read and examined this week") },
-      { href: "/stories", label: msg("How people use it"), note: msg("an artist, a company, a game studio") },
-      // A sibling product rather than a use case, but this is where a reader
-      // asking "what else is there" actually looks.
-      { href: "/ichi", label: msg("ichi"), note: msg("a temper for your agent, not just knowledge") },
-      { href: "/packs", label: msg("Packs"), note: msg("a trade's brains, sold together") },
-      { href: "https://gallery.mozg.sh", label: msg("Style gallery"), note: msg("buy the way someone works"), external: true },
-      { href: "/styles", label: msg("Sell your style"), note: msg("the answer to scraping that pays you") },
-      { href: "/answerable", label: msg("Make your product answerable"), note: msg("your users ask an agent, not your docs") },
-      { href: "/audit", label: msg("Audit a knowledge base"), note: msg("exam-as-a-service, dated") },
-      { href: "https://learn.mozg.sh", label: msg("Learn as a human"), note: msg("the same brain, as a course"), external: true },
-    ],
-  },
-  {
-    // Not "Money". Nobody clicks a tab called Money, and the page behind it is
-    // mostly an argument that most of this is free — the label should say that.
-    label: msg("The deal"),
-    summary: msg("free, paid, and what's new"),
-    pages: [
-      { href: "/pricing", label: msg("Pricing"), note: msg("your inference is free, ours is the plan") },
-      { href: "/earn", label: msg("Earn with mozg"), note: msg("20% of every month, recurring") },
-      { href: "/changelog", label: msg("News & changelog"), note: msg("what shipped, dated") },
       { href: "/changes", label: msg("What the brains learned"), note: msg("knowledge deltas, verified by re-sits") },
-      { href: "/roadmap", label: msg("Roadmap"), note: msg("what is next, with its gate") },
+      { href: "/changelog", label: msg("News & changelog"), note: msg("what shipped, dated") },
+      { href: "/about", label: msg("The manifesto"), note: msg("what this is for, and who by") },
     ],
   },
 ];

@@ -1129,7 +1129,13 @@ async function brainWrite(
         ? `Proposed to ${handle}. You have read access, not write access, so it ` +
           "was saved as a proposal under your account: its owner sees it in their " +
           "review queue and decides. It answers nobody until then — say so if the " +
-          "user was expecting the brain to know this immediately."
+          "user was expecting the brain to know this immediately.\n\n" +
+          // The moment someone discovers the limit themselves is the only one
+          // where saying "a brain of your own keeps this" is information
+          // rather than an advert — and it is already happening, unremarked,
+          // on every write to a brain the caller does not own.
+          "If the user wants what they just worked out to answer their own next " +
+          "question, a brain of their own keeps it: https://mozg.sh/brains?utm_source=mcp-propose"
         : r.pending
           ? `Saved to ${handle} and queued for the owner's review. It will not appear ` +
             "in search until approved."
