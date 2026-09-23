@@ -33,3 +33,21 @@ export function fromExtension(stack?: string | null): boolean {
 export function fromStaleDeploy(message?: string | null): boolean {
   return !!message && /Server Action "[^"]*" was not found on the server/.test(message);
 }
+
+/**
+ * A throw from script the browser itself injected, not from the page.
+ *
+ * In-app browsers (wallet apps, Firefox on iOS) evaluate their own snippets
+ * against every page they open — `window.ethereum.selectedAddress = …`,
+ * `window.__firefox__.reader` — and when one fails it is reported as ours, on
+ * whatever page was open (/explore, 09-16). "Script error." is the same story
+ * with the details hidden: the browser only says that for a cross-origin
+ * script, and every script we ship is same-origin.
+ */
+export function fromHostScript(message?: string | null): boolean {
+  if (!message) return false;
+  return (
+    message === "Script error." ||
+    /\b(ethereum|__firefox__|__gCrWeb|webkit\.messageHandlers)\b/.test(message)
+  );
+}

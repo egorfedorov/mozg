@@ -139,3 +139,17 @@ test("nothing a retry cannot fix is retried", async () => {
     assert.equal(endpointTore(err), false, `wrongly retried: ${String(err)}`);
   }
 });
+
+test("a provider refusing the model is told apart from a bad request", async () => {
+  const { modelRefused, costCents } = await load();
+  const err = (status: number, message: string) => Object.assign(new Error(message), { status });
+  // Transcribed from worker/ingest, 2026-09-23.
+  assert.ok(modelRefused(err(400, 'ValidationException: Access to Anthropic models is not allowed for this account.')));
+  assert.ok(modelRefused(err(404, '{"error":{"code":"model_not_found"}}')));
+  assert.ok(!modelRefused(err(400, "max_tokens: must be at most 64000")));
+  assert.ok(!modelRefused(err(500, "not allowed for this account")));
+  assert.ok(!modelRefused(new Error("not allowed for this account")));
+  // The fallback is priced as itself, not as the model that was asked for.
+  const usage = { input_tokens: 1_000_000, output_tokens: 0 };
+  assert.equal(costCents("claude-haiku-4-5", { ...usage, model: "claude-sonnet-5" }), 300);
+});

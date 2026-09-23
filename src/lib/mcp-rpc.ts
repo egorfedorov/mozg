@@ -202,14 +202,27 @@ export async function handle(rpc: RpcRequest, owner: Owner) {
       try {
         outcome = await callTool(name, args, owner);
       } catch (err) {
-        // err.message can carry pg details (relation names, constraint text) —
-        // schema information a caller has no business seeing. Report it to the
-        // error center (admin-only surface), answer with something generic.
-        reportError("mcp", name, err, { userId: owner.userId });
-        outcome = {
-          text: "Tool failed with an internal error. The details are logged; do not retry the same call.",
-          isError: true,
-        };
+        // 22P02: an id argument that is not a uuid ("" from an agent that lost
+        // the note_id, a title pasted where the id goes). Every id-taking tool
+        // hands its argument straight to postgres, so this is the one place
+        // that sees them all — and it is the caller's mistake, not ours.
+        if ((err as { code?: string })?.code === "22P02") {
+          outcome = {
+            text:
+              "An id you passed is not a valid id (empty or malformed). Ids come " +
+              "from brain_search / brain_list results — search again and pass one verbatim.",
+            isError: true,
+          };
+        } else {
+          // err.message can carry pg details (relation names, constraint text) —
+          // schema information a caller has no business seeing. Report it to the
+          // error center (admin-only surface), answer with something generic.
+          reportError("mcp", name, err, { userId: owner.userId });
+          outcome = {
+            text: "Tool failed with an internal error. The details are logged; do not retry the same call.",
+            isError: true,
+          };
+        }
       }
 
       // Metering is the same table billing will read — record every call,

@@ -30,6 +30,11 @@ export async function generateMetadata() {
  */
 const ENTRIES: { date: string; title: string; body: string }[] = [
   {
+    date: "2026-09-23",
+    title: msg("Brains keep learning when a model goes away"),
+    body: msg("Our model provider stopped serving the model that reads your sources and marks your exams, and for a night every new page and every exam failed with it. Nothing about your brains was lost — the failed pages were simply waiting. Now, when a provider refuses a model outright, mozg switches to the next one that answers and checks back later, so a supplier's outage is a slower night rather than a stopped one. Also fixed: brain_read given an empty note id now says what to do instead of reporting an internal error."),
+  },
+  {
     date: "2026-08-20",
     title: msg("Every page speaks the language you picked"),
     body: msg("The language choice was scoped to the host it was made on, so picking Russian on mozg.sh left gen.mozg.sh in English — and the pages built this week had no translations at all, which made them half one language and half the other. Mixed is worse than English, because English at least looks deliberate. The cookie is shared across the subdomains now, the leftover copy is cleared rather than left to win by being more specific, and every title is translated too: metadata was a static export evaluated before there was a reader to have a language, so the tab said one thing while the page said another."),

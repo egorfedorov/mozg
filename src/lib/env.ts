@@ -28,6 +28,10 @@ const schema = z.object({
   // is the one already proven to resolve on whatever proxy prod points at;
   // a separate default here is how translate broke while exams worked.
   MODEL_TRANSLATE: z.string().optional(),
+  // Used when the provider refuses a model outright (not a request): apimart
+  // cut Haiku/Sonnet 4.5 on 2026-09-23 and every ingest and exam died with it.
+  // Empty string disables the fallback.
+  MODEL_FALLBACK: z.string().default("claude-sonnet-5"),
   // Web push (operator notifications). Absent = the feature is quietly off.
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),

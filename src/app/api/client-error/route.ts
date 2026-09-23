@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/db";
 import { currentUser } from "@/lib/session";
-import { fromExtension, fromStaleDeploy } from "@/lib/client-error";
+import { fromExtension, fromHostScript, fromStaleDeploy } from "@/lib/client-error";
 
 /**
  * The browser's lane into the error center. Anonymous reports are accepted —
@@ -23,7 +23,9 @@ export async function POST(req: Request) {
   // Someone's extension throwing inside their browser is not this app's error.
   // Accepted and dropped, rather than rejected: the reporter cannot do
   // anything useful with a failure either way.
-  if (fromExtension(body?.stack)) return NextResponse.json({ ok: true });
+  if (fromExtension(body?.stack) || fromHostScript(message)) {
+    return NextResponse.json({ ok: true });
+  }
 
   // A tab that was open when we deployed. Nothing to fix in the code, and the
   // reporter reloads the page so the user's next click works — filing it as a

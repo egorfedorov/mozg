@@ -59,6 +59,9 @@ export interface Usage {
   output_tokens: number;
   cache_read_input_tokens?: number | null;
   cache_creation_input_tokens?: number | null;
+  /** Set when structured() answered with MODEL_FALLBACK instead of the model
+   *  asked for — costCents prices what was actually spent. */
+  model?: string;
 }
 
 /**
@@ -142,6 +145,28 @@ export function endpointTore(err: unknown): boolean {
   );
 }
 
+/**
+ * The provider refuses the model itself, not this request.
+ *
+ * 2026-09-23: apimart's Bedrock channel started answering every Haiku 4.5 and
+ * Sonnet 4.5 call with "Access to Anthropic models is not allowed for this
+ * account" while Sonnet 5 and Opus 5 on the same key kept working — 116 ingest
+ * and exam jobs failed in an hour on a model id nobody can change from here.
+ * A retry of the same model cannot help; another model can.
+ */
+export function modelRefused(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const status = (err as { status?: number }).status;
+  if (status !== 400 && status !== 403 && status !== 404) return false;
+  const m = err.message.toLowerCase();
+  return m.includes("not allowed for this account") || m.includes("model_not_found");
+}
+
+// lazy: per-process memory; a provider that recovers is noticed after the TTL
+// or on the next deploy, whichever comes first.
+const REFUSED_TTL_MS = 15 * 60_000;
+const refusedAt = new Map<string, number>();
+
 export function endedCleanly(stopReason: string | null | undefined): boolean {
   // Null is what an in-flight message carries; a finished one always names a
   // reason. Nothing to complain about either way.
@@ -206,10 +231,25 @@ export async function structured<T>(opts: {
   // Once, not more: if the endpoint is actually down, the job retry is the
   // right backstop and a tighter loop here just spends money discovering the
   // same fact.
+  // A BYOK key is the owner's catalogue and their call; ours falls back.
+  const fallback = byok ? undefined : env.MODEL_FALLBACK;
+  const refused = refusedAt.get(opts.model);
+  let model =
+    fallback && refused && Date.now() - refused < REFUSED_TTL_MS ? fallback : opts.model;
+
   for (let attempt = 0; ; attempt++) {
     try {
-      return await attemptStructured<T>(opts, maxTokens);
+      const out = await attemptStructured<T>({ ...opts, model }, maxTokens);
+      if (model !== opts.model) out.usage.model = model;
+      return out;
     } catch (err) {
+      if (fallback && model !== fallback && modelRefused(err)) {
+        refusedAt.set(model, Date.now());
+        console.warn(`[claude] provider refuses ${model} — falling back to ${fallback} for 15m`);
+        model = fallback;
+        attempt--; // the swap is not a retry of the same thing
+        continue;
+      }
       if (attempt >= 1 || !endpointTore(err)) throw err;
       console.warn(
         `[claude] ${opts.toolName}: endpoint tore the stream ` +
@@ -353,6 +393,7 @@ export function costCents(model: string, usage: Usage): number {
   // Resellers hand out dated ids (claude-haiku-4-5-20251001) and suffixed
   // variants (-thinking). Same model, same price — strip to the base id or
   // every cost lands as zero and the economics look free.
+  model = usage.model ?? model;
   const base = model.replace(/-\d{8}$/, "").replace(/-thinking$/, "");
   const p = PRICE[base];
   if (!p) {

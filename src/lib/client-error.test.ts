@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fromExtension } from "@/lib/client-error";
+import { fromExtension, fromHostScript } from "@/lib/client-error";
 
 test("an extension frame on top is not our error", () => {
   assert.equal(
@@ -50,4 +50,13 @@ test("a stale deploy is recognised so the page can reload itself", async () => {
   assert.equal(fromStaleDeploy("TypeError: x is not a function"), false);
   assert.equal(fromStaleDeploy(null), false);
   assert.equal(fromStaleDeploy(""), false);
+});
+
+test("browser-injected script is not filed as ours", () => {
+  // All four transcribed from /explore, 09-16.
+  assert.ok(fromHostScript("TypeError: undefined is not an object (evaluating 'window.ethereum.selectedAddress = undefined')"));
+  assert.ok(fromHostScript("ReferenceError: Can't find variable: __firefox__"));
+  assert.ok(fromHostScript("TypeError: undefined is not an object (evaluating 'window.__firefox__.reader')"));
+  assert.ok(fromHostScript("Script error."));
+  assert.ok(!fromHostScript("TypeError: Cannot read properties of undefined (reading 'notes')"));
 });
