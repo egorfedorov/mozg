@@ -66,6 +66,7 @@ export const ALLOW = new Map<string, string>([
   ["one brain, every agent", "baked into the OG image, which crawlers fetch with no language"],
   ["mozg", "the product's name"],
   ["chatmozg", "the product's name"],
+  ["mozg 2.0", "the product's name and version"],
   ["github.com/egorfedorov/mozg", "a URL"],
   ["Model Context Protocol", "the protocol's name, in every language"],
   ["Claude Code", "another company's product name"],

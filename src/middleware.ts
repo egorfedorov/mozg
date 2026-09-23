@@ -124,8 +124,33 @@ function rememberSource(req: NextRequest, res: NextResponse): NextResponse {
   return res;
 }
 
+/**
+ * The whole service is paused while mozg 2.0 is built (2026-09-23). Every page
+ * on every host serves /closed; sign-in and /admin stay reachable so the
+ * operator can still work, and /api stays up so payment webhooks and auth keep
+ * landing. MCP is closed in lib/mcp-rpc.ts. Reopen: set false and deploy.
+ */
+export const CLOSED = true;
+
+function closedAllows(pathname: string): boolean {
+  return (
+    pathname === "/closed" ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/mcp") ||
+    isInfrastructure(pathname)
+  );
+}
+
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
+
+  if (CLOSED && !closedAllows(req.nextUrl.pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/closed";
+    url.search = "";
+    // 503 + Retry-After: crawlers read it as "down for now", not "gone".
+    return NextResponse.rewrite(url, { status: 503, headers: { "Retry-After": "86400" } });
+  }
 
   if (host.startsWith("gallery.")) {
     const { pathname } = req.nextUrl;

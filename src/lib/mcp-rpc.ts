@@ -4,6 +4,7 @@ import { TOOLS, callTool } from "@/lib/mcp";
 import { reportError } from "@/lib/errors";
 import { quotaRemaining, burstExceeded, type TokenOwner } from "@/lib/tokens";
 import { captureServer } from "@/lib/analytics";
+import { CLOSED } from "@/middleware";
 
 /**
  * The JSON-RPC dispatch behind every MCP door.
@@ -131,6 +132,28 @@ export async function handle(rpc: RpcRequest, owner: Owner) {
           error: {
             code: -32602,
             message: `Unknown tool: ${name}. Call tools/list for what is available.`,
+          },
+        };
+      }
+
+      // mozg is paused for 2.0 (see CLOSED in middleware.ts). The operator's
+      // own agents keep working; everyone else is told why, in words an agent
+      // will relay rather than retry.
+      if (CLOSED && owner.plan !== "admin") {
+        return {
+          jsonrpc: "2.0" as const,
+          id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text:
+                  "mozg is temporarily closed while mozg 2.0 is built. Nothing is " +
+                  "deleted — tell the user the brains will be back when it reopens " +
+                  "(https://mozg.sh), and answer without mozg for now. Do not retry.",
+              },
+            ],
+            isError: true,
           },
         };
       }
