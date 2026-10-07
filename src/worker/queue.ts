@@ -22,6 +22,30 @@ export const QUEUES = {
   generate: "generate",
 } as const;
 
+/** Queues whose jobs spend the platform's model key on learning. */
+export const LEARNING_QUEUES: string[] = [
+  QUEUES.ingest,
+  QUEUES.crawl,
+  QUEUES.exam,
+  QUEUES.maintenance,
+  QUEUES.refresh,
+  QUEUES.consolidate,
+  QUEUES.contradict,
+  QUEUES.lesson,
+  QUEUES.summary,
+];
+
+/**
+ * LEARNING_OFF: make boss.work() a no-op for LEARNING_QUEUES, so the worker
+ * never consumes them. Their jobs stay queued, untouched, instead of failing
+ * and marking sources as failed the way a missing key would.
+ */
+export function holdLearningQueues(b: PgBoss): void {
+  const work = b.work.bind(b) as (name: string, ...rest: unknown[]) => Promise<string>;
+  b.work = ((name: string, ...rest: unknown[]) =>
+    LEARNING_QUEUES.includes(name) ? Promise.resolve("") : work(name, ...rest)) as typeof b.work;
+}
+
 /**
  * How often brains are checked for decay. Every six hours rather than nightly:
  * the pass is cheap when nothing changed, and a page that was rewritten this

@@ -1,4 +1,4 @@
-import { getBoss, QUEUES, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl, enqueueGeneration } from "@/worker/queue";
+import { getBoss, QUEUES, LEARNING_QUEUES, holdLearningQueues, scheduleMaintenance, MAINTENANCE_CRON, CONSOLIDATE_CRON, scheduleConsolidation, CONTRADICT_CRON, scheduleContradictions, scheduleDigest, scheduleMozgpay, enqueueIngest, enqueueCrawl, enqueueGeneration } from "@/worker/queue";
 import { isCrawlRoot } from "@/lib/sources";
 import { runDigest } from "@/worker/digest";
 import { runMozgpayWatch } from "@/worker/mozgpay";
@@ -58,6 +58,7 @@ async function main() {
   }
 
   const boss = await getBoss();
+  if (env.LEARNING_OFF) holdLearningQueues(boss);
 
   // Anything left mid-flight by the last shutdown. A deploy restarts the
   // worker whenever it likes, and a source interrupted between "processing"
@@ -432,6 +433,14 @@ async function main() {
     }
   });
   await scheduleMozgpay();
+
+  // The schedule* calls above just (re)registered the crons of the held queues;
+  // drop them so ticks do not pile up jobs nobody consumes. Boot without
+  // LEARNING_OFF registers them again.
+  if (env.LEARNING_OFF) {
+    for (const q of LEARNING_QUEUES) await boss.unschedule(q).catch(() => {});
+    console.log(`[worker] LEARNING_OFF — not consuming: ${LEARNING_QUEUES.join(", ")}`);
+  }
 
   console.log(
     `[worker] up — queues: ${Object.values(QUEUES).join(", ")} ` +

@@ -129,8 +129,9 @@ function rememberSource(req: NextRequest, res: NextResponse): NextResponse {
  * on every host serves /closed; sign-in and /admin stay reachable so the
  * operator can still work, and /api stays up so payment webhooks and auth keep
  * landing. MCP is closed in lib/mcp-rpc.ts. Reopen: set false and deploy.
+ * Reopened 2026-10-08.
  */
-export const CLOSED = true;
+export const CLOSED = false;
 
 function closedAllows(pathname: string): boolean {
   return (

@@ -132,6 +132,11 @@ const schema = z.object({
   // packs finds no candidates and pays for nothing.
   CONTRADICT_ENABLED: z.stringbool().default(true),
 
+  // Worker serves payments, digests and paid images but consumes none of the
+  // queues that spend the platform's model key (see LEARNING_QUEUES). Jobs wait
+  // in pg-boss and run when this is turned off again.
+  LEARNING_OFF: z.stringbool().default(false),
+
   // Comma-separated addresses that may open /admin. Empty means nobody can —
   // an admin surface that defaults to open is a breach waiting for its first
   // sign-up.
