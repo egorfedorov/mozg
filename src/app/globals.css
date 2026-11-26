@@ -3891,13 +3891,24 @@ a.nav-part:hover {
   cursor: pointer;
 }
 
-/* The one thing to do next, along the bottom: beside the brain, never under
-   it, at any width. */
+/* The one thing to do next, along the bottom: the middle of the window, and
+   never under the brain.
+
+   The bar is 44rem wide at most, which leaves 6.5rem on each side of it from a
+   57rem window up: more than the brain takes, with its shadow and a gap. In a
+   narrower window the two would meet side by side, and the bar stands above
+   the brain instead. It used to hug the left edge and keep a wide gap on the
+   right for the brain, which read as crooked. */
 .bar {
+  --bar-side: clamp(0.75rem, 2vw, 1.5rem);
   position: fixed;
-  left: clamp(0.75rem, 2vw, 1.5rem);
-  right: max(calc(50% - 22rem), calc(clamp(0.75rem, 2vw, 1.5rem) + 76px));
-  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  left: 50%;
+  bottom: var(--bar-side);
+  width: min(calc(100% - 2 * var(--bar-side)), 44rem);
+  /* The shadow falls to the right, so the box is set half of it to the left of
+     the true middle: what the eye takes as the bar is the box with its shadow. */
+  transform: translateX(calc(-50% - 2px));
+  box-sizing: border-box;
   z-index: 39;
   display: flex;
   align-items: center;
@@ -3906,6 +3917,14 @@ a.nav-part:hover {
   border: 1.5px solid var(--ink);
   background: var(--paper);
   box-shadow: 4px 4px 0 var(--ink);
+}
+
+/* The brain is 60px square with 4px of shadow, and sits as low as the bar
+   does: the bar rises over it, with the same gap as beside it. */
+@media (max-width: 56.99rem) {
+  .bar {
+    bottom: calc(var(--bar-side) + 76px);
+  }
 }
 
 .bar-mark {
