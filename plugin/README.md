@@ -95,5 +95,4 @@ plugin, or delete `~/.mozg`, and nothing is left.
 - Payment. Nothing is for sale: everything in this plugin is free, and the
   plans on the site are a proposal marked as one.
 
-Licenced AGPL-3.0. The source and the development notes are in the repository
-this plugin is packed from.
+Licenced AGPL-3.0. The source is in <https://github.com/egorfedorov/mozg>.
