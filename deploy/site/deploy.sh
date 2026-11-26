@@ -26,10 +26,13 @@ npm run build
 npm run build:site
 
 echo "▸ copy the source and the deploy folder (the pages are built again on the host)"
+# The history of the repository is not the server's to have, nor is anything
+# built here: the host builds from the source alone.
 rsync -az --delete \
   --exclude node_modules --exclude .next --exclude out --exclude dist \
   --exclude .i18n-parts --exclude 'plugin/desk' --exclude 'plugin/dist' \
   --exclude 'backup-*.tar.gz' --exclude 'deploy/site/data' --exclude 'deploy/site/.env' \
+  --exclude .git --exclude .zcode --exclude .DS_Store --exclude '*.tsbuildinfo' \
   ./ "$host:/srv/mozg/src/"
 
 echo "▸ the server, in its container"
