@@ -1,0 +1,24 @@
+# The site's server, on the host of mozg.sh.
+#
+#   cp .env.example .env      and fill it in (the values never go in a repository)
+#   docker compose up -d --build
+#   docker compose exec site node dist/site-server.mjs token
+#
+# It listens on 127.0.0.1:4318 of the host and nowhere else: nginx forwards
+# /api/, /admin/ to it and serves the pages itself. The data folder is this
+# one, next to the file: back it up.
+services:
+  site:
+    build:
+      context: ../..
+      dockerfile: deploy/site/Dockerfile
+    container_name: mozg-site
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4318:4318"
+    env_file:
+      - .env
+    environment:
+      MOZG_SITE_ORIGIN: https://mozg.sh
+    volumes:
+      - ./data:/data

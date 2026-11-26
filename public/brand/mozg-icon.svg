@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
+  <!-- The mozg dot as a printed sticker: paper, the coral dot with a bold ink
+       outline, a hair of misregistration where the coral peeks past the
+       outline, and a hard offset shadow with no blur. Plain shapes only, so
+       every renderer, however plain, prints the same thing. -->
+  <rect width="512" height="512" fill="#eceee7"/>
+  <circle cx="282" cy="282" r="156" fill="#14161a"/>
+  <circle cx="256" cy="256" r="156" fill="#14161a"/>
+  <circle cx="248" cy="248" r="150" fill="#f15060"/>
+</svg>

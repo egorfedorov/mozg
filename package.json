@@ -1,0 +1,47 @@
+{
+  "name": "mozg",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Own what your AI writes: a local explain-back after every coding-agent session.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev -p 3320",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "build:server": "esbuild src/server/main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/server.mjs",
+    "dev:api": "tsx scripts/dev-desk.ts plugin/dist/server.mjs",
+    "pack": "node scripts/pack.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build:server",
+    "dev:api:plain": "npm run build:server && tsx scripts/dev-desk.ts",
+    "i18n:check": "tsx scripts/i18n-check.ts",
+    "prebuild": "npm run i18n:check -- --strict && tsx scripts/i18n-routes.mts && tsx scripts/site-map.mts",
+    "site": "npm run i18n:check && tsx scripts/i18n-routes.mts && tsx scripts/site-map.mts",
+    "predev": "npm run site",
+    "i18n:parts": "tsx scripts/i18n-parts.ts",
+    "build:site": "esbuild src/server/site-main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/site-server.mjs",
+    "dev:site": "npm run build:site && tsx scripts/dev-site.ts",
+    "story": "node scripts/story.mjs"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.1",
+    "typescript": "^5"
+  }
+}

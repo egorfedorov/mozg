@@ -1,0 +1,19 @@
+{
+  "name": "mozg",
+  "version": "2.0.0",
+  "description": "Own what your AI writes. mozg reads what your agent changed, and a one-minute explain-back after a session makes the risky parts yours. Local only: no keys, no accounts.",
+  "author": {
+    "name": "mozg",
+    "url": "https://mozg.sh"
+  },
+  "homepage": "https://mozg.sh",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "mcp",
+    "code-review",
+    "learning",
+    "ownership",
+    "agent"
+  ],
+  "icon": ".claude-plugin/icon.png"
+}

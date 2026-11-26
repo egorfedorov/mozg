@@ -1,0 +1,37 @@
+node_modules
+.next
+dist
+out
+out-desk
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets
+.env
+.env.*
+!.env.example
+!.env.development
+.claude/settings.local.json
+
+# what npm run pack makes from the above
+plugin/desk
+
+# made before a build, one folder per finished language
+src/app/(locale)/*/
+
+# made before a build or a dev run, from the pages' own data
+public/sitemap.xml
+public/robots.txt
+public/llms.txt
+public/changelog.xml
+
+# translations in batches, on their way into the dictionaries
+.i18n-parts/
+
+# the tool that helped build it, and the copy of the layout from before the redesign
+.zcode/
+backup-*.tar.gz
+
+# what the site server keeps on its host
+deploy/site/data/

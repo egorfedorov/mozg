@@ -1,0 +1,52 @@
+// Made by `npm run i18n:check`. Do not edit: run the check instead.
+/** How much of each surface a language has translated, from 0 to 1. The panel is the operator's. */
+export const COVERAGE: Record<string, { messages: number; docs: number }> = {
+  "de": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "es": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "fr": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "it": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "ja": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "ko": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "nl": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "pt": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "ru": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "tr": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "zh": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  },
+  "zh-tw": {
+    "messages": 0.975929978118162,
+    "docs": 1
+  }
+};

@@ -1,0 +1,39 @@
+{
+  "description": "mozg reads what the session changed, in a local log, offers a one-minute explain-back for the parts nobody can vouch for yet, and puts an edit in such a part to the person first.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/server.mjs\" hook",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/server.mjs\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/server.mjs\" hook",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}

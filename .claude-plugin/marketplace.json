@@ -1,0 +1,15 @@
+{
+  "name": "mozg",
+  "description": "mozg: own what your AI writes. A one-minute explain-back after a coding session makes the risky parts yours. Local only: no keys, no accounts.",
+  "owner": {
+    "name": "mozg",
+    "url": "https://mozg.sh"
+  },
+  "plugins": [
+    {
+      "source": "./plugin",
+      "name": "mozg",
+      "description": "Own what your AI writes: a one-minute explain-back after a coding session makes the risky parts yours. Local only, no keys."
+    }
+  ]
+}

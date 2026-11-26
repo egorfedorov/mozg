@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+dist
+.i18n-parts
+plugin/desk
+plugin/dist
+backup-*.tar.gz
+deploy/site/data
+deploy/site/.env

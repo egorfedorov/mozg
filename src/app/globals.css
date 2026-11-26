@@ -1,0 +1,4270 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   mozg — riso print
+   Paper, ink, one coral accent. A screen is a printed sheet: 1.5px ink rules,
+   hard offset shadows with no blur, halftone where a tone is needed, and never
+   a gradient. Colour carries meaning and is not swapped:
+     red    #f15060  identity, the mozg dot, a defect
+     green  #00a95c  explained, success
+     yellow #ffe800  the one emphasis plate per composition
+     orange #ff6c2f  not explained, pending
+     blue   #3d5588  due for a re-check, calm technical
+     violet #765ba7  the examiner
+   Text is ink on paper or paper on ink. The inks mark state on shapes; they do
+   not colour small words, where none of them reaches 4.5:1 on paper.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-paper: #eceee7;
+  --color-paper-2: #f6f7f3;
+  --color-ink: #14161a;
+  --color-ink-2: #565c66;
+  --color-ink-3: #646b75;
+  --color-rule: #cfd2ca;
+
+  --color-riso-blue: #3d5588;
+  --color-riso-red: #f15060;
+  --color-riso-green: #00a95c;
+  --color-riso-yellow: #ffe800;
+  --color-riso-violet: #765ba7;
+  --color-riso-orange: #ff6c2f;
+}
+
+:root {
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --paper: #eceee7;
+  --paper-2: #f6f7f3;
+  --ink: #14161a;
+  --ink-2: #565c66;
+  --ink-3: #646b75;
+  --rule: #cfd2ca;
+  --red: #f15060;
+  --green: #00a95c;
+  --yellow: #ffe800;
+  --orange: #ff6c2f;
+  --blue: #3d5588;
+  --violet: #765ba7;
+
+  /* Pencil grey for the drawn figures: a pencil is not a pen. */
+  --graphite: #3f444c;
+  /* A rule on ink, and the two greys that read on it. */
+  --ink-rule: #2b2f36;
+  --on-ink: #c9cdd3;
+  --on-ink-2: #9aa1ab;
+
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Faint paper tooth: riso stock is never flat. */
+  background-image: radial-gradient(var(--rule) 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+}
+
+/* ─── by language ────────────────────────────────────────────────────────── */
+/* The three vendored faces write in Latin and Cyrillic only. The languages
+   that write in Chinese characters or Hangul take their system's own faces,
+   which are better than anything downloaded; the display face keeps its place
+   first, so Latin words inside those languages are still set in it. */
+
+:lang(zh) {
+  --font-display: "Unbounded", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --font-body: "Golos Text", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", monospace;
+}
+
+:lang(zh-TW) {
+  --font-display: "Unbounded", "PingFang TC", "Noto Sans TC", "Source Han Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-body: "Golos Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "JetBrains Mono", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", monospace;
+}
+
+:lang(ja) {
+  --font-display: "Unbounded", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+  --font-body: "Golos Text", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+  --font-mono: "JetBrains Mono", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", monospace;
+}
+
+:lang(ko) {
+  --font-display: "Unbounded", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-body: "Golos Text", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-mono: "JetBrains Mono", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", monospace;
+}
+
+/* Tight tracking is for a fat Latin face. In characters that are already
+   square it closes the words into each other. */
+:lang(zh) .display,
+:lang(zh-TW) .display,
+:lang(ja) .display,
+:lang(ko) .display,
+:lang(zh) .h1,
+:lang(zh-TW) .h1,
+:lang(ja) .h1,
+:lang(ko) .h1,
+:lang(zh) .h2,
+:lang(zh-TW) .h2,
+:lang(ja) .h2,
+:lang(ko) .h2,
+:lang(zh) .plan-name,
+:lang(zh-TW) .plan-name,
+:lang(ja) .plan-name,
+:lang(ko) .plan-name,
+:lang(zh) .log-title,
+:lang(zh-TW) .log-title,
+:lang(ja) .log-title,
+:lang(ko) .log-title {
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* Small set labels written in characters rather than letters: a tenth of an
+   em between characters is too much air. */
+:lang(zh) .eyebrow,
+:lang(zh-TW) .eyebrow,
+:lang(ja) .eyebrow,
+:lang(ko) .eyebrow {
+  letter-spacing: 0.06em;
+}
+
+/* Languages with long compounds break them at the line, in headings only:
+   body text keeps the measure it has in English. */
+:lang(de) .display,
+:lang(de) .h1,
+:lang(de) .h2,
+:lang(de) .plan-name,
+:lang(de) .log-title,
+:lang(nl) .display,
+:lang(nl) .h1,
+:lang(nl) .h2,
+:lang(nl) .plan-name,
+:lang(tr) .display,
+:lang(tr) .h1,
+:lang(tr) .h2,
+:lang(tr) .plan-name,
+:lang(tr) .log-title {
+  hyphens: auto;
+}
+
+/* A word longer than its box is a word that broke the page. */
+.btn,
+.navlink,
+.plan-name,
+.wordmark,
+.chip,
+.pick,
+.seg-opt {
+  overflow-wrap: anywhere;
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── type ───────────────────────────────────────────────────────────────── */
+
+.display {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-ligatures: none;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Four sizes. Every heading is one of them, so hierarchy is readable without
+   counting pixels. */
+.h1 {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  text-wrap: balance;
+  font-size: clamp(2rem, 5.5vw, 3.25rem);
+  margin: 0;
+}
+
+.h2 {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.h3 {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.lede {
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+/* ─── shell ──────────────────────────────────────────────────────────────── */
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.stack > * + * {
+  margin-top: 2.5rem;
+}
+
+.stack-tight > * + * {
+  margin-top: 1.25rem;
+}
+
+.section {
+  padding-block: clamp(2.5rem, 7vw, 5rem);
+}
+
+.section-head {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.35rem;
+}
+
+.rule {
+  border: 0;
+  border-top: 1.5px solid var(--ink);
+  margin: 0;
+}
+
+/* ─── top bar ────────────────────────────────────────────────────────────── */
+
+.topbar {
+  border-bottom: 1.5px solid var(--ink);
+  /* Opaque paper with the same tooth as the sheet: nothing is blurred. */
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--rule) 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 60px;
+  padding-block: 0.5rem;
+}
+
+/* "mozg." — the full stop is the product's one mark. */
+.wordmark {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  margin-right: auto;
+}
+
+.wordmark span {
+  color: var(--red);
+}
+
+.navlink {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  padding: 0.35rem 0;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.navlink:hover,
+.navlink[data-active="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+  border: 1.25px solid var(--rule);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* A printed registration mark: the state of a thing, as a square of ink. */
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--st, var(--ink-2));
+}
+
+.dot[data-state="unexplained"],
+.dot[data-state="changed"] {
+  --st: var(--orange);
+}
+
+.dot[data-state="explained"] {
+  --st: var(--green);
+}
+
+.dot[data-state="due"] {
+  --st: var(--blue);
+}
+
+.dot[data-state="bug"] {
+  --st: var(--red);
+}
+
+.dot[data-state="idle"] {
+  --st: var(--rule);
+}
+
+/* ─── buttons ────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: box-shadow 0.14s var(--ease), transform 0.14s var(--ease);
+}
+
+/* An ink shadow under an ink button is invisible, so it answers with a hairline
+   of paper instead of a lift. */
+.btn:hover {
+  box-shadow: inset 0 0 0 1.5px var(--paper-2);
+}
+
+.btn:active {
+  box-shadow: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.btn-ghost:active {
+  box-shadow: none;
+  transform: none;
+}
+
+/* The house emphasis, on a button: at most one per screen. */
+.btn-plate {
+  background: var(--yellow);
+  border-width: 3px;
+  color: var(--ink);
+  padding: 0.65rem 1.1rem;
+  transform: rotate(-1.5deg);
+}
+
+.btn-plate:hover {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: translate(-1px, -1px) rotate(-1.5deg);
+}
+
+.btn-sm {
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.linkish:hover {
+  color: var(--ink);
+}
+
+/* ─── panels, tags, rows, stats ──────────────────────────────────────────── */
+
+.panel {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  padding: 1.25rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border: 1.25px solid var(--ink);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* A note said in a sentence: the ink of "pending" as a bar down its side. Too
+   long for a tag, too small to be a callout. */
+.notice {
+  border-left: 3px solid var(--orange);
+  padding: 0.3rem 0 0.3rem 0.9rem;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 56ch;
+  margin: 1rem 0 0;
+}
+
+.rows {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+a.row:hover {
+  background: var(--paper);
+}
+
+/* A state bar down the left edge. */
+.row[data-state] {
+  border-left: 3px solid transparent;
+  padding-left: calc(1.25rem - 3px);
+}
+
+.row[data-state="unexplained"],
+.row[data-state="changed"] {
+  border-left-color: var(--orange);
+}
+
+.row[data-state="explained"] {
+  border-left-color: var(--green);
+}
+
+.row[data-state="due"] {
+  border-left-color: var(--blue);
+}
+
+.row[data-state="bug"] {
+  border-left-color: var(--red);
+}
+
+.row-sub {
+  display: block;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+
+.row-meta {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.row-side {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.row-empty {
+  padding: 1.25rem;
+  color: var(--ink-2);
+}
+
+/* One implementation, so the landing and the desk measure a tile the same. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1.5px solid var(--ink);
+}
+
+.stat {
+  background: var(--paper-2);
+  padding: 1rem 1.1rem;
+  display: block;
+  min-width: 0;
+}
+
+.stat-value {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.75rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.stat-note {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--ink-3);
+  margin-top: 0.35rem;
+}
+
+.chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border: 1.25px solid var(--rule);
+  color: var(--ink-2);
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+
+.chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.chip[data-on="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* ─── terminal ───────────────────────────────────────────────────────────── */
+
+.term {
+  background: var(--ink);
+  color: #e6e8ea;
+  border: 1.5px solid var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+}
+
+.term-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--ink-rule);
+  color: var(--on-ink-2);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.term-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #3a3f47;
+  flex: none;
+}
+
+.term .u {
+  color: var(--yellow);
+}
+
+.term .c {
+  color: var(--on-ink-2);
+}
+
+/* ─── the board ──────────────────────────────────────────────────────────── */
+/* The product on one sheet: what the agent did, what is yours, and what the
+   agent is allowed to do next. The landing shows it on a sample session; the
+   desk shows it on yours. */
+
+.board {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.board-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1.5px solid var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.board-bar-name {
+  margin-left: 0.4rem;
+  color: var(--ink);
+}
+
+.board-bar-side {
+  margin-left: auto;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* The cards a sample leaves out are counted, never hidden silently. */
+.feed-more {
+  margin: 0.15rem 0 0;
+  padding-left: 0.25rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+/* A caption that belongs to what is above it, not a paragraph of its own. */
+.board-note {
+  margin: 0.9rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ─── the feed ───────────────────────────────────────────────────────────── */
+/* One card is one verdict and one action. Never two actions, never none. */
+
+.feed {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.feed-card {
+  --st: var(--ink-2);
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.7rem 0.75rem 0.75rem 0.95rem;
+  background: var(--paper);
+  border: 1.25px solid var(--ink);
+  box-shadow: inset 3px 0 0 var(--st);
+}
+
+.feed-card[data-state="unexplained"],
+.feed-card[data-state="changed"] {
+  --st: var(--orange);
+}
+
+.feed-card[data-state="explained"] {
+  --st: var(--green);
+}
+
+.feed-card[data-state="due"] {
+  --st: var(--blue);
+}
+
+.feed-card[data-state="bug"] {
+  --st: var(--red);
+}
+
+.feed-card[data-state="info"] {
+  --st: var(--ink);
+}
+
+.feed-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.feed-tag .dot {
+  --st: inherit;
+}
+
+.feed-tag::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  background: var(--st);
+}
+
+.feed-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.feed-text {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.feed-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+/* ─── ownership ──────────────────────────────────────────────────────────── */
+
+.own-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.own-value {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.75rem, 6vw, 4.25rem);
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+  display: flex;
+  align-items: baseline;
+}
+
+/* Nothing to own today is shown, not hidden: hiding it would read as "never
+   measured", which is a different and worse claim. */
+.own-value[data-empty="true"] {
+  opacity: 0.42;
+  font-weight: 600;
+}
+
+.own-value sup {
+  font-size: 0.38em;
+  font-weight: 700;
+  vertical-align: super;
+  margin-left: 0.08em;
+}
+
+.own-cap {
+  /* The whole width, so the caption always takes its own line under the number.
+     A max-width here would let it squeeze in beside the spark instead. */
+  flex-basis: 100%;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.spark {
+  width: 132px;
+  height: 40px;
+  flex: none;
+}
+
+/* A treemap would be exact and unreadable. Squares of equal size, sorted by how
+   much the agent touched them, let the eye count what is and is not yours. */
+.own-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr));
+  overflow: hidden;
+  background: var(--paper-2);
+  border: 1.5px solid var(--ink);
+}
+
+.own-tile {
+  --st: var(--rule);
+  position: relative;
+  /* Each tile draws its own hairline, so the grid lines end with the tiles. */
+  box-shadow: 0 0 0 1px var(--rule);
+  display: grid;
+  align-content: space-between;
+  gap: 0.3rem;
+  min-height: 4.5rem;
+  padding: 0.7rem 0.7rem 0.6rem;
+  background: var(--paper);
+}
+
+.own-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--st);
+}
+
+.own-tile[data-state="unexplained"] {
+  --st: var(--orange);
+}
+
+.own-tile[data-state="explained"] {
+  --st: var(--green);
+}
+
+.own-tile[data-state="due"] {
+  --st: var(--blue);
+}
+
+/* It was yours, and the agent has been back. */
+.own-tile[data-state="changed"] {
+  --st: var(--orange);
+  background-image: repeating-linear-gradient(135deg, var(--rule) 0 1px, transparent 1px 7px);
+}
+
+.own-tile[data-state="idle"] {
+  --st: var(--rule);
+  opacity: 0.62;
+}
+
+.own-tile-name {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  padding-top: 0.3rem;
+}
+
+.own-tile-meta {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--ink-3);
+}
+
+.own-bar {
+  height: 4px;
+  border: 1px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.own-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--st);
+}
+
+.own-legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.own-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.own-legend i {
+  width: 0.5rem;
+  height: 0.5rem;
+  display: inline-block;
+  background: var(--st);
+}
+
+/* ─── the explain-back ───────────────────────────────────────────────────── */
+/* One explain-back as it happens: three voices in order, each with its own
+   ink. Ink for the agent that asks, coral for the person who answers, violet
+   for the examiner that grades: the one place the examiner appears. */
+
+.xb-wrap {
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+}
+
+.xb {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.xb-row {
+  --who: var(--ink);
+  display: grid;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.25rem 1rem 1.2rem;
+  box-shadow: inset 3px 0 0 var(--who);
+}
+
+.xb-row[data-who="you"] {
+  --who: var(--red);
+}
+
+.xb-row[data-who="examiner"] {
+  --who: var(--violet);
+}
+
+.xb-row + .xb-row {
+  border-top: 1px solid var(--rule);
+}
+
+.xb-who {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding-top: 0.25rem;
+}
+
+.xb-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.xb-verdict {
+  font-weight: 600;
+}
+
+.xb-verdict::after {
+  content: ".";
+  margin-right: 0.35rem;
+}
+
+.xb-bug {
+  font-weight: 600;
+}
+
+.xb-bug-mark {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--red);
+  margin-right: 0.4rem;
+}
+
+/* ─── the brain ──────────────────────────────────────────────────────────── */
+/* A pupil that asks, never a warden. Every line it says is computed from the
+   numbers beside it: nothing is generated, nothing is encouraging on its own. */
+
+.brain {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.brain-face {
+  width: 92px;
+  height: 92px;
+  flex: none;
+  transform-origin: center;
+}
+
+.brain[data-live="true"] .brain-face {
+  animation: breathe 4.5s ease-in-out infinite;
+}
+
+.bubble {
+  position: relative;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  padding: 0.85rem 0.95rem;
+  display: grid;
+  gap: 0.45rem;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -8.5px;
+  top: 20px;
+  width: 12px;
+  height: 12px;
+  background: var(--paper);
+  border-left: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  transform: rotate(45deg);
+}
+
+.brain-line {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.brain-line[data-tone="warn"],
+.brain-line[data-tone="good"] {
+  color: var(--ink);
+}
+
+.brain-mark {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+
+.brain-mark[data-tone="warn"] {
+  color: var(--red);
+}
+
+.brain-mark[data-tone="good"] {
+  color: var(--green);
+}
+
+.brain-note {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+/* ─── the hand-drawn layer ───────────────────────────────────────────────── */
+/* Riso and pencil are one family: riso is how the zine gets printed, pencil is
+   how it is drawn first. Inline SVG with a displacement filter; degrades to
+   straight lines where filters are unsupported. */
+
+.sk-panel {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.sk-panel-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sk-panel-body {
+  position: relative;
+  padding: 1.5rem 1.4rem 1.3rem;
+}
+
+.sk-panel-n {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.sk-panel-title {
+  margin: 0 0 0.55rem;
+}
+
+.sk-panel-text {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.sk-panel-text p {
+  margin: 0 0 0.6rem;
+}
+
+.sk-panel-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* The margin note, written after the panel at a slight angle. */
+.sk-aside {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--graphite);
+  opacity: 0.8;
+  margin: 0.9rem 0 0;
+  padding-left: 0.9rem;
+  border-left: 1.5px solid currentColor;
+  transform: rotate(-0.4deg);
+}
+
+/* The figure is a drawing; its words are set on the page below it. */
+.sk-fig-wrap {
+  margin: 0;
+  max-width: 720px;
+}
+
+.sk-fig {
+  display: block;
+  overflow: visible;
+}
+
+.sk-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-inline: 7.3% 5.6%;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.sk-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+.sk-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sk-key i {
+  width: 1.25rem;
+  height: 0.5rem;
+  flex: none;
+}
+
+.sk-key-agent {
+  background: var(--graphite);
+}
+
+.sk-key-you {
+  background: var(--red);
+}
+
+/* Hatching, not a blend: the same hard stops as the "changed" tile. */
+.sk-key-gap {
+  background: repeating-linear-gradient(135deg, transparent 0 3px, var(--orange) 3px 5px);
+}
+
+.sk-strip {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* ─── landing: hero and thesis ───────────────────────────────────────────── */
+
+.hero {
+  padding-block: clamp(2rem, 4.5vw, 3.25rem) clamp(3rem, 8vw, 5.5rem);
+}
+
+.hero-title {
+  font-size: clamp(2.4rem, 6.6vw, 4.6rem);
+  margin: 0.6rem 0 0.6rem;
+  max-width: 15ch;
+}
+
+/* The second line in the mono face: a printed caption under a headline. */
+.hero-sub {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(1rem, 2vw, 1.375rem);
+  line-height: 1.3;
+  color: var(--ink-2);
+  margin: 0 0 1.5rem;
+  max-width: 56ch;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.75rem;
+}
+
+.board-label {
+  display: flex;
+  justify-content: flex-end;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.5rem;
+}
+
+.thesis {
+  padding-block: clamp(3rem, 10vw, 7.5rem);
+}
+
+.thesis-line {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 6.6vw, 4.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin: 0;
+  max-width: 16ch;
+}
+
+.thesis-word {
+  display: inline-block;
+  /* As printed, the words are simply there. They go faint only once the script
+     has armed the reveal (data-ready), and only until the reader reaches them,
+     so a page without JavaScript, or with motion turned off, loses nothing. */
+  opacity: 1;
+  transition: opacity 0.7s var(--ease);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+[data-ready="true"] .thesis-word:not([data-on="true"]) {
+  opacity: 0.12;
+}
+
+.thesis-line[data-accent="true"] .thesis-word {
+  color: var(--red);
+}
+
+.thesis-figure {
+  margin-top: clamp(2rem, 6vw, 3.5rem);
+}
+
+/* ─── landing: the moment it asks ─────────────────────────────────────────── */
+/* An edit waiting for the person, drawn as a printed slip. The bar down the
+   reason is the ink of "not explained". */
+
+.asks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+}
+
+.ask-slip {
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.ask-slip-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1.5px solid var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ask-slip-bar span:last-child {
+  margin-left: 0.5rem;
+}
+
+.ask-file {
+  margin: 0;
+  padding: 1rem 1.1rem 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.ask-reason {
+  margin: 0.7rem 1.1rem 0;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--orange);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.ask-reason strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ask-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.ask-btn {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+}
+
+.ask-btn[data-on="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.asks-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.asks-list li {
+  display: grid;
+  grid-template-columns: 0.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.asks-list i {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--orange);
+  margin-top: 0.55rem;
+}
+
+/* ─── landing: who it is for ──────────────────────────────────────────────── */
+/* The one inverted sheet: ink for the person, paper for everything else. */
+
+.for {
+  background: var(--ink);
+  color: var(--paper-2);
+  border-block: 1.5px solid var(--ink);
+}
+
+.for-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 200px);
+  gap: 2rem;
+  align-items: center;
+}
+
+.for-title {
+  color: var(--paper-2);
+  font-size: clamp(1.9rem, 5.2vw, 3.5rem);
+  margin: 0.5rem 0 0;
+}
+
+.for-lede {
+  color: var(--on-ink);
+  max-width: 46ch;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  margin: 1rem 0 0;
+}
+
+/* A die-cut sticker: the character carries its own cream edge onto the ink. */
+.for-face {
+  width: 100%;
+  height: auto;
+  justify-self: center;
+}
+
+.for .eyebrow {
+  color: var(--on-ink-2);
+}
+
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1px;
+  background: var(--ink-rule);
+  border: 1px solid var(--ink-rule);
+  margin-top: clamp(2rem, 5vw, 3rem);
+}
+
+.pillar {
+  background: var(--ink);
+  padding: 1.1rem 1.2rem 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.pillar-n {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--on-ink-2);
+}
+
+.pillar-name {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+  color: var(--paper-2);
+}
+
+.pillar-text {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--on-ink);
+}
+
+/* ─── landing: questions and the closing plate ───────────────────────────── */
+
+.faq {
+  border-top: 1.5px solid var(--ink);
+}
+
+.faq details {
+  border-bottom: 1px solid var(--rule);
+}
+
+.faq summary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 1rem 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary:hover {
+  background: var(--paper-2);
+}
+
+.faq-n {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+/* The marker is the one place a colour carries text: it is a glyph, not a word. */
+.faq summary::after {
+  content: "+";
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.faq details[open] summary::after {
+  content: "−";
+}
+
+.faq-a {
+  padding: 0 0 1.2rem 3.25rem;
+  color: var(--ink-2);
+  max-width: 68ch;
+  line-height: 1.6;
+}
+
+/* The house emphasis: a phrase on a yellow plate, 3px ink border, hard offset
+   shadow, a degree or two of rotation. One per screen. */
+.plate {
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  transform: rotate(-1deg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.plate-title {
+  font-size: clamp(1.6rem, 4.2vw, 2.75rem);
+  margin: 0;
+  max-width: 18ch;
+}
+
+.plate-text {
+  color: var(--ink);
+  margin: 0.6rem 0 0;
+  max-width: 56ch;
+}
+
+/* On the yellow plate the mono button keeps its own ink shadow. */
+.plate .btn {
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.plate .btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+/* Prose beside a thing to copy: the reason on the left, the command on the right. */
+.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.closing {
+  padding-bottom: clamp(1rem, 3vw, 2rem);
+}
+
+/* ─── footer ─────────────────────────────────────────────────────────────── */
+
+.footer {
+  border-top: 1.5px solid var(--ink);
+  margin-top: clamp(3rem, 8vw, 6rem);
+}
+
+.footer-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  padding-block: clamp(2rem, 5vw, 3rem);
+}
+
+.footer-tag {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  margin: 0.5rem 0 0;
+  max-width: 26ch;
+}
+
+.footer-col {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer-col a {
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.footer-col a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer-legal {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-bottom: 2rem;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+/* ─── top bar: the way around, the language, the way forward ────────────── */
+
+.topbar-inner {
+  gap: 1.25rem;
+}
+
+.topbar-inner .wordmark {
+  margin-right: 0.25rem;
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.topbar-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 980px) {
+  .hide-md {
+    display: none;
+  }
+}
+
+/* The language picker. A `<details>`: it works before anything has loaded. */
+.lang {
+  position: relative;
+}
+
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.lang-btn::-webkit-details-marker {
+  display: none;
+}
+
+.lang-short {
+  display: none;
+}
+
+.lang-caret {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: -0.3rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.lang[open] .lang-caret {
+  margin-top: 0.3rem;
+  transform: rotate(225deg);
+}
+
+.lang[open] .lang-btn {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 40;
+  min-width: 11.5rem;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.lang-menu a {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.6rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.lang-menu a:hover {
+  background: var(--yellow);
+}
+
+.lang-menu a[aria-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (max-width: 640px) {
+  .topnav {
+    display: none;
+  }
+
+  .lang-name {
+    display: none;
+  }
+
+  .lang-short {
+    display: inline;
+  }
+}
+
+/* The way around, behind one button where the links do not fit beside the
+   wordmark. A `<details>` too, dressed as the language picker is: the menu
+   button keeps its word at every width, where the picker keeps a short one. */
+.mnav {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .mnav {
+    display: block;
+  }
+
+  .mnav-list {
+    right: auto;
+    left: 0;
+    min-width: 13rem;
+    max-height: calc(100vh - 5rem);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  /* The wordmark and the two menus fill the bar; the button is inside the menu. */
+  .topbar-end > .btn {
+    display: none;
+  }
+
+  .mnav .lang-name {
+    display: inline;
+  }
+}
+
+.mnav-install {
+  padding: 0.5rem 0.6rem 0.2rem;
+}
+
+/* Inside the menu it is a menu link to the cascade, ink on paper like the
+   others. It says what it is: ink, with paper on it, on hover as at rest. */
+.mnav-install .btn {
+  width: 100%;
+  color: var(--paper-2);
+}
+
+.mnav-install .btn:hover {
+  background: var(--ink);
+}
+
+/* ─── pricing ────────────────────────────────────────────────────────────── */
+/* Three plans on one sheet, the first one printed on top of the others: an
+   offset shadow, as a card laid over the page. A feature not built yet has a
+   dashed mark, so that the eye can count what exists without reading. */
+
+.pricing-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem 1.4rem 1.3rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+}
+
+.plan[data-first] {
+  background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.plan-flag {
+  position: absolute;
+  top: -0.95rem;
+  left: 1.4rem;
+  background: var(--yellow);
+}
+
+.plan-name {
+  margin: 0;
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  font-size: 1.625rem;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.plan-who {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 800;
+  font-size: 2.75rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.plan-unit {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+.pricing[data-billing="yearly"] [data-when="monthly"],
+.pricing[data-billing="monthly"] [data-when="yearly"] {
+  display: none;
+}
+
+.plan-features {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.plan-features li {
+  display: grid;
+  grid-template-columns: 0.5rem minmax(0, 1fr);
+  gap: 0 0.6rem;
+}
+
+.plan-features i {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.5rem;
+  background: var(--green);
+}
+
+/* Planned is orange, the colour of what is pending, with the outline in ink:
+   an outline in orange alone could hardly be told from the paper. The same
+   mark as the comparison table under the plans. */
+.plan-features li[data-planned] i {
+  border: 1.5px dashed var(--ink);
+  background: var(--orange);
+}
+
+.plan-features li[data-planned] > span:first-of-type {
+  color: var(--ink-2);
+}
+
+.plan-planned {
+  grid-column: 2;
+  margin-top: -0.3rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.plan-cta {
+  justify-content: center;
+}
+
+/* A plan that is not on sale has a button that says so and does nothing: drawn
+   as an outline, not as a button gone grey. */
+.plan:not([data-sold="now"]) .plan-cta {
+  background: transparent;
+  border: 1.5px dashed var(--ink-3);
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.plan-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 1.75rem;
+}
+
+.compare {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  font-size: 0.9375rem;
+}
+
+.compare th,
+.compare td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.compare thead th {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.compare tbody th {
+  font-weight: 500;
+}
+
+.compare td {
+  width: 6.5rem;
+  text-align: center;
+}
+
+.compare tbody tr:last-child th,
+.compare tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.have {
+  color: var(--ink);
+}
+
+/* Planned: a square outlined in ink and filled with the orange of what is
+   pending, dashed as what is still to come. A ring in orange alone could
+   hardly be told from the paper. */
+.have[data-planned] {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border: 1.5px dashed var(--ink);
+  background: var(--orange);
+  vertical-align: -0.04em;
+}
+
+.have[data-none] {
+  color: var(--ink-3);
+}
+
+/* ─── questions, in groups ───────────────────────────────────────────────── */
+
+.faq-group + .faq-group {
+  margin-top: 2rem;
+}
+
+.faq-group-name {
+  margin-bottom: 0.6rem;
+}
+
+/* ─── a page of its own: the changelog ───────────────────────────────────── */
+
+.page {
+  padding-block: clamp(2.5rem, 7vw, 5rem) clamp(3rem, 8vw, 5.5rem);
+}
+
+.page-head {
+  max-width: 46rem;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.page-title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+}
+
+.log {
+  max-width: 54rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: 10rem 1.25rem minmax(0, 1fr);
+  gap: 0 1rem;
+  padding-bottom: clamp(2rem, 5vw, 3.25rem);
+}
+
+.log-when {
+  padding-top: 0.3rem;
+  text-align: right;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.log-dot {
+  position: relative;
+}
+
+/* A printed mark on a rule: where each entry sits on the line. */
+.log-dot::before {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  left: 50%;
+  z-index: 1;
+  width: 0.7rem;
+  height: 0.7rem;
+  transform: translateX(-50%);
+  background: var(--green);
+  border: 1.5px solid var(--ink);
+}
+
+.log-dot::after {
+  content: "";
+  position: absolute;
+  top: 1.3rem;
+  bottom: -0.1rem;
+  left: 50%;
+  width: 1.5px;
+  transform: translateX(-50%);
+  background: var(--rule);
+}
+
+.log-entry:last-child .log-dot::after {
+  display: none;
+}
+
+.log-entry[data-planned] .log-dot::before {
+  background: var(--orange);
+}
+
+.log-body {
+  padding-left: 0.75rem;
+}
+
+.log-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.log-title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.75rem, 4.5vw, 2.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.log-summary {
+  max-width: 60ch;
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.log-items {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.log-items li {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 0 0.75rem;
+}
+
+.log-kind {
+  --st: var(--ink);
+  padding-top: 0.25rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.log-items li[data-kind="new"] .log-kind {
+  --st: var(--green);
+}
+
+.log-items li[data-kind="improved"] .log-kind {
+  --st: var(--blue);
+}
+
+.log-items li[data-kind="planned"] .log-kind {
+  --st: var(--orange);
+}
+
+/* The kind is a mark and a word: the mark carries the colour. */
+.log-kind::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.45rem;
+  vertical-align: baseline;
+  background: var(--st);
+}
+
+/* ─── the documentation ──────────────────────────────────────────────────── */
+/* Three columns on a wide screen: the way around, the page, what is on the
+   page. On a narrow one the page first, and the way around folded above it. */
+
+.docs {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr) 13rem;
+  gap: 2.5rem;
+  align-items: start;
+  padding-block: clamp(1.5rem, 4vw, 2.5rem) clamp(3rem, 8vw, 5rem);
+}
+
+.docs-side {
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.docs-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.45rem 0.65rem;
+  border: 1.5px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.docs-search:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.docs-search kbd {
+  margin-left: auto;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--rule);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.docs-nav-fold {
+  display: none;
+}
+
+.docs-group + .docs-group {
+  margin-top: 1.25rem;
+}
+
+.docs-group .eyebrow {
+  margin: 0 0 0.45rem;
+}
+
+.docs-group ul {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs-group a {
+  display: block;
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid transparent;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+
+.docs-group a:hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+.docs-group a[aria-current="page"] {
+  background: var(--paper-2);
+  border-left-color: var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.docs-article {
+  min-width: 0;
+  max-width: 46rem;
+}
+
+.docs-article > .h1 {
+  margin-bottom: 0.6rem;
+}
+
+.docs-tools {
+  margin: 0.25rem 0 0.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.docs-article h2 {
+  margin: 2.25rem 0 0.75rem;
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 700;
+  font-size: 1.625rem;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  scroll-margin-top: 90px;
+}
+
+.docs-article p,
+.docs-article li {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.docs-article p {
+  margin: 0 0 1rem;
+}
+
+.docs-article ul,
+.docs-article ol {
+  margin: 0 0 1rem;
+  padding-left: 1.4rem;
+}
+
+.docs-article li {
+  margin-bottom: 0.45rem;
+}
+
+.docs-article li::marker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.docs-article code,
+.doc-note code {
+  padding: 0.05rem 0.25rem;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.875em;
+  overflow-wrap: anywhere;
+  /* Cut by the end of a line, a box is drawn again on every line it runs
+     along, closed on all sides, and not left open where it was cut. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* A short token is one thing. In running text it goes to the next line whole,
+   box and all, instead of being cut where the line ends. A table cell may be
+   narrower than the token, and there it is still cut. */
+.docs-article p code.code-whole,
+.docs-article li code.code-whole,
+.docs-article dd code.code-whole,
+.doc-note code.code-whole {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* An address in the text is a link. Under the pointer its box lifts the way
+   anything on this paper does. */
+.code-link:hover code {
+  border-color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.docs-toc {
+  position: sticky;
+  top: 76px;
+  font-size: 0.875rem;
+}
+
+.docs-toc .btn {
+  width: fit-content;
+}
+
+.docs-toc .eyebrow {
+  margin-bottom: 0.6rem;
+}
+
+.docs-toc ul {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  border-left: 1.5px solid var(--rule);
+}
+
+/* The entries of the list, and not the button under it: that one keeps the
+   padding and the paper letters of a button. */
+.docs-toc li a {
+  display: block;
+  margin-left: -1.5px;
+  padding: 0.25rem 0 0.25rem 0.85rem;
+  border-left: 1.5px solid transparent;
+  color: var(--ink-2);
+}
+
+.docs-toc li a:hover {
+  border-left-color: var(--ink);
+  color: var(--ink);
+}
+
+/* A command or a quote, printed in ink with paper letters. */
+.codeblock {
+  margin: 0 0 1.25rem;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+}
+
+.codeblock-label {
+  display: block;
+  padding: 0.6rem 1rem 0;
+  color: var(--on-ink-2);
+}
+
+.codeblock pre {
+  margin: 0;
+  padding: 0.85rem 1rem 0.6rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: #e6e8ea;
+}
+
+.codeblock pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+  overflow-wrap: normal;
+}
+
+.codeblock-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0.6rem 0.6rem;
+}
+
+.codeblock-copy {
+  background: var(--ink);
+  border-color: var(--on-ink-2);
+  color: var(--paper-2);
+}
+
+.codeblock-copy:hover {
+  box-shadow: inset 0 0 0 1.5px var(--paper-2);
+}
+
+/* Something to keep in mind: a bar of ink down the side, blue for a note and
+   orange where it would hurt to skip. */
+.doc-note {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+  border: 1.5px solid var(--ink);
+  border-left: 3px solid var(--blue);
+  background: var(--paper);
+}
+
+.doc-note[data-tone="warn"] {
+  border-left-color: var(--orange);
+}
+
+.doc-note p {
+  margin: 0.35rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.doc-table {
+  margin: 0 0 1.25rem;
+  overflow-x: auto;
+  border: 1.5px solid var(--ink);
+}
+
+.doc-table table {
+  width: 100%;
+  min-width: 30rem;
+  border-collapse: collapse;
+  background: var(--paper-2);
+  font-size: 0.875rem;
+}
+
+.doc-table th,
+.doc-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.doc-table thead th {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.doc-table tbody th {
+  font-weight: 500;
+}
+
+.doc-table tr:last-child th,
+.doc-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.doc-terms {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0 0 1.25rem;
+}
+
+.doc-terms dt {
+  margin: 0 0 0.2rem;
+}
+
+.doc-terms dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.docs-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1.5px solid var(--ink);
+}
+
+.docs-pager-link {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.docs-pager-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.docs-pager-next {
+  text-align: right;
+}
+
+/* The search: a printed sheet over a dimmed page. */
+.docs-dialog {
+  width: min(34rem, calc(100vw - 2rem));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.docs-dialog::backdrop {
+  background: rgba(20, 22, 26, 0.45);
+}
+
+.docs-dialog input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-bottom: 1.5px solid var(--ink);
+  background: transparent;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.docs-dialog input:focus {
+  outline: none;
+}
+
+.docs-dialog ul {
+  max-height: 60vh;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.docs-dialog a {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9375rem;
+}
+
+.docs-dialog a:hover,
+.docs-dialog a:focus-visible {
+  background: var(--yellow);
+  outline: none;
+}
+
+.docs-hit-page {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.docs-dialog-empty {
+  margin: 0;
+  padding: 1.25rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 1100px) {
+  .docs {
+    grid-template-columns: 14rem minmax(0, 1fr);
+  }
+
+  .docs-toc {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan[data-first] {
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .docs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .docs-side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .docs-nav {
+    display: none;
+  }
+
+  .docs-nav-fold {
+    display: block;
+    margin-bottom: 1.5rem;
+    border: 1.5px solid var(--ink);
+    background: var(--paper-2);
+  }
+
+  .docs-nav-fold summary {
+    padding: 0.7rem 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .docs-nav-fold nav {
+    padding: 0.25rem 0.9rem 0.9rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .log-entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .log-when {
+    padding-top: 0;
+    margin-bottom: 0.4rem;
+    text-align: left;
+  }
+
+  .log-dot {
+    display: none;
+  }
+
+  .log-body {
+    padding-left: 0;
+  }
+
+  .log-items li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+}
+
+/* ─── the desk ───────────────────────────────────────────────────────────── */
+
+.desk {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  padding-block: clamp(1.25rem, 4vw, 2.5rem) clamp(2.5rem, 6vw, 4rem);
+}
+
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-5 { grid-column: span 5; }
+.col-6 { grid-column: span 6; }
+.col-7 { grid-column: span 7; }
+.col-8 { grid-column: span 8; }
+.col-9 { grid-column: span 9; }
+.col-12 { grid-column: span 12; }
+
+.desk-panel {
+  min-width: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.desk-panel > .panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.recap {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1.25px solid var(--ink);
+  background: var(--paper);
+  padding: 1rem 1.1rem;
+  margin: 0 0 0.85rem;
+}
+
+/* ─── connection and settings ────────────────────────────────────────────── */
+/* What the desk knows about how it is attached: a name on the left, what
+   actually happened on the right, and a mark that is green only when
+   something did. */
+
+.kv {
+  margin: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  padding: 0.7rem 1rem;
+}
+
+.kv-row + .kv-row {
+  border-top: 1px solid var(--rule);
+}
+
+.kv dt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-top: 0.25rem;
+}
+
+.kv dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.set {
+  margin-top: 1.35rem;
+}
+
+.set-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+}
+
+.set-text {
+  margin: 0.45rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 68ch;
+}
+
+.set-note {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+
+/* A choice of two or three, printed as one control: the chosen half is ink. */
+.select {
+  min-height: 2.5rem;
+  margin-top: 0.6rem;
+  padding: 0.4rem 2rem 0.4rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  border: 1.5px solid var(--ink);
+  margin-top: 0.7rem;
+}
+
+.seg-opt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.seg-opt[aria-checked="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.seg-opt:disabled {
+  cursor: wait;
+}
+
+.seg-opt:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Solid is on the desk; dashed is hidden. */
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.pick {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.pick[aria-pressed="false"] {
+  border: 1.5px dashed var(--ink-3);
+  background: none;
+  color: var(--ink-3);
+}
+
+.pick:disabled {
+  cursor: wait;
+}
+
+.pick-off {
+  color: var(--ink-3);
+}
+
+/* A link inside a sentence. */
+.tlink {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.875em;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.tlink:hover {
+  background: var(--yellow);
+}
+
+/* An empty state is an instruction, not a shrug. */
+.empty {
+  border: 1.5px dashed var(--ink-3);
+  padding: 1.5rem;
+  color: var(--ink-2);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.skel {
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  min-height: 4.5rem;
+  animation: skel-pulse 1.6s ease-in-out infinite;
+}
+
+/* ─── motion ─────────────────────────────────────────────────────────────── */
+/* Two motions, both slow: the brain breathes, and a card rises once on its way
+   in. Nothing blinks, nothing bounces, nothing eases dramatically. */
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes skel-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Only the sample board plays its session; the real desk refreshes and must not
+   replay an entrance every time a number moves. */
+.board[data-play="true"] .feed-card {
+  animation: rise 0.5s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 260ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-panel-frame {
+    filter: none;
+  }
+
+  .thesis-word {
+    opacity: 1;
+    transition: none;
+  }
+
+  .skel {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1020px) {
+  .desk > * {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 820px) {
+  .two,
+  .asks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ask-slip {
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+}
+
+@media (max-width: 760px) {
+  .board {
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .for-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .for-face {
+    width: 132px;
+    justify-self: start;
+  }
+
+  .plate {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .faq-a {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-inner {
+    gap: 0.75rem;
+  }
+
+  .hide-sm {
+    display: none;
+  }
+
+  .brain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .brain-face {
+    width: 72px;
+    height: 72px;
+  }
+
+  .bubble::before {
+    top: -8.5px;
+    left: 22px;
+    border: 0;
+    border-left: 1.5px solid var(--ink);
+    border-top: 1.5px solid var(--ink);
+  }
+
+  .stat {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .stat-value {
+    font-size: 1.375rem;
+  }
+
+  .own-value {
+    font-size: 2.75rem;
+  }
+
+  .spark {
+    display: none;
+  }
+
+  .desk-panel {
+    padding: 0.9rem;
+  }
+
+  .xb-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+  }
+
+  .desk-panel > .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .kv-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .kv dt {
+    padding-top: 0;
+  }
+}
+
+/* ─── the desk as a dashboard ────────────────────────────────────────────── */
+/* One part at a time, with the way from one to the other always in sight.
+   Today comes first: the score and what the brain says, the one thing to do
+   next, then the map and the latest cards. The landing shows the same pieces
+   on a sample session, with the five parts standing still beside them. */
+
+.desk-shell {
+  display: grid;
+  grid-template-columns: 12.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: 1.5rem;
+  padding-block: clamp(1.25rem, 4vw, 2.5rem) clamp(2.5rem, 6vw, 4rem);
+}
+
+.desk-main {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+
+.desk-grid {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.desk-nav {
+  position: sticky;
+  top: 76px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-2);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.desk-nav ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desk-nav li + li {
+  border-top: 1px solid var(--rule);
+}
+
+/* A part of the desk: its name, and what is waiting in it where a count says so. */
+.nav-part {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Under the pointer a yellow plate, always with ink on it: the part in front
+   is printed paper on ink, and paper on yellow cannot be read. */
+a.nav-part:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+/* The part in front is printed in ink, as the page itself is on paper. */
+.nav-part[aria-current="page"],
+.nav-part[data-on] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.nav-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding-inline: 0.3rem;
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Orange is "not explained": the modules waiting for one. */
+.nav-count[data-attention] {
+  background: var(--orange);
+}
+
+/* The project in front, named in the top bar when there are several. */
+.desk-project {
+  max-width: 14rem;
+}
+
+.score-panel .own-head {
+  margin-bottom: 0.75rem;
+}
+
+.score-panel .brain {
+  margin-bottom: 0;
+}
+
+/* The one thing to do next. */
+.next-panel {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.next-title {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(1.125rem, 1.9vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.next-title-plain {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+}
+
+.next-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.next-cmd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+
+.next-cmd .c {
+  color: var(--ink-3);
+}
+
+.next-cmd code {
+  overflow-wrap: anywhere;
+}
+
+.next-cmd .btn {
+  margin-left: auto;
+}
+
+/* On the desk this is the one thing to do, and it takes the page's one yellow plate. */
+.next-panel[data-plate] {
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 6px 6px 0 var(--ink);
+  transform: rotate(-1.5deg);
+}
+
+.next-panel[data-plate] .next-note {
+  color: var(--ink);
+}
+
+/* The way to the whole of what a part shows only the first of. */
+.more-link {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.more-link:hover {
+  background: var(--yellow);
+}
+
+.explain-open {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.explain-open > .row {
+  padding-inline: 0;
+}
+
+/* The modules, one row each: what it is, how much changed there and who let it
+   through, what the agent does there now, and the way to make it yours. */
+.mod-rows {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
+.mod-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.mod-main {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.mod-name {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.mod-side {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* A rule is a fact about the module, so it is said in ink, not outlined. */
+.tag-rule {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.row-empty-in {
+  margin: 0;
+  border: 0;
+}
+
+.board-note-top {
+  margin: 0 0 0.9rem;
+}
+
+.chip-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.2rem;
+  font-size: 0.6875rem;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.chip[data-on="true"] .chip-count {
+  background: var(--yellow);
+}
+
+/* The landing's picture of the desk: the five parts, standing still, beside today. */
+.showcase {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+}
+
+.showcase > .board-bar {
+  grid-column: 1 / -1;
+}
+
+/* The parts on the left, today on the right of them, whatever order they are written in. */
+.showcase .desk-nav {
+  grid-column: 1;
+  grid-row: 2;
+  position: static;
+  align-self: stretch;
+  border: 0;
+  border-right: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: none;
+}
+
+.showcase .nav-part {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+}
+
+.showcase-body {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.showcase-top,
+.showcase-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+
+.showcase-top {
+  border-bottom: 1px solid var(--rule);
+}
+
+.showcase-top > *,
+.showcase-lower > * {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.showcase-top > * + *,
+.showcase-lower > * + * {
+  border-left: 1px solid var(--rule);
+}
+
+.showcase-map,
+.showcase-latest {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.showcase .next-title {
+  font-size: 1.125rem;
+}
+
+@media (max-width: 1100px) {
+  .showcase {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1020px) {
+  .desk-shell {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1.1rem;
+  }
+
+  /* The parts in a row across the top, each as wide as its name. */
+  .desk-nav {
+    position: sticky;
+    top: 61px;
+    z-index: 15;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .desk-nav ul {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+  }
+
+  .desk-nav li + li {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+
+  .showcase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The parts across the top, today under them. */
+  .showcase .desk-nav,
+  .showcase-body {
+    grid-column: 1;
+  }
+
+  .showcase .desk-nav {
+    grid-row: 2;
+  }
+
+  .showcase-body {
+    grid-row: 3;
+  }
+
+  .showcase .desk-nav {
+    position: static;
+    border-right: 0;
+    border-bottom: 1.5px solid var(--ink);
+  }
+}
+
+@media (max-width: 760px) {
+  .desk-grid > * {
+    grid-column: span 12;
+  }
+
+  .next-panel[data-plate] {
+    transform: none;
+  }
+
+  .showcase-top,
+  .showcase-lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .showcase-top > * + *,
+  .showcase-lower > * + * {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .mod-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mod-side {
+    justify-content: flex-start;
+  }
+}
+
+/* Each panel takes the height of what is in it: a short one is not stretched
+   to its neighbour with a hole underneath. */
+.desk-grid {
+  align-items: start;
+}
+
+/* A day without a score says so with a dash that reads as a dash, and not as
+   a bar that is still loading. */
+.own-value[data-empty="true"] {
+  opacity: 0.6;
+  font-weight: 500;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.2;
+}
+
+/* ─── what the site shares: the chat, the announcements, the bar ─────────── */
+/* Pieces that live in the footer of every public page and speak to the site's
+   server from the browser. Paper, ink, a hard shadow: nothing of them floats
+   in a blur. The plugin's desk has none of them. */
+
+/* The floating brain: a sticker with feet on the paper. */
+.dock-button {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+}
+
+.dock-button:hover {
+  background: var(--paper-2);
+}
+
+/* Open, the sticker is pressed down onto the page. */
+.dock-button[data-open] {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+.dock-brain {
+  display: block;
+}
+
+.dock-brain[data-live] {
+  animation: dock-breathe 4.5s ease-in-out infinite;
+}
+
+@keyframes dock-breathe {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+/* A reply nobody has read yet is news, and news is green. */
+.dock-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--green);
+  border: 1.5px solid var(--ink);
+}
+
+.dock-panel {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: calc(clamp(0.75rem, 2vw, 1.5rem) + 72px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, calc(100vw - 1.5rem));
+  max-height: min(32rem, calc(100vh - 8rem));
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.dock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1.5px solid var(--ink);
+}
+
+.dock-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.dock-close {
+  padding: 0.15rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.dock-close:hover {
+  color: var(--red);
+}
+
+.dock-body {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.dock-intro {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.dock-thread {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* A line of the thread: a bar down its side, coral for mozg. */
+.dock-msg {
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+
+.dock-msg[data-author="operator"] {
+  border-left-color: var(--red);
+}
+
+.dock-msg-at {
+  margin: 0 0 0.2rem;
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.dock-msg-body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.dock-form {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.dock-form textarea {
+  width: 100%;
+  min-height: 6rem;
+  padding: 0.7rem 0.85rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+}
+
+/* The trap for machines: out of the window and out of the tab order. */
+.dock-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+/* What became of a message, said with a mark: ink words, a square of meaning. */
+.dock-said,
+.dock-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.dock-said::before,
+.dock-error::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--ink);
+  background: var(--green);
+}
+
+.dock-error::before {
+  background: var(--red);
+}
+
+.dock-mail {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.dock-mail-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.dock-mail-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dock-mail-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+/* What the operator has posted: a strip along the top, in flow, so nothing is
+   hidden behind it. Its ink is the kind of news it is. */
+.announce {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+.announce[data-kind="news"] {
+  background: var(--green);
+}
+
+.announce[data-kind="maintenance"] {
+  background: var(--red);
+}
+
+.announce-dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--ink);
+}
+
+.announce-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.75rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.announce-body {
+  opacity: 0.85;
+}
+
+.announce-until {
+  font-size: 0.75rem;
+}
+
+.announce-link {
+  color: inherit;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.announce-close,
+.bar-close {
+  padding: 0.1rem 0.3rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The one thing to do next, along the bottom: beside the brain, never under
+   it, at any width. */
+.bar {
+  position: fixed;
+  left: clamp(0.75rem, 2vw, 1.5rem);
+  right: max(calc(50% - 22rem), calc(clamp(0.75rem, 2vw, 1.5rem) + 76px));
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  z-index: 39;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.bar-mark {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.bar-said {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.bar-go {
+  margin-left: auto;
+}
+
+@media (max-width: 560px) {
+  .bar-said {
+    display: none;
+  }
+}
+
+/* A claim between two laurel branches. */
+.laurel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.laurel-branch {
+  flex: none;
+  color: var(--ink-2);
+}
+
+/* The people who said something, in their words. Shown only when there are any. */
+.voices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.4rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.voice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  max-width: 22rem;
+}
+
+.voice img {
+  flex: none;
+  border: 1.5px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.voice p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.voice cite {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-style: normal;
+  color: var(--ink-3);
+}
+
+/* Whether the site's server answers: one square in the fine print. */
+.footer-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sitedot-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sitedot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--ink);
+  background: var(--rule);
+}
+
+.sitedot[data-state="up"] {
+  background: var(--green);
+}
+
+.sitedot[data-state="down"] {
+  background: var(--orange);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-brain[data-live] {
+    animation: none;
+  }
+}
+
+/* ─── the operator's panel ───────────────────────────────────────────────── */
+/* Built from the desk's own dashboard: the same rail on the left, the same
+   panels, the same rows. What is here is only what the panel has and the desk
+   has not: the way in, a thread, a form. */
+
+.login-panel {
+  max-width: 34rem;
+}
+
+.login-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.login-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+
+/* What became of a request, said under the button that made it. */
+.login-said {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.adm-text {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.adm-form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.adm-label {
+  margin-top: 0.5rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.adm-form .chips {
+  margin-bottom: 0.25rem;
+}
+
+.adm-area {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.adm-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.adm-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--ink);
+}
+
+.adm-count {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.adm-form .dock-actions {
+  margin-top: 0.75rem;
+}
+
+/* A form in words a person keeps to themself: the panel is never indexed. */
+.adm-said {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adm-snip {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.adm-path {
+  overflow-wrap: anywhere;
+}
+
+.adm-error {
+  overflow-wrap: anywhere;
+}
+
+.adm-solved-head {
+  margin: 1.1rem 0 0.2rem;
+}
+
+/* Errors are defects, and a defect is red. Threads that wait are orange. */
+.nav-count[data-defect] {
+  background: var(--red);
+}
+
+.tag[data-attention] {
+  background: var(--orange);
+}
+
+.error-row[data-open] {
+  --state: var(--red);
+}
+
+/* The threads, and the one in front. */
+.chat-grid {
+  align-items: stretch;
+}
+
+.thread-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: min(40rem, calc(100vh - 11rem));
+  overflow-y: auto;
+}
+
+.thread {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.thread:hover {
+  background: var(--yellow);
+}
+
+.thread[data-on] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.thread-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.thread-lang,
+.thread-when,
+.thread-page {
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.thread[data-on] .thread-lang,
+.thread[data-on] .thread-when,
+.thread[data-on] .thread-page {
+  color: var(--paper-2);
+  opacity: 0.8;
+}
+
+.thread-snip {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.chat-thread {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.reply {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.reply textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+}
+
+.error-stack {
+  margin-top: 0.4rem;
+}
+
+.error-stack summary {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.error-stack .recap {
+  max-height: 14rem;
+  overflow: auto;
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 1020px) {
+  .thread-list {
+    max-height: 18rem;
+  }
+}
