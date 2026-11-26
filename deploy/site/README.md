@@ -7,11 +7,16 @@ in it, and nothing on a person's machine talks to it.
 
 ## Once, on the host
 
-1. Put the two lines of `nginx.conf` that are outside the `location` blocks
-   (`limit_req_zone`) into the `http { … }` block of nginx.
-2. Put the rest inside the `server { … }` block for mozg.sh, beside the
-   `ssl_certificate` lines.
-3. `cp .env.example .env` and fill it in. The values never go in a repository.
+1. `nginx.conf` is in two parts, and says where each goes: the one
+   `limit_req_zone` line into the `http { … }` block of nginx, and everything
+   else inside the `server { … }` block for mozg.sh and www.mozg.sh. The site
+   file keeps what else it holds: other projects under paths of mozg.sh, the
+   other names of the host, and the turn from :80 to https.
+2. `cp .env.example .env` in this folder on the host, and fill it in. The
+   values never go in a repository. The file is read by Docker alone, and can
+   stay closed to everybody but root.
+3. The data folder is written by the container, which runs as the user with
+   the id 1000: `mkdir -p data && chown 1000:1000 data && chmod 700 data`.
 4. `docker compose up -d --build` the first time can be left to the deploy
    script.
 
@@ -24,8 +29,16 @@ deploy/site/deploy.sh user@host
 ```
 
 It builds here, copies the source, builds the image there, starts it, copies
-the pages to where nginx looks, and asks the server whether it is up. It does
-not touch nginx's configuration.
+the pages to where nginx looks and opens them to the user nginx reads as, asks
+the server whether it is up, and asks whether the web server can read the
+pages. It does not touch nginx's own configuration.
+
+## Since 2026-11-26
+
+mozg.sh is served this way. On the host the site file is
+`/etc/nginx/sites-enabled/mozg.sh`, the pages are in `/srv/mozg/out`, the
+source in `/srv/mozg/src`, and the copy of the site file from before is
+`/root/mozg.sh.before-2.0`. The old mozg that ran there is the branch `v1`.
 
 ## The panel
 

@@ -29,7 +29,7 @@ echo "▸ copy the source and the deploy folder (the pages are built again on th
 # The history of the repository is not the server's to have, nor is anything
 # built here: the host builds from the source alone.
 rsync -az --delete \
-  --exclude node_modules --exclude .next --exclude out --exclude dist \
+  --exclude node_modules --exclude .next --exclude out --exclude out-desk --exclude dist \
   --exclude .i18n-parts --exclude 'plugin/desk' --exclude 'plugin/dist' \
   --exclude 'backup-*.tar.gz' --exclude 'deploy/site/data' --exclude 'deploy/site/.env' \
   --exclude .git --exclude .zcode --exclude .DS_Store --exclude '*.tsbuildinfo' \
@@ -39,9 +39,14 @@ echo "▸ the server, in its container"
 ssh "$host" "cd /srv/mozg/src && test -f deploy/site/.env && docker compose -f deploy/site/docker-compose.yml up -d --build"
 
 echo "▸ the pages, where nginx looks"
-ssh "$host" "mkdir -p /srv/mozg/out && docker cp mozg-site:/mozg/out/. /srv/mozg/out/ && cp /srv/mozg/src/deploy/site/proxy-params.conf /srv/mozg/"
+# nginx reads the pages as its own user, not as root: every folder on the way
+# and every file must be open to it. The first deploy of 2.0 made /srv/mozg
+# under a closed umask, and the site answered 404 for four minutes.
+ssh "$host" "mkdir -p /srv/mozg/out && docker cp mozg-site:/mozg/out/. /srv/mozg/out/ && cp /srv/mozg/src/deploy/site/proxy-params.conf /srv/mozg/ && chmod 755 /srv/mozg /srv/mozg/out && find /srv/mozg/out -type d -exec chmod 755 {} + && find /srv/mozg/out -type f -exec chmod 644 {} +"
 
 echo "▸ does it answer"
 sleep 2
 ssh "$host" "curl -fsS http://127.0.0.1:4318/api/health && echo"
+echo "▸ can the web server read the pages"
+ssh "$host" 'u=$(ps -o user= -C nginx | grep -v "^root$" | head -1); if [ -n "$u" ] && sudo -u "$u" test -r /srv/mozg/out/index.html; then echo "yes, as $u"; else echo "NO: the web server cannot read /srv/mozg/out/index.html"; exit 1; fi'
 echo "done. The panel: https://mozg.sh/admin/  (a link: docker compose -f /srv/mozg/src/deploy/site/docker-compose.yml exec site node dist/site-server.mjs token)"
