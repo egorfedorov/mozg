@@ -155,9 +155,9 @@ Every request passes, in order:
   fifteen seconds apart in one thread, five asks for the link.
 
 To run it on a machine of your own: `deploy/site/` holds the image, the
-compose file, the nginx snippet, a deploy script and a README. It is built and
-tested here, and it is on mozg.sh only once `deploy/site/deploy.sh` has been
-run: nothing in this repository puts it there by itself.
+compose file, the nginx snippet, a deploy script and a README. It is what runs
+at mozg.sh since 2026-11-26, put there by `deploy/site/deploy.sh`: nothing in
+this repository runs it by itself.
 
 ## Settings
 
